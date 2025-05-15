@@ -2,7 +2,7 @@
 <html lang="pt-BR" class=""> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento Interno de OS - V5.2</title>
+    <title>Gerenciamento Interno de OS - V5.3</title>
     <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,18 +16,70 @@
         /* ==========================================================================
            Estilos Base e Modo Claro (Padrão)
            ========================================================================== */
+        :root {
+            --bg-body-light: #f0f4f8;
+            --text-primary-light: #1e293b;
+            --bg-sidebar-light: #1f2937; /* Mesmo que o dark .sidebar para manter consistência visual inicial, mas pode ser alterado */
+            --text-sidebar-light: #e2e8f0;
+            --bg-card-light: #ffffff;
+            --text-card-light: #1e293b;
+            --border-card-light: #e2e8f0;
+            --bg-table-header-light: #f8fafc;
+            --text-table-header-light: #334155;
+            --border-table-header-light: #cbd5e1;
+            --text-table-row-light: #475569;
+            --border-table-row-light: #e2e8f0;
+            --bg-table-row-hover-light: #f1f5f9;
+            --bg-input-light: #ffffff;
+            --text-input-light: #1e293b;
+            --border-input-light: #cbd5e1;
+            --border-input-focus-light: #0ea5e9;
+            --shadow-input-focus-light: rgba(14, 165, 233, 0.25);
+            --bg-button-primary-light: #0ea5e9;
+            --text-button-primary-light: white;
+            --bg-button-primary-hover-light: #0284c7;
+            --text-placeholder-light: #64748b;
+            --text-link-light: #0ea5e9;
+        }
+
+        html.dark {
+            --bg-body-light: #0f172a;
+            --text-primary-light: #cbd5e1;
+            --bg-sidebar-light: #020617;
+            --text-sidebar-light: #94a3b8;
+            --bg-card-light: #1e293b;
+            --text-card-light: #cbd5e1;
+            --border-card-light: #334155;
+            --bg-table-header-light: #334155;
+            --text-table-header-light: #94a3b8;
+            --border-table-header-light: #475569;
+            --text-table-row-light: #cbd5e1;
+            --border-table-row-light: #334155;
+            --bg-table-row-hover-light: #283447;
+            --bg-input-light: #0f172a;
+            --text-input-light: #cbd5e1;
+            --border-input-light: #475569;
+            --border-input-focus-light: #0ea5e9;
+            --shadow-input-focus-light: rgba(14, 165, 233, 0.25);
+            --bg-button-primary-light: #0ea5e9;
+            --text-button-primary-light: #0f172a;
+            --bg-button-primary-hover-light: #0284c7;
+            --text-placeholder-light: #64748b;
+            --text-link-light: #38bdf8;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8; /* Um cinza azulado muito claro para o fundo */
-            color: #1e293b;      /* Azul ardósia bem escuro para texto principal */
+            background-color: var(--bg-body-light); 
+            color: var(--text-primary-light);      
             transition: background-color 0.3s, color 0.3s;
         }
 
         .sidebar {
-            background-color: #1f2937; /* Azul ardósia escuro para sidebar */
-            color: #e2e8f0;      /* Cinza azulado claro para texto da sidebar */
+            background-color: var(--bg-sidebar-light); 
+            color: var(--text-sidebar-light);      
             width: 260px;
-            transition: width 0.3s ease;
+            transition: width 0.3s ease, background-color 0.3s, color 0.3s;
             box-shadow: 2px 0 6px rgba(0,0,0,0.1);
             height: 100vh; 
             position: fixed; 
@@ -39,16 +91,21 @@
         }
         .sidebar.collapsed { width: 70px; }
         .sidebar-item { padding: 14px 18px; cursor: pointer; display: flex; align-items: center; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 6px; margin: 4px 0; }
-        .sidebar-item:hover { background-color: #334155; color: #ffffff; } /* Azul ardósia médio no hover */
-        .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; } /* Azul céu para item ativo */
+        .dark .sidebar-item:hover { background-color: #1e293b; color: #f8fafc; }
+        html:not(.dark) .sidebar-item:hover { background-color: #334155; color: #ffffff; }
+        .dark .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; } 
+        html:not(.dark) .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; }
         .sidebar-item i { margin-right: 12px; min-width: 24px; text-align: center; font-size: 1.1em; }
         .sidebar.collapsed .sidebar-item span, .sidebar.collapsed #sidebar-title span { display: none; }
         .sidebar.collapsed .sidebar-item i { margin-right: 0; }
         .sidebar-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; margin-bottom:10px; }
+        .dark .sidebar-header { border-bottom-color: #1e293b; }
         #sidebar-title span { font-size: 1.4em; font-weight: 600; color: #f8fafc; } 
+        .dark #sidebar-title span { color: #e2e8f0; }
+
 
         .content {
-            background-color: #f0f4f8; /* Mesmo fundo do body */
+            background-color: var(--bg-body-light); 
             flex-grow: 1;
             padding: 25px;
             transition: margin-left 0.3s ease, background-color 0.3s;
@@ -57,53 +114,60 @@
         .content.collapsed { margin-left: 70px; }
         
         .card {
-            background-color: #ffffff; /* Branco para cards */
-            color: #1e293b;      /* Texto principal dentro dos cards */
+            background-color: var(--bg-card-light); 
+            color: var(--text-card-light);      
             border-radius: 8px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.07); /* Sombra mais suave */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.07); 
             padding: 25px;
             margin-bottom: 25px;
             transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-            border: 1px solid #e2e8f0; /* Borda sutil para cards */
+            border: 1px solid var(--border-card-light); 
         }
         
         .table-header th { 
-            background-color: #f8fafc; /* Branco gelo para cabeçalho da tabela */
-            color: #334155;      /* Azul ardósia para texto do cabeçalho */
+            background-color: var(--bg-table-header-light); 
+            color: var(--text-table-header-light);      
             font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; 
             padding-top: 12px; padding-bottom: 12px; 
-            border-bottom: 2px solid #cbd5e1; /* Borda inferior mais definida */
+            border-bottom: 2px solid var(--border-table-header-light); 
             transition: background-color 0.3s, color 0.3s, border-color 0.3s;
         }
         .table-row td { 
-            color: #475569;      /* Cinza ardósia para texto das células */
-            border-color: #e2e8f0; /* Cinza azulado claro para bordas de célula */
+            color: var(--text-table-row-light);      
+            border-color: var(--border-table-row-light); 
             padding: 10px 16px; 
             transition: color 0.3s, border-color 0.3s, background-color 0.3s;
         }
         .table-row:hover td {
-            background-color: #f1f5f9; /* Hover muito sutil nas linhas */
+            background-color: var(--bg-table-row-hover-light); 
         }
 
         .input-field, .select-field { 
-            background-color: #ffffff; 
-            color: #1e293b; 
-            border: 1px solid #cbd5e1; /* Borda padrão para inputs */
+            background-color: var(--bg-input-light); 
+            color: var(--text-input-light); 
+            border: 1px solid var(--border-input-light); 
             border-radius: 6px;
             padding: 10px;
             transition: background-color 0.3s, color 0.3s, border-color 0.3s; 
         }
         .input-field:focus, .select-field:focus { 
-            border-color: #0ea5e9; /* Azul céu ao focar */
-            box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.25);
+            border-color: var(--border-input-focus-light); 
+            box-shadow: 0 0 0 0.2rem var(--shadow-input-focus-light);
             outline: none;
         }
+        .form-checkbox { border-color: var(--border-input-light); }
+        .dark .form-checkbox { background-color: var(--bg-input-light); }
+        .form-checkbox:checked { background-color: var(--border-input-focus-light); border-color: var(--border-input-focus-light); }
         
         .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-weight: 500; text-transform: capitalize; display: inline-flex; align-items: center; gap: 8px; border: none; }
-        .btn-primary { background-color: #0ea5e9; color: white; } 
-        .btn-primary:hover { background-color: #0284c7; } 
-        .btn-secondary { background-color: #64748b; color: white; } 
-        .btn-secondary:hover { background-color: #475569; }
+        .btn-primary { background-color: var(--bg-button-primary-light); color: var(--text-button-primary-light); } 
+        .btn-primary:hover { background-color: var(--bg-button-primary-hover-light); } 
+        
+        html:not(.dark) .btn-secondary { background-color: #7f8c8d; color: white; } 
+        html:not(.dark) .btn-secondary:hover { background-color: #6c7a7b; }
+        .dark .btn-secondary { background-color: #475569; color: #e2e8f0; } 
+        .dark .btn-secondary:hover { background-color: #334155; }
+
         .btn-danger { background-color: #ef4444; color: white; } 
         .btn-danger:hover { background-color: #dc2626; }
         .btn-success { background-color: #22c55e; color: white; } 
@@ -111,20 +175,21 @@
         .btn-warning { background-color: #f59e0b; color: white; } 
         .btn-warning:hover { background-color: #d97706; }
         
-        .modal-content { background-color: #ffffff; color: #1e293b; margin: 7% auto; padding: 30px; border: 1px solid #e2e8f0; width: 90%; max-width: 700px; border-radius: 8px; position: relative; animation: slideIn 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+        .modal-content { background-color: var(--bg-card-light); color: var(--text-card-light); margin: 7% auto; padding: 30px; border: 1px solid var(--border-card-light); width: 90%; max-width: 700px; border-radius: 8px; position: relative; animation: slideIn 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
         .close-button { color: #64748b; position: absolute; right: 15px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+        .dark .close-button { color: #9ca3af; }
         .close-button:hover, .close-button:focus { color: #1e293b; text-decoration: none; }
+        .dark .close-button:hover, .dark .close-button:focus { color: #e2e8f0; }
         
-        #recentActivityList li { border-bottom-color: #e2e8f0; }
-        #recentActivityList .text-gray-500 { color: #64748b; } 
-        #paginationControls span { color: #334155; }
+        #recentActivityList li { border-bottom-color: var(--border-table-row-light); }
+        #recentActivityList .text-placeholder { color: var(--text-placeholder-light); } 
+        #paginationControls span { color: var(--text-primary-light); }
         #google-login-container { margin-top: auto; padding: 15px; border-top: 1px solid #334155;}
+        .dark #google-login-container { border-top-color: #4b5563; }
         #user-info { display: flex; align-items: center; gap: 10px; }
-        #user-info img { border-radius: 50%; width: 32px; height: 32px; border: 2px solid #e2e8f0;}
+        #user-info img { border-radius: 50%; width: 32px; height: 32px; border: 2px solid var(--border-card-light);}
         #user-info span { font-size: 0.9em; font-weight: 500; }
         .checkbox-cell { width: 1%; white-space: nowrap; }
-        .form-checkbox { border-color: #cbd5e1; }
-        .form-checkbox:checked { background-color: #0ea5e9; border-color: #0ea5e9; }
         
         .priority-Alta { background-color: #fee2e2; color: #b91c1c; }
         .priority-Urgente { background-color: #ffedd5; color: #c2410c; animation: pulse 1.5s infinite; }
@@ -136,58 +201,16 @@
         @keyframes slideIn { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
         
         ::-webkit-scrollbar { width: 8px; height: 8px;}
-        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        /* ==========================================================================
-           Estilos do Modo Escuro
-           ========================================================================== */
-        .dark body { background-color: #0f172a; color: #cbd5e1; } /* Azul noite muito escuro */
-        .dark .sidebar { background-color: #020617; color: #94a3b8; } /* Quase preto para sidebar */
-        .dark .sidebar-header { border-bottom-color: #1e293b; }
-        .dark #sidebar-title span { color: #e2e8f0; }
-        .dark .sidebar-item:hover { background-color: #1e293b; color: #f8fafc; }
-        .dark .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; } 
-        
-        .dark .content { background-color: #0f172a; }
-        .dark .card { background-color: #1e293b; color: #cbd5e1; border-color: #334155; } /* Azul ardósia escuro para cards */
-        
-        .dark .table-header th { background-color: #334155; color: #94a3b8; border-bottom-color: #475569; } 
-        .dark .table-row td { color: #cbd5e1; border-color: #334155; }
-        .dark .table-row:hover td { background-color: #283447; } 
-        
-        .dark .input-field, .dark .select-field { 
-            background-color: #0f172a; 
-            color: #cbd5e1; 
-            border: 1px solid #475569; 
-        }
-        .dark .input-field:focus, .dark .select-field:focus { 
-            border-color: #0ea5e9; 
-            box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.25);
-        }
-        .dark .form-checkbox { border-color: #475569; background-color: #334155; }
-        .dark .form-checkbox:checked { background-color: #0ea5e9; border-color: #0ea5e9; }
-        
-        .dark .btn-primary { background-color: #0ea5e9; color: #0f172a; } 
-        .dark .btn-primary:hover { background-color: #0284c7; }
-        .dark .btn-secondary { background-color: #475569; color: #e2e8f0; } 
-        .dark .btn-secondary:hover { background-color: #334155; }
-
-        .dark .modal-content { background-color: #1e293b; color: #cbd5e1; border-color: #334155;}
-        .dark .close-button { color: #9ca3af; }
-        .dark .close-button:hover { color: #e2e8f0; }
-
-        .dark #recentActivityList li { border-bottom-color: #334155; }
-        .dark #recentActivityList .text-gray-500 { color: #64748b; } 
-        .dark #paginationControls span { color: #94a3b8; }
-        .dark #google-login-container { border-top-color: #334155; }
-        .dark #user-info img { border-color: #334155; }
+        html:not(.dark) ::-webkit-scrollbar-track { background: #e2e8f0; }
+        html:not(.dark) ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .dark ::-webkit-scrollbar-track { background: #1e293b; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        .dark .g_id_signin div[role="button"] { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #475569 !important;} /* Forçar estilo do botão Google no modo escuro */
+        .dark .g_id_signin div[role="button"] { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #475569 !important;} 
         .dark .g_id_signin svg { fill: #e2e8f0 !important; }
+        .dashboard-card-link { cursor: pointer; transition: transform 0.2s ease-in-out; }
+        .dashboard-card-link:hover { transform: translateY(-3px); }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -196,7 +219,8 @@
         <div> 
             <div class="sidebar-header">
                 <div id="sidebar-title" class="flex items-center">
-                     <i class="fas fa-tasks text-2xl text-sky-500"></i> <span class="text-xl font-semibold">Gestão OS</span>
+                     <i class="fas fa-tasks text-2xl text-sky-500"></i> 
+                     <span class="text-xl font-semibold">Gestão OS</span>
                 </div>
                 <button id="toggleSidebar" class="text-slate-400 hover:text-white focus:outline-none p-1 rounded-md">
                     <i class="fas fa-bars text-lg"></i> 
@@ -241,7 +265,8 @@
                  data-shape="rectangular"
                  data-logo_alignment="left">
             </div>
-            <div id="user-info" class="mt-2 hidden"> <img id="user-pic" src="" alt="User Pic" class="w-8 h-8 rounded-full mr-2">
+            <div id="user-info" class="mt-2 hidden">
+                <img id="user-pic" src="" alt="User Pic" class="w-8 h-8 rounded-full mr-2">
                 <span id="user-name" class="text-sm font-medium"></span>
                 <button onclick="handleSignOut()" class="btn btn-xs btn-danger !p-1.5 !text-xs ml-auto"><i class="fas fa-sign-out-alt"></i></button>
             </div>
@@ -251,12 +276,13 @@
                 <i id="darkModeIcon" class="fas fa-moon"></i> 
                 <span>Modo Escuro</span>
             </div>
-            <div class="sidebar-item" onclick="showView('settingsView', this)"> <i class="fas fa-cog"></i>
+            <div class="sidebar-item" onclick="showView('settingsView', this)"> 
+                <i class="fas fa-cog"></i>
                 <span>Configurações</span>
             </div>
              <div class="sidebar-item text-sm text-slate-500 dark:text-slate-400">
                 <i class="fas fa-info-circle"></i>
-                <span>Versão 1.5.1</span> 
+                <span>Versão 1.5.2</span> 
             </div>
         </div>
     </aside>
@@ -265,28 +291,27 @@
         <div id="dashboardView" class="view-section card"> 
             <h2 class="text-3xl font-bold mb-6">Dashboard Analítico</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-gradient-to-br from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white">
+                <div class="bg-gradient-to-br from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white dashboard-card-link" onclick="navigateToOsListWithFilter('Aberta')">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium">OS Abertas</h3>
                         <i class="fas fa-folder-open text-3xl opacity-70"></i>
                     </div>
                     <p id="osAbertasCount" class="text-4xl font-bold mt-2">0</p>
                 </div>
-                <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-xl shadow-lg text-white">
-                     <div class="flex justify-between items-center">
+                <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-xl shadow-lg text-white dashboard-card-link" onclick="navigateToOsListWithFilter('Completa', true)"> <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium">OS Completas (Mês)</h3>
                         <i class="fas fa-check-circle text-3xl opacity-70"></i>
                     </div>
                     <p id="osCompletasMesCount" class="text-4xl font-bold mt-2">0</p>
                 </div>
-                <div class="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-xl shadow-lg text-white">
+                <div class="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-xl shadow-lg text-white dashboard-card-link" onclick="navigateToOsListWithFilter(['Pendente Informação', 'Aguardando Aprovação'])">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium">OS Pendentes</h3>
                         <i class="fas fa-exclamation-triangle text-3xl opacity-70"></i>
                     </div>
                     <p id="osPendentesCount" class="text-4xl font-bold mt-2">0</p>
                 </div>
-                 <div class="bg-gradient-to-br from-rose-500 to-rose-600 p-6 rounded-xl shadow-lg text-white">
+                 <div class="bg-gradient-to-br from-rose-500 to-rose-600 p-6 rounded-xl shadow-lg text-white dashboard-card-link" onclick="navigateToOsListWithFilter('Cancelada')">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium">OS Canceladas</h3>
                         <i class="fas fa-times-circle text-3xl opacity-70"></i>
@@ -306,7 +331,7 @@
                 <div class="card">
                     <h3 class="text-xl font-semibold mb-3">Atividades Recentes</h3>
                     <ul id="recentActivityList" class="space-y-3 max-h-80 overflow-y-auto">
-                        <li class="text-sm text-slate-500 dark:text-slate-400">Nenhuma atividade recente.</li>
+                        <li class="text-sm text-placeholder">Nenhuma atividade recente.</li>
                     </ul>
                 </div>
             </div>
@@ -513,10 +538,9 @@
                     <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-200 dark:border-slate-700">Visualização</h3>
                     <div class="space-y-4">
                         <div>
-                            <label for="itemsPerPageSetting" class="block text-sm font-medium mb-1">Itens por Página na Tabela de OS (Exemplo):</label>
+                            <label for="itemsPerPageSetting" class="block text-sm font-medium mb-1">Itens por Página na Tabela de OS:</label>
                             <input type="number" id="itemsPerPageSetting" value="10" min="5" max="50" step="5" class="input-field p-2 rounded-md w-full md:w-1/4">
                             <button class="btn btn-sm btn-primary ml-2" onclick="applyItemsPerPageSetting()">Aplicar</button>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Funcionalidade de exemplo, não implementada para persistência.</p>
                         </div>
                         <div>
                             <label for="dateFormatSetting" class="block text-sm font-medium mb-1">Formato de Data Preferido (Exemplo):</label>
@@ -735,7 +759,6 @@
             localStorage.setItem('darkMode_v5_2', document.documentElement.classList.contains('dark'));
             localStorage.setItem('savedFilters_v5_2', JSON.stringify(savedFilters));
             localStorage.setItem('itemsPerPage_v5_2', ITEMS_PER_PAGE);
-            // addRecentActivity("Dados salvos no LocalStorage."); // Pode ser muito frequente, comentar se necessário
         }
 
         function loadDataFromLocalStorage() {
@@ -753,7 +776,6 @@
             const storedUser = localStorage.getItem('googleUser_v5_2');
             if (storedUser) {
                 googleUser = JSON.parse(storedUser);
-                updateLoginUI();
             }
             const storedDarkMode = localStorage.getItem('darkMode_v5_2');
             if (storedDarkMode === 'true') {
@@ -772,6 +794,8 @@
             if (storedItemsPerPage) {
                 ITEMS_PER_PAGE = parseInt(storedItemsPerPage, 10) || ITEMS_PER_PAGE_DEFAULT;
                 if(itemsPerPageSettingInput) itemsPerPageSettingInput.value = ITEMS_PER_PAGE;
+            } else {
+                 if(itemsPerPageSettingInput) itemsPerPageSettingInput.value = ITEMS_PER_PAGE_DEFAULT;
             }
 
             populateProductFilters(); 
@@ -907,12 +931,16 @@
 
         function populateSavedFiltersSelect() {
             if (!savedFiltersSelect) return;
+            const currentSelection = savedFiltersSelect.value; // Salva a seleção atual se houver
             savedFiltersSelect.innerHTML = '<option value="">Carregar filtro...</option>';
             for (const name in savedFilters) {
                 const option = document.createElement('option');
                 option.value = name;
                 option.textContent = name;
                 savedFiltersSelect.appendChild(option);
+            }
+            if (currentSelection && savedFilters[currentSelection]) { // Restaura a seleção se ainda existir
+                savedFiltersSelect.value = currentSelection;
             }
         }
 
@@ -1224,7 +1252,8 @@
                 setDefaultAnalysisMonth(); 
                 renderMonthlyAnalysisByWeek();
             } else if (viewId === 'settingsView') {
-                // Lógica específica para a view de configurações, se necessário
+                // Carrega as configurações atuais ao abrir a aba
+                if(itemsPerPageSettingInput) itemsPerPageSettingInput.value = ITEMS_PER_PAGE;
             }
         }
 
@@ -1275,7 +1304,7 @@
 
             weeksInSelectedMonth.forEach(week => {
                 const { start: weekStart, end: weekEnd, wednesday: weekWednesday, weekNumber } = week;
-                const today = new Date();
+                const today = new Date(); // Data atual para comparação
                 const hasWednesdayOfOSWeekPassed = today > weekWednesday || today > weekEnd;
 
 
@@ -1423,12 +1452,12 @@
                 datasets: [{
                     label: 'OS por Status', data: Object.values(statusCounts),
                     backgroundColor: ['rgba(54, 162, 235, 0.8)','rgba(255, 159, 64, 0.8)','rgba(255, 205, 86, 0.8)','rgba(153, 102, 255, 0.8)','rgba(75, 192, 192, 0.8)','rgba(255, 99, 132, 0.8)'],
-                    borderColor: isDarkMode ? '#1e293b' : '#ffffff', // Ajustado para o fundo do card no modo escuro
+                    borderColor: isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim() : '#ffffff', 
                     borderWidth: 2, hoverOffset: 4
                 }]
             };
             if (osStatusChartInstance) osStatusChartInstance.destroy(); 
-            osStatusChartInstance = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 }, color: isDarkMode ? '#cbd5e1' : '#1e293b'}}, tooltip: { bodyFontColor: isDarkMode ? '#cbd5e1' : '#1e293b', titleFontColor: isDarkMode ? '#cbd5e1' : '#1e293b', callbacks: { label: function(c) { return `${c.label || ''}: ${c.parsed || 0}`; }}}}}});
+            osStatusChartInstance = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 }, color: isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim() : '#1e293b'}}, tooltip: { bodyFont: { color: isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim() : '#1e293b'}, titleFont: {color: isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim() : '#1e293b'}, callbacks: { label: function(c) { return `${c.label || ''}: ${c.parsed || 0}`; }}}}}});
         }
 
         const reportMonthYearEl = document.getElementById('reportMonthYear');
@@ -1503,6 +1532,7 @@
             const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
             const head = []; const body = [];
             const isDarkMode = document.documentElement.classList.contains('dark');
+            const textColor = isDarkMode ? [203, 213, 225] : [30, 41, 59]; // Ajustado para melhor contraste no PDF
 
             const headerCells = table.querySelectorAll("thead th");
             const headerRow = [];
@@ -1526,14 +1556,11 @@
                 if (tableId === 'osTable' && cells[0] && cells[0].querySelector('input[type="checkbox"]')) {
                     cellOffset = 1;
                 } else if (isWeeklyReport && tableId === 'weeklyAnalysisTable' && cells[0] && cells[0].innerText.toLowerCase().includes("semana")) {
-                    // Para o relatório semanal, a primeira coluna é "Semana do Prazo", que queremos incluir
-                    // Então não há offset se for o relatório semanal, a menos que ele também tivesse um checkbox (o que não tem)
+                    // Não há offset, pois a primeira coluna é informativa
                 }
-
 
                 for(let i = cellOffset; i < cells.length; i++) {
                     const cell = cells[i];
-                    // A condição de rowData.length < headerRow.length garante que não pegamos a coluna de ação
                     if (rowData.length < headerRow.length) { 
                          if (cell.querySelector('select')) rowData.push(cell.querySelector('select').value);
                          else rowData.push(cell.innerText);
@@ -1548,12 +1575,12 @@
 
             doc.autoTable({ 
                 head: head, body: body, startY: 60, 
-                headStyles: { fillColor: isDarkMode ? [30, 41, 59] : [44, 62, 80], fontSize: 8, textColor: 255 }, 
-                bodyStyles: { fontSize: 7, textColor: isDarkMode ? [203, 213, 225] : [44, 62, 80] }, 
-                alternateRowStyles: { fillColor: isDarkMode ? [15, 23, 42, 0.5] : [243, 244, 246] }, 
+                headStyles: { fillColor: isDarkMode ? [45, 55, 72] : [30, 41, 59], fontSize: 8, textColor: [255,255,255] }, 
+                bodyStyles: { fontSize: 7, textColor: textColor }, 
+                alternateRowStyles: { fillColor: isDarkMode ? [30, 41, 59, 0.7] : [243, 244, 246] }, 
                 margin: { top: 50, right: 20, bottom: 30, left: 20 }, 
                 didDrawPage: function (data) { 
-                    doc.setFontSize(16); doc.setTextColor(isDarkMode ? 226 : 40); doc.text(title, data.settings.margin.left, 35); 
+                    doc.setFontSize(16); doc.setTextColor(textColor[0], textColor[1], textColor[2]); doc.text(title, data.settings.margin.left, 35); 
                     const pageCount = doc.internal.getNumberOfPages();
                     doc.setFontSize(8); doc.text("Página " + doc.internal.getCurrentPageInfo().pageNumber + " de " + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 15); 
                 }
@@ -1590,7 +1617,6 @@
             }
             const formatDateToICS = (dateString, isEndOfDay = false) => {
                 const date = new Date(dateString);
-                // Ajusta para UTC para consistência no arquivo .ics
                 if (isEndOfDay) { date.setUTCHours(23, 59, 59, 999); } 
                 else { date.setUTCHours(9,0,0,0); } 
                 return date.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
@@ -1628,16 +1654,16 @@
             addRecentActivity(`Arquivo .ics gerado para OS ${os.numero}.`);
         }
 
-        // Funções da Página de Configurações (Exemplos)
+        // Funções da Página de Configurações
         function confirmClearAllData() {
             if (confirm("ATENÇÃO!\n\nVocê tem certeza que deseja apagar TODAS as Ordens de Serviço salvas localmente?\n\nEsta ação NÃO PODE SER DESFEITA.")) {
                 ordensServico = [];
-                savedFilters = {}; // Limpa também os filtros salvos
+                savedFilters = {}; 
                 localStorage.removeItem('ordensServicoData_v5_2');
                 localStorage.removeItem('savedFilters_v5_2');
                 addRecentActivity("Todos os dados de OS foram limpos.");
-                populateSavedFiltersSelect(); // Atualiza o select de filtros
-                refreshAllViews(); // Atualiza todas as visualizações para refletir a limpeza
+                populateSavedFiltersSelect(); 
+                refreshAllViews(); 
                 alert("Todos os dados foram limpos do LocalStorage.");
             }
         }
@@ -1647,14 +1673,47 @@
             const newItemsPerPage = parseInt(itemsPerPageSettingInput.value, 10);
             if (newItemsPerPage >= 5 && newItemsPerPage <= 50) {
                 ITEMS_PER_PAGE = newItemsPerPage;
-                currentPage = 1; // Reseta para a primeira página
-                saveDataToLocalStorage(); // Salva a nova configuração
-                renderOSTable(); // Re-renderiza a tabela com a nova quantidade de itens
+                currentPage = 1; 
+                saveDataToLocalStorage(); 
+                renderOSTable(); 
                 addRecentActivity(`Itens por página alterado para ${ITEMS_PER_PAGE}.`);
             } else {
                 alert("Por favor, insira um valor entre 5 e 50 para itens por página.");
-                itemsPerPageSettingInput.value = ITEMS_PER_PAGE; // Restaura o valor anterior
+                itemsPerPageSettingInput.value = ITEMS_PER_PAGE; 
             }
+        }
+        
+        // Navegação pelos cards do Dashboard
+        function navigateToOsListWithFilter(statusFilter, filterCurrentMonth = false) {
+            const filterStatusEl = document.getElementById('filterStatus');
+            const filterOsNumEl = document.getElementById('filterOsNumber');
+            const filterClientEl = document.getElementById('filterClient');
+            const filterProductEl = document.getElementById('filterProduct');
+            const filterDescriptionEl = document.getElementById('filterDescription');
+
+            // Limpa filtros anteriores
+            if(filterOsNumEl) filterOsNumEl.value = '';
+            if(filterClientEl) filterClientEl.value = '';
+            if(filterProductEl) filterProductEl.value = '';
+            if(filterDescriptionEl) filterDescriptionEl.value = '';
+
+
+            if (Array.isArray(statusFilter)) { // Para "Pendentes" que pode ser mais de um status
+                 // Como o select de filtro só aceita um, vamos priorizar o primeiro ou deixar em branco
+                 // Idealmente, o filtro de status deveria suportar múltiplos valores ou teríamos que filtrar programaticamente
+                 if(filterStatusEl) filterStatusEl.value = statusFilter[0] || "";
+            } else {
+                if(filterStatusEl) filterStatusEl.value = statusFilter;
+            }
+
+            // A filtragem por mês para "Completas (Mês)" é mais complexa de aplicar diretamente nos filtros da UI
+            // sem um filtro de data específico. Por enquanto, apenas o status será aplicado.
+            // Uma melhoria futura seria adicionar um filtro de intervalo de datas na lista de OS.
+
+            applyFiltersAndRender(); // Aplica o filtro de status e re-renderiza a tabela
+            
+            const osListSidebarItem = document.querySelector('.sidebar-item[onclick*="osListView"]');
+            showView('osListView', osListSidebarItem); // Muda para a aba de Ordens de Serviço
         }
 
 
@@ -1665,7 +1724,11 @@
             setDefaultAnalysisMonth(); 
             
             const dashboardSidebarItem = document.querySelector('.sidebar-item[onclick*="dashboardView"]');
-            showView('dashboardView', dashboardSidebarItem); 
+            if (dashboardSidebarItem) { // Garante que o elemento existe
+                showView('dashboardView', dashboardSidebarItem); 
+            } else { // Fallback se o elemento não for encontrado
+                showView('dashboardView', null);
+            }
             
             refreshAllViews(); 
 
