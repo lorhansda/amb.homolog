@@ -2,7 +2,7 @@
 <html lang="pt-BR" class=""> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento Interno de OS - V5.1</title>
+    <title>Gerenciamento Interno de OS - V5.2</title>
     <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,17 +18,17 @@
            ========================================================================== */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f4f7f6; /* Cinza muito claro para o fundo geral */
-            color: #1f2937;      /* Azul ardósia escuro para texto principal */
+            background-color: #f0f4f8; /* Um cinza azulado muito claro para o fundo */
+            color: #1e293b;      /* Azul ardósia bem escuro para texto principal */
             transition: background-color 0.3s, color 0.3s;
         }
 
         .sidebar {
-            background-color: #2c3e50; /* Azul escuro para sidebar */
-            color: #ecf0f1;      /* Cinza claro para texto da sidebar */
+            background-color: #1f2937; /* Azul ardósia escuro para sidebar */
+            color: #e2e8f0;      /* Cinza azulado claro para texto da sidebar */
             width: 260px;
             transition: width 0.3s ease;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 6px rgba(0,0,0,0.1);
             height: 100vh; 
             position: fixed; 
             top: 0;
@@ -39,16 +39,16 @@
         }
         .sidebar.collapsed { width: 70px; }
         .sidebar-item { padding: 14px 18px; cursor: pointer; display: flex; align-items: center; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 6px; margin: 4px 0; }
-        .sidebar-item:hover { background-color: #34495e; color: #ffffff; } /* Azul um pouco mais claro no hover */
-        .sidebar-item.active { background-color: #1abc9c; color: #ffffff; } /* Verde para item ativo */
+        .sidebar-item:hover { background-color: #334155; color: #ffffff; } /* Azul ardósia médio no hover */
+        .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; } /* Azul céu para item ativo */
         .sidebar-item i { margin-right: 12px; min-width: 24px; text-align: center; font-size: 1.1em; }
         .sidebar.collapsed .sidebar-item span, .sidebar.collapsed #sidebar-title span { display: none; }
         .sidebar.collapsed .sidebar-item i { margin-right: 0; }
-        .sidebar-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #34495e; margin-bottom:10px; }
-        #sidebar-title span { font-size: 1.4em; font-weight: 600; color: #ecf0f1; } 
+        .sidebar-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; margin-bottom:10px; }
+        #sidebar-title span { font-size: 1.4em; font-weight: 600; color: #f8fafc; } 
 
         .content {
-            background-color: #f4f7f6; /* Mesmo cinza muito claro do body */
+            background-color: #f0f4f8; /* Mesmo fundo do body */
             flex-grow: 1;
             padding: 25px;
             transition: margin-left 0.3s ease, background-color 0.3s;
@@ -58,144 +58,136 @@
         
         .card {
             background-color: #ffffff; /* Branco para cards */
-            color: #2c3e50;      /* Azul escuro para texto dentro dos cards */
+            color: #1e293b;      /* Texto principal dentro dos cards */
             border-radius: 8px; 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.07); /* Sombra mais suave */
             padding: 25px;
             margin-bottom: 25px;
             transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-            border: 1px solid #e5e7eb; /* Borda sutil para cards */
+            border: 1px solid #e2e8f0; /* Borda sutil para cards */
         }
         
         .table-header th { 
-            background-color: #e9ecef; /* Cinza bem claro para cabeçalho da tabela */
-            color: #495057;      /* Cinza escuro para texto do cabeçalho */
+            background-color: #f8fafc; /* Branco gelo para cabeçalho da tabela */
+            color: #334155;      /* Azul ardósia para texto do cabeçalho */
             font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; 
             padding-top: 12px; padding-bottom: 12px; 
-            border-bottom: 2px solid #dee2e6; /* Borda inferior mais forte no cabeçalho */
+            border-bottom: 2px solid #cbd5e1; /* Borda inferior mais definida */
             transition: background-color 0.3s, color 0.3s, border-color 0.3s;
         }
         .table-row td { 
-            color: #34495e;      /* Azul ardósia para texto das células */
-            border-color: #e9ecef; /* Cinza claro para bordas de célula */
-            padding: 10px 16px; /* Ajuste de padding */
+            color: #475569;      /* Cinza ardósia para texto das células */
+            border-color: #e2e8f0; /* Cinza azulado claro para bordas de célula */
+            padding: 10px 16px; 
             transition: color 0.3s, border-color 0.3s, background-color 0.3s;
         }
         .table-row:hover td {
-            background-color: #f8f9fa; /* Hover sutil nas linhas */
+            background-color: #f1f5f9; /* Hover muito sutil nas linhas */
         }
 
         .input-field, .select-field { 
             background-color: #ffffff; 
-            color: #2c3e50; 
-            border: 1px solid #ced4da; /* Borda padrão para inputs */
+            color: #1e293b; 
+            border: 1px solid #cbd5e1; /* Borda padrão para inputs */
             border-radius: 6px;
             padding: 10px;
             transition: background-color 0.3s, color 0.3s, border-color 0.3s; 
         }
         .input-field:focus, .select-field:focus { 
-            border-color: #1abc9c; /* Verde ao focar */
-            box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+            border-color: #0ea5e9; /* Azul céu ao focar */
+            box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.25);
             outline: none;
         }
         
-        /* Botões - Estilo base e Modo Claro */
         .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-weight: 500; text-transform: capitalize; display: inline-flex; align-items: center; gap: 8px; border: none; }
-        .btn-primary { background-color: #1abc9c; color: white; } /* Verde principal */
-        .btn-primary:hover { background-color: #16a085; } /* Verde mais escuro no hover */
-        .btn-secondary { background-color: #7f8c8d; color: white; } /* Cinza para secundário */
-        .btn-secondary:hover { background-color: #6c7a7b; }
-        .btn-danger { background-color: #e74c3c; color: white; } /* Vermelho para perigo */
-        .btn-danger:hover { background-color: #c0392b; }
-        .btn-success { background-color: #2ecc71; color: white; } /* Verde para sucesso */
-        .btn-success:hover { background-color: #27ae60; }
-        .btn-warning { background-color: #f39c12; color: white; } /* Laranja para aviso */
-        .btn-warning:hover { background-color: #e67e22; }
+        .btn-primary { background-color: #0ea5e9; color: white; } 
+        .btn-primary:hover { background-color: #0284c7; } 
+        .btn-secondary { background-color: #64748b; color: white; } 
+        .btn-secondary:hover { background-color: #475569; }
+        .btn-danger { background-color: #ef4444; color: white; } 
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-success { background-color: #22c55e; color: white; } 
+        .btn-success:hover { background-color: #16a34a; }
+        .btn-warning { background-color: #f59e0b; color: white; } 
+        .btn-warning:hover { background-color: #d97706; }
         
-        /* Modal - Modo Claro */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; } 
-        .modal-content { background-color: #ffffff; color: #2c3e50; margin: 7% auto; padding: 30px; border: 1px solid #bdc3c7; width: 90%; max-width: 700px; border-radius: 8px; position: relative; animation: slideIn 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .close-button { color: #7f8c8d; position: absolute; right: 15px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
-        .close-button:hover, .close-button:focus { color: #34495e; text-decoration: none; }
+        .modal-content { background-color: #ffffff; color: #1e293b; margin: 7% auto; padding: 30px; border: 1px solid #e2e8f0; width: 90%; max-width: 700px; border-radius: 8px; position: relative; animation: slideIn 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+        .close-button { color: #64748b; position: absolute; right: 15px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+        .close-button:hover, .close-button:focus { color: #1e293b; text-decoration: none; }
         
-        /* Outros elementos - Modo Claro */
-        #recentActivityList li { border-bottom-color: #ecf0f1; }
-        #recentActivityList .text-gray-500 { color: #7f8c8d; } 
-        #paginationControls span { color: #34495e; }
-        #google-login-container { margin-top: auto; padding: 15px; border-top: 1px solid #34495e;}
+        #recentActivityList li { border-bottom-color: #e2e8f0; }
+        #recentActivityList .text-gray-500 { color: #64748b; } 
+        #paginationControls span { color: #334155; }
+        #google-login-container { margin-top: auto; padding: 15px; border-top: 1px solid #334155;}
         #user-info { display: flex; align-items: center; gap: 10px; }
-        #user-info img { border-radius: 50%; width: 30px; height: 30px; }
-        #user-info span { font-size: 0.9em; }
+        #user-info img { border-radius: 50%; width: 32px; height: 32px; border: 2px solid #e2e8f0;}
+        #user-info span { font-size: 0.9em; font-weight: 500; }
         .checkbox-cell { width: 1%; white-space: nowrap; }
+        .form-checkbox { border-color: #cbd5e1; }
+        .form-checkbox:checked { background-color: #0ea5e9; border-color: #0ea5e9; }
         
-        /* Prioridades - Mantidas, pois são baseadas em cor e não em tema claro/escuro */
         .priority-Alta { background-color: #fee2e2; color: #b91c1c; }
         .priority-Urgente { background-color: #ffedd5; color: #c2410c; animation: pulse 1.5s infinite; }
         .priority-Média { background-color: #fef3c7; color: #a16207; }
         .priority-Baixa { background-color: #dcfce7; color: #15803d; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         
-        /* Animações - Mantidas */
         @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
         @keyframes slideIn { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
         
-        /* Scrollbar - Modo Claro */
         ::-webkit-scrollbar { width: 8px; height: 8px;}
-        ::-webkit-scrollbar-track { background: #ecf0f1; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb:hover { background: #95a5a6; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px;}
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px;}
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         /* ==========================================================================
-           Estilos do Modo Escuro (Sobrescrevem os de cima quando .dark está no html)
+           Estilos do Modo Escuro
            ========================================================================== */
-        .dark body { background-color: #1e293b; color: #e2e8f0; } /* Azul ardósia muito escuro */
-        .dark .sidebar { background-color: #0f172a; color: #cbd5e1; } /* Azul noite para sidebar */
+        .dark body { background-color: #0f172a; color: #cbd5e1; } /* Azul noite muito escuro */
+        .dark .sidebar { background-color: #020617; color: #94a3b8; } /* Quase preto para sidebar */
         .dark .sidebar-header { border-bottom-color: #1e293b; }
         .dark #sidebar-title span { color: #e2e8f0; }
-        .dark .sidebar-item:hover { background-color: #1e293b; color: #ffffff; }
-        .dark .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; } /* Azul céu para item ativo no modo escuro */
+        .dark .sidebar-item:hover { background-color: #1e293b; color: #f8fafc; }
+        .dark .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; } 
         
-        .dark .content { background-color: #1e293b; }
-        .dark .card { background-color: #0f172a; color: #e2e8f0; border-color: #334155; }
+        .dark .content { background-color: #0f172a; }
+        .dark .card { background-color: #1e293b; color: #cbd5e1; border-color: #334155; } /* Azul ardósia escuro para cards */
         
-        .dark .table-header th { background-color: #1e293b; color: #94a3b8; border-bottom-color: #334155; } /* Azul ardósia para cabeçalho da tabela */
+        .dark .table-header th { background-color: #334155; color: #94a3b8; border-bottom-color: #475569; } 
         .dark .table-row td { color: #cbd5e1; border-color: #334155; }
-        .dark .table-row:hover td { background-color: #172233; } /* Hover mais escuro nas linhas */
+        .dark .table-row:hover td { background-color: #283447; } 
         
         .dark .input-field, .dark .select-field { 
-            background-color: #1e293b; 
-            color: #e2e8f0; 
-            border: 1px solid #475569; /* Borda mais escura para inputs */
+            background-color: #0f172a; 
+            color: #cbd5e1; 
+            border: 1px solid #475569; 
         }
         .dark .input-field:focus, .dark .select-field:focus { 
-            border-color: #0ea5e9; /* Azul céu ao focar */
+            border-color: #0ea5e9; 
             box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.25);
         }
+        .dark .form-checkbox { border-color: #475569; background-color: #334155; }
+        .dark .form-checkbox:checked { background-color: #0ea5e9; border-color: #0ea5e9; }
         
-        /* Botões - Modo Escuro */
-        .dark .btn-primary { background-color: #0ea5e9; color: #0f172a; } /* Azul céu para primário */
+        .dark .btn-primary { background-color: #0ea5e9; color: #0f172a; } 
         .dark .btn-primary:hover { background-color: #0284c7; }
-        .dark .btn-secondary { background-color: #475569; color: #e2e8f0; } /* Cinza ardósia para secundário */
+        .dark .btn-secondary { background-color: #475569; color: #e2e8f0; } 
         .dark .btn-secondary:hover { background-color: #334155; }
-        /* btn-danger, btn-success, btn-warning podem manter as cores ou ter versões levemente ajustadas se necessário */
-        .dark .btn-danger { background-color: #ef4444; color: white; } 
-        .dark .btn-danger:hover { background-color: #dc2626; }
 
-        /* Modal - Modo Escuro */
-        .dark .modal-content { background-color: #1e293b; color: #e2e8f0; border-color: #334155;}
+        .dark .modal-content { background-color: #1e293b; color: #cbd5e1; border-color: #334155;}
         .dark .close-button { color: #9ca3af; }
         .dark .close-button:hover { color: #e2e8f0; }
 
-        /* Outros elementos - Modo Escuro */
         .dark #recentActivityList li { border-bottom-color: #334155; }
-        .dark #recentActivityList .text-gray-500 { color: #9ca3af; } 
-        .dark #paginationControls span { color: #cbd5e1; }
+        .dark #recentActivityList .text-gray-500 { color: #64748b; } 
+        .dark #paginationControls span { color: #94a3b8; }
         .dark #google-login-container { border-top-color: #334155; }
+        .dark #user-info img { border-color: #334155; }
         .dark ::-webkit-scrollbar-track { background: #1e293b; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        /* Garante que o texto dentro dos cards de dashboard com gradiente seja legível */
-        .dark .bg-gradient-to-br p, .dark .bg-gradient-to-br h3 { color: #ffffff !important; }
+        .dark .g_id_signin div[role="button"] { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #475569 !important;} /* Forçar estilo do botão Google no modo escuro */
+        .dark .g_id_signin svg { fill: #e2e8f0 !important; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -204,9 +196,9 @@
         <div> 
             <div class="sidebar-header">
                 <div id="sidebar-title" class="flex items-center">
-                     <i class="fas fa-tasks text-2xl text-blue-400"></i> <span class="text-xl font-semibold">Gestão OS</span>
+                     <i class="fas fa-tasks text-2xl text-sky-500"></i> <span class="text-xl font-semibold">Gestão OS</span>
                 </div>
-                <button id="toggleSidebar" class="text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-white focus:outline-none p-1 rounded-md">
+                <button id="toggleSidebar" class="text-slate-400 hover:text-white focus:outline-none p-1 rounded-md">
                     <i class="fas fa-bars text-lg"></i> 
                 </button>
             </div>
@@ -229,13 +221,13 @@
                         <span>Relatórios</span>
                     </li>
                      <li class="sidebar-item mt-4" onclick="openAddOSModal()"> 
-                        <i class="fas fa-plus-circle text-green-400 dark:text-green-500"></i>
-                        <span class="text-green-400 dark:text-green-500">Nova OS</span>
+                        <i class="fas fa-plus-circle text-green-500"></i>
+                        <span class="text-green-500">Nova OS</span>
                     </li>
                 </ul>
             </nav>
         </div>
-        <div id="google-login-container">
+        <div id="google-login-container" class="px-2">
             <div id="g_id_onload"
                  data-client_id="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com" 
                  data-callback="handleCredentialResponse"
@@ -249,10 +241,9 @@
                  data-shape="rectangular"
                  data-logo_alignment="left">
             </div>
-            <div id="user-info" class="mt-3 hidden">
-                <img id="user-pic" src="" alt="User Pic">
-                <span id="user-name"></span>
-                <button onclick="handleSignOut()" class="btn btn-sm btn-danger !p-2 text-xs"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            <div id="user-info" class="mt-2 hidden"> <img id="user-pic" src="" alt="User Pic" class="w-8 h-8 rounded-full mr-2">
+                <span id="user-name" class="text-sm font-medium"></span>
+                <button onclick="handleSignOut()" class="btn btn-xs btn-danger !p-1.5 !text-xs ml-auto"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
         <div class="mt-auto pb-2"> 
@@ -260,11 +251,10 @@
                 <i id="darkModeIcon" class="fas fa-moon"></i> 
                 <span>Modo Escuro</span>
             </div>
-            <div class="sidebar-item">
-                <i class="fas fa-cog"></i>
+            <div class="sidebar-item" onclick="showView('settingsView', this)"> <i class="fas fa-cog"></i>
                 <span>Configurações</span>
             </div>
-             <div class="sidebar-item text-sm text-gray-500 dark:text-gray-400">
+             <div class="sidebar-item text-sm text-slate-500 dark:text-slate-400">
                 <i class="fas fa-info-circle"></i>
                 <span>Versão 1.5.1</span> 
             </div>
@@ -275,28 +265,28 @@
         <div id="dashboardView" class="view-section card"> 
             <h2 class="text-3xl font-bold mb-6">Dashboard Analítico</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg text-white">
+                <div class="bg-gradient-to-br from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium">OS Abertas</h3>
                         <i class="fas fa-folder-open text-3xl opacity-70"></i>
                     </div>
                     <p id="osAbertasCount" class="text-4xl font-bold mt-2">0</p>
                 </div>
-                <div class="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl shadow-lg text-white">
+                <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-xl shadow-lg text-white">
                      <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium">OS Completas (Mês)</h3>
                         <i class="fas fa-check-circle text-3xl opacity-70"></i>
                     </div>
                     <p id="osCompletasMesCount" class="text-4xl font-bold mt-2">0</p>
                 </div>
-                <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-xl shadow-lg text-white">
+                <div class="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-xl shadow-lg text-white">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium">OS Pendentes</h3>
                         <i class="fas fa-exclamation-triangle text-3xl opacity-70"></i>
                     </div>
                     <p id="osPendentesCount" class="text-4xl font-bold mt-2">0</p>
                 </div>
-                 <div class="bg-gradient-to-br from-red-500 to-red-600 p-6 rounded-xl shadow-lg text-white">
+                 <div class="bg-gradient-to-br from-rose-500 to-rose-600 p-6 rounded-xl shadow-lg text-white">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium">OS Canceladas</h3>
                         <i class="fas fa-times-circle text-3xl opacity-70"></i>
@@ -306,7 +296,7 @@
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="card !p-0"> 
-                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-700">
                         <h3 class="text-xl font-semibold">Distribuição de Status das OS</h3>
                     </div>
                     <div id="osStatusChartContainer" class="p-4">
@@ -316,7 +306,7 @@
                 <div class="card">
                     <h3 class="text-xl font-semibold mb-3">Atividades Recentes</h3>
                     <ul id="recentActivityList" class="space-y-3 max-h-80 overflow-y-auto">
-                        <li class="text-sm text-gray-500 dark:text-gray-400">Nenhuma atividade recente.</li>
+                        <li class="text-sm text-slate-500 dark:text-slate-400">Nenhuma atividade recente.</li>
                     </ul>
                 </div>
             </div>
@@ -347,7 +337,7 @@
                 </div>
             </div>
 
-            <div class="mb-6 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+            <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                     <input type="text" id="filterOsNumber" placeholder="Nº OS" class="input-field p-2 rounded-md">
                     <input type="text" id="filterClient" placeholder="Cliente" class="input-field p-2 rounded-md">
@@ -381,7 +371,7 @@
                 <table id="osTable" class="min-w-full">
                     <thead class="table-header">
                         <tr>
-                            <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"></th>
+                            <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4 text-sky-500 border-slate-300 rounded focus:ring-sky-500 dark:focus:ring-sky-600 dark:ring-offset-slate-800 dark:bg-slate-700 dark:border-slate-600"></th>
                             <th class="py-3 px-4 text-left">Nº OS</th>
                             <th class="py-3 px-4 text-left">Cliente</th>
                             <th class="py-3 px-4 text-left">Produto</th>
@@ -395,7 +385,7 @@
                             <th class="py-3 px-4 text-left">Ações</th>
                         </tr>
                     </thead>
-                    <tbody id="osTableBody" class="divide-y divide-gray-200 dark:divide-slate-700">
+                    <tbody id="osTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
                         </tbody>
                 </table>
             </div>
@@ -415,7 +405,7 @@
                 </div>
             </div>
             <p class="text-base mb-2">OSs com prazo final no mês selecionado que não foram marcadas como "Completa" até o final da Quarta-Feira da respectiva semana do prazo.</p>
-            <p id="selectedMonthInfo" class="text-sm text-blue-600 dark:text-sky-400 font-semibold mb-4"></p>
+            <p id="selectedMonthInfo" class="text-sm text-sky-600 dark:text-sky-400 font-semibold mb-4"></p>
 
             <div class="overflow-x-auto shadow-md rounded-lg">
                 <table id="weeklyAnalysisTable" class="min-w-full">
@@ -432,7 +422,7 @@
                             <th class="py-3 px-4 text-left">Ação Sugerida</th>
                         </tr>
                     </thead>
-                    <tbody id="weeklyAnalysisTableBody" class="divide-y divide-gray-200 dark:divide-slate-700">
+                    <tbody id="weeklyAnalysisTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
                         </tbody>
                 </table>
             </div>
@@ -447,7 +437,7 @@
                     <button class="btn btn-danger" onclick="exportTableToPDF('reportsTable', 'Relatório de Ordens de Serviço', 'reportsTableBody')"><i class="fas fa-file-pdf"></i>Exportar PDF</button>
                 </div>
             </div>
-            <div class="mb-6 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+            <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label for="reportMonthYear" class="block text-sm font-medium mb-1">Mês/Ano do Prazo Final:</label>
@@ -489,12 +479,74 @@
                             <th class="py-3 px-4 text-left">Responsável</th>
                         </tr>
                     </thead>
-                    <tbody id="reportsTableBody" class="divide-y divide-gray-200 dark:divide-slate-700">
-                       <tr class="table-row"><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Selecione os filtros e clique em "Gerar Relatório".</td></tr>
+                    <tbody id="reportsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                       <tr class="table-row"><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Selecione os filtros e clique em "Gerar Relatório".</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <div id="settingsView" class="view-section card hidden">
+            <h2 class="text-3xl font-bold mb-6">Configurações</h2>
+            <div class="space-y-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-200 dark:border-slate-700">Gestão da Página</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <button class="btn btn-danger" onclick="confirmClearAllData()">
+                                <i class="fas fa-trash-alt"></i> Limpar Todos os Dados das OS (LocalStorage)
+                            </button>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Atenção: Esta ação é irreversível e apagará todas as Ordens de Serviço salvas localmente.</p>
+                        </div>
+                        <div>
+                            <label for="defaultExportFormat" class="block text-sm font-medium mb-1">Formato de Exportação Padrão (Exemplo):</label>
+                            <select id="defaultExportFormat" class="select-field p-2 rounded-md w-full md:w-1/3">
+                                <option value="csv">CSV</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Funcionalidade de exemplo, não implementada.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-200 dark:border-slate-700">Visualização</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="itemsPerPageSetting" class="block text-sm font-medium mb-1">Itens por Página na Tabela de OS (Exemplo):</label>
+                            <input type="number" id="itemsPerPageSetting" value="10" min="5" max="50" step="5" class="input-field p-2 rounded-md w-full md:w-1/4">
+                            <button class="btn btn-sm btn-primary ml-2" onclick="applyItemsPerPageSetting()">Aplicar</button>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Funcionalidade de exemplo, não implementada para persistência.</p>
+                        </div>
+                        <div>
+                            <label for="dateFormatSetting" class="block text-sm font-medium mb-1">Formato de Data Preferido (Exemplo):</label>
+                            <select id="dateFormatSetting" class="select-field p-2 rounded-md w-full md:w-1/3">
+                                <option value="dd/mm/yyyy">DD/MM/YYYY</option>
+                                <option value="mm/dd/yyyy">MM/DD/YYYY</option>
+                                <option value="yyyy-mm-dd">YYYY-MM-DD</option>
+                            </select>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Funcionalidade de exemplo, não implementada.</p>
+                        </div>
+                    </div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-200 dark:border-slate-700">Notificações (Placeholder)</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox mr-2">
+                            <span>Receber notificações de novas OS atribuídas</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox mr-2">
+                            <span>Alertar sobre OS próximas do prazo</span>
+                        </label>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Funcionalidade de notificações em tempo real requer backend.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     </main> 
     <div id="osModal" class="modal">
         <div class="modal-content">
@@ -569,7 +621,8 @@
     </div>
     <script>
         // Configuração Global
-        const ITEMS_PER_PAGE = 10; 
+        const ITEMS_PER_PAGE_DEFAULT = 10; 
+        let ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
         let currentPage = 1;
         let ordensServico = []; 
         const defaultProducts = [ 
@@ -578,7 +631,7 @@
             "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"
         ];
         let googleUser = null; 
-        let savedFilters = {}; // Objeto para armazenar filtros salvos
+        let savedFilters = {}; 
 
         // Elementos da DOM 
         const osTableBody = document.getElementById('osTableBody');
@@ -607,6 +660,7 @@
         const bulkActionsContainer = document.getElementById('bulkActionsContainer');
         const selectedOsCountSpan = document.getElementById('selectedOsCount');
         const bulkActionStatusSelect = document.getElementById('bulkActionStatus');
+        const itemsPerPageSettingInput = document.getElementById('itemsPerPageSetting');
 
 
         // Funções Auxiliares de Data
@@ -666,7 +720,7 @@
                 case 'Urgente': return 'priority-Urgente';
                 case 'Média': return 'priority-Média';
                 case 'Baixa': return 'priority-Baixa';
-                default: return 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300'; 
+                default: return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'; 
             }
         }
 
@@ -676,18 +730,18 @@
 
         // Funções de LocalStorage 
         function saveDataToLocalStorage() {
-            localStorage.setItem('ordensServicoData_v5_1', JSON.stringify(ordensServico)); 
-            localStorage.setItem('googleUser_v5_1', JSON.stringify(googleUser));
-            localStorage.setItem('darkMode_v5_1', document.documentElement.classList.contains('dark'));
-            localStorage.setItem('savedFilters_v5_1', JSON.stringify(savedFilters));
-            addRecentActivity("Dados salvos no LocalStorage.");
+            localStorage.setItem('ordensServicoData_v5_2', JSON.stringify(ordensServico)); 
+            localStorage.setItem('googleUser_v5_2', JSON.stringify(googleUser));
+            localStorage.setItem('darkMode_v5_2', document.documentElement.classList.contains('dark'));
+            localStorage.setItem('savedFilters_v5_2', JSON.stringify(savedFilters));
+            localStorage.setItem('itemsPerPage_v5_2', ITEMS_PER_PAGE);
+            // addRecentActivity("Dados salvos no LocalStorage."); // Pode ser muito frequente, comentar se necessário
         }
 
         function loadDataFromLocalStorage() {
-            const data = localStorage.getItem('ordensServicoData_v5_1'); 
+            const data = localStorage.getItem('ordensServicoData_v5_2'); 
             if (data) {
                 ordensServico = JSON.parse(data);
-                // addRecentActivity("Dados de OS carregados."); // Removido para não poluir ao carregar
             } else {
                 ordensServico = [
                     { id: generateId(), numero: 'OS2505W3-1', cliente: 'Cliente Teste A', produto: 'SOLIDWORKS CAD', descricao: 'Resolver problema de instalação e configuração do SOLIDWORKS Premium na máquina do cliente.', dataAbertura: '2025-05-01', prazoFinal: '2025-05-15', responsavel: 'Carlos Z.', solicitante: 'Ana P.', status: 'Em Andamento', prioridade: 'Alta' }, 
@@ -695,14 +749,13 @@
                     { id: generateId(), numero: 'OS2505W4-1', cliente: 'Cliente Teste C', produto: 'WORKNC', descricao: 'Verificar licença do WORKNC e auxiliar na criação de um novo projeto complexo.', dataAbertura: '2025-05-10', prazoFinal: '2025-05-22', responsavel: 'Daniel F.', solicitante: 'Julia M.', status: 'Aberta', prioridade: 'Urgente'}, 
                     { id: generateId(), numero: 'OS2504W5-1', cliente: 'Cliente Teste D', produto: 'LANTEK', descricao: 'Suporte para configuração de nesting e importação de arquivos DXF no Lantek Expert.', dataAbertura: '2025-04-20', prazoFinal: '2025-04-30', responsavel: 'Eduardo G.', solicitante: 'Laura C.', status: 'Pendente Informação', prioridade: 'Média'}, 
                 ];
-                // addRecentActivity("Dados de OS iniciais carregados.");
             }
-            const storedUser = localStorage.getItem('googleUser_v5_1');
+            const storedUser = localStorage.getItem('googleUser_v5_2');
             if (storedUser) {
                 googleUser = JSON.parse(storedUser);
                 updateLoginUI();
             }
-            const storedDarkMode = localStorage.getItem('darkMode_v5_1');
+            const storedDarkMode = localStorage.getItem('darkMode_v5_2');
             if (storedDarkMode === 'true') {
                 document.documentElement.classList.add('dark');
                 if(darkModeIcon) darkModeIcon.classList.replace('fa-moon', 'fa-sun');
@@ -710,11 +763,17 @@
                  document.documentElement.classList.remove('dark');
                  if(darkModeIcon) darkModeIcon.classList.replace('fa-sun', 'fa-moon');
             }
-            const storedFilters = localStorage.getItem('savedFilters_v5_1');
+            const storedFilters = localStorage.getItem('savedFilters_v5_2');
             if (storedFilters) {
                 savedFilters = JSON.parse(storedFilters);
                 populateSavedFiltersSelect();
             }
+            const storedItemsPerPage = localStorage.getItem('itemsPerPage_v5_2');
+            if (storedItemsPerPage) {
+                ITEMS_PER_PAGE = parseInt(storedItemsPerPage, 10) || ITEMS_PER_PAGE_DEFAULT;
+                if(itemsPerPageSettingInput) itemsPerPageSettingInput.value = ITEMS_PER_PAGE;
+            }
+
             populateProductFilters(); 
         }
 
@@ -742,10 +801,10 @@
             if (!recentActivityList) return;
             const listItem = document.createElement('li');
             const now = new Date();
-            listItem.className = 'flex justify-between items-center text-sm pb-2 border-b border-gray-200 dark:border-slate-700'; 
+            listItem.className = 'flex justify-between items-center text-sm pb-2 border-b border-slate-200 dark:border-slate-700'; 
             listItem.innerHTML = `
                 <span>${action}</span>
-                <span class="text-gray-400 dark:text-slate-500 text-xs">${now.toLocaleTimeString('pt-BR')}</span>
+                <span class="text-slate-400 dark:text-slate-500 text-xs">${now.toLocaleTimeString('pt-BR')}</span>
             `;
             const firstChild = recentActivityList.firstChild;
             if (firstChild && firstChild.nodeType === Node.ELEMENT_NODE && firstChild.textContent.trim() === 'Nenhuma atividade recente.') {
@@ -883,9 +942,9 @@
                     saveDataToLocalStorage();
                     addRecentActivity(`Filtro "${name}" excluído.`);
                 }
-            } else if (name) { // Mudança aqui: só alerta se um nome foi selecionado mas não encontrado.
+            } else if (name) { 
                 alert("Nenhum filtro salvo selecionado para excluir ou filtro inválido.");
-            } else { // Se nenhum filtro estiver selecionado (value === "")
+            } else { 
                  alert("Por favor, selecione um filtro salvo para excluir.");
             }
         }
@@ -905,7 +964,7 @@
 
         function toggleSelectAllOS(masterCheckbox) {
             if(!osTableBody) return;
-            const checkboxes = osTableBody.querySelectorAll('input[type="checkbox"][data-id]'); // Apenas checkboxes de OS
+            const checkboxes = osTableBody.querySelectorAll('input[type="checkbox"][data-id]'); 
             checkboxes.forEach(checkbox => checkbox.checked = masterCheckbox.checked);
             updateSelectedCount();
         }
@@ -958,9 +1017,6 @@
             }
         }
 
-
-        // --- Restante do JavaScript (CRUD, Tabelas, Dashboard, etc.) ---
-
         function renderOSTable(filteredData = getFilteredOS()) {
             if (!osTableBody) return;
             osTableBody.innerHTML = ''; 
@@ -968,7 +1024,7 @@
             updateSelectedCount(); 
 
             if (filteredData.length === 0) {
-                osTableBody.innerHTML = '<tr><td colspan="12" class="text-center py-10 text-gray-500 dark:text-gray-400">Nenhuma ordem de serviço encontrada.</td></tr>';
+                osTableBody.innerHTML = '<tr><td colspan="12" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma ordem de serviço encontrada.</td></tr>';
                 renderPagination(0, 0); 
                 return;
             }
@@ -977,9 +1033,9 @@
 
             paginatedData.forEach(os => { 
                 const row = osTableBody.insertRow();
-                row.className = 'table-row hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-150'; 
+                row.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-150'; 
                 row.innerHTML = `
-                    <td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"></td>
+                    <td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4 text-sky-500 border-slate-300 rounded focus:ring-sky-500 dark:focus:ring-sky-600 dark:ring-offset-slate-800 dark:bg-slate-700 dark:border-slate-600"></td>
                     <td class="py-3 px-4 text-sm font-medium">${os.numero}</td>
                     <td class="py-3 px-4 text-sm">${os.cliente}</td>
                     <td class="py-3 px-4 text-sm">${os.produto || 'N/A'}</td>
@@ -1002,7 +1058,7 @@
                         <span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span>
                     </td>
                     <td class="py-3 px-4 text-sm whitespace-nowrap">
-                        <button class="text-blue-600 hover:text-blue-800 dark:text-sky-400 dark:hover:text-sky-300 mr-2 p-1" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300 mr-2 p-1" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button>
                         <button class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 mr-2 p-1" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button>
                         <button class="text-green-600 hover:text-green-800 dark:text-emerald-400 dark:hover:text-emerald-300 p-1" title="Baixar .ics do Calendário" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button>
                     </td>
@@ -1167,6 +1223,8 @@
             if (viewId === 'weeklyAnalysisView') {
                 setDefaultAnalysisMonth(); 
                 renderMonthlyAnalysisByWeek();
+            } else if (viewId === 'settingsView') {
+                // Lógica específica para a view de configurações, se necessário
             }
         }
 
@@ -1204,7 +1262,7 @@
             
             if (!monthYearValue) {
                 selectedMonthInfo.textContent = 'Por favor, selecione um mês/ano para análise.';
-                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500 dark:text-gray-400">Selecione um mês/ano.</td></tr>`;
+                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500 dark:text-slate-400">Selecione um mês/ano.</td></tr>`;
                 return;
             }
 
@@ -1237,7 +1295,7 @@
 
 
             if (allPendingOS.length === 0) {
-                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500 dark:text-gray-400">Nenhuma OS pendente encontrada para o mês selecionado conforme os critérios.</td></tr>`;
+                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma OS pendente encontrada para o mês selecionado conforme os critérios.</td></tr>`;
                 return;
             }
 
@@ -1250,9 +1308,9 @@
 
             allPendingOS.forEach(os => {
                 const row = weeklyAnalysisTableBody.insertRow();
-                row.className = 'table-row hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-150';
+                row.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-150';
                 row.innerHTML = `
-                    <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Semana ${os.weekNumberForAnalysis}</td>
+                    <td class="py-3 px-4 text-sm text-slate-500 dark:text-slate-400">Semana ${os.weekNumberForAnalysis}</td>
                     <td class="py-3 px-4 text-sm font-medium">${os.numero}</td>
                     <td class="py-3 px-4 text-sm">${os.cliente}</td>
                     <td class="py-3 px-4 text-sm">${os.produto || 'N/A'}</td>
@@ -1261,8 +1319,8 @@
                     <td class="py-3 px-4 text-sm">${os.responsavel}</td>
                     <td class="py-3 px-4 text-sm text-red-600">Não 'Completa' após Quarta-feira da semana do prazo.</td>
                     <td class="py-3 px-4 text-sm whitespace-nowrap">
-                        <button class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 mr-1 rounded" onclick="editOS('${os.id}')" title="Ver/Editar OS"><i class="fas fa-edit"></i> Detalhes</button>
-                        <button class="btn btn-sm bg-yellow-400 hover:bg-yellow-500 text-black py-1 px-2 rounded" onclick="notifyCollaborator('${os.responsavel}', '${os.numero}')" title="Notificar Colaborador (Simulação)"><i class="fas fa-bell"></i> Notificar</button>
+                        <button class="btn btn-sm bg-sky-500 hover:bg-sky-600 text-white py-1 px-2 mr-1 rounded" onclick="editOS('${os.id}')" title="Ver/Editar OS"><i class="fas fa-edit"></i> Detalhes</button>
+                        <button class="btn btn-sm bg-amber-400 hover:bg-amber-500 text-black py-1 px-2 rounded" onclick="notifyCollaborator('${os.responsavel}', '${os.numero}')" title="Notificar Colaborador (Simulação)"><i class="fas fa-bell"></i> Notificar</button>
                     </td>
                 `;
             });
@@ -1365,21 +1423,21 @@
                 datasets: [{
                     label: 'OS por Status', data: Object.values(statusCounts),
                     backgroundColor: ['rgba(54, 162, 235, 0.8)','rgba(255, 159, 64, 0.8)','rgba(255, 205, 86, 0.8)','rgba(153, 102, 255, 0.8)','rgba(75, 192, 192, 0.8)','rgba(255, 99, 132, 0.8)'],
-                    borderColor: isDarkMode ? '#0f172a' : '#fff', 
+                    borderColor: isDarkMode ? '#1e293b' : '#ffffff', // Ajustado para o fundo do card no modo escuro
                     borderWidth: 2, hoverOffset: 4
                 }]
             };
             if (osStatusChartInstance) osStatusChartInstance.destroy(); 
-            osStatusChartInstance = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 }, color: isDarkMode ? '#e2e8f0' : '#334155'}}, tooltip: { बॉडीFontColor: isDarkMode ? '#e2e8f0' : '#334155', titleFontColor: isDarkMode ? '#e2e8f0' : '#334155', callbacks: { label: function(c) { return `${c.label || ''}: ${c.parsed || 0}`; }}}}}});
+            osStatusChartInstance = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 }, color: isDarkMode ? '#cbd5e1' : '#1e293b'}}, tooltip: { bodyFontColor: isDarkMode ? '#cbd5e1' : '#1e293b', titleFontColor: isDarkMode ? '#cbd5e1' : '#1e293b', callbacks: { label: function(c) { return `${c.label || ''}: ${c.parsed || 0}`; }}}}}});
         }
 
         const reportMonthYearEl = document.getElementById('reportMonthYear');
         const reportStatusEl = document.getElementById('reportStatus');
         const reportProductEl = document.getElementById('reportProduct');
 
-        if(reportMonthYearEl) reportMonthYearEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
-        if(reportStatusEl) reportStatusEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
-        if(reportProductEl) reportProductEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
+        if(reportMonthYearEl) reportMonthYearEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
+        if(reportStatusEl) reportStatusEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
+        if(reportProductEl) reportProductEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
 
         function generateCustomReport() {
             if(!reportsTableBody || !reportMonthYearEl || !reportStatusEl || !reportProductEl) {
@@ -1402,9 +1460,9 @@
                 return matchesDate && matchesStatus && matchesProduct;
             });
 
-            if (filteredReportData.length === 0) { reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Nenhuma OS encontrada para os filtros selecionados.</td></tr>'; return; }
+            if (filteredReportData.length === 0) { reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma OS encontrada para os filtros selecionados.</td></tr>'; return; }
             filteredReportData.forEach(os => {
-                const row = reportsTableBody.insertRow(); row.className = 'table-row hover:bg-gray-100 dark:hover:bg-slate-700';
+                const row = reportsTableBody.insertRow(); row.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700';
                 row.innerHTML = `<td class="py-3 px-4 text-sm font-medium">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm">${os.responsavel}</td>`;
             });
             addRecentActivity("Relatório personalizado gerado.");
@@ -1467,10 +1525,15 @@
                 let cellOffset = 0; 
                 if (tableId === 'osTable' && cells[0] && cells[0].querySelector('input[type="checkbox"]')) {
                     cellOffset = 1;
+                } else if (isWeeklyReport && tableId === 'weeklyAnalysisTable' && cells[0] && cells[0].innerText.toLowerCase().includes("semana")) {
+                    // Para o relatório semanal, a primeira coluna é "Semana do Prazo", que queremos incluir
+                    // Então não há offset se for o relatório semanal, a menos que ele também tivesse um checkbox (o que não tem)
                 }
+
 
                 for(let i = cellOffset; i < cells.length; i++) {
                     const cell = cells[i];
+                    // A condição de rowData.length < headerRow.length garante que não pegamos a coluna de ação
                     if (rowData.length < headerRow.length) { 
                          if (cell.querySelector('select')) rowData.push(cell.querySelector('select').value);
                          else rowData.push(cell.innerText);
@@ -1501,10 +1564,12 @@
         function refreshAllViews() {
             renderOSTable(getFilteredOS()); 
             updateDashboardCounts(); 
-            if (document.getElementById('weeklyAnalysisView') && !document.getElementById('weeklyAnalysisView').classList.contains('hidden')) {
+            const weeklyAnalysisViewEl = document.getElementById('weeklyAnalysisView');
+            if (weeklyAnalysisViewEl && !weeklyAnalysisViewEl.classList.contains('hidden')) {
                  renderMonthlyAnalysisByWeek(); 
             }
-            if (document.getElementById('reportsView') && !document.getElementById('reportsView').classList.contains('hidden')) {
+            const reportsViewEl = document.getElementById('reportsView');
+            if (reportsViewEl && !reportsViewEl.classList.contains('hidden')) {
                 generateCustomReport(); 
             }
         }
@@ -1525,9 +1590,10 @@
             }
             const formatDateToICS = (dateString, isEndOfDay = false) => {
                 const date = new Date(dateString);
+                // Ajusta para UTC para consistência no arquivo .ics
                 if (isEndOfDay) { date.setUTCHours(23, 59, 59, 999); } 
-                else { date.setUTCHours(9,0,0,0); } // Evento começa às 9:00 UTC
-                return date.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z"; // Adiciona Z para UTC
+                else { date.setUTCHours(9,0,0,0); } 
+                return date.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
             };
 
             const startDateICS = formatDateToICS(os.prazoFinal); 
@@ -1538,10 +1604,10 @@
             const icsContent = [
                 "BEGIN:VCALENDAR",
                 "VERSION:2.0",
-                "PRODID:-//SeuNomeOuEmpresa//SeuAppOS//PT",
+                "PRODID:-//SuaEmpresa//AppGestaoOS//PT",
                 "CALSCALE:GREGORIAN",
                 "BEGIN:VEVENT",
-                `UID:${os.id}@gestao-os.com`, 
+                `UID:${os.id}@gestao-os.app`, 
                 `DTSTAMP:${nowICS}`, 
                 `DTSTART:${startDateICS}`,
                 `DTEND:${endDateICS}`,
@@ -1560,6 +1626,35 @@
             link.click();
             document.body.removeChild(link);
             addRecentActivity(`Arquivo .ics gerado para OS ${os.numero}.`);
+        }
+
+        // Funções da Página de Configurações (Exemplos)
+        function confirmClearAllData() {
+            if (confirm("ATENÇÃO!\n\nVocê tem certeza que deseja apagar TODAS as Ordens de Serviço salvas localmente?\n\nEsta ação NÃO PODE SER DESFEITA.")) {
+                ordensServico = [];
+                savedFilters = {}; // Limpa também os filtros salvos
+                localStorage.removeItem('ordensServicoData_v5_2');
+                localStorage.removeItem('savedFilters_v5_2');
+                addRecentActivity("Todos os dados de OS foram limpos.");
+                populateSavedFiltersSelect(); // Atualiza o select de filtros
+                refreshAllViews(); // Atualiza todas as visualizações para refletir a limpeza
+                alert("Todos os dados foram limpos do LocalStorage.");
+            }
+        }
+
+        function applyItemsPerPageSetting() {
+            if (!itemsPerPageSettingInput) return;
+            const newItemsPerPage = parseInt(itemsPerPageSettingInput.value, 10);
+            if (newItemsPerPage >= 5 && newItemsPerPage <= 50) {
+                ITEMS_PER_PAGE = newItemsPerPage;
+                currentPage = 1; // Reseta para a primeira página
+                saveDataToLocalStorage(); // Salva a nova configuração
+                renderOSTable(); // Re-renderiza a tabela com a nova quantidade de itens
+                addRecentActivity(`Itens por página alterado para ${ITEMS_PER_PAGE}.`);
+            } else {
+                alert("Por favor, insira um valor entre 5 e 50 para itens por página.");
+                itemsPerPageSettingInput.value = ITEMS_PER_PAGE; // Restaura o valor anterior
+            }
         }
 
 
@@ -1592,7 +1687,7 @@
                 if (sidebarTitleDiv.querySelector('span')) sidebarTitleDiv.querySelector('span').style.display = isCollapsed ? 'none' : 'inline';
                 if (sidebarTitleDiv.querySelector('i')) sidebarTitleDiv.querySelector('i').style.marginRight = isCollapsed ? '0' : '0.5rem';
             }
-            addRecentActivity("Sistema V1.5.1 inicializado e pronto.");
+            addRecentActivity("Sistema V1.5.2 inicializado e pronto.");
             updateLoginUI(); 
         };
 
