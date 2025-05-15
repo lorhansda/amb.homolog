@@ -1,27 +1,32 @@
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
+<html lang="pt-BR" class=""> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento Interno de OS - V1.4.2</title>
+    <title>Gerenciamento Interno de OS - V5.1</title>
+    <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <style>
+        /* ==========================================================================
+           Estilos Base e Modo Claro (Padrão)
+           ========================================================================== */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5; 
-            color: #334155; 
+            background-color: #f4f7f6; /* Cinza muito claro para o fundo geral */
+            color: #1f2937;      /* Azul ardósia escuro para texto principal */
+            transition: background-color 0.3s, color 0.3s;
         }
+
         .sidebar {
+            background-color: #2c3e50; /* Azul escuro para sidebar */
+            color: #ecf0f1;      /* Cinza claro para texto da sidebar */
             width: 260px;
-            background-color: #1e293b; 
-            color: #e2e8f0; 
             transition: width 0.3s ease;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
             height: 100vh; 
@@ -29,169 +34,246 @@
             top: 0;
             left: 0;
             z-index: 50; 
+            display: flex; 
+            flex-direction: column; 
         }
-        .sidebar.collapsed {
-            width: 70px;
-        }
-        .sidebar-item {
-            padding: 14px 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            border-radius: 6px;
-            margin: 4px 0; 
-        }
-        .sidebar-item:hover, .sidebar-item.active {
-            background-color: #334155; 
-            color: #ffffff;
-        }
-        .sidebar-item i {
-            margin-right: 12px;
-            min-width: 24px; 
-            text-align: center;
-            font-size: 1.1em;
-        }
-        .sidebar.collapsed .sidebar-item span, .sidebar.collapsed #sidebar-title span {
-            display: none; 
-        }
-        .sidebar.collapsed .sidebar-item i {
-            margin-right: 0; 
-        }
-        .sidebar-header {
-            padding: 14px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between; 
-            border-bottom: 1px solid #334155; 
-            margin-bottom:10px;
-        }
-        #sidebar-title span { font-size: 1.4em; font-weight: 600; color: #f8fafc; } 
+        .sidebar.collapsed { width: 70px; }
+        .sidebar-item { padding: 14px 18px; cursor: pointer; display: flex; align-items: center; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 6px; margin: 4px 0; }
+        .sidebar-item:hover { background-color: #34495e; color: #ffffff; } /* Azul um pouco mais claro no hover */
+        .sidebar-item.active { background-color: #1abc9c; color: #ffffff; } /* Verde para item ativo */
+        .sidebar-item i { margin-right: 12px; min-width: 24px; text-align: center; font-size: 1.1em; }
+        .sidebar.collapsed .sidebar-item span, .sidebar.collapsed #sidebar-title span { display: none; }
+        .sidebar.collapsed .sidebar-item i { margin-right: 0; }
+        .sidebar-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #34495e; margin-bottom:10px; }
+        #sidebar-title span { font-size: 1.4em; font-weight: 600; color: #ecf0f1; } 
 
         .content {
+            background-color: #f4f7f6; /* Mesmo cinza muito claro do body */
             flex-grow: 1;
             padding: 25px;
-            transition: margin-left 0.3s ease;
+            transition: margin-left 0.3s ease, background-color 0.3s;
             margin-left: 260px; 
-            background-color: #f0f2f5;
         }
-        .content.collapsed {
-            margin-left: 70px; 
-        }
+        .content.collapsed { margin-left: 70px; }
+        
         .card {
-            background-color: white;
-            border-radius: 10px; 
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08); 
+            background-color: #ffffff; /* Branco para cards */
+            color: #2c3e50;      /* Azul escuro para texto dentro dos cards */
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
             padding: 25px;
             margin-bottom: 25px;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+            border: 1px solid #e5e7eb; /* Borda sutil para cards */
         }
-        .table-header th {
-            background-color: #f1f5f9; 
-            color: #475569; 
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.8rem;
-            padding-top: 12px; 
-            padding-bottom: 12px;
+        
+        .table-header th { 
+            background-color: #e9ecef; /* Cinza bem claro para cabeçalho da tabela */
+            color: #495057;      /* Cinza escuro para texto do cabeçalho */
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; 
+            padding-top: 12px; padding-bottom: 12px; 
+            border-bottom: 2px solid #dee2e6; /* Borda inferior mais forte no cabeçalho */
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
         }
-        .status-select, .priority-select, .product-select {
-            min-width: 130px;
+        .table-row td { 
+            color: #34495e;      /* Azul ardósia para texto das células */
+            border-color: #e9ecef; /* Cinza claro para bordas de célula */
+            padding: 10px 16px; /* Ajuste de padding */
+            transition: color 0.3s, border-color 0.3s, background-color 0.3s;
         }
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            text-transform: capitalize; 
-            display: inline-flex; 
-            align-items: center;
-            gap: 8px; 
-            border: none; 
+        .table-row:hover td {
+            background-color: #f8f9fa; /* Hover sutil nas linhas */
         }
-        .btn-primary { background-color: #2563eb; color: white; } 
-        .btn-primary:hover { background-color: #1d4ed8; }
-        .btn-secondary { background-color: #64748b; color: white; } 
-        .btn-secondary:hover { background-color: #475569; }
-        .btn-danger { background-color: #dc2626; color: white; } 
-        .btn-danger:hover { background-color: #b91c1c; }
-        .btn-success { background-color: #16a34a; color: white; } 
-        .btn-success:hover { background-color: #15803d; }
-        .btn-warning { background-color: #f59e0b; color: white; } 
-        .btn-warning:hover { background-color: #d97706; }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.65); animation: fadeIn 0.3s; } 
-        .modal-content { background-color: #fefefe; margin: 7% auto; padding: 30px; border: 1px solid #d1d5db; width: 90%; max-width: 700px; border-radius: 10px; position: relative; animation: slideIn 0.3s; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .close-button { color: #9ca3af; position: absolute; right: 15px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
-        .close-button:hover, .close-button:focus { color: #1f2937; text-decoration: none; }
-        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
-        @keyframes slideIn { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
-        #osStatusChartContainer { position: relative; height:350px; width:100%;}
-
+        .input-field, .select-field { 
+            background-color: #ffffff; 
+            color: #2c3e50; 
+            border: 1px solid #ced4da; /* Borda padrão para inputs */
+            border-radius: 6px;
+            padding: 10px;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s; 
+        }
+        .input-field:focus, .select-field:focus { 
+            border-color: #1abc9c; /* Verde ao focar */
+            box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+            outline: none;
+        }
+        
+        /* Botões - Estilo base e Modo Claro */
+        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-weight: 500; text-transform: capitalize; display: inline-flex; align-items: center; gap: 8px; border: none; }
+        .btn-primary { background-color: #1abc9c; color: white; } /* Verde principal */
+        .btn-primary:hover { background-color: #16a085; } /* Verde mais escuro no hover */
+        .btn-secondary { background-color: #7f8c8d; color: white; } /* Cinza para secundário */
+        .btn-secondary:hover { background-color: #6c7a7b; }
+        .btn-danger { background-color: #e74c3c; color: white; } /* Vermelho para perigo */
+        .btn-danger:hover { background-color: #c0392b; }
+        .btn-success { background-color: #2ecc71; color: white; } /* Verde para sucesso */
+        .btn-success:hover { background-color: #27ae60; }
+        .btn-warning { background-color: #f39c12; color: white; } /* Laranja para aviso */
+        .btn-warning:hover { background-color: #e67e22; }
+        
+        /* Modal - Modo Claro */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; } 
+        .modal-content { background-color: #ffffff; color: #2c3e50; margin: 7% auto; padding: 30px; border: 1px solid #bdc3c7; width: 90%; max-width: 700px; border-radius: 8px; position: relative; animation: slideIn 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .close-button { color: #7f8c8d; position: absolute; right: 15px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+        .close-button:hover, .close-button:focus { color: #34495e; text-decoration: none; }
+        
+        /* Outros elementos - Modo Claro */
+        #recentActivityList li { border-bottom-color: #ecf0f1; }
+        #recentActivityList .text-gray-500 { color: #7f8c8d; } 
+        #paginationControls span { color: #34495e; }
+        #google-login-container { margin-top: auto; padding: 15px; border-top: 1px solid #34495e;}
+        #user-info { display: flex; align-items: center; gap: 10px; }
+        #user-info img { border-radius: 50%; width: 30px; height: 30px; }
+        #user-info span { font-size: 0.9em; }
+        .checkbox-cell { width: 1%; white-space: nowrap; }
+        
+        /* Prioridades - Mantidas, pois são baseadas em cor e não em tema claro/escuro */
         .priority-Alta { background-color: #fee2e2; color: #b91c1c; }
         .priority-Urgente { background-color: #ffedd5; color: #c2410c; animation: pulse 1.5s infinite; }
         .priority-Média { background-color: #fef3c7; color: #a16207; }
         .priority-Baixa { background-color: #dcfce7; color: #15803d; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-
+        
+        /* Animações - Mantidas */
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+        @keyframes slideIn { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+        
+        /* Scrollbar - Modo Claro */
         ::-webkit-scrollbar { width: 8px; height: 8px;}
-        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        ::-webkit-scrollbar-track { background: #ecf0f1; border-radius: 10px;}
+        ::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 10px;}
+        ::-webkit-scrollbar-thumb:hover { background: #95a5a6; }
+
+        /* ==========================================================================
+           Estilos do Modo Escuro (Sobrescrevem os de cima quando .dark está no html)
+           ========================================================================== */
+        .dark body { background-color: #1e293b; color: #e2e8f0; } /* Azul ardósia muito escuro */
+        .dark .sidebar { background-color: #0f172a; color: #cbd5e1; } /* Azul noite para sidebar */
+        .dark .sidebar-header { border-bottom-color: #1e293b; }
+        .dark #sidebar-title span { color: #e2e8f0; }
+        .dark .sidebar-item:hover { background-color: #1e293b; color: #ffffff; }
+        .dark .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; } /* Azul céu para item ativo no modo escuro */
+        
+        .dark .content { background-color: #1e293b; }
+        .dark .card { background-color: #0f172a; color: #e2e8f0; border-color: #334155; }
+        
+        .dark .table-header th { background-color: #1e293b; color: #94a3b8; border-bottom-color: #334155; } /* Azul ardósia para cabeçalho da tabela */
+        .dark .table-row td { color: #cbd5e1; border-color: #334155; }
+        .dark .table-row:hover td { background-color: #172233; } /* Hover mais escuro nas linhas */
+        
+        .dark .input-field, .dark .select-field { 
+            background-color: #1e293b; 
+            color: #e2e8f0; 
+            border: 1px solid #475569; /* Borda mais escura para inputs */
+        }
+        .dark .input-field:focus, .dark .select-field:focus { 
+            border-color: #0ea5e9; /* Azul céu ao focar */
+            box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.25);
+        }
+        
+        /* Botões - Modo Escuro */
+        .dark .btn-primary { background-color: #0ea5e9; color: #0f172a; } /* Azul céu para primário */
+        .dark .btn-primary:hover { background-color: #0284c7; }
+        .dark .btn-secondary { background-color: #475569; color: #e2e8f0; } /* Cinza ardósia para secundário */
+        .dark .btn-secondary:hover { background-color: #334155; }
+        /* btn-danger, btn-success, btn-warning podem manter as cores ou ter versões levemente ajustadas se necessário */
+        .dark .btn-danger { background-color: #ef4444; color: white; } 
+        .dark .btn-danger:hover { background-color: #dc2626; }
+
+        /* Modal - Modo Escuro */
+        .dark .modal-content { background-color: #1e293b; color: #e2e8f0; border-color: #334155;}
+        .dark .close-button { color: #9ca3af; }
+        .dark .close-button:hover { color: #e2e8f0; }
+
+        /* Outros elementos - Modo Escuro */
+        .dark #recentActivityList li { border-bottom-color: #334155; }
+        .dark #recentActivityList .text-gray-500 { color: #9ca3af; } 
+        .dark #paginationControls span { color: #cbd5e1; }
+        .dark #google-login-container { border-top-color: #334155; }
+        .dark ::-webkit-scrollbar-track { background: #1e293b; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        /* Garante que o texto dentro dos cards de dashboard com gradiente seja legível */
+        .dark .bg-gradient-to-br p, .dark .bg-gradient-to-br h3 { color: #ffffff !important; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="flex"> 
-    <aside id="sidebar" class="sidebar p-3 flex flex-col"> 
-        <div class="sidebar-header">
-            <div id="sidebar-title" class="flex items-center">
-                 <i class="fas fa-tasks text-2xl text-blue-400 mr-2"></i> 
-                 <span class="text-xl font-semibold">Gestão OS</span>
+    <aside id="sidebar" class="sidebar p-3"> 
+        <div> 
+            <div class="sidebar-header">
+                <div id="sidebar-title" class="flex items-center">
+                     <i class="fas fa-tasks text-2xl text-blue-400"></i> <span class="text-xl font-semibold">Gestão OS</span>
+                </div>
+                <button id="toggleSidebar" class="text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-white focus:outline-none p-1 rounded-md">
+                    <i class="fas fa-bars text-lg"></i> 
+                </button>
             </div>
-            <button id="toggleSidebar" class="text-gray-400 hover:text-white focus:outline-none p-1 rounded-md">
-                <i class="fas fa-bars text-lg"></i> 
-            </button>
+            <nav class="flex-grow mt-2"> 
+                <ul>
+                    <li class="sidebar-item active" onclick="showView('dashboardView', this)">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </li>
+                    <li class="sidebar-item" onclick="showView('osListView', this)">
+                        <i class="fas fa-list-alt"></i>
+                        <span>Ordens de Serviço</span>
+                    </li>
+                    <li class="sidebar-item" onclick="showView('weeklyAnalysisView', this)">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Análise Mensal</span> 
+                    </li>
+                    <li class="sidebar-item" onclick="showView('reportsView', this)">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Relatórios</span>
+                    </li>
+                     <li class="sidebar-item mt-4" onclick="openAddOSModal()"> 
+                        <i class="fas fa-plus-circle text-green-400 dark:text-green-500"></i>
+                        <span class="text-green-400 dark:text-green-500">Nova OS</span>
+                    </li>
+                </ul>
+            </nav>
         </div>
-        <nav class="flex-grow mt-2"> 
-            <ul>
-                <li class="sidebar-item active" onclick="showView('dashboardView', this)">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </li>
-                <li class="sidebar-item" onclick="showView('osListView', this)">
-                    <i class="fas fa-list-alt"></i>
-                    <span>Ordens de Serviço</span>
-                </li>
-                <li class="sidebar-item" onclick="showView('weeklyAnalysisView', this)">
-                    <i class="fas fa-calendar-check"></i>
-                    <span>Análise Semanal</span>
-                </li>
-                <li class="sidebar-item" onclick="showView('reportsView', this)">
-                    <i class="fas fa-chart-pie"></i>
-                    <span>Relatórios</span>
-                </li>
-                 <li class="sidebar-item mt-4" onclick="openAddOSModal()"> 
-                    <i class="fas fa-plus-circle text-green-400"></i>
-                    <span class="text-green-400">Nova OS</span>
-                </li>
-            </ul>
-        </nav>
+        <div id="google-login-container">
+            <div id="g_id_onload"
+                 data-client_id="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com" 
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false"> 
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline" 
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
+            <div id="user-info" class="mt-3 hidden">
+                <img id="user-pic" src="" alt="User Pic">
+                <span id="user-name"></span>
+                <button onclick="handleSignOut()" class="btn btn-sm btn-danger !p-2 text-xs"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </div>
+        </div>
         <div class="mt-auto pb-2"> 
+            <div class="sidebar-item" onclick="toggleDarkMode()">
+                <i id="darkModeIcon" class="fas fa-moon"></i> 
+                <span>Modo Escuro</span>
+            </div>
             <div class="sidebar-item">
                 <i class="fas fa-cog"></i>
                 <span>Configurações</span>
             </div>
-             <div class="sidebar-item text-sm text-gray-500">
+             <div class="sidebar-item text-sm text-gray-500 dark:text-gray-400">
                 <i class="fas fa-info-circle"></i>
-                <span>Versão 1.4.2</span> 
+                <span>Versão 1.5.1</span> 
             </div>
         </div>
     </aside>
 
     <main id="mainContent" class="content"> 
         <div id="dashboardView" class="view-section card"> 
-            <h2 class="text-3xl font-bold mb-6 text-gray-700">Dashboard Analítico</h2>
+            <h2 class="text-3xl font-bold mb-6">Dashboard Analítico</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg text-white">
                     <div class="flex justify-between items-center">
@@ -224,25 +306,39 @@
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="card !p-0"> 
-                    <div class="p-4 border-b border-gray-200">
-                        <h3 class="text-xl font-semibold text-gray-700">Distribuição de Status das OS</h3>
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="text-xl font-semibold">Distribuição de Status das OS</h3>
                     </div>
                     <div id="osStatusChartContainer" class="p-4">
                          <canvas id="osStatusChart"></canvas>
                     </div>
                 </div>
                 <div class="card">
-                    <h3 class="text-xl font-semibold mb-3 text-gray-700">Atividades Recentes</h3>
+                    <h3 class="text-xl font-semibold mb-3">Atividades Recentes</h3>
                     <ul id="recentActivityList" class="space-y-3 max-h-80 overflow-y-auto">
-                        <li class="text-sm text-gray-500">Nenhuma atividade recente.</li>
+                        <li class="text-sm text-gray-500 dark:text-gray-400">Nenhuma atividade recente.</li>
                     </ul>
                 </div>
             </div>
         </div>
         <div id="osListView" class="view-section card hidden"> 
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-3xl font-bold text-gray-700">Ordens de Serviço</h2>
-                <div class="flex gap-2 flex-wrap">
+                <h2 class="text-3xl font-bold">Ordens de Serviço</h2>
+                <div class="flex gap-2 flex-wrap items-center">
+                    <div id="bulkActionsContainer" class="hidden flex gap-2 items-center mr-4">
+                        <span id="selectedOsCount" class="text-sm">0 selecionadas</span>
+                        <select id="bulkActionStatus" class="select-field p-2 rounded-md text-sm">
+                            <option value="">Alterar Status para...</option>
+                            <option value="Aberta">Aberta</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Pendente Informação">Pendente Informação</option>
+                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                            <option value="Completa">Completa</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="applyBulkAction()"><i class="fas fa-check"></i> Aplicar</button>
+                        <button class="btn btn-sm btn-danger" onclick="bulkDeleteSelectedOS()"><i class="fas fa-trash"></i> Excluir Selecionadas</button>
+                    </div>
                     <button class="btn btn-success" onclick="exportTableToCSV('osTable', 'lista_os.csv')"><i class="fas fa-file-csv"></i>Exportar CSV</button>
                     <button class="btn btn-danger" onclick="exportTableToPDF('osTable', 'Lista de Ordens de Serviço', 'osTableBody')"><i class="fas fa-file-pdf"></i>Exportar PDF</button>
                     <button class="btn btn-primary" onclick="openAddOSModal()">
@@ -251,14 +347,15 @@
                 </div>
             </div>
 
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <input type="text" id="filterOsNumber" placeholder="Nº OS" class="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
-                    <input type="text" id="filterClient" placeholder="Cliente" class="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
-                     <select id="filterProduct" class="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+            <div class="mb-6 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <input type="text" id="filterOsNumber" placeholder="Nº OS" class="input-field p-2 rounded-md">
+                    <input type="text" id="filterClient" placeholder="Cliente" class="input-field p-2 rounded-md">
+                    <input type="text" id="filterDescription" placeholder="Buscar na Descrição..." class="input-field p-2 rounded-md md:col-span-2 lg:col-span-1"> 
+                    <select id="filterProduct" class="select-field p-2 rounded-md">
                         <option value="">Todos os Produtos</option>
                     </select>
-                    <select id="filterStatus" class="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    <select id="filterStatus" class="select-field p-2 rounded-md">
                         <option value="">Todos os Status</option>
                         <option value="Aberta">Aberta</option>
                         <option value="Em Andamento">Em Andamento</option>
@@ -268,12 +365,23 @@
                         <option value="Cancelada">Cancelada</option>
                     </select>
                 </div>
+                <div class="mt-4 flex flex-wrap gap-2 items-center">
+                    <label for="savedFilters" class="text-sm font-medium">Filtros Salvos:</label>
+                    <select id="savedFilters" class="select-field p-2 rounded-md text-sm">
+                        <option value="">Carregar filtro...</option>
+                        </select>
+                    <button class="btn btn-sm btn-secondary" onclick="loadSelectedFilter()"><i class="fas fa-download"></i> Carregar</button>
+                    <input type="text" id="newFilterName" placeholder="Nome do novo filtro" class="input-field p-2 rounded-md text-sm">
+                    <button class="btn btn-sm btn-primary" onclick="saveCurrentFilters()"><i class="fas fa-save"></i> Salvar Filtro Atual</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSavedFilter()" title="Excluir filtro selecionado"><i class="fas fa-trash-alt"></i></button>
+                </div>
             </div>
 
             <div class="overflow-x-auto shadow-md rounded-lg">
-                <table id="osTable" class="min-w-full bg-white">
+                <table id="osTable" class="min-w-full">
                     <thead class="table-header">
                         <tr>
+                            <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"></th>
                             <th class="py-3 px-4 text-left">Nº OS</th>
                             <th class="py-3 px-4 text-left">Cliente</th>
                             <th class="py-3 px-4 text-left">Produto</th>
@@ -287,30 +395,30 @@
                             <th class="py-3 px-4 text-left">Ações</th>
                         </tr>
                     </thead>
-                    <tbody id="osTableBody" class="divide-y divide-gray-200">
-                    </tbody>
+                    <tbody id="osTableBody" class="divide-y divide-gray-200 dark:divide-slate-700">
+                        </tbody>
                 </table>
             </div>
              <div id="paginationControls" class="mt-6 flex justify-end items-center gap-2">
-            </div>
+                </div>
         </div>
 
         <div id="weeklyAnalysisView" class="view-section card hidden"> 
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-3xl font-bold text-gray-700">Análise Mensal de Pendências (por Semana)</h2>
+                <h2 class="text-3xl font-bold">Análise Mensal de Pendências (por Semana)</h2>
                 <div class="flex items-center gap-3 flex-wrap">
                     <div>
                         <label for="analysisMonthYearInput" class="text-sm font-medium mr-2">Selecionar Mês/Ano:</label>
-                        <input type="month" id="analysisMonthYearInput" name="analysisMonthYearInput" class="p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="month" id="analysisMonthYearInput" name="analysisMonthYearInput" class="input-field p-2 rounded-md">
                     </div>
                     <button class="btn btn-warning" onclick="sendWeeklyReportAndGeneratePDF()"><i class="fas fa-paper-plane"></i> Gerar Relatório PDF de Pendências</button>
                 </div>
             </div>
-            <p class="text-gray-600 mb-2">OSs com prazo final no mês selecionado que não foram marcadas como "Completa" até o final da Quarta-Feira da respectiva semana do prazo.</p>
-            <p id="selectedMonthInfo" class="text-sm text-blue-600 font-semibold mb-4"></p>
+            <p class="text-base mb-2">OSs com prazo final no mês selecionado que não foram marcadas como "Completa" até o final da Quarta-Feira da respectiva semana do prazo.</p>
+            <p id="selectedMonthInfo" class="text-sm text-blue-600 dark:text-sky-400 font-semibold mb-4"></p>
 
             <div class="overflow-x-auto shadow-md rounded-lg">
-                <table id="weeklyAnalysisTable" class="min-w-full bg-white">
+                <table id="weeklyAnalysisTable" class="min-w-full">
                      <thead class="table-header">
                         <tr>
                             <th class="py-3 px-4 text-left">Semana do Prazo</th>
@@ -324,8 +432,8 @@
                             <th class="py-3 px-4 text-left">Ação Sugerida</th>
                         </tr>
                     </thead>
-                    <tbody id="weeklyAnalysisTableBody" class="divide-y divide-gray-200">
-                    </tbody>
+                    <tbody id="weeklyAnalysisTableBody" class="divide-y divide-gray-200 dark:divide-slate-700">
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -333,21 +441,21 @@
 
         <div id="reportsView" class="view-section card hidden"> 
              <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-3xl font-bold text-gray-700">Relatórios Personalizados</h2>
+                <h2 class="text-3xl font-bold">Relatórios Personalizados</h2>
                  <div class="flex gap-2 flex-wrap">
                     <button class="btn btn-success" onclick="exportTableToCSV('reportsTable', 'relatorio_os.csv')"><i class="fas fa-file-csv"></i>Exportar CSV</button>
                     <button class="btn btn-danger" onclick="exportTableToPDF('reportsTable', 'Relatório de Ordens de Serviço', 'reportsTableBody')"><i class="fas fa-file-pdf"></i>Exportar PDF</button>
                 </div>
             </div>
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div class="mb-6 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label for="reportMonthYear" class="block text-sm font-medium text-gray-700 mb-1">Mês/Ano do Prazo Final:</label>
-                        <input type="month" id="reportMonthYear" name="reportMonthYear" class="w-full p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label for="reportMonthYear" class="block text-sm font-medium mb-1">Mês/Ano do Prazo Final:</label>
+                        <input type="month" id="reportMonthYear" name="reportMonthYear" class="input-field w-full p-2 rounded-md">
                     </div>
                     <div>
-                        <label for="reportStatus" class="block text-sm font-medium text-gray-700 mb-1">Status:</label>
-                        <select id="reportStatus" class="w-full p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label for="reportStatus" class="block text-sm font-medium mb-1">Status:</label>
+                        <select id="reportStatus" class="select-field w-full p-2 rounded-md">
                             <option value="">Todos</option>
                             <option value="Aberta">Aberta</option>
                             <option value="Em Andamento">Em Andamento</option>
@@ -358,8 +466,8 @@
                         </select>
                     </div>
                     <div>
-                        <label for="reportProduct" class="block text-sm font-medium text-gray-700 mb-1">Produto:</label>
-                        <select id="reportProduct" class="w-full p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label for="reportProduct" class="block text-sm font-medium mb-1">Produto:</label>
+                        <select id="reportProduct" class="select-field w-full p-2 rounded-md">
                              <option value="">Todos</option>
                         </select>
                     </div>
@@ -370,7 +478,7 @@
             </div>
 
             <div class="overflow-x-auto shadow-md rounded-lg">
-                <table id="reportsTable" class="min-w-full bg-white">
+                <table id="reportsTable" class="min-w-full">
                      <thead class="table-header">
                         <tr>
                             <th class="py-3 px-4 text-left">Nº OS</th>
@@ -381,8 +489,8 @@
                             <th class="py-3 px-4 text-left">Responsável</th>
                         </tr>
                     </thead>
-                    <tbody id="reportsTableBody" class="divide-y divide-gray-200">
-                       <tr><td colspan="6" class="text-center py-10 text-gray-500">Selecione os filtros e clique em "Gerar Relatório".</td></tr>
+                    <tbody id="reportsTableBody" class="divide-y divide-gray-200 dark:divide-slate-700">
+                       <tr class="table-row"><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Selecione os filtros e clique em "Gerar Relatório".</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -391,49 +499,49 @@
     <div id="osModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeOSModal()">&times;</span>
-            <h3 id="modalTitle" class="text-2xl font-semibold mb-6 text-gray-700">Adicionar Nova Ordem de Serviço</h3>
+            <h3 id="modalTitle" class="text-2xl font-semibold mb-6">Adicionar Nova Ordem de Serviço</h3>
             <form id="osForm">
                 <input type="hidden" id="osId"> 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
                     <div>
-                        <label for="osNumeroModal" class="block text-sm font-medium text-gray-700 mb-1">Nº OS <span class="text-red-500">*</span></label>
-                        <input type="text" id="osNumeroModal" name="osNumeroModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <label for="osNumeroModal" class="block text-sm font-medium mb-1">Nº OS <span class="text-red-500">*</span></label>
+                        <input type="text" id="osNumeroModal" name="osNumeroModal" class="input-field w-full p-2 rounded-md" required>
                     </div>
                     <div>
-                        <label for="osClienteModal" class="block text-sm font-medium text-gray-700 mb-1">Cliente <span class="text-red-500">*</span></label>
-                        <input type="text" id="osClienteModal" name="osClienteModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <label for="osClienteModal" class="block text-sm font-medium mb-1">Cliente <span class="text-red-500">*</span></label>
+                        <input type="text" id="osClienteModal" name="osClienteModal" class="input-field w-full p-2 rounded-md" required>
                     </div>
                      <div>
-                        <label for="osProdutoModal" class="block text-sm font-medium text-gray-700 mb-1">Produto/Serviço <span class="text-red-500">*</span></label>
-                        <input type="text" id="osProdutoModal" name="osProdutoModal" list="productList" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <label for="osProdutoModal" class="block text-sm font-medium mb-1">Produto/Serviço <span class="text-red-500">*</span></label>
+                        <input type="text" id="osProdutoModal" name="osProdutoModal" list="productList" class="input-field w-full p-2 rounded-md" required>
                         <datalist id="productList">
                         </datalist>
                     </div>
                     <div>
-                        <label for="osSolicitanteModal" class="block text-sm font-medium text-gray-700 mb-1">Solicitante</label>
-                        <input type="text" id="osSolicitanteModal" name="osSolicitanteModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label for="osSolicitanteModal" class="block text-sm font-medium mb-1">Solicitante</label>
+                        <input type="text" id="osSolicitanteModal" name="osSolicitanteModal" class="input-field w-full p-2 rounded-md">
                     </div>
                 </div>
                 <div class="mb-4">
-                    <label for="osDescricaoModal" class="block text-sm font-medium text-gray-700 mb-1">Descrição Detalhada <span class="text-red-500">*</span></label>
-                    <textarea id="osDescricaoModal" name="osDescricaoModal" rows="3" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required></textarea>
+                    <label for="osDescricaoModal" class="block text-sm font-medium mb-1">Descrição Detalhada <span class="text-red-500">*</span></label>
+                    <textarea id="osDescricaoModal" name="osDescricaoModal" rows="3" class="input-field w-full p-2 rounded-md" required></textarea>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
                     <div>
-                        <label for="osDataAberturaModal" class="block text-sm font-medium text-gray-700 mb-1">Data de Abertura <span class="text-red-500">*</span></label>
-                        <input type="date" id="osDataAberturaModal" name="osDataAberturaModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <label for="osDataAberturaModal" class="block text-sm font-medium mb-1">Data de Abertura <span class="text-red-500">*</span></label>
+                        <input type="date" id="osDataAberturaModal" name="osDataAberturaModal" class="input-field w-full p-2 rounded-md" required>
                     </div>
                     <div>
-                        <label for="osPrazoFinalModal" class="block text-sm font-medium text-gray-700 mb-1">Prazo Final <span class="text-red-500">*</span></label>
-                        <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <label for="osPrazoFinalModal" class="block text-sm font-medium mb-1">Prazo Final <span class="text-red-500">*</span></label>
+                        <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="input-field w-full p-2 rounded-md" required>
                     </div>
                      <div>
-                        <label for="osResponsavelModal" class="block text-sm font-medium text-gray-700 mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label>
-                        <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <label for="osResponsavelModal" class="block text-sm font-medium mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label>
+                        <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="input-field w-full p-2 rounded-md" required>
                     </div>
                     <div>
-                        <label for="osStatusModal" class="block text-sm font-medium text-gray-700 mb-1">Status <span class="text-red-500">*</span></label>
-                        <select id="osStatusModal" name="osStatusModal" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <label for="osStatusModal" class="block text-sm font-medium mb-1">Status <span class="text-red-500">*</span></label>
+                        <select id="osStatusModal" name="osStatusModal" class="select-field w-full p-2 rounded-md" required>
                             <option value="Aberta">Aberta</option>
                             <option value="Em Andamento">Em Andamento</option>
                             <option value="Pendente Informação">Pendente Informação</option>
@@ -444,8 +552,8 @@
                     </div>
                 </div>
                 <div class="mb-6"> 
-                     <label for="osPrioridadeModal" class="block text-sm font-medium text-gray-700 mb-1">Prioridade <span class="text-red-500">*</span></label>
-                     <select id="osPrioridadeModal" name="osPrioridadeModal" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none" required>
+                     <label for="osPrioridadeModal" class="block text-sm font-medium mb-1">Prioridade <span class="text-red-500">*</span></label>
+                     <select id="osPrioridadeModal" name="osPrioridadeModal" class="select-field w-full p-2 rounded-md" required>
                         <option value="Baixa">Baixa</option>
                         <option value="Média">Média</option>
                         <option value="Alta">Alta</option>
@@ -459,8 +567,6 @@
             </form>
         </div>
     </div>
-
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
     <script>
         // Configuração Global
         const ITEMS_PER_PAGE = 10; 
@@ -471,11 +577,8 @@
             "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner",
             "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"
         ];
-<<<<<<< HEAD
         let googleUser = null; 
         let savedFilters = {}; // Objeto para armazenar filtros salvos
-=======
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
 
         // Elementos da DOM 
         const osTableBody = document.getElementById('osTableBody');
@@ -489,7 +592,6 @@
         const productDatalist = document.getElementById('productList');
         const filterProductSelect = document.getElementById('filterProduct');
         const reportProductSelect = document.getElementById('reportProduct');
-<<<<<<< HEAD
         const selectedMonthInfo = document.getElementById('selectedMonthInfo'); 
         const analysisMonthYearInput = document.getElementById('analysisMonthYearInput'); 
         const googleLoginContainer = document.getElementById('google-login-container');
@@ -505,10 +607,6 @@
         const bulkActionsContainer = document.getElementById('bulkActionsContainer');
         const selectedOsCountSpan = document.getElementById('selectedOsCount');
         const bulkActionStatusSelect = document.getElementById('bulkActionStatus');
-=======
-        const selectedMonthInfo = document.getElementById('selectedMonthInfo'); // Alterado de selectedWeekInfo
-        const analysisMonthYearInput = document.getElementById('analysisMonthYearInput'); // Alterado de analysisWeekInput
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
 
 
         // Funções Auxiliares de Data
@@ -527,7 +625,6 @@
             return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }); 
         }
         
-<<<<<<< HEAD
         function getWeeksInMonth(year, month) {
             const weeks = [];
             const firstDayOfMonth = new Date(year, month - 1, 1);
@@ -535,23 +632,6 @@
 
             let currentMonday = new Date(firstDayOfMonth);
             currentMonday.setDate(firstDayOfMonth.getDate() - (firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1)); 
-=======
-        /**
-         * Retorna um array de objetos, cada um representando uma semana que intercepta o mês/ano fornecido.
-         * Cada objeto de semana contém: start (Date), end (Date), wednesday (Date), weekNumber (number).
-         * @param {number} year - O ano.
-         * @param {number} month - O mês (1-12).
-         * @returns {Array<object>} Array de semanas.
-         */
-        function getWeeksInMonth(year, month) {
-            const weeks = [];
-            const firstDayOfMonth = new Date(year, month - 1, 1);
-            const lastDayOfMonth = new Date(year, month, 0); // Dia 0 do próximo mês é o último do mês atual
-
-            // Encontra a primeira segunda-feira da primeira semana que intercepta o mês
-            let currentMonday = new Date(firstDayOfMonth);
-            currentMonday.setDate(firstDayOfMonth.getDate() - (firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1)); // Ajusta para segunda-feira
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
 
             while (currentMonday <= lastDayOfMonth) {
                 const weekStart = new Date(currentMonday);
@@ -562,16 +642,9 @@
                 weekEnd.setHours(23, 59, 59, 999);
 
                 const weekWednesday = new Date(weekStart);
-<<<<<<< HEAD
                 weekWednesday.setDate(weekStart.getDate() + 2); 
                 weekWednesday.setHours(23, 59, 59, 999); 
 
-=======
-                weekWednesday.setDate(weekStart.getDate() + 2); // Quarta-feira
-                weekWednesday.setHours(23, 59, 59, 999);
-
-                // Calcula o número da semana ISO 8601
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                 const target = new Date(weekStart.valueOf());
                 target.setDate(target.getDate() - ((weekStart.getDay() + 6) % 7) + 3);
                 const firstThursday = target.valueOf();
@@ -582,30 +655,18 @@
                 const weekNumber = 1 + Math.ceil((firstThursday - target) / 604800000);
 
                 weeks.push({ start: weekStart, end: weekEnd, wednesday: weekWednesday, weekNumber: weekNumber });
-<<<<<<< HEAD
                 currentMonday.setDate(currentMonday.getDate() + 7); 
-=======
-                currentMonday.setDate(currentMonday.getDate() + 7); // Próxima segunda
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             }
             return weeks;
         }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
         function getPriorityClass(priority) {
             switch (priority) {
                 case 'Alta': return 'priority-Alta';
                 case 'Urgente': return 'priority-Urgente';
                 case 'Média': return 'priority-Média';
                 case 'Baixa': return 'priority-Baixa';
-<<<<<<< HEAD
                 default: return 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300'; 
-=======
-                default: return 'bg-gray-100 text-gray-700'; 
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             }
         }
 
@@ -615,19 +676,14 @@
 
         // Funções de LocalStorage 
         function saveDataToLocalStorage() {
-<<<<<<< HEAD
             localStorage.setItem('ordensServicoData_v5_1', JSON.stringify(ordensServico)); 
             localStorage.setItem('googleUser_v5_1', JSON.stringify(googleUser));
             localStorage.setItem('darkMode_v5_1', document.documentElement.classList.contains('dark'));
             localStorage.setItem('savedFilters_v5_1', JSON.stringify(savedFilters));
-=======
-            localStorage.setItem('ordensServicoData_v4_2', JSON.stringify(ordensServico)); // Chave atualizada
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             addRecentActivity("Dados salvos no LocalStorage.");
         }
 
         function loadDataFromLocalStorage() {
-<<<<<<< HEAD
             const data = localStorage.getItem('ordensServicoData_v5_1'); 
             if (data) {
                 ordensServico = JSON.parse(data);
@@ -658,29 +714,12 @@
             if (storedFilters) {
                 savedFilters = JSON.parse(storedFilters);
                 populateSavedFiltersSelect();
-=======
-            const data = localStorage.getItem('ordensServicoData_v4_2'); // Chave atualizada
-            if (data) {
-                ordensServico = JSON.parse(data);
-                addRecentActivity("Dados carregados do LocalStorage.");
-            } else {
-                ordensServico = [
-                    { id: generateId(), numero: 'OS2505W3-1', cliente: 'Cliente Teste A', produto: 'SOLIDWORKS CAD', descricao: 'Prazo semana 3 de Maio, pendente', dataAbertura: '2025-05-01', prazoFinal: '2025-05-15', responsavel: 'Carlos Z.', solicitante: 'Ana P.', status: 'Em Andamento', prioridade: 'Alta' }, // Semana 20 (12-18 Maio)
-                    { id: generateId(), numero: 'OS2505W3-2', cliente: 'Cliente Teste B', produto: 'EDGECAM', descricao: 'Prazo semana 3 de Maio, completa', dataAbertura: '2025-05-02', prazoFinal: '2025-05-16', responsavel: 'Beatriz L.', solicitante: 'Mario S.', status: 'Completa', prioridade: 'Média' }, // Semana 20
-                    { id: generateId(), numero: 'OS2505W4-1', cliente: 'Cliente Teste C', produto: 'WORKNC', descricao: 'Prazo semana 4 de Maio, aberta', dataAbertura: '2025-05-10', prazoFinal: '2025-05-22', responsavel: 'Daniel F.', solicitante: 'Julia M.', status: 'Aberta', prioridade: 'Urgente'}, // Semana 21 (19-25 Maio)
-                    { id: generateId(), numero: 'OS2504W5-1', cliente: 'Cliente Teste D', produto: 'LANTEK', descricao: 'Prazo última semana de Abril, pendente', dataAbertura: '2025-04-20', prazoFinal: '2025-04-30', responsavel: 'Eduardo G.', solicitante: 'Laura C.', status: 'Pendente Informação', prioridade: 'Média'}, // Semana 18 (28 Abr - 04 Mai)
-                ];
-                addRecentActivity("Dados iniciais de exemplo carregados.");
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             }
             populateProductFilters(); 
         }
 
         function populateProductFilters() {
-<<<<<<< HEAD
             if(!productDatalist || !filterProductSelect || !reportProductSelect) return;
-=======
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             const products = [...new Set(ordensServico.map(os => os.produto).concat(defaultProducts)
                                             .filter(p => p && p.trim() !== ""))]
                                             .sort();
@@ -703,17 +742,10 @@
             if (!recentActivityList) return;
             const listItem = document.createElement('li');
             const now = new Date();
-<<<<<<< HEAD
             listItem.className = 'flex justify-between items-center text-sm pb-2 border-b border-gray-200 dark:border-slate-700'; 
             listItem.innerHTML = `
                 <span>${action}</span>
                 <span class="text-gray-400 dark:text-slate-500 text-xs">${now.toLocaleTimeString('pt-BR')}</span>
-=======
-            listItem.className = 'flex justify-between items-center text-sm pb-2 border-b border-gray-100'; 
-            listItem.innerHTML = `
-                <span>${action}</span>
-                <span class="text-gray-400 text-xs">${now.toLocaleTimeString('pt-BR')}</span>
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             `;
             const firstChild = recentActivityList.firstChild;
             if (firstChild && firstChild.nodeType === Node.ELEMENT_NODE && firstChild.textContent.trim() === 'Nenhuma atividade recente.') {
@@ -726,7 +758,6 @@
             }
         }
 
-<<<<<<< HEAD
         // Funções de Login com Google
         function parseJwt (token) {
             try {
@@ -938,13 +969,6 @@
 
             if (filteredData.length === 0) {
                 osTableBody.innerHTML = '<tr><td colspan="12" class="text-center py-10 text-gray-500 dark:text-gray-400">Nenhuma ordem de serviço encontrada.</td></tr>';
-=======
-        function renderOSTable(filteredData = getFilteredOS()) {
-            if (!osTableBody) return;
-            osTableBody.innerHTML = ''; 
-            if (filteredData.length === 0) {
-                osTableBody.innerHTML = '<tr><td colspan="11" class="text-center py-10 text-gray-500">Nenhuma ordem de serviço encontrada com os filtros aplicados.</td></tr>';
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                 renderPagination(0, 0); 
                 return;
             }
@@ -953,7 +977,6 @@
 
             paginatedData.forEach(os => { 
                 const row = osTableBody.insertRow();
-<<<<<<< HEAD
                 row.className = 'table-row hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-150'; 
                 row.innerHTML = `
                     <td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"></td>
@@ -967,20 +990,6 @@
                     <td class="py-3 px-4 text-sm">${os.solicitante || 'N/A'}</td>
                     <td class="py-3 px-4 text-sm">
                         <select class="select-field status-select p-1 rounded-md text-xs" data-id="${os.id}" onchange="updateStatus(this)">
-=======
-                row.className = 'hover:bg-gray-50 transition-colors duration-150'; 
-                row.innerHTML = `
-                    <td class="py-3 px-4 text-sm text-gray-700 font-medium">${os.numero}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.cliente}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.produto || 'N/A'}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 truncate max-w-xs" title="${os.descricao}">${os.descricao}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${formatDateToBR(os.dataAbertura)}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.responsavel}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.solicitante || 'N/A'}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">
-                        <select class="status-select p-1 border rounded-md bg-white focus:ring-1 focus:ring-blue-500 outline-none text-xs" data-id="${os.id}" onchange="updateStatus(this)">
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                             <option value="Aberta" ${os.status === 'Aberta' ? 'selected' : ''}>Aberta</option>
                             <option value="Em Andamento" ${os.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
                             <option value="Pendente Informação" ${os.status === 'Pendente Informação' ? 'selected' : ''}>Pendente Info</option>
@@ -989,7 +998,6 @@
                             <option value="Cancelada" ${os.status === 'Cancelada' ? 'selected' : ''}>Cancelada</option>
                         </select>
                     </td>
-<<<<<<< HEAD
                     <td class="py-3 px-4 text-sm">
                         <span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span>
                     </td>
@@ -997,14 +1005,6 @@
                         <button class="text-blue-600 hover:text-blue-800 dark:text-sky-400 dark:hover:text-sky-300 mr-2 p-1" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button>
                         <button class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 mr-2 p-1" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button>
                         <button class="text-green-600 hover:text-green-800 dark:text-emerald-400 dark:hover:text-emerald-300 p-1" title="Baixar .ics do Calendário" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button>
-=======
-                    <td class="py-3 px-4 text-sm text-gray-600">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span>
-                    </td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">
-                        <button class="text-blue-600 hover:text-blue-800 mr-2 p-1" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="text-red-600 hover:text-red-800 p-1" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button>
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                     </td>
                 `;
             });
@@ -1032,11 +1032,7 @@
             paginationControls.appendChild(prevButton);
 
             const pageInfo = document.createElement('span');
-<<<<<<< HEAD
             pageInfo.className = 'text-sm px-3';
-=======
-            pageInfo.className = 'text-sm text-gray-700 px-3';
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             pageInfo.textContent = `Página ${page} de ${totalPages}`;
             paginationControls.appendChild(pageInfo);
 
@@ -1204,19 +1200,11 @@
                 return;
             }
             weeklyAnalysisTableBody.innerHTML = ''; 
-<<<<<<< HEAD
             const monthYearValue = analysisMonthYearInput.value; 
             
             if (!monthYearValue) {
                 selectedMonthInfo.textContent = 'Por favor, selecione um mês/ano para análise.';
                 weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500 dark:text-gray-400">Selecione um mês/ano.</td></tr>`;
-=======
-            const monthYearValue = analysisMonthYearInput.value; // Formato "YYYY-MM"
-            
-            if (!monthYearValue) {
-                selectedMonthInfo.textContent = 'Por favor, selecione um mês/ano para análise.';
-                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500">Selecione um mês/ano.</td></tr>`;
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                 return;
             }
 
@@ -1230,11 +1218,6 @@
             weeksInSelectedMonth.forEach(week => {
                 const { start: weekStart, end: weekEnd, wednesday: weekWednesday, weekNumber } = week;
                 const today = new Date();
-<<<<<<< HEAD
-=======
-                // A quarta-feira da semana da OS já passou em relação ao dia de HOJE?
-                // Ou, se a semana inteira já passou, consideramos que a quarta já passou.
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                 const hasWednesdayOfOSWeekPassed = today > weekWednesday || today > weekEnd;
 
 
@@ -1246,11 +1229,6 @@
                     const isNotCompleteOrCancelled = os.status !== 'Completa' && os.status !== 'Cancelada';
                     if (!isNotCompleteOrCancelled) return false;
                     
-<<<<<<< HEAD
-=======
-                    // Se a quarta-feira da semana do prazo da OS já passou (em relação a hoje),
-                    // e a OS ainda não está completa/cancelada, ela é uma pendência.
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                     return hasWednesdayOfOSWeekPassed;
                 });
                 
@@ -1259,19 +1237,11 @@
 
 
             if (allPendingOS.length === 0) {
-<<<<<<< HEAD
                 weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500 dark:text-gray-400">Nenhuma OS pendente encontrada para o mês selecionado conforme os critérios.</td></tr>`;
                 return;
             }
 
             allPendingOS.sort((a, b) => { 
-=======
-                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500">Nenhuma OS pendente encontrada para o mês selecionado conforme os critérios.</td></tr>`;
-                return;
-            }
-
-            allPendingOS.sort((a, b) => { // Ordena primeiro por semana, depois por prazo
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                 if (a.weekNumberForAnalysis !== b.weekNumberForAnalysis) {
                     return a.weekNumberForAnalysis - b.weekNumberForAnalysis;
                 }
@@ -1280,7 +1250,6 @@
 
             allPendingOS.forEach(os => {
                 const row = weeklyAnalysisTableBody.insertRow();
-<<<<<<< HEAD
                 row.className = 'table-row hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-150';
                 row.innerHTML = `
                     <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">Semana ${os.weekNumberForAnalysis}</td>
@@ -1292,19 +1261,6 @@
                     <td class="py-3 px-4 text-sm">${os.responsavel}</td>
                     <td class="py-3 px-4 text-sm text-red-600">Não 'Completa' após Quarta-feira da semana do prazo.</td>
                     <td class="py-3 px-4 text-sm whitespace-nowrap">
-=======
-                row.className = 'hover:bg-gray-50 transition-colors duration-150';
-                row.innerHTML = `
-                    <td class="py-3 px-4 text-sm text-gray-500">Semana ${os.weekNumberForAnalysis}</td>
-                    <td class="py-3 px-4 text-sm text-gray-700 font-medium">${os.numero}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.cliente}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.produto || 'N/A'}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.status}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.responsavel}</td>
-                    <td class="py-3 px-4 text-sm text-red-600">Não 'Completa' após Quarta-feira da semana do prazo.</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                         <button class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 mr-1 rounded" onclick="editOS('${os.id}')" title="Ver/Editar OS"><i class="fas fa-edit"></i> Detalhes</button>
                         <button class="btn btn-sm bg-yellow-400 hover:bg-yellow-500 text-black py-1 px-2 rounded" onclick="notifyCollaborator('${os.responsavel}', '${os.numero}')" title="Notificar Colaborador (Simulação)"><i class="fas fa-bell"></i> Notificar</button>
                     </td>
@@ -1344,33 +1300,23 @@
         if (filterStatusEl) filterStatusEl.addEventListener('change', applyFiltersAndRender);
         const filterProductEl = document.getElementById('filterProduct');
         if (filterProductEl) filterProductEl.addEventListener('change', applyFiltersAndRender);
-<<<<<<< HEAD
         if (filterDescriptionInput) filterDescriptionInput.addEventListener('input', applyFiltersAndRender);
 
-=======
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
 
         function getFilteredOS() {
             const filterOsNumberValue = filterOsNumEl ? filterOsNumEl.value.toLowerCase() : "";
             const filterClientValue = filterClientEl ? filterClientEl.value.toLowerCase() : "";
             const filterStatusValue = filterStatusEl ? filterStatusEl.value : "";
             const filterProductValue = filterProductEl ? filterProductEl.value : "";
-<<<<<<< HEAD
             const filterDescriptionValue = filterDescriptionInput ? filterDescriptionInput.value.toLowerCase() : "";
-=======
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
 
             return ordensServico.filter(os => {
                 const matchesOsNumber = os.numero.toLowerCase().includes(filterOsNumberValue);
                 const matchesClient = os.cliente.toLowerCase().includes(filterClientValue);
                 const matchesStatus = filterStatusValue ? os.status === filterStatusValue : true;
                 const matchesProduct = filterProductValue ? os.produto === filterProductValue : true;
-<<<<<<< HEAD
                 const matchesDescription = os.descricao.toLowerCase().includes(filterDescriptionValue);
                 return matchesOsNumber && matchesClient && matchesStatus && matchesProduct && matchesDescription;
-=======
-                return matchesOsNumber && matchesClient && matchesStatus && matchesProduct;
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             });
         }
         function applyFiltersAndRender() {
@@ -1407,10 +1353,7 @@
                 return;
             }
             const ctx = chartCanvas.getContext('2d');
-<<<<<<< HEAD
             const isDarkMode = document.documentElement.classList.contains('dark');
-=======
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
 
             const statusCounts = ordensServico.reduce((acc, os) => { 
                 acc[os.status] = (acc[os.status] || 0) + 1;
@@ -1422,35 +1365,21 @@
                 datasets: [{
                     label: 'OS por Status', data: Object.values(statusCounts),
                     backgroundColor: ['rgba(54, 162, 235, 0.8)','rgba(255, 159, 64, 0.8)','rgba(255, 205, 86, 0.8)','rgba(153, 102, 255, 0.8)','rgba(75, 192, 192, 0.8)','rgba(255, 99, 132, 0.8)'],
-<<<<<<< HEAD
                     borderColor: isDarkMode ? '#0f172a' : '#fff', 
                     borderWidth: 2, hoverOffset: 4
                 }]
             };
             if (osStatusChartInstance) osStatusChartInstance.destroy(); 
             osStatusChartInstance = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 }, color: isDarkMode ? '#e2e8f0' : '#334155'}}, tooltip: { बॉडीFontColor: isDarkMode ? '#e2e8f0' : '#334155', titleFontColor: isDarkMode ? '#e2e8f0' : '#334155', callbacks: { label: function(c) { return `${c.label || ''}: ${c.parsed || 0}`; }}}}}});
-=======
-                    borderColor: '#fff', borderWidth: 2, hoverOffset: 4
-                }]
-            };
-            if (osStatusChartInstance) osStatusChartInstance.destroy(); 
-            osStatusChartInstance = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 }}}, tooltip: { callbacks: { label: function(c) { return `${c.label || ''}: ${c.parsed || 0}`; }}}}}});
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
         }
 
         const reportMonthYearEl = document.getElementById('reportMonthYear');
         const reportStatusEl = document.getElementById('reportStatus');
         const reportProductEl = document.getElementById('reportProduct');
 
-<<<<<<< HEAD
         if(reportMonthYearEl) reportMonthYearEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
         if(reportStatusEl) reportStatusEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
         if(reportProductEl) reportProductEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
-=======
-        if(reportMonthYearEl) reportMonthYearEl.addEventListener('change', () => reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">Clique em "Gerar Relatório" para atualizar.</td></tr>');
-        if(reportStatusEl) reportStatusEl.addEventListener('change', () => reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">Clique em "Gerar Relatório" para atualizar.</td></tr>');
-        if(reportProductEl) reportProductEl.addEventListener('change', () => reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">Clique em "Gerar Relatório" para atualizar.</td></tr>');
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
 
         function generateCustomReport() {
             if(!reportsTableBody || !reportMonthYearEl || !reportStatusEl || !reportProductEl) {
@@ -1473,17 +1402,10 @@
                 return matchesDate && matchesStatus && matchesProduct;
             });
 
-<<<<<<< HEAD
             if (filteredReportData.length === 0) { reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Nenhuma OS encontrada para os filtros selecionados.</td></tr>'; return; }
             filteredReportData.forEach(os => {
                 const row = reportsTableBody.insertRow(); row.className = 'table-row hover:bg-gray-100 dark:hover:bg-slate-700';
                 row.innerHTML = `<td class="py-3 px-4 text-sm font-medium">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm">${os.responsavel}</td>`;
-=======
-            if (filteredReportData.length === 0) { reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">Nenhuma OS encontrada para os filtros selecionados.</td></tr>'; return; }
-            filteredReportData.forEach(os => {
-                const row = reportsTableBody.insertRow(); row.className = 'hover:bg-gray-50 transition-colors duration-150';
-                row.innerHTML = `<td class="py-3 px-4 text-sm text-gray-700 font-medium">${os.numero}</td><td class="py-3 px-4 text-sm text-gray-600">${os.cliente}</td><td class="py-3 px-4 text-sm text-gray-600">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm text-gray-600">${os.status}</td><td class="py-3 px-4 text-sm text-gray-600">${os.responsavel}</td>`;
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
             });
             addRecentActivity("Relatório personalizado gerado.");
         }
@@ -1495,11 +1417,7 @@
                 const rowData = [];
                 const headerCells = table.querySelectorAll("thead th");
                 row.querySelectorAll("th, td").forEach((cell, cellIndex) => {
-<<<<<<< HEAD
                     if (headerCells[cellIndex] && (headerCells[cellIndex].innerText.toUpperCase().includes("AÇÕES") || headerCells[cellIndex].innerText.toUpperCase().includes("AÇÃO SUGERIDA") || cell.querySelector('input[type="checkbox"]'))) { 
-=======
-                    if (headerCells[cellIndex] && (headerCells[cellIndex].innerText.toUpperCase().includes("AÇÕES") || headerCells[cellIndex].innerText.toUpperCase().includes("AÇÃO SUGERIDA"))) {
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                         return; 
                     }
                     if (cell.querySelector('select')) rowData.push(cell.querySelector('select').value);
@@ -1526,19 +1444,12 @@
 
             const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
             const head = []; const body = [];
-<<<<<<< HEAD
             const isDarkMode = document.documentElement.classList.contains('dark');
-=======
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
 
             const headerCells = table.querySelectorAll("thead th");
             const headerRow = [];
             headerCells.forEach(cell => { 
-<<<<<<< HEAD
                 if (!cell.innerText.toUpperCase().includes("AÇÕES") && !(isWeeklyReport && cell.innerText.toUpperCase().includes("AÇÃO SUGERIDA")) && !cell.querySelector('input[type="checkbox"]')) {
-=======
-                if (!cell.innerText.toUpperCase().includes("AÇÕES") && !(isWeeklyReport && cell.innerText.toUpperCase().includes("AÇÃO SUGERIDA"))) {
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                     headerRow.push(cell.innerText);
                 }
             });
@@ -1553,7 +1464,6 @@
             bodyRows.forEach(row => {
                 const rowData = [];
                 const cells = row.querySelectorAll("td");
-<<<<<<< HEAD
                 let cellOffset = 0; 
                 if (tableId === 'osTable' && cells[0] && cells[0].querySelector('input[type="checkbox"]')) {
                     cellOffset = 1;
@@ -1566,14 +1476,6 @@
                          else rowData.push(cell.innerText);
                     }
                 }
-=======
-                cells.forEach((cell, index) => {
-                    if (index < headerRow.length) { 
-                         if (cell.querySelector('select')) rowData.push(cell.querySelector('select').value);
-                         else rowData.push(cell.innerText);
-                    }
-                });
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                 if (rowData.length > 0) body.push(rowData);
             });
 
@@ -1583,21 +1485,12 @@
 
             doc.autoTable({ 
                 head: head, body: body, startY: 60, 
-<<<<<<< HEAD
                 headStyles: { fillColor: isDarkMode ? [30, 41, 59] : [44, 62, 80], fontSize: 8, textColor: 255 }, 
                 bodyStyles: { fontSize: 7, textColor: isDarkMode ? [203, 213, 225] : [44, 62, 80] }, 
                 alternateRowStyles: { fillColor: isDarkMode ? [15, 23, 42, 0.5] : [243, 244, 246] }, 
                 margin: { top: 50, right: 20, bottom: 30, left: 20 }, 
                 didDrawPage: function (data) { 
                     doc.setFontSize(16); doc.setTextColor(isDarkMode ? 226 : 40); doc.text(title, data.settings.margin.left, 35); 
-=======
-                headStyles: { fillColor: [31, 41, 55], fontSize: 8, textColor: 255 }, 
-                bodyStyles: { fontSize: 7 }, 
-                alternateRowStyles: { fillColor: [243, 244, 246] }, 
-                margin: { top: 50, right: 20, bottom: 30, left: 20 }, 
-                didDrawPage: function (data) { 
-                    doc.setFontSize(16); doc.setTextColor(40); doc.text(title, data.settings.margin.left, 35); 
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
                     const pageCount = doc.internal.getNumberOfPages();
                     doc.setFontSize(8); doc.text("Página " + doc.internal.getCurrentPageInfo().pageNumber + " de " + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 15); 
                 }
@@ -1620,7 +1513,6 @@
             if (!analysisMonthYearInput) return; 
             const today = new Date();
             const year = today.getFullYear();
-<<<<<<< HEAD
             const month = String(today.getMonth() + 1).padStart(2, '0'); 
             analysisMonthYearInput.value = `${year}-${month}`;
         }
@@ -1671,12 +1563,6 @@
         }
 
 
-=======
-            const month = String(today.getMonth() + 1).padStart(2, '0'); // Mês atual (1-12)
-            analysisMonthYearInput.value = `${year}-${month}`;
-        }
-
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
         window.onload = () => {
             loadDataFromLocalStorage(); 
             populateProductFilters();   
@@ -1706,12 +1592,8 @@
                 if (sidebarTitleDiv.querySelector('span')) sidebarTitleDiv.querySelector('span').style.display = isCollapsed ? 'none' : 'inline';
                 if (sidebarTitleDiv.querySelector('i')) sidebarTitleDiv.querySelector('i').style.marginRight = isCollapsed ? '0' : '0.5rem';
             }
-<<<<<<< HEAD
             addRecentActivity("Sistema V1.5.1 inicializado e pronto.");
             updateLoginUI(); 
-=======
-            addRecentActivity("Sistema V1.4.2 inicializado e pronto.");
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
         };
 
         window.onclick = function(event) { 
@@ -1727,1218 +1609,3 @@
     </script>
 </body>
 </html>
-<<<<<<< HEAD
-=======
-=======
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento Interno de OS - V1.4.2</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5; 
-            color: #334155; 
-        }
-        .sidebar {
-            width: 260px;
-            background-color: #1e293b; 
-            color: #e2e8f0; 
-            transition: width 0.3s ease;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            height: 100vh; 
-            position: fixed; 
-            top: 0;
-            left: 0;
-            z-index: 50; 
-        }
-        .sidebar.collapsed {
-            width: 70px;
-        }
-        .sidebar-item {
-            padding: 14px 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            border-radius: 6px;
-            margin: 4px 0; 
-        }
-        .sidebar-item:hover, .sidebar-item.active {
-            background-color: #334155; 
-            color: #ffffff;
-        }
-        .sidebar-item i {
-            margin-right: 12px;
-            min-width: 24px; 
-            text-align: center;
-            font-size: 1.1em;
-        }
-        .sidebar.collapsed .sidebar-item span, .sidebar.collapsed #sidebar-title span {
-            display: none; 
-        }
-        .sidebar.collapsed .sidebar-item i {
-            margin-right: 0; 
-        }
-        .sidebar-header {
-            padding: 14px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between; 
-            border-bottom: 1px solid #334155; 
-            margin-bottom:10px;
-        }
-        #sidebar-title span { font-size: 1.4em; font-weight: 600; color: #f8fafc; } 
-
-        .content {
-            flex-grow: 1;
-            padding: 25px;
-            transition: margin-left 0.3s ease;
-            margin-left: 260px; 
-            background-color: #f0f2f5;
-        }
-        .content.collapsed {
-            margin-left: 70px; 
-        }
-        .card {
-            background-color: white;
-            border-radius: 10px; 
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08); 
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-        .table-header th {
-            background-color: #f1f5f9; 
-            color: #475569; 
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.8rem;
-            padding-top: 12px; 
-            padding-bottom: 12px;
-        }
-        .status-select, .priority-select, .product-select {
-            min-width: 130px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            text-transform: capitalize; 
-            display: inline-flex; 
-            align-items: center;
-            gap: 8px; 
-            border: none; 
-        }
-        .btn-primary { background-color: #2563eb; color: white; } 
-        .btn-primary:hover { background-color: #1d4ed8; }
-        .btn-secondary { background-color: #64748b; color: white; } 
-        .btn-secondary:hover { background-color: #475569; }
-        .btn-danger { background-color: #dc2626; color: white; } 
-        .btn-danger:hover { background-color: #b91c1c; }
-        .btn-success { background-color: #16a34a; color: white; } 
-        .btn-success:hover { background-color: #15803d; }
-        .btn-warning { background-color: #f59e0b; color: white; } 
-        .btn-warning:hover { background-color: #d97706; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.65); animation: fadeIn 0.3s; } 
-        .modal-content { background-color: #fefefe; margin: 7% auto; padding: 30px; border: 1px solid #d1d5db; width: 90%; max-width: 700px; border-radius: 10px; position: relative; animation: slideIn 0.3s; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .close-button { color: #9ca3af; position: absolute; right: 15px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
-        .close-button:hover, .close-button:focus { color: #1f2937; text-decoration: none; }
-        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
-        @keyframes slideIn { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
-        #osStatusChartContainer { position: relative; height:350px; width:100%;}
-
-        .priority-Alta { background-color: #fee2e2; color: #b91c1c; }
-        .priority-Urgente { background-color: #ffedd5; color: #c2410c; animation: pulse 1.5s infinite; }
-        .priority-Média { background-color: #fef3c7; color: #a16207; }
-        .priority-Baixa { background-color: #dcfce7; color: #15803d; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-
-        ::-webkit-scrollbar { width: 8px; height: 8px;}
-        ::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="flex"> 
-    <aside id="sidebar" class="sidebar p-3 flex flex-col"> 
-        <div class="sidebar-header">
-            <div id="sidebar-title" class="flex items-center">
-                 <i class="fas fa-tasks text-2xl text-blue-400 mr-2"></i> 
-                 <span class="text-xl font-semibold">Gestão OS</span>
-            </div>
-            <button id="toggleSidebar" class="text-gray-400 hover:text-white focus:outline-none p-1 rounded-md">
-                <i class="fas fa-bars text-lg"></i> 
-            </button>
-        </div>
-        <nav class="flex-grow mt-2"> 
-            <ul>
-                <li class="sidebar-item active" onclick="showView('dashboardView', this)">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </li>
-                <li class="sidebar-item" onclick="showView('osListView', this)">
-                    <i class="fas fa-list-alt"></i>
-                    <span>Ordens de Serviço</span>
-                </li>
-                <li class="sidebar-item" onclick="showView('weeklyAnalysisView', this)">
-                    <i class="fas fa-calendar-check"></i>
-                    <span>Análise Semanal</span>
-                </li>
-                <li class="sidebar-item" onclick="showView('reportsView', this)">
-                    <i class="fas fa-chart-pie"></i>
-                    <span>Relatórios</span>
-                </li>
-                 <li class="sidebar-item mt-4" onclick="openAddOSModal()"> 
-                    <i class="fas fa-plus-circle text-green-400"></i>
-                    <span class="text-green-400">Nova OS</span>
-                </li>
-            </ul>
-        </nav>
-        <div class="mt-auto pb-2"> 
-            <div class="sidebar-item">
-                <i class="fas fa-cog"></i>
-                <span>Configurações</span>
-            </div>
-             <div class="sidebar-item text-sm text-gray-500">
-                <i class="fas fa-info-circle"></i>
-                <span>Versão 1.4.2</span> 
-            </div>
-        </div>
-    </aside>
-
-    <main id="mainContent" class="content"> 
-        <div id="dashboardView" class="view-section card"> 
-            <h2 class="text-3xl font-bold mb-6 text-gray-700">Dashboard Analítico</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg text-white">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-medium">OS Abertas</h3>
-                        <i class="fas fa-folder-open text-3xl opacity-70"></i>
-                    </div>
-                    <p id="osAbertasCount" class="text-4xl font-bold mt-2">0</p>
-                </div>
-                <div class="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl shadow-lg text-white">
-                     <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-medium">OS Completas (Mês)</h3>
-                        <i class="fas fa-check-circle text-3xl opacity-70"></i>
-                    </div>
-                    <p id="osCompletasMesCount" class="text-4xl font-bold mt-2">0</p>
-                </div>
-                <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-xl shadow-lg text-white">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-medium">OS Pendentes</h3>
-                        <i class="fas fa-exclamation-triangle text-3xl opacity-70"></i>
-                    </div>
-                    <p id="osPendentesCount" class="text-4xl font-bold mt-2">0</p>
-                </div>
-                 <div class="bg-gradient-to-br from-red-500 to-red-600 p-6 rounded-xl shadow-lg text-white">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-medium">OS Canceladas</h3>
-                        <i class="fas fa-times-circle text-3xl opacity-70"></i>
-                    </div>
-                    <p id="osCanceladasCount" class="text-4xl font-bold mt-2">0</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="card !p-0"> 
-                    <div class="p-4 border-b border-gray-200">
-                        <h3 class="text-xl font-semibold text-gray-700">Distribuição de Status das OS</h3>
-                    </div>
-                    <div id="osStatusChartContainer" class="p-4">
-                         <canvas id="osStatusChart"></canvas>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3 class="text-xl font-semibold mb-3 text-gray-700">Atividades Recentes</h3>
-                    <ul id="recentActivityList" class="space-y-3 max-h-80 overflow-y-auto">
-                        <li class="text-sm text-gray-500">Nenhuma atividade recente.</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div id="osListView" class="view-section card hidden"> 
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-3xl font-bold text-gray-700">Ordens de Serviço</h2>
-                <div class="flex gap-2 flex-wrap">
-                    <button class="btn btn-success" onclick="exportTableToCSV('osTable', 'lista_os.csv')"><i class="fas fa-file-csv"></i>Exportar CSV</button>
-                    <button class="btn btn-danger" onclick="exportTableToPDF('osTable', 'Lista de Ordens de Serviço', 'osTableBody')"><i class="fas fa-file-pdf"></i>Exportar PDF</button>
-                    <button class="btn btn-primary" onclick="openAddOSModal()">
-                        <i class="fas fa-plus"></i> Adicionar OS
-                    </button>
-                </div>
-            </div>
-
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <input type="text" id="filterOsNumber" placeholder="Nº OS" class="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
-                    <input type="text" id="filterClient" placeholder="Cliente" class="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
-                     <select id="filterProduct" class="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                        <option value="">Todos os Produtos</option>
-                    </select>
-                    <select id="filterStatus" class="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                        <option value="">Todos os Status</option>
-                        <option value="Aberta">Aberta</option>
-                        <option value="Em Andamento">Em Andamento</option>
-                        <option value="Pendente Informação">Pendente Informação</option>
-                        <option value="Aguardando Aprovação">Aguardando Aprovação</option>
-                        <option value="Completa">Completa</option>
-                        <option value="Cancelada">Cancelada</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto shadow-md rounded-lg">
-                <table id="osTable" class="min-w-full bg-white">
-                    <thead class="table-header">
-                        <tr>
-                            <th class="py-3 px-4 text-left">Nº OS</th>
-                            <th class="py-3 px-4 text-left">Cliente</th>
-                            <th class="py-3 px-4 text-left">Produto</th>
-                            <th class="py-3 px-4 text-left">Descrição</th>
-                            <th class="py-3 px-4 text-left">Data Abertura</th>
-                            <th class="py-3 px-4 text-left">Prazo Final</th>
-                            <th class="py-3 px-4 text-left">Responsável</th>
-                            <th class="py-3 px-4 text-left">Solicitante</th>
-                            <th class="py-3 px-4 text-left">Status</th>
-                            <th class="py-3 px-4 text-left">Prioridade</th>
-                            <th class="py-3 px-4 text-left">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="osTableBody" class="divide-y divide-gray-200">
-                    </tbody>
-                </table>
-            </div>
-             <div id="paginationControls" class="mt-6 flex justify-end items-center gap-2">
-            </div>
-        </div>
-
-        <div id="weeklyAnalysisView" class="view-section card hidden"> 
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-3xl font-bold text-gray-700">Análise Mensal de Pendências (por Semana)</h2>
-                <div class="flex items-center gap-3 flex-wrap">
-                    <div>
-                        <label for="analysisMonthYearInput" class="text-sm font-medium mr-2">Selecionar Mês/Ano:</label>
-                        <input type="month" id="analysisMonthYearInput" name="analysisMonthYearInput" class="p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-                    <button class="btn btn-warning" onclick="sendWeeklyReportAndGeneratePDF()"><i class="fas fa-paper-plane"></i> Gerar Relatório PDF de Pendências</button>
-                </div>
-            </div>
-            <p class="text-gray-600 mb-2">OSs com prazo final no mês selecionado que não foram marcadas como "Completa" até o final da Quarta-Feira da respectiva semana do prazo.</p>
-            <p id="selectedMonthInfo" class="text-sm text-blue-600 font-semibold mb-4"></p>
-
-            <div class="overflow-x-auto shadow-md rounded-lg">
-                <table id="weeklyAnalysisTable" class="min-w-full bg-white">
-                     <thead class="table-header">
-                        <tr>
-                            <th class="py-3 px-4 text-left">Semana do Prazo</th>
-                            <th class="py-3 px-4 text-left">Nº OS</th>
-                            <th class="py-3 px-4 text-left">Cliente</th>
-                            <th class="py-3 px-4 text-left">Produto</th>
-                            <th class="py-3 px-4 text-left">Prazo Final</th>
-                            <th class="py-3 px-4 text-left">Status Atual</th>
-                            <th class="py-3 px-4 text-left">Responsável</th>
-                            <th class="py-3 px-4 text-left">Pendência</th>
-                            <th class="py-3 px-4 text-left">Ação Sugerida</th>
-                        </tr>
-                    </thead>
-                    <tbody id="weeklyAnalysisTableBody" class="divide-y divide-gray-200">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-
-        <div id="reportsView" class="view-section card hidden"> 
-             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-3xl font-bold text-gray-700">Relatórios Personalizados</h2>
-                 <div class="flex gap-2 flex-wrap">
-                    <button class="btn btn-success" onclick="exportTableToCSV('reportsTable', 'relatorio_os.csv')"><i class="fas fa-file-csv"></i>Exportar CSV</button>
-                    <button class="btn btn-danger" onclick="exportTableToPDF('reportsTable', 'Relatório de Ordens de Serviço', 'reportsTableBody')"><i class="fas fa-file-pdf"></i>Exportar PDF</button>
-                </div>
-            </div>
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label for="reportMonthYear" class="block text-sm font-medium text-gray-700 mb-1">Mês/Ano do Prazo Final:</label>
-                        <input type="month" id="reportMonthYear" name="reportMonthYear" class="w-full p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-                    <div>
-                        <label for="reportStatus" class="block text-sm font-medium text-gray-700 mb-1">Status:</label>
-                        <select id="reportStatus" class="w-full p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="">Todos</option>
-                            <option value="Aberta">Aberta</option>
-                            <option value="Em Andamento">Em Andamento</option>
-                            <option value="Pendente Informação">Pendente Informação</option>
-                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
-                            <option value="Completa">Completa</option>
-                            <option value="Cancelada">Cancelada</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="reportProduct" class="block text-sm font-medium text-gray-700 mb-1">Produto:</label>
-                        <select id="reportProduct" class="w-full p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                             <option value="">Todos</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <button class="btn btn-primary" onclick="generateCustomReport()"><i class="fas fa-filter"></i> Gerar Relatório</button>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto shadow-md rounded-lg">
-                <table id="reportsTable" class="min-w-full bg-white">
-                     <thead class="table-header">
-                        <tr>
-                            <th class="py-3 px-4 text-left">Nº OS</th>
-                            <th class="py-3 px-4 text-left">Cliente</th>
-                            <th class="py-3 px-4 text-left">Produto</th>
-                            <th class="py-3 px-4 text-left">Prazo Final</th>
-                            <th class="py-3 px-4 text-left">Status</th>
-                            <th class="py-3 px-4 text-left">Responsável</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportsTableBody" class="divide-y divide-gray-200">
-                       <tr><td colspan="6" class="text-center py-10 text-gray-500">Selecione os filtros e clique em "Gerar Relatório".</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main> 
-    <div id="osModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeOSModal()">&times;</span>
-            <h3 id="modalTitle" class="text-2xl font-semibold mb-6 text-gray-700">Adicionar Nova Ordem de Serviço</h3>
-            <form id="osForm">
-                <input type="hidden" id="osId"> 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
-                    <div>
-                        <label for="osNumeroModal" class="block text-sm font-medium text-gray-700 mb-1">Nº OS <span class="text-red-500">*</span></label>
-                        <input type="text" id="osNumeroModal" name="osNumeroModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
-                    </div>
-                    <div>
-                        <label for="osClienteModal" class="block text-sm font-medium text-gray-700 mb-1">Cliente <span class="text-red-500">*</span></label>
-                        <input type="text" id="osClienteModal" name="osClienteModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
-                    </div>
-                     <div>
-                        <label for="osProdutoModal" class="block text-sm font-medium text-gray-700 mb-1">Produto/Serviço <span class="text-red-500">*</span></label>
-                        <input type="text" id="osProdutoModal" name="osProdutoModal" list="productList" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
-                        <datalist id="productList">
-                        </datalist>
-                    </div>
-                    <div>
-                        <label for="osSolicitanteModal" class="block text-sm font-medium text-gray-700 mb-1">Solicitante</label>
-                        <input type="text" id="osSolicitanteModal" name="osSolicitanteModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <label for="osDescricaoModal" class="block text-sm font-medium text-gray-700 mb-1">Descrição Detalhada <span class="text-red-500">*</span></label>
-                    <textarea id="osDescricaoModal" name="osDescricaoModal" rows="3" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required></textarea>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
-                    <div>
-                        <label for="osDataAberturaModal" class="block text-sm font-medium text-gray-700 mb-1">Data de Abertura <span class="text-red-500">*</span></label>
-                        <input type="date" id="osDataAberturaModal" name="osDataAberturaModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
-                    </div>
-                    <div>
-                        <label for="osPrazoFinalModal" class="block text-sm font-medium text-gray-700 mb-1">Prazo Final <span class="text-red-500">*</span></label>
-                        <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
-                    </div>
-                     <div>
-                        <label for="osResponsavelModal" class="block text-sm font-medium text-gray-700 mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label>
-                        <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required>
-                    </div>
-                    <div>
-                        <label for="osStatusModal" class="block text-sm font-medium text-gray-700 mb-1">Status <span class="text-red-500">*</span></label>
-                        <select id="osStatusModal" name="osStatusModal" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none" required>
-                            <option value="Aberta">Aberta</option>
-                            <option value="Em Andamento">Em Andamento</option>
-                            <option value="Pendente Informação">Pendente Informação</option>
-                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
-                            <option value="Completa">Completa</option>
-                            <option value="Cancelada">Cancelada</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mb-6"> 
-                     <label for="osPrioridadeModal" class="block text-sm font-medium text-gray-700 mb-1">Prioridade <span class="text-red-500">*</span></label>
-                     <select id="osPrioridadeModal" name="osPrioridadeModal" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none" required>
-                        <option value="Baixa">Baixa</option>
-                        <option value="Média">Média</option>
-                        <option value="Alta">Alta</option>
-                        <option value="Urgente">Urgente</option>
-                    </select>
-                </div>
-                <div class="flex justify-end gap-3">
-                    <button type="button" class="btn btn-secondary" onclick="closeOSModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar OS</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // Configuração Global
-        const ITEMS_PER_PAGE = 10; 
-        let currentPage = 1;
-        let ordensServico = []; 
-        const defaultProducts = [ 
-            "WORKNC", "EDGECAM", "ESPRIT", "ALPHACAM", "LANTEK",
-            "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner",
-            "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"
-        ];
-
-        // Elementos da DOM 
-        const osTableBody = document.getElementById('osTableBody');
-        const weeklyAnalysisTableBody = document.getElementById('weeklyAnalysisTableBody');
-        const reportsTableBody = document.getElementById('reportsTableBody');
-        const osModal = document.getElementById('osModal');
-        const osForm = document.getElementById('osForm');
-        const modalTitle = document.getElementById('modalTitle');
-        const recentActivityList = document.getElementById('recentActivityList');
-        const paginationControls = document.getElementById('paginationControls');
-        const productDatalist = document.getElementById('productList');
-        const filterProductSelect = document.getElementById('filterProduct');
-        const reportProductSelect = document.getElementById('reportProduct');
-        const selectedMonthInfo = document.getElementById('selectedMonthInfo'); // Alterado de selectedWeekInfo
-        const analysisMonthYearInput = document.getElementById('analysisMonthYearInput'); // Alterado de analysisWeekInput
-
-
-        // Funções Auxiliares de Data
-        function formatDateToBR(dateString) {
-            if (!dateString) return 'N/A';
-            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
-                return dateString;
-            }
-            const datePart = dateString.toString().split('T')[0];
-            const partsYMD = datePart.split('-');
-            if (partsYMD.length === 3 && partsYMD[0].length === 4) { 
-                return `${partsYMD[2]}/${partsYMD[1]}/${partsYMD[0]}`;
-            }
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Data Inválida'; 
-            return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }); 
-        }
-        
-        /**
-         * Retorna um array de objetos, cada um representando uma semana que intercepta o mês/ano fornecido.
-         * Cada objeto de semana contém: start (Date), end (Date), wednesday (Date), weekNumber (number).
-         * @param {number} year - O ano.
-         * @param {number} month - O mês (1-12).
-         * @returns {Array<object>} Array de semanas.
-         */
-        function getWeeksInMonth(year, month) {
-            const weeks = [];
-            const firstDayOfMonth = new Date(year, month - 1, 1);
-            const lastDayOfMonth = new Date(year, month, 0); // Dia 0 do próximo mês é o último do mês atual
-
-            // Encontra a primeira segunda-feira da primeira semana que intercepta o mês
-            let currentMonday = new Date(firstDayOfMonth);
-            currentMonday.setDate(firstDayOfMonth.getDate() - (firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1)); // Ajusta para segunda-feira
-
-            while (currentMonday <= lastDayOfMonth) {
-                const weekStart = new Date(currentMonday);
-                weekStart.setHours(0, 0, 0, 0);
-
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6);
-                weekEnd.setHours(23, 59, 59, 999);
-
-                const weekWednesday = new Date(weekStart);
-                weekWednesday.setDate(weekStart.getDate() + 2); // Quarta-feira
-                weekWednesday.setHours(23, 59, 59, 999);
-
-                // Calcula o número da semana ISO 8601
-                const target = new Date(weekStart.valueOf());
-                target.setDate(target.getDate() - ((weekStart.getDay() + 6) % 7) + 3);
-                const firstThursday = target.valueOf();
-                target.setMonth(0, 1);
-                if (target.getDay() !== 4) {
-                    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
-                }
-                const weekNumber = 1 + Math.ceil((firstThursday - target) / 604800000);
-
-                weeks.push({ start: weekStart, end: weekEnd, wednesday: weekWednesday, weekNumber: weekNumber });
-                currentMonday.setDate(currentMonday.getDate() + 7); // Próxima segunda
-            }
-            return weeks;
-        }
-
-
-        function getPriorityClass(priority) {
-            switch (priority) {
-                case 'Alta': return 'priority-Alta';
-                case 'Urgente': return 'priority-Urgente';
-                case 'Média': return 'priority-Média';
-                case 'Baixa': return 'priority-Baixa';
-                default: return 'bg-gray-100 text-gray-700'; 
-            }
-        }
-
-        function generateId() {
-            return 'OS' + String(Date.now()).slice(-6) + Math.random().toString(36).substr(2, 3).toUpperCase();
-        }
-
-        // Funções de LocalStorage 
-        function saveDataToLocalStorage() {
-            localStorage.setItem('ordensServicoData_v4_2', JSON.stringify(ordensServico)); // Chave atualizada
-            addRecentActivity("Dados salvos no LocalStorage.");
-        }
-
-        function loadDataFromLocalStorage() {
-            const data = localStorage.getItem('ordensServicoData_v4_2'); // Chave atualizada
-            if (data) {
-                ordensServico = JSON.parse(data);
-                addRecentActivity("Dados carregados do LocalStorage.");
-            } else {
-                ordensServico = [
-                    { id: generateId(), numero: 'OS2505W3-1', cliente: 'Cliente Teste A', produto: 'SOLIDWORKS CAD', descricao: 'Prazo semana 3 de Maio, pendente', dataAbertura: '2025-05-01', prazoFinal: '2025-05-15', responsavel: 'Carlos Z.', solicitante: 'Ana P.', status: 'Em Andamento', prioridade: 'Alta' }, // Semana 20 (12-18 Maio)
-                    { id: generateId(), numero: 'OS2505W3-2', cliente: 'Cliente Teste B', produto: 'EDGECAM', descricao: 'Prazo semana 3 de Maio, completa', dataAbertura: '2025-05-02', prazoFinal: '2025-05-16', responsavel: 'Beatriz L.', solicitante: 'Mario S.', status: 'Completa', prioridade: 'Média' }, // Semana 20
-                    { id: generateId(), numero: 'OS2505W4-1', cliente: 'Cliente Teste C', produto: 'WORKNC', descricao: 'Prazo semana 4 de Maio, aberta', dataAbertura: '2025-05-10', prazoFinal: '2025-05-22', responsavel: 'Daniel F.', solicitante: 'Julia M.', status: 'Aberta', prioridade: 'Urgente'}, // Semana 21 (19-25 Maio)
-                    { id: generateId(), numero: 'OS2504W5-1', cliente: 'Cliente Teste D', produto: 'LANTEK', descricao: 'Prazo última semana de Abril, pendente', dataAbertura: '2025-04-20', prazoFinal: '2025-04-30', responsavel: 'Eduardo G.', solicitante: 'Laura C.', status: 'Pendente Informação', prioridade: 'Média'}, // Semana 18 (28 Abr - 04 Mai)
-                ];
-                addRecentActivity("Dados iniciais de exemplo carregados.");
-            }
-            populateProductFilters(); 
-        }
-
-        function populateProductFilters() {
-            const products = [...new Set(ordensServico.map(os => os.produto).concat(defaultProducts)
-                                            .filter(p => p && p.trim() !== ""))]
-                                            .sort();
-            
-            productDatalist.innerHTML = '';
-            filterProductSelect.innerHTML = '<option value="">Todos os Produtos</option>'; 
-            reportProductSelect.innerHTML = '<option value="">Todos os Produtos</option>'; 
-
-            products.forEach(product => {
-                const option = document.createElement('option');
-                option.value = product;
-                option.textContent = product;
-                productDatalist.appendChild(option.cloneNode(true)); 
-                filterProductSelect.appendChild(option.cloneNode(true)); 
-                reportProductSelect.appendChild(option.cloneNode(true)); 
-            });
-        }
-
-        function addRecentActivity(action) {
-            if (!recentActivityList) return;
-            const listItem = document.createElement('li');
-            const now = new Date();
-            listItem.className = 'flex justify-between items-center text-sm pb-2 border-b border-gray-100'; 
-            listItem.innerHTML = `
-                <span>${action}</span>
-                <span class="text-gray-400 text-xs">${now.toLocaleTimeString('pt-BR')}</span>
-            `;
-            const firstChild = recentActivityList.firstChild;
-            if (firstChild && firstChild.nodeType === Node.ELEMENT_NODE && firstChild.textContent.trim() === 'Nenhuma atividade recente.') {
-                 recentActivityList.innerHTML = '';
-            }
-
-            recentActivityList.insertBefore(listItem, recentActivityList.firstChild); 
-            if (recentActivityList.children.length > 7) { 
-                recentActivityList.removeChild(recentActivityList.lastChild);
-            }
-        }
-
-        function renderOSTable(filteredData = getFilteredOS()) {
-            if (!osTableBody) return;
-            osTableBody.innerHTML = ''; 
-            if (filteredData.length === 0) {
-                osTableBody.innerHTML = '<tr><td colspan="11" class="text-center py-10 text-gray-500">Nenhuma ordem de serviço encontrada com os filtros aplicados.</td></tr>';
-                renderPagination(0, 0); 
-                return;
-            }
-
-            const paginatedData = paginateData(filteredData, currentPage, ITEMS_PER_PAGE); 
-
-            paginatedData.forEach(os => { 
-                const row = osTableBody.insertRow();
-                row.className = 'hover:bg-gray-50 transition-colors duration-150'; 
-                row.innerHTML = `
-                    <td class="py-3 px-4 text-sm text-gray-700 font-medium">${os.numero}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.cliente}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.produto || 'N/A'}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 truncate max-w-xs" title="${os.descricao}">${os.descricao}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${formatDateToBR(os.dataAbertura)}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.responsavel}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.solicitante || 'N/A'}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">
-                        <select class="status-select p-1 border rounded-md bg-white focus:ring-1 focus:ring-blue-500 outline-none text-xs" data-id="${os.id}" onchange="updateStatus(this)">
-                            <option value="Aberta" ${os.status === 'Aberta' ? 'selected' : ''}>Aberta</option>
-                            <option value="Em Andamento" ${os.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
-                            <option value="Pendente Informação" ${os.status === 'Pendente Informação' ? 'selected' : ''}>Pendente Info</option>
-                            <option value="Aguardando Aprovação" ${os.status === 'Aguardando Aprovação' ? 'selected' : ''}>Aguard. Aprov.</option>
-                            <option value="Completa" ${os.status === 'Completa' ? 'selected' : ''}>Completa</option>
-                            <option value="Cancelada" ${os.status === 'Cancelada' ? 'selected' : ''}>Cancelada</option>
-                        </select>
-                    </td>
-                    <td class="py-3 px-4 text-sm text-gray-600">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span>
-                    </td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">
-                        <button class="text-blue-600 hover:text-blue-800 mr-2 p-1" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="text-red-600 hover:text-red-800 p-1" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-            });
-            renderPagination(filteredData.length, currentPage); 
-        }
-
-        function paginateData(data, page, itemsPerPage) {
-            const start = (page - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            return data.slice(start, end);
-        }
-
-        function renderPagination(totalItems, page) {
-            if (!paginationControls) return;
-            paginationControls.innerHTML = ''; 
-            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
-            if (totalPages <= 1) return; 
-
-            const prevButton = document.createElement('button');
-            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i> Anterior';
-            prevButton.className = 'btn btn-sm btn-secondary disabled:opacity-50';
-            prevButton.disabled = page === 1;
-            prevButton.onclick = () => { if (page > 1) changePage(page - 1); };
-            paginationControls.appendChild(prevButton);
-
-            const pageInfo = document.createElement('span');
-            pageInfo.className = 'text-sm text-gray-700 px-3';
-            pageInfo.textContent = `Página ${page} de ${totalPages}`;
-            paginationControls.appendChild(pageInfo);
-
-            const nextButton = document.createElement('button');
-            nextButton.innerHTML = 'Próximo <i class="fas fa-chevron-right"></i>';
-            nextButton.className = 'btn btn-sm btn-secondary disabled:opacity-50';
-            nextButton.disabled = page === totalPages;
-            nextButton.onclick = () => { if (page < totalPages) changePage(page + 1); };
-            paginationControls.appendChild(nextButton);
-        }
-
-        function changePage(newPage) {
-            currentPage = newPage;
-            renderOSTable(); 
-        }
-
-        function updateStatus(selectElement) {
-            const osId = selectElement.dataset.id; 
-            const newStatus = selectElement.value; 
-            const osIndex = ordensServico.findIndex(os => os.id === osId);
-            if (osIndex !== -1) {
-                ordensServico[osIndex].status = newStatus;
-                addRecentActivity(`Status da OS ${ordensServico[osIndex].numero} alterado para ${newStatus}.`);
-                saveDataToLocalStorage(); 
-                refreshAllViews(); 
-            }
-        }
-
-        function openAddOSModal() {
-            if (!osForm || !modalTitle || !osModal) return;
-            osForm.reset(); 
-            document.getElementById('osId').value = ''; 
-            modalTitle.textContent = 'Adicionar Nova Ordem de Serviço';
-            document.getElementById('osDataAberturaModal').value = new Date().toISOString().split('T')[0]; 
-            osModal.style.display = 'block'; 
-        }
-
-        function closeOSModal() {
-            if (!osModal) return;
-            osModal.style.display = 'none'; 
-        }
-
-        function editOS(id) {
-            if (!osModal || !modalTitle) return;
-            const os = ordensServico.find(o => o.id === id); 
-            if (os) {
-                modalTitle.textContent = `Editar Ordem de Serviço - ${os.numero}`;
-                document.getElementById('osId').value = os.id;
-                document.getElementById('osNumeroModal').value = os.numero;
-                document.getElementById('osClienteModal').value = os.cliente;
-                document.getElementById('osProdutoModal').value = os.produto || '';
-                document.getElementById('osSolicitanteModal').value = os.solicitante || '';
-                document.getElementById('osDescricaoModal').value = os.descricao;
-                document.getElementById('osDataAberturaModal').value = os.dataAbertura; 
-                document.getElementById('osPrazoFinalModal').value = os.prazoFinal;   
-                document.getElementById('osResponsavelModal').value = os.responsavel;
-                document.getElementById('osStatusModal').value = os.status;
-                document.getElementById('osPrioridadeModal').value = os.prioridade;
-                osModal.style.display = 'block'; 
-            }
-        }
-
-        function deleteOS(id) {
-            const osToDelete = ordensServico.find(os => os.id === id);
-            if (confirm(`Tem certeza que deseja excluir a OS ${osToDelete?.numero || id}? Esta ação não pode ser desfeita.`)) {
-                ordensServico = ordensServico.filter(os => os.id !== id); 
-                addRecentActivity(`OS ${osToDelete?.numero || id} excluída.`);
-                saveDataToLocalStorage(); 
-                if (currentPage > 1 && paginateData(getFilteredOS(), currentPage, ITEMS_PER_PAGE).length === 0) {
-                    currentPage--;
-                }
-                refreshAllViews(); 
-            }
-        }
-
-        if (osForm) {
-            osForm.addEventListener('submit', function(event) {
-                event.preventDefault(); 
-                const id = document.getElementById('osId').value; 
-                const osData = {
-                    numero: document.getElementById('osNumeroModal').value,
-                    cliente: document.getElementById('osClienteModal').value,
-                    produto: document.getElementById('osProdutoModal').value,
-                    solicitante: document.getElementById('osSolicitanteModal').value,
-                    descricao: document.getElementById('osDescricaoModal').value,
-                    dataAbertura: document.getElementById('osDataAberturaModal').value,
-                    prazoFinal: document.getElementById('osPrazoFinalModal').value,
-                    responsavel: document.getElementById('osResponsavelModal').value,
-                    status: document.getElementById('osStatusModal').value, 
-                    prioridade: document.getElementById('osPrioridadeModal').value, 
-                };
-
-                if (id) { 
-                    const osIndex = ordensServico.findIndex(o => o.id === id);
-                    if (osIndex !== -1) {
-                        ordensServico[osIndex] = { ...ordensServico[osIndex], ...osData }; 
-                        addRecentActivity(`OS ${osData.numero} editada.`);
-                    }
-                } else { 
-                    osData.id = generateId(); 
-                    ordensServico.unshift(osData); 
-                    addRecentActivity(`Nova OS ${osData.numero} adicionada.`);
-                }
-                saveDataToLocalStorage(); 
-                populateProductFilters(); 
-                refreshAllViews(); 
-                closeOSModal(); 
-                currentPage = 1; 
-                renderOSTable(); 
-            });
-        }
-
-        function showView(viewId, clickedElement) {
-            document.querySelectorAll('.view-section').forEach(section => {
-                section.classList.add('hidden');
-            });
-            const targetView = document.getElementById(viewId);
-            if (targetView) {
-                targetView.classList.remove('hidden');
-            } else {
-                console.error(`View com ID '${viewId}' não encontrada.`);
-                return; 
-            }
-
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            if (clickedElement && typeof clickedElement.classList !== 'undefined' && clickedElement.classList.contains('sidebar-item')) {
-                clickedElement.classList.add('active');
-            }
-            
-            if (viewId === 'weeklyAnalysisView') {
-                setDefaultAnalysisMonth(); 
-                renderMonthlyAnalysisByWeek();
-            }
-        }
-
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('mainContent');
-        const toggleSidebarBtn = document.getElementById('toggleSidebar');
-        const sidebarTitleDiv = document.getElementById('sidebar-title');
-
-        if (toggleSidebarBtn && sidebar && mainContent && sidebarTitleDiv) { 
-            toggleSidebarBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('collapsed');
-                mainContent.classList.toggle('collapsed');
-                const isCollapsed = sidebar.classList.contains('collapsed');
-                toggleSidebarBtn.innerHTML = isCollapsed ? '<i class="fas fa-chevron-right text-lg"></i>' : '<i class="fas fa-bars text-lg"></i>'; 
-                if (sidebarTitleDiv.querySelector('span')) { 
-                    sidebarTitleDiv.querySelector('span').style.display = isCollapsed ? 'none' : 'inline'; 
-                }
-                if (sidebarTitleDiv.querySelector('i')) { 
-                     sidebarTitleDiv.querySelector('i').style.marginRight = isCollapsed ? '0' : '0.5rem'; 
-                }
-            });
-        }
-
-        if (analysisMonthYearInput) { 
-            analysisMonthYearInput.addEventListener('change', renderMonthlyAnalysisByWeek); 
-        }
-        
-        function renderMonthlyAnalysisByWeek() {
-            if (!weeklyAnalysisTableBody || !analysisMonthYearInput || !selectedMonthInfo) { 
-                console.error("Elementos da Análise Semanal/Mensal não encontrados no DOM.");
-                return;
-            }
-            weeklyAnalysisTableBody.innerHTML = ''; 
-            const monthYearValue = analysisMonthYearInput.value; // Formato "YYYY-MM"
-            
-            if (!monthYearValue) {
-                selectedMonthInfo.textContent = 'Por favor, selecione um mês/ano para análise.';
-                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500">Selecione um mês/ano.</td></tr>`;
-                return;
-            }
-
-            const [year, month] = monthYearValue.split('-').map(Number);
-            const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long' });
-            selectedMonthInfo.textContent = `Analisando pendências para ${monthName} de ${year}. Pendências são OSs não 'Completas' após a Quarta-Feira da respectiva semana do prazo.`;
-            
-            const weeksInSelectedMonth = getWeeksInMonth(year, month);
-            let allPendingOS = [];
-
-            weeksInSelectedMonth.forEach(week => {
-                const { start: weekStart, end: weekEnd, wednesday: weekWednesday, weekNumber } = week;
-                const today = new Date();
-                // A quarta-feira da semana da OS já passou em relação ao dia de HOJE?
-                // Ou, se a semana inteira já passou, consideramos que a quarta já passou.
-                const hasWednesdayOfOSWeekPassed = today > weekWednesday || today > weekEnd;
-
-
-                const osInThisWeek = ordensServico.filter(os => {
-                    const prazoFinalDate = new Date(os.prazoFinal + 'T23:59:59');
-                    const isPrazoInThisSpecificWeek = prazoFinalDate >= weekStart && prazoFinalDate <= weekEnd;
-                    if (!isPrazoInThisSpecificWeek) return false;
-
-                    const isNotCompleteOrCancelled = os.status !== 'Completa' && os.status !== 'Cancelada';
-                    if (!isNotCompleteOrCancelled) return false;
-                    
-                    // Se a quarta-feira da semana do prazo da OS já passou (em relação a hoje),
-                    // e a OS ainda não está completa/cancelada, ela é uma pendência.
-                    return hasWednesdayOfOSWeekPassed;
-                });
-                
-                osInThisWeek.forEach(os => allPendingOS.push({...os, weekNumberForAnalysis: weekNumber}));
-            });
-
-
-            if (allPendingOS.length === 0) {
-                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500">Nenhuma OS pendente encontrada para o mês selecionado conforme os critérios.</td></tr>`;
-                return;
-            }
-
-            allPendingOS.sort((a, b) => { // Ordena primeiro por semana, depois por prazo
-                if (a.weekNumberForAnalysis !== b.weekNumberForAnalysis) {
-                    return a.weekNumberForAnalysis - b.weekNumberForAnalysis;
-                }
-                return new Date(a.prazoFinal) - new Date(b.prazoFinal);
-            }); 
-
-            allPendingOS.forEach(os => {
-                const row = weeklyAnalysisTableBody.insertRow();
-                row.className = 'hover:bg-gray-50 transition-colors duration-150';
-                row.innerHTML = `
-                    <td class="py-3 px-4 text-sm text-gray-500">Semana ${os.weekNumberForAnalysis}</td>
-                    <td class="py-3 px-4 text-sm text-gray-700 font-medium">${os.numero}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.cliente}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.produto || 'N/A'}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.status}</td>
-                    <td class="py-3 px-4 text-sm text-gray-600">${os.responsavel}</td>
-                    <td class="py-3 px-4 text-sm text-red-600">Não 'Completa' após Quarta-feira da semana do prazo.</td>
-                    <td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">
-                        <button class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 mr-1 rounded" onclick="editOS('${os.id}')" title="Ver/Editar OS"><i class="fas fa-edit"></i> Detalhes</button>
-                        <button class="btn btn-sm bg-yellow-400 hover:bg-yellow-500 text-black py-1 px-2 rounded" onclick="notifyCollaborator('${os.responsavel}', '${os.numero}')" title="Notificar Colaborador (Simulação)"><i class="fas fa-bell"></i> Notificar</button>
-                    </td>
-                `;
-            });
-        }
-        
-        function sendWeeklyReportAndGeneratePDF() {
-            if (!analysisMonthYearInput) {
-                alert("Elemento de seleção de mês não encontrado.");
-                return;
-            }
-            const monthYearValue = analysisMonthYearInput.value;
-            if (!monthYearValue) {
-                alert("Por favor, selecione um mês/ano para gerar o relatório de pendências.");
-                return;
-            }
-            const [year, month] = monthYearValue.split('-').map(Number);
-            const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long' });
-            const title = `Relatório de Pendências Mensal - ${monthName} de ${year}`;
-            
-            exportTableToPDF('weeklyAnalysisTable', title, 'weeklyAnalysisTableBody', true); 
-            addRecentActivity("PDF do relatório mensal de pendências gerado.");
-            alert(`PDF "${title}" gerado.\n\nEste arquivo está pronto para ser salvo e anexado ao seu e-mail no Outlook para envio aos responsáveis.`);
-        }
-
-        function notifyCollaborator(responsavel, osNumero) {
-            alert(`Simulação: Notificação para ${responsavel} sobre pendências na OS ${osNumero} seria preparada aqui para envio.`);
-            addRecentActivity(`Notificação (simulada) para ${responsavel} (OS ${osNumero}).`);
-        }
-
-        const filterOsNumEl = document.getElementById('filterOsNumber');
-        if (filterOsNumEl) filterOsNumEl.addEventListener('input', applyFiltersAndRender);
-        const filterClientEl = document.getElementById('filterClient');
-        if (filterClientEl) filterClientEl.addEventListener('input', applyFiltersAndRender);
-        const filterStatusEl = document.getElementById('filterStatus');
-        if (filterStatusEl) filterStatusEl.addEventListener('change', applyFiltersAndRender);
-        const filterProductEl = document.getElementById('filterProduct');
-        if (filterProductEl) filterProductEl.addEventListener('change', applyFiltersAndRender);
-
-        function getFilteredOS() {
-            const filterOsNumberValue = filterOsNumEl ? filterOsNumEl.value.toLowerCase() : "";
-            const filterClientValue = filterClientEl ? filterClientEl.value.toLowerCase() : "";
-            const filterStatusValue = filterStatusEl ? filterStatusEl.value : "";
-            const filterProductValue = filterProductEl ? filterProductEl.value : "";
-
-            return ordensServico.filter(os => {
-                const matchesOsNumber = os.numero.toLowerCase().includes(filterOsNumberValue);
-                const matchesClient = os.cliente.toLowerCase().includes(filterClientValue);
-                const matchesStatus = filterStatusValue ? os.status === filterStatusValue : true;
-                const matchesProduct = filterProductValue ? os.produto === filterProductValue : true;
-                return matchesOsNumber && matchesClient && matchesStatus && matchesProduct;
-            });
-        }
-        function applyFiltersAndRender() {
-            currentPage = 1; 
-            renderOSTable();
-        }
-
-        let osStatusChartInstance = null; 
-        function updateDashboardCounts() {
-            const osAbertasEl = document.getElementById('osAbertasCount');
-            const osCompletasMesEl = document.getElementById('osCompletasMesCount');
-            const osPendentesEl = document.getElementById('osPendentesCount');
-            const osCanceladasEl = document.getElementById('osCanceladasCount');
-
-            if (osAbertasEl) osAbertasEl.textContent = ordensServico.filter(os => os.status === 'Aberta').length;
-            
-            const hoje = new Date();
-            if (osCompletasMesEl) osCompletasMesEl.textContent = ordensServico.filter(os => {
-                if (os.status !== 'Completa') return false;
-                const prazo = new Date(os.prazoFinal + 'T23:59:59');
-                return prazo.getMonth() === hoje.getMonth() && prazo.getFullYear() === hoje.getFullYear();
-            }).length;
-
-            if (osPendentesEl) osPendentesEl.textContent = ordensServico.filter(os => os.status === 'Pendente Informação' || os.status === 'Aguardando Aprovação').length;
-            if (osCanceladasEl) osCanceladasEl.textContent = ordensServico.filter(os => os.status === 'Cancelada').length;
-            
-            renderOSStatusChart(); 
-        }
-
-        function renderOSStatusChart() {
-            const chartContainer = document.getElementById('osStatusChartContainer');
-            const chartCanvas = document.getElementById('osStatusChart');
-            if (!chartContainer || !chartCanvas) {
-                return;
-            }
-            const ctx = chartCanvas.getContext('2d');
-
-            const statusCounts = ordensServico.reduce((acc, os) => { 
-                acc[os.status] = (acc[os.status] || 0) + 1;
-                return acc;
-            }, {});
-
-            const data = {
-                labels: Object.keys(statusCounts),
-                datasets: [{
-                    label: 'OS por Status', data: Object.values(statusCounts),
-                    backgroundColor: ['rgba(54, 162, 235, 0.8)','rgba(255, 159, 64, 0.8)','rgba(255, 205, 86, 0.8)','rgba(153, 102, 255, 0.8)','rgba(75, 192, 192, 0.8)','rgba(255, 99, 132, 0.8)'],
-                    borderColor: '#fff', borderWidth: 2, hoverOffset: 4
-                }]
-            };
-            if (osStatusChartInstance) osStatusChartInstance.destroy(); 
-            osStatusChartInstance = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 }}}, tooltip: { callbacks: { label: function(c) { return `${c.label || ''}: ${c.parsed || 0}`; }}}}}});
-        }
-
-        const reportMonthYearEl = document.getElementById('reportMonthYear');
-        const reportStatusEl = document.getElementById('reportStatus');
-        const reportProductEl = document.getElementById('reportProduct');
-
-        if(reportMonthYearEl) reportMonthYearEl.addEventListener('change', () => reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">Clique em "Gerar Relatório" para atualizar.</td></tr>');
-        if(reportStatusEl) reportStatusEl.addEventListener('change', () => reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">Clique em "Gerar Relatório" para atualizar.</td></tr>');
-        if(reportProductEl) reportProductEl.addEventListener('change', () => reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">Clique em "Gerar Relatório" para atualizar.</td></tr>');
-
-        function generateCustomReport() {
-            if(!reportsTableBody || !reportMonthYearEl || !reportStatusEl || !reportProductEl) {
-                return;
-            }
-            reportsTableBody.innerHTML = ''; 
-            const monthYearValue = reportMonthYearEl.value;
-            const statusValue = reportStatusEl.value;
-            const productValue = reportProductEl.value;
-            let [year, month] = [null, null]; if (monthYearValue) [year, month] = monthYearValue.split('-').map(Number);
-
-            const filteredReportData = ordensServico.filter(os => {
-                let matchesDate = true;
-                if (year && month) {
-                    const prazoFinalDate = new Date(os.prazoFinal + 'T23:59:59');
-                    matchesDate = prazoFinalDate.getFullYear() === year && (prazoFinalDate.getMonth() + 1) === month;
-                }
-                const matchesStatus = statusValue ? os.status === statusValue : true;
-                const matchesProduct = productValue ? os.produto === productValue : true;
-                return matchesDate && matchesStatus && matchesProduct;
-            });
-
-            if (filteredReportData.length === 0) { reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">Nenhuma OS encontrada para os filtros selecionados.</td></tr>'; return; }
-            filteredReportData.forEach(os => {
-                const row = reportsTableBody.insertRow(); row.className = 'hover:bg-gray-50 transition-colors duration-150';
-                row.innerHTML = `<td class="py-3 px-4 text-sm text-gray-700 font-medium">${os.numero}</td><td class="py-3 px-4 text-sm text-gray-600">${os.cliente}</td><td class="py-3 px-4 text-sm text-gray-600">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm text-gray-600">${os.status}</td><td class="py-3 px-4 text-sm text-gray-600">${os.responsavel}</td>`;
-            });
-            addRecentActivity("Relatório personalizado gerado.");
-        }
-
-        function exportTableToCSV(tableId, filename) {
-            const table = document.getElementById(tableId); if (!table) { alert("Tabela não encontrada para exportação CSV."); return; }
-            let csv = [];
-            table.querySelectorAll("tr").forEach(row => {
-                const rowData = [];
-                const headerCells = table.querySelectorAll("thead th");
-                row.querySelectorAll("th, td").forEach((cell, cellIndex) => {
-                    if (headerCells[cellIndex] && (headerCells[cellIndex].innerText.toUpperCase().includes("AÇÕES") || headerCells[cellIndex].innerText.toUpperCase().includes("AÇÃO SUGERIDA"))) {
-                        return; 
-                    }
-                    if (cell.querySelector('select')) rowData.push(cell.querySelector('select').value);
-                    else rowData.push(`"${cell.innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/"/g, '""')}"`);
-                });
-                if(rowData.length > 0) csv.push(rowData.join(","));
-            });
-            const csvFile = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
-            const downloadLink = document.createElement("a");
-            downloadLink.href = URL.createObjectURL(csvFile);
-            downloadLink.download = filename;
-            downloadLink.style.display = "none"; document.body.appendChild(downloadLink);
-            downloadLink.click(); document.body.removeChild(downloadLink);
-            addRecentActivity(`Tabela ${tableId} exportada para CSV.`);
-        }
-
-        function exportTableToPDF(tableId, title, tableBodyId, isWeeklyReport = false) {
-            const { jsPDF } = window.jspdf; 
-            if (typeof jsPDF === 'undefined' || typeof jsPDF.API === 'undefined' || typeof jsPDF.API.autoTable === 'undefined') {
-                alert("A biblioteca jsPDF ou o plugin autoTable não foram carregados corretamente.");
-                console.error("jsPDF ou jsPDF.autoTable não está definido."); return;
-            }
-            const table = document.getElementById(tableId); if (!table) { alert("Tabela não encontrada para exportação PDF."); return; }
-
-            const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-            const head = []; const body = [];
-
-            const headerCells = table.querySelectorAll("thead th");
-            const headerRow = [];
-            headerCells.forEach(cell => { 
-                if (!cell.innerText.toUpperCase().includes("AÇÕES") && !(isWeeklyReport && cell.innerText.toUpperCase().includes("AÇÃO SUGERIDA"))) {
-                    headerRow.push(cell.innerText);
-                }
-            });
-            head.push(headerRow);
-
-            const targetTableBody = document.getElementById(tableBodyId);
-            if (!targetTableBody) {
-                alert(`Corpo da tabela com ID '${tableBodyId}' não encontrado.`);
-                return;
-            }
-            const bodyRows = targetTableBody.querySelectorAll("tr");
-            bodyRows.forEach(row => {
-                const rowData = [];
-                const cells = row.querySelectorAll("td");
-                cells.forEach((cell, index) => {
-                    if (index < headerRow.length) { 
-                         if (cell.querySelector('select')) rowData.push(cell.querySelector('select').value);
-                         else rowData.push(cell.innerText);
-                    }
-                });
-                if (rowData.length > 0) body.push(rowData);
-            });
-
-            if (body.length === 0 && (!bodyRows.length || (bodyRows[0] && bodyRows[0].textContent.toLowerCase().includes("nenhuma")))) {
-                 alert("Não há dados na tabela para exportar para PDF."); return;
-            }
-
-            doc.autoTable({ 
-                head: head, body: body, startY: 60, 
-                headStyles: { fillColor: [31, 41, 55], fontSize: 8, textColor: 255 }, 
-                bodyStyles: { fontSize: 7 }, 
-                alternateRowStyles: { fillColor: [243, 244, 246] }, 
-                margin: { top: 50, right: 20, bottom: 30, left: 20 }, 
-                didDrawPage: function (data) { 
-                    doc.setFontSize(16); doc.setTextColor(40); doc.text(title, data.settings.margin.left, 35); 
-                    const pageCount = doc.internal.getNumberOfPages();
-                    doc.setFontSize(8); doc.text("Página " + doc.internal.getCurrentPageInfo().pageNumber + " de " + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 15); 
-                }
-            });
-            doc.save(`${title.replace(/[\s/:]+/g, '_').toLowerCase()}.pdf`); 
-        }
-
-        function refreshAllViews() {
-            renderOSTable(getFilteredOS()); 
-            updateDashboardCounts(); 
-            if (document.getElementById('weeklyAnalysisView') && !document.getElementById('weeklyAnalysisView').classList.contains('hidden')) {
-                 renderMonthlyAnalysisByWeek(); 
-            }
-            if (document.getElementById('reportsView') && !document.getElementById('reportsView').classList.contains('hidden')) {
-                generateCustomReport(); 
-            }
-        }
-        
-        function setDefaultAnalysisMonth() {
-            if (!analysisMonthYearInput) return; 
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0'); // Mês atual (1-12)
-            analysisMonthYearInput.value = `${year}-${month}`;
-        }
-
-        window.onload = () => {
-            loadDataFromLocalStorage(); 
-            populateProductFilters();   
-            
-            setDefaultAnalysisMonth(); 
-            
-            const dashboardSidebarItem = document.querySelector('.sidebar-item[onclick*="dashboardView"]');
-            showView('dashboardView', dashboardSidebarItem); 
-            
-            refreshAllViews(); 
-
-            const dataAberturaModalEl = document.getElementById('osDataAberturaModal');
-            if (dataAberturaModalEl) dataAberturaModalEl.value = new Date().toISOString().split('T')[0];
-            
-            const reportMonthYearEl = document.getElementById('reportMonthYear');
-            if (reportMonthYearEl) {
-                const todayForReport = new Date();
-                const currentMonthForReport = String(todayForReport.getMonth() + 1).padStart(2, '0');
-                const currentYearForReport = todayForReport.getFullYear();
-                reportMonthYearEl.value = `${currentYearForReport}-${currentMonthForReport}`;
-            }
-
-            if (window.innerWidth < 1024 && sidebar && mainContent && toggleSidebarBtn && sidebarTitleDiv) {
-                sidebar.classList.add('collapsed'); mainContent.classList.add('collapsed');
-                const isCollapsed = sidebar.classList.contains('collapsed');
-                toggleSidebarBtn.innerHTML = isCollapsed ? '<i class="fas fa-chevron-right text-lg"></i>' : '<i class="fas fa-bars text-lg"></i>';
-                if (sidebarTitleDiv.querySelector('span')) sidebarTitleDiv.querySelector('span').style.display = isCollapsed ? 'none' : 'inline';
-                if (sidebarTitleDiv.querySelector('i')) sidebarTitleDiv.querySelector('i').style.marginRight = isCollapsed ? '0' : '0.5rem';
-            }
-            addRecentActivity("Sistema V1.4.2 inicializado e pronto.");
-        };
-
-        window.onclick = function(event) { 
-            if (osModal && event.target == osModal) { 
-                closeOSModal();
-            }
-        }
-        window.onkeydown = function(event) { 
-            if (osModal && osModal.style.display === 'block' && event.key === "Escape") { 
-                closeOSModal();
-            }
-        };
-    </script>
-</body>
-</html>
->>>>>>> ad3ef0ac7f2dfac4a997694cdaebb48f45046b46
->>>>>>> 8b5b62abe979ccaeb57069bd830c4eceb5adbf58
