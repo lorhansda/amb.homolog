@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class=""> <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento Interno de OS - V5.3</title>
+    <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        /* ==========================================================================
+           Estilos Base e Modo Claro (Padrão)
+           ========================================================================== */
+        :root {
+            --bg-body-light: #f0f4f8;
+            --text-primary-light: #1e293b;
+            --bg-sidebar-light: #1f2937; /* Mesmo que o dark .sidebar para manter consistência visual inicial, mas pode ser alterado */
+            --text-sidebar-light: #e2e8f0;
+            --bg-card-light: #ffffff;
+            --text-card-light: #1e293b;
+            --border-card-light: #e2e8f0;
+            --bg-table-header-light: #f8fafc;
+            --text-table-header-light: #334155;
+            --border-table-header-light: #cbd5e1;
+            --text-table-row-light: #475569;
+            --border-table-row-light: #e2e8f0;
+            --bg-table-row-hover-light: #f1f5f9;
+            --bg-input-light: #ffffff;
+            --text-input-light: #1e293b;
+            --border-input-light: #cbd5e1;
+            --border-input-focus-light: #0ea5e9;
+            --shadow-input-focus-light: rgba(14, 165, 233, 0.25);
+            --bg-button-primary-light: #0ea5e9;
+            --text-button-primary-light: white;
+            --bg-button-primary-hover-light: #0284c7;
+            --text-placeholder-light: #64748b;
+            --text-link-light: #0ea5e9;
+        }
+
+        html.dark {
+            --bg-body-light: #0f172a;
+            --text-primary-light: #cbd5e1;
+            --bg-sidebar-light: #020617;
+            --text-sidebar-light: #94a3b8;
+            --bg-card-light: #1e293b;
+            --text-card-light: #cbd5e1;
+            --border-card-light: #334155;
+            --bg-table-header-light: #334155;
+            --text-table-header-light: #94a3b8;
+            --border-table-header-light: #475569;
+            --text-table-row-light: #cbd5e1;
+            --border-table-row-light: #334155;
+            --bg-table-row-hover-light: #283447;
+            --bg-input-light: #0f172a;
+            --text-input-light: #cbd5e1;
+            --border-input-light: #475569;
+            --border-input-focus-light: #0ea5e9;
+            --shadow-input-focus-light: rgba(14, 165, 233, 0.25);
+            --bg-button-primary-light: #0ea5e9;
+            --text-button-primary-light: #0f172a;
+            --bg-button-primary-hover-light: #0284c7;
+            --text-placeholder-light: #64748b;
+            --text-link-light: #38bdf8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body-light); 
+            color: var(--text-primary-light);      
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .sidebar {
+            background-color: var(--bg-sidebar-light); 
+            color: var(--text-sidebar-light);      
+            width: 260px;
+            transition: width 0.3s ease, background-color 0.3s, color 0.3s;
+            box-shadow: 2px 0 6px rgba(0,0,0,0.1);
+            height: 100vh; 
+            position: fixed; 
+            top: 0;
+            left: 0;
+            z-index: 50; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        .sidebar.collapsed { width: 70px; }
+        .sidebar-item { padding: 14px 18px; cursor: pointer; display: flex; align-items: center; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 6px; margin: 4px 0; }
+        .dark .sidebar-item:hover { background-color: #1e293b; color: #f8fafc; }
+        html:not(.dark) .sidebar-item:hover { background-color: #334155; color: #ffffff; }
+        .dark .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; } 
+        html:not(.dark) .sidebar-item.active { background-color: #0ea5e9; color: #ffffff; }
+        .sidebar-item i { margin-right: 12px; min-width: 24px; text-align: center; font-size: 1.1em; }
+        .sidebar.collapsed .sidebar-item span, .sidebar.collapsed #sidebar-title span { display: none; }
+        .sidebar.collapsed .sidebar-item i { margin-right: 0; }
+        .sidebar-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; margin-bottom:10px; }
+        .dark .sidebar-header { border-bottom-color: #1e293b; }
+        #sidebar-title span { font-size: 1.4em; font-weight: 600; color: #f8fafc; } 
+        .dark #sidebar-title span { color: #e2e8f0; }
+
+
+        .content {
+            background-color: var(--bg-body-light); 
+            flex-grow: 1;
+            padding: 25px;
+            transition: margin-left 0.3s ease, background-color 0.3s;
+            margin-left: 260px; 
+        }
+        .content.collapsed { margin-left: 70px; }
+        
+        .card {
+            background-color: var(--bg-card-light); 
+            color: var(--text-card-light);      
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.07); 
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+            border: 1px solid var(--border-card-light); 
+        }
+        
+        .table-header th { 
+            background-color: var(--bg-table-header-light); 
+            color: var(--text-table-header-light);      
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.8rem; 
+            padding-top: 12px; padding-bottom: 12px; 
+            border-bottom: 2px solid var(--border-table-header-light); 
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        .table-row td { 
+            color: var(--text-table-row-light);      
+            border-color: var(--border-table-row-light); 
+            padding: 10px 16px; 
+            transition: color 0.3s, border-color 0.3s, background-color 0.3s;
+        }
+        .table-row:hover td {
+            background-color: var(--bg-table-row-hover-light); 
+        }
+
+        .input-field, .select-field { 
+            background-color: var(--bg-input-light); 
+            color: var(--text-input-light); 
+            border: 1px solid var(--border-input-light); 
+            border-radius: 6px;
+            padding: 10px;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s; 
+        }
+        .input-field:focus, .select-field:focus { 
+            border-color: var(--border-input-focus-light); 
+            box-shadow: 0 0 0 0.2rem var(--shadow-input-focus-light);
+            outline: none;
+        }
+        .form-checkbox { border-color: var(--border-input-light); }
+        .dark .form-checkbox { background-color: var(--bg-input-light); }
+        .form-checkbox:checked { background-color: var(--border-input-focus-light); border-color: var(--border-input-focus-light); }
+        
+        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-weight: 500; text-transform: capitalize; display: inline-flex; align-items: center; gap: 8px; border: none; }
+        .btn-primary { background-color: var(--bg-button-primary-light); color: var(--text-button-primary-light); } 
+        .btn-primary:hover { background-color: var(--bg-button-primary-hover-light); } 
+        
+        html:not(.dark) .btn-secondary { background-color: #7f8c8d; color: white; } 
+        html:not(.dark) .btn-secondary:hover { background-color: #6c7a7b; }
+        .dark .btn-secondary { background-color: #475569; color: #e2e8f0; } 
+        .dark .btn-secondary:hover { background-color: #334155; }
+
+        .btn-danger { background-color: #ef4444; color: white; } 
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-success { background-color: #22c55e; color: white; } 
+        .btn-success:hover { background-color: #16a34a; }
+        .btn-warning { background-color: #f59e0b; color: white; } 
+        .btn-warning:hover { background-color: #d97706; }
+        
+        .modal-content { background-color: var(--bg-card-light); color: var(--text-card-light); margin: 7% auto; padding: 30px; border: 1px solid var(--border-card-light); width: 90%; max-width: 700px; border-radius: 8px; position: relative; animation: slideIn 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+        .close-button { color: #64748b; position: absolute; right: 15px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+        .dark .close-button { color: #9ca3af; }
+        .close-button:hover, .close-button:focus { color: #1e293b; text-decoration: none; }
+        .dark .close-button:hover, .dark .close-button:focus { color: #e2e8f0; }
+        
+        #recentActivityList li { border-bottom-color: var(--border-table-row-light); }
+        #recentActivityList .text-placeholder { color: var(--text-placeholder-light); } 
+        #paginationControls span { color: var(--text-primary-light); }
+        #google-login-container { margin-top: auto; padding: 15px; border-top: 1px solid #334155;}
+        .dark #google-login-container { border-top-color: #4b5563; }
+        #user-info { display: flex; align-items: center; gap: 10px; }
+        #user-info img { border-radius: 50%; width: 32px; height: 32px; border: 2px solid var(--border-card-light);}
+        #user-info span { font-size: 0.9em; font-weight: 500; }
+        .checkbox-cell { width: 1%; white-space: nowrap; }
+        
+        .priority-Alta { background-color: #fee2e2; color: #b91c1c; }
+        .priority-Urgente { background-color: #ffedd5; color: #c2410c; animation: pulse 1.5s infinite; }
+        .priority-Média { background-color: #fef3c7; color: #a16207; }
+        .priority-Baixa { background-color: #dcfce7; color: #15803d; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+        @keyframes slideIn { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px;}
+        html:not(.dark) ::-webkit-scrollbar-track { background: #e2e8f0; }
+        html:not(.dark) ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-track { background: #1e293b; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .dark .g_id_signin div[role="button"] { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #475569 !important;} 
+        .dark .g_id_signin svg { fill: #e2e8f0 !important; }
+        .dashboard-card-link { cursor: pointer; transition: transform 0.2s ease-in-out; }
+        .dashboard-card-link:hover { transform: translateY(-3px); }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="flex"> 
+    <aside id="sidebar" class="sidebar p-3"> 
+        <div> 
+            <div class="sidebar-header">
+                <div id="sidebar-title" class="flex items-center">
+                     <i class="fas fa-tasks text-2xl text-sky-500"></i> 
+                     <span class="text-xl font-semibold">Gestão OS</span>
+                </div>
+                <button id="toggleSidebar" class="text-slate-400 hover:text-white focus:outline-none p-1 rounded-md">
+                    <i class="fas fa-bars text-lg"></i> 
+                </button>
+            </div>
+            <nav class="flex-grow mt-2"> 
+                <ul>
+                    <li class="sidebar-item active" onclick="showView('dashboardView', this)">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </li>
+                    <li class="sidebar-item" onclick="showView('osListView', this)">
+                        <i class="fas fa-list-alt"></i>
+                        <span>Ordens de Serviço</span>
+                    </li>
+                    <li class="sidebar-item" onclick="showView('weeklyAnalysisView', this)">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Análise Mensal</span> 
+                    </li>
+                    <li class="sidebar-item" onclick="showView('reportsView', this)">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Relatórios</span>
+                    </li>
+                     <li class="sidebar-item mt-4" onclick="openAddOSModal()"> 
+                        <i class="fas fa-plus-circle text-green-500"></i>
+                        <span class="text-green-500">Nova OS</span>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div id="google-login-container" class="px-2">
+            <div id="g_id_onload"
+                 data-client_id="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com" 
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false"> 
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline" 
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
+            <div id="user-info" class="mt-2 hidden">
+                <img id="user-pic" src="" alt="User Pic" class="w-8 h-8 rounded-full mr-2">
+                <span id="user-name" class="text-sm font-medium"></span>
+                <button onclick="handleSignOut()" class="btn btn-xs btn-danger !p-1.5 !text-xs ml-auto"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </div>
+        <div class="mt-auto pb-2"> 
+            <div class="sidebar-item" onclick="toggleDarkMode()">
+                <i id="darkModeIcon" class="fas fa-moon"></i> 
+                <span>Modo Escuro</span>
+            </div>
+            <div class="sidebar-item" onclick="showView('settingsView', this)"> 
+                <i class="fas fa-cog"></i>
+                <span>Configurações</span>
+            </div>
+             <div class="sidebar-item text-sm text-slate-500 dark:text-slate-400">
+                <i class="fas fa-info-circle"></i>
+                <span>Versão 1.5.2</span> 
+            </div>
+        </div>
+    </aside>
+
+    <main id="mainContent" class="content"> 
+        <div id="dashboardView" class="view-section card"> 
+            <h2 class="text-3xl font-bold mb-6">Dashboard Analítico</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white dashboard-card-link" onclick="navigateToOsListWithFilter('Aberta')">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-medium">OS Abertas</h3>
+                        <i class="fas fa-folder-open text-3xl opacity-70"></i>
+                    </div>
+                    <p id="osAbertasCount" class="text-4xl font-bold mt-2">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-xl shadow-lg text-white dashboard-card-link" onclick="navigateToOsListWithFilter('Completa', true)"> <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-medium">OS Completas (Mês)</h3>
+                        <i class="fas fa-check-circle text-3xl opacity-70"></i>
+                    </div>
+                    <p id="osCompletasMesCount" class="text-4xl font-bold mt-2">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-xl shadow-lg text-white dashboard-card-link" onclick="navigateToOsListWithFilter(['Pendente Informação', 'Aguardando Aprovação'])">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-medium">OS Pendentes</h3>
+                        <i class="fas fa-exclamation-triangle text-3xl opacity-70"></i>
+                    </div>
+                    <p id="osPendentesCount" class="text-4xl font-bold mt-2">0</p>
+                </div>
+                 <div class="bg-gradient-to-br from-rose-500 to-rose-600 p-6 rounded-xl shadow-lg text-white dashboard-card-link" onclick="navigateToOsListWithFilter('Cancelada')">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-medium">OS Canceladas</h3>
+                        <i class="fas fa-times-circle text-3xl opacity-70"></i>
+                    </div>
+                    <p id="osCanceladasCount" class="text-4xl font-bold mt-2">0</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card !p-0"> 
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                        <h3 class="text-xl font-semibold">Distribuição de Status das OS</h3>
+                    </div>
+                    <div id="osStatusChartContainer" class="p-4">
+                         <canvas id="osStatusChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="text-xl font-semibold mb-3">Atividades Recentes</h3>
+                    <ul id="recentActivityList" class="space-y-3 max-h-80 overflow-y-auto">
+                        <li class="text-sm text-placeholder">Nenhuma atividade recente.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="osListView" class="view-section card hidden"> 
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-3xl font-bold">Ordens de Serviço</h2>
+                <div class="flex gap-2 flex-wrap items-center">
+                    <div id="bulkActionsContainer" class="hidden flex gap-2 items-center mr-4">
+                        <span id="selectedOsCount" class="text-sm">0 selecionadas</span>
+                        <select id="bulkActionStatus" class="select-field p-2 rounded-md text-sm">
+                            <option value="">Alterar Status para...</option>
+                            <option value="Aberta">Aberta</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Pendente Informação">Pendente Informação</option>
+                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                            <option value="Completa">Completa</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="applyBulkAction()"><i class="fas fa-check"></i> Aplicar</button>
+                        <button class="btn btn-sm btn-danger" onclick="bulkDeleteSelectedOS()"><i class="fas fa-trash"></i> Excluir Selecionadas</button>
+                    </div>
+                    <button class="btn btn-success" onclick="exportTableToCSV('osTable', 'lista_os.csv')"><i class="fas fa-file-csv"></i>Exportar CSV</button>
+                    <button class="btn btn-danger" onclick="exportTableToPDF('osTable', 'Lista de Ordens de Serviço', 'osTableBody')"><i class="fas fa-file-pdf"></i>Exportar PDF</button>
+                    <button class="btn btn-primary" onclick="openAddOSModal()">
+                        <i class="fas fa-plus"></i> Adicionar OS
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <input type="text" id="filterOsNumber" placeholder="Nº OS" class="input-field p-2 rounded-md">
+                    <input type="text" id="filterClient" placeholder="Cliente" class="input-field p-2 rounded-md">
+                    <input type="text" id="filterDescription" placeholder="Buscar na Descrição..." class="input-field p-2 rounded-md md:col-span-2 lg:col-span-1"> 
+                    <select id="filterProduct" class="select-field p-2 rounded-md">
+                        <option value="">Todos os Produtos</option>
+                    </select>
+                    <select id="filterStatus" class="select-field p-2 rounded-md">
+                        <option value="">Todos os Status</option>
+                        <option value="Aberta">Aberta</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Pendente Informação">Pendente Informação</option>
+                        <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                        <option value="Completa">Completa</option>
+                        <option value="Cancelada">Cancelada</option>
+                    </select>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2 items-center">
+                    <label for="savedFilters" class="text-sm font-medium">Filtros Salvos:</label>
+                    <select id="savedFilters" class="select-field p-2 rounded-md text-sm">
+                        <option value="">Carregar filtro...</option>
+                        </select>
+                    <button class="btn btn-sm btn-secondary" onclick="loadSelectedFilter()"><i class="fas fa-download"></i> Carregar</button>
+                    <input type="text" id="newFilterName" placeholder="Nome do novo filtro" class="input-field p-2 rounded-md text-sm">
+                    <button class="btn btn-sm btn-primary" onclick="saveCurrentFilters()"><i class="fas fa-save"></i> Salvar Filtro Atual</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSavedFilter()" title="Excluir filtro selecionado"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto shadow-md rounded-lg">
+                <table id="osTable" class="min-w-full">
+                    <thead class="table-header">
+                        <tr>
+                            <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4 text-sky-500 border-slate-300 rounded focus:ring-sky-500 dark:focus:ring-sky-600 dark:ring-offset-slate-800 dark:bg-slate-700 dark:border-slate-600"></th>
+                            <th class="py-3 px-4 text-left">Nº OS</th>
+                            <th class="py-3 px-4 text-left">Cliente</th>
+                            <th class="py-3 px-4 text-left">Produto</th>
+                            <th class="py-3 px-4 text-left">Descrição</th>
+                            <th class="py-3 px-4 text-left">Data Abertura</th>
+                            <th class="py-3 px-4 text-left">Prazo Final</th>
+                            <th class="py-3 px-4 text-left">Responsável</th>
+                            <th class="py-3 px-4 text-left">Solicitante</th>
+                            <th class="py-3 px-4 text-left">Status</th>
+                            <th class="py-3 px-4 text-left">Prioridade</th>
+                            <th class="py-3 px-4 text-left">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="osTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                        </tbody>
+                </table>
+            </div>
+             <div id="paginationControls" class="mt-6 flex justify-end items-center gap-2">
+                </div>
+        </div>
+
+        <div id="weeklyAnalysisView" class="view-section card hidden"> 
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-3xl font-bold">Análise Mensal de Pendências (por Semana)</h2>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div>
+                        <label for="analysisMonthYearInput" class="text-sm font-medium mr-2">Selecionar Mês/Ano:</label>
+                        <input type="month" id="analysisMonthYearInput" name="analysisMonthYearInput" class="input-field p-2 rounded-md">
+                    </div>
+                    <button class="btn btn-warning" onclick="sendWeeklyReportAndGeneratePDF()"><i class="fas fa-paper-plane"></i> Gerar Relatório PDF de Pendências</button>
+                </div>
+            </div>
+            <p class="text-base mb-2">OSs com prazo final no mês selecionado que não foram marcadas como "Completa" até o final da Quarta-Feira da respectiva semana do prazo.</p>
+            <p id="selectedMonthInfo" class="text-sm text-sky-600 dark:text-sky-400 font-semibold mb-4"></p>
+
+            <div class="overflow-x-auto shadow-md rounded-lg">
+                <table id="weeklyAnalysisTable" class="min-w-full">
+                     <thead class="table-header">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Semana do Prazo</th>
+                            <th class="py-3 px-4 text-left">Nº OS</th>
+                            <th class="py-3 px-4 text-left">Cliente</th>
+                            <th class="py-3 px-4 text-left">Produto</th>
+                            <th class="py-3 px-4 text-left">Prazo Final</th>
+                            <th class="py-3 px-4 text-left">Status Atual</th>
+                            <th class="py-3 px-4 text-left">Responsável</th>
+                            <th class="py-3 px-4 text-left">Pendência</th>
+                            <th class="py-3 px-4 text-left">Ação Sugerida</th>
+                        </tr>
+                    </thead>
+                    <tbody id="weeklyAnalysisTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+
+        <div id="reportsView" class="view-section card hidden"> 
+             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-3xl font-bold">Relatórios Personalizados</h2>
+                 <div class="flex gap-2 flex-wrap">
+                    <button class="btn btn-success" onclick="exportTableToCSV('reportsTable', 'relatorio_os.csv')"><i class="fas fa-file-csv"></i>Exportar CSV</button>
+                    <button class="btn btn-danger" onclick="exportTableToPDF('reportsTable', 'Relatório de Ordens de Serviço', 'reportsTableBody')"><i class="fas fa-file-pdf"></i>Exportar PDF</button>
+                </div>
+            </div>
+            <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="reportMonthYear" class="block text-sm font-medium mb-1">Mês/Ano do Prazo Final:</label>
+                        <input type="month" id="reportMonthYear" name="reportMonthYear" class="input-field w-full p-2 rounded-md">
+                    </div>
+                    <div>
+                        <label for="reportStatus" class="block text-sm font-medium mb-1">Status:</label>
+                        <select id="reportStatus" class="select-field w-full p-2 rounded-md">
+                            <option value="">Todos</option>
+                            <option value="Aberta">Aberta</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Pendente Informação">Pendente Informação</option>
+                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                            <option value="Completa">Completa</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="reportProduct" class="block text-sm font-medium mb-1">Produto:</label>
+                        <select id="reportProduct" class="select-field w-full p-2 rounded-md">
+                             <option value="">Todos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-primary" onclick="generateCustomReport()"><i class="fas fa-filter"></i> Gerar Relatório</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto shadow-md rounded-lg">
+                <table id="reportsTable" class="min-w-full">
+                     <thead class="table-header">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Nº OS</th>
+                            <th class="py-3 px-4 text-left">Cliente</th>
+                            <th class="py-3 px-4 text-left">Produto</th>
+                            <th class="py-3 px-4 text-left">Prazo Final</th>
+                            <th class="py-3 px-4 text-left">Status</th>
+                            <th class="py-3 px-4 text-left">Responsável</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                       <tr class="table-row"><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Selecione os filtros e clique em "Gerar Relatório".</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="settingsView" class="view-section card hidden">
+            <h2 class="text-3xl font-bold mb-6">Configurações</h2>
+            <div class="space-y-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-200 dark:border-slate-700">Gestão da Página</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <button class="btn btn-danger" onclick="confirmClearAllData()">
+                                <i class="fas fa-trash-alt"></i> Limpar Todos os Dados das OS (LocalStorage)
+                            </button>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Atenção: Esta ação é irreversível e apagará todas as Ordens de Serviço salvas localmente.</p>
+                        </div>
+                        <div>
+                            <label for="defaultExportFormat" class="block text-sm font-medium mb-1">Formato de Exportação Padrão (Exemplo):</label>
+                            <select id="defaultExportFormat" class="select-field p-2 rounded-md w-full md:w-1/3">
+                                <option value="csv">CSV</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Funcionalidade de exemplo, não implementada.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-200 dark:border-slate-700">Visualização</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="itemsPerPageSetting" class="block text-sm font-medium mb-1">Itens por Página na Tabela de OS:</label>
+                            <input type="number" id="itemsPerPageSetting" value="10" min="5" max="50" step="5" class="input-field p-2 rounded-md w-full md:w-1/4">
+                            <button class="btn btn-sm btn-primary ml-2" onclick="applyItemsPerPageSetting()">Aplicar</button>
+                        </div>
+                        <div>
+                            <label for="dateFormatSetting" class="block text-sm font-medium mb-1">Formato de Data Preferido (Exemplo):</label>
+                            <select id="dateFormatSetting" class="select-field p-2 rounded-md w-full md:w-1/3">
+                                <option value="dd/mm/yyyy">DD/MM/YYYY</option>
+                                <option value="mm/dd/yyyy">MM/DD/YYYY</option>
+                                <option value="yyyy-mm-dd">YYYY-MM-DD</option>
+                            </select>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Funcionalidade de exemplo, não implementada.</p>
+                        </div>
+                    </div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-200 dark:border-slate-700">Notificações (Placeholder)</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox mr-2">
+                            <span>Receber notificações de novas OS atribuídas</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox mr-2">
+                            <span>Alertar sobre OS próximas do prazo</span>
+                        </label>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Funcionalidade de notificações em tempo real requer backend.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </main> 
+    <div id="osModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeOSModal()">&times;</span>
+            <h3 id="modalTitle" class="text-2xl font-semibold mb-6">Adicionar Nova Ordem de Serviço</h3>
+            <form id="osForm">
+                <input type="hidden" id="osId"> 
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
+                    <div>
+                        <label for="osNumeroModal" class="block text-sm font-medium mb-1">Nº OS <span class="text-red-500">*</span></label>
+                        <input type="text" id="osNumeroModal" name="osNumeroModal" class="input-field w-full p-2 rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="osClienteModal" class="block text-sm font-medium mb-1">Cliente <span class="text-red-500">*</span></label>
+                        <input type="text" id="osClienteModal" name="osClienteModal" class="input-field w-full p-2 rounded-md" required>
+                    </div>
+                     <div>
+                        <label for="osProdutoModal" class="block text-sm font-medium mb-1">Produto/Serviço <span class="text-red-500">*</span></label>
+                        <input type="text" id="osProdutoModal" name="osProdutoModal" list="productList" class="input-field w-full p-2 rounded-md" required>
+                        <datalist id="productList">
+                        </datalist>
+                    </div>
+                    <div>
+                        <label for="osSolicitanteModal" class="block text-sm font-medium mb-1">Solicitante</label>
+                        <input type="text" id="osSolicitanteModal" name="osSolicitanteModal" class="input-field w-full p-2 rounded-md">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="osDescricaoModal" class="block text-sm font-medium mb-1">Descrição Detalhada <span class="text-red-500">*</span></label>
+                    <textarea id="osDescricaoModal" name="osDescricaoModal" rows="3" class="input-field w-full p-2 rounded-md" required></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
+                    <div>
+                        <label for="osDataAberturaModal" class="block text-sm font-medium mb-1">Data de Abertura <span class="text-red-500">*</span></label>
+                        <input type="date" id="osDataAberturaModal" name="osDataAberturaModal" class="input-field w-full p-2 rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="osPrazoFinalModal" class="block text-sm font-medium mb-1">Prazo Final <span class="text-red-500">*</span></label>
+                        <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="input-field w-full p-2 rounded-md" required>
+                    </div>
+                     <div>
+                        <label for="osResponsavelModal" class="block text-sm font-medium mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label>
+                        <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="input-field w-full p-2 rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="osStatusModal" class="block text-sm font-medium mb-1">Status <span class="text-red-500">*</span></label>
+                        <select id="osStatusModal" name="osStatusModal" class="select-field w-full p-2 rounded-md" required>
+                            <option value="Aberta">Aberta</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Pendente Informação">Pendente Informação</option>
+                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                            <option value="Completa">Completa</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-6"> 
+                     <label for="osPrioridadeModal" class="block text-sm font-medium mb-1">Prioridade <span class="text-red-500">*</span></label>
+                     <select id="osPrioridadeModal" name="osPrioridadeModal" class="select-field w-full p-2 rounded-md" required>
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média">Média</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Urgente">Urgente</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="btn btn-secondary" onclick="closeOSModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar OS</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        // Configuração Global
+        const ITEMS_PER_PAGE_DEFAULT = 10; 
+        let ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
+        let currentPage = 1;
+        let ordensServico = []; 
+        const defaultProducts = [ 
+            "WORKNC", "EDGECAM", "ESPRIT", "ALPHACAM", "LANTEK",
+            "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner",
+            "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"
+        ];
+        let googleUser = null; 
+        let savedFilters = {}; 
+
+        // Elementos da DOM 
+        const osTableBody = document.getElementById('osTableBody');
+        const weeklyAnalysisTableBody = document.getElementById('weeklyAnalysisTableBody');
+        const reportsTableBody = document.getElementById('reportsTableBody');
+        const osModal = document.getElementById('osModal');
+        const osForm = document.getElementById('osForm');
+        const modalTitle = document.getElementById('modalTitle');
+        const recentActivityList = document.getElementById('recentActivityList');
+        const paginationControls = document.getElementById('paginationControls');
+        const productDatalist = document.getElementById('productList');
+        const filterProductSelect = document.getElementById('filterProduct');
+        const reportProductSelect = document.getElementById('reportProduct');
+        const selectedMonthInfo = document.getElementById('selectedMonthInfo'); 
+        const analysisMonthYearInput = document.getElementById('analysisMonthYearInput'); 
+        const googleLoginContainer = document.getElementById('google-login-container');
+        const userInfoDiv = document.getElementById('user-info');
+        const userPic = document.getElementById('user-pic');
+        const userName = document.getElementById('user-name');
+        const googleSignInButton = document.querySelector('.g_id_signin');
+        const darkModeIcon = document.getElementById('darkModeIcon');
+        const savedFiltersSelect = document.getElementById('savedFilters');
+        const newFilterNameInput = document.getElementById('newFilterName');
+        const filterDescriptionInput = document.getElementById('filterDescription');
+        const selectAllOsCheckbox = document.getElementById('selectAllOsCheckbox');
+        const bulkActionsContainer = document.getElementById('bulkActionsContainer');
+        const selectedOsCountSpan = document.getElementById('selectedOsCount');
+        const bulkActionStatusSelect = document.getElementById('bulkActionStatus');
+        const itemsPerPageSettingInput = document.getElementById('itemsPerPageSetting');
+
+
+        // Funções Auxiliares de Data
+        function formatDateToBR(dateString) {
+            if (!dateString) return 'N/A';
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+                return dateString;
+            }
+            const datePart = dateString.toString().split('T')[0];
+            const partsYMD = datePart.split('-');
+            if (partsYMD.length === 3 && partsYMD[0].length === 4) { 
+                return `${partsYMD[2]}/${partsYMD[1]}/${partsYMD[0]}`;
+            }
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'Data Inválida'; 
+            return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }); 
+        }
+        
+        function getWeeksInMonth(year, month) {
+            const weeks = [];
+            const firstDayOfMonth = new Date(year, month - 1, 1);
+            const lastDayOfMonth = new Date(year, month, 0); 
+
+            let currentMonday = new Date(firstDayOfMonth);
+            currentMonday.setDate(firstDayOfMonth.getDate() - (firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1)); 
+
+            while (currentMonday <= lastDayOfMonth) {
+                const weekStart = new Date(currentMonday);
+                weekStart.setHours(0, 0, 0, 0);
+
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+                weekEnd.setHours(23, 59, 59, 999);
+
+                const weekWednesday = new Date(weekStart);
+                weekWednesday.setDate(weekStart.getDate() + 2); 
+                weekWednesday.setHours(23, 59, 59, 999); 
+
+                const target = new Date(weekStart.valueOf());
+                target.setDate(target.getDate() - ((weekStart.getDay() + 6) % 7) + 3);
+                const firstThursday = target.valueOf();
+                target.setMonth(0, 1);
+                if (target.getDay() !== 4) {
+                    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+                }
+                const weekNumber = 1 + Math.ceil((firstThursday - target) / 604800000);
+
+                weeks.push({ start: weekStart, end: weekEnd, wednesday: weekWednesday, weekNumber: weekNumber });
+                currentMonday.setDate(currentMonday.getDate() + 7); 
+            }
+            return weeks;
+        }
+
+        function getPriorityClass(priority) {
+            switch (priority) {
+                case 'Alta': return 'priority-Alta';
+                case 'Urgente': return 'priority-Urgente';
+                case 'Média': return 'priority-Média';
+                case 'Baixa': return 'priority-Baixa';
+                default: return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'; 
+            }
+        }
+
+        function generateId() {
+            return 'OS' + String(Date.now()).slice(-6) + Math.random().toString(36).substr(2, 3).toUpperCase();
+        }
+
+        // Funções de LocalStorage 
+        function saveDataToLocalStorage() {
+            localStorage.setItem('ordensServicoData_v5_2', JSON.stringify(ordensServico)); 
+            localStorage.setItem('googleUser_v5_2', JSON.stringify(googleUser));
+            localStorage.setItem('darkMode_v5_2', document.documentElement.classList.contains('dark'));
+            localStorage.setItem('savedFilters_v5_2', JSON.stringify(savedFilters));
+            localStorage.setItem('itemsPerPage_v5_2', ITEMS_PER_PAGE);
+        }
+
+        function loadDataFromLocalStorage() {
+            const data = localStorage.getItem('ordensServicoData_v5_2'); 
+            if (data) {
+                ordensServico = JSON.parse(data);
+            } else {
+                ordensServico = [
+                    { id: generateId(), numero: 'OS2505W3-1', cliente: 'Cliente Teste A', produto: 'SOLIDWORKS CAD', descricao: 'Resolver problema de instalação e configuração do SOLIDWORKS Premium na máquina do cliente.', dataAbertura: '2025-05-01', prazoFinal: '2025-05-15', responsavel: 'Carlos Z.', solicitante: 'Ana P.', status: 'Em Andamento', prioridade: 'Alta' }, 
+                    { id: generateId(), numero: 'OS2505W3-2', cliente: 'Cliente Teste B', produto: 'EDGECAM', descricao: 'Treinamento de Fresamento 3 Eixos e otimização de percursos para novas peças.', dataAbertura: '2025-05-02', prazoFinal: '2025-05-16', responsavel: 'Beatriz L.', solicitante: 'Mario S.', status: 'Completa', prioridade: 'Média' }, 
+                    { id: generateId(), numero: 'OS2505W4-1', cliente: 'Cliente Teste C', produto: 'WORKNC', descricao: 'Verificar licença do WORKNC e auxiliar na criação de um novo projeto complexo.', dataAbertura: '2025-05-10', prazoFinal: '2025-05-22', responsavel: 'Daniel F.', solicitante: 'Julia M.', status: 'Aberta', prioridade: 'Urgente'}, 
+                    { id: generateId(), numero: 'OS2504W5-1', cliente: 'Cliente Teste D', produto: 'LANTEK', descricao: 'Suporte para configuração de nesting e importação de arquivos DXF no Lantek Expert.', dataAbertura: '2025-04-20', prazoFinal: '2025-04-30', responsavel: 'Eduardo G.', solicitante: 'Laura C.', status: 'Pendente Informação', prioridade: 'Média'}, 
+                ];
+            }
+            const storedUser = localStorage.getItem('googleUser_v5_2');
+            if (storedUser) {
+                googleUser = JSON.parse(storedUser);
+            }
+            const storedDarkMode = localStorage.getItem('darkMode_v5_2');
+            if (storedDarkMode === 'true') {
+                document.documentElement.classList.add('dark');
+                if(darkModeIcon) darkModeIcon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                 document.documentElement.classList.remove('dark');
+                 if(darkModeIcon) darkModeIcon.classList.replace('fa-sun', 'fa-moon');
+            }
+            const storedFilters = localStorage.getItem('savedFilters_v5_2');
+            if (storedFilters) {
+                savedFilters = JSON.parse(storedFilters);
+                populateSavedFiltersSelect();
+            }
+            const storedItemsPerPage = localStorage.getItem('itemsPerPage_v5_2');
+            if (storedItemsPerPage) {
+                ITEMS_PER_PAGE = parseInt(storedItemsPerPage, 10) || ITEMS_PER_PAGE_DEFAULT;
+                if(itemsPerPageSettingInput) itemsPerPageSettingInput.value = ITEMS_PER_PAGE;
+            } else {
+                 if(itemsPerPageSettingInput) itemsPerPageSettingInput.value = ITEMS_PER_PAGE_DEFAULT;
+            }
+
+            populateProductFilters(); 
+        }
+
+        function populateProductFilters() {
+            if(!productDatalist || !filterProductSelect || !reportProductSelect) return;
+            const products = [...new Set(ordensServico.map(os => os.produto).concat(defaultProducts)
+                                            .filter(p => p && p.trim() !== ""))]
+                                            .sort();
+            
+            productDatalist.innerHTML = '';
+            filterProductSelect.innerHTML = '<option value="">Todos os Produtos</option>'; 
+            reportProductSelect.innerHTML = '<option value="">Todos os Produtos</option>'; 
+
+            products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product;
+                option.textContent = product;
+                productDatalist.appendChild(option.cloneNode(true)); 
+                filterProductSelect.appendChild(option.cloneNode(true)); 
+                reportProductSelect.appendChild(option.cloneNode(true)); 
+            });
+        }
+
+        function addRecentActivity(action) {
+            if (!recentActivityList) return;
+            const listItem = document.createElement('li');
+            const now = new Date();
+            listItem.className = 'flex justify-between items-center text-sm pb-2 border-b border-slate-200 dark:border-slate-700'; 
+            listItem.innerHTML = `
+                <span>${action}</span>
+                <span class="text-slate-400 dark:text-slate-500 text-xs">${now.toLocaleTimeString('pt-BR')}</span>
+            `;
+            const firstChild = recentActivityList.firstChild;
+            if (firstChild && firstChild.nodeType === Node.ELEMENT_NODE && firstChild.textContent.trim() === 'Nenhuma atividade recente.') {
+                 recentActivityList.innerHTML = '';
+            }
+
+            recentActivityList.insertBefore(listItem, recentActivityList.firstChild); 
+            if (recentActivityList.children.length > 7) { 
+                recentActivityList.removeChild(recentActivityList.lastChild);
+            }
+        }
+
+        // Funções de Login com Google
+        function parseJwt (token) {
+            try {
+                return JSON.parse(atob(token.split('.')[1]));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function handleCredentialResponse(response) {
+            const responsePayload = parseJwt(response.credential);
+            googleUser = {
+                id: responsePayload.sub,
+                name: responsePayload.name,
+                given_name: responsePayload.given_name,
+                picture: responsePayload.picture,
+                email: responsePayload.email
+            };
+            saveDataToLocalStorage();
+            updateLoginUI();
+            addRecentActivity(`Usuário ${googleUser.name} logado.`);
+        }
+
+        function handleSignOut() {
+            googleUser = null;
+            saveDataToLocalStorage(); 
+            updateLoginUI();
+            addRecentActivity("Usuário deslogado.");
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                google.accounts.id.disableAutoSelect();
+            }
+        }
+
+        function updateLoginUI() {
+            if (!userInfoDiv || !googleSignInButton || !userName || !userPic) return;
+            if (googleUser) {
+                userName.textContent = googleUser.given_name || googleUser.name;
+                userPic.src = googleUser.picture;
+                userInfoDiv.classList.remove('hidden');
+                googleSignInButton.classList.add('hidden');
+            } else {
+                userInfoDiv.classList.add('hidden');
+                googleSignInButton.classList.remove('hidden');
+                userName.textContent = '';
+                userPic.src = '';
+            }
+        }
+
+        // Modo Escuro
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            if (darkModeIcon) {
+                if (document.documentElement.classList.contains('dark')) {
+                    darkModeIcon.classList.replace('fa-moon', 'fa-sun');
+                } else {
+                    darkModeIcon.classList.replace('fa-sun', 'fa-moon');
+                }
+            }
+            saveDataToLocalStorage(); 
+            renderOSStatusChart(); 
+        }
+
+        // Filtros Salvos
+        function saveCurrentFilters() {
+            if (!newFilterNameInput || !savedFiltersSelect) return;
+            const name = newFilterNameInput.value.trim();
+            if (!name) {
+                alert("Por favor, dê um nome para o filtro.");
+                return;
+            }
+            if (savedFilters[name]) {
+                if (!confirm(`Já existe um filtro com o nome "${name}". Deseja sobrescrevê-lo?`)) {
+                    return;
+                }
+            }
+            savedFilters[name] = {
+                numero: document.getElementById('filterOsNumber').value,
+                cliente: document.getElementById('filterClient').value,
+                descricao: filterDescriptionInput ? filterDescriptionInput.value : "",
+                produto: filterProductSelect.value,
+                status: document.getElementById('filterStatus').value
+            };
+            newFilterNameInput.value = '';
+            populateSavedFiltersSelect();
+            saveDataToLocalStorage();
+            addRecentActivity(`Filtro "${name}" salvo.`);
+        }
+
+        function populateSavedFiltersSelect() {
+            if (!savedFiltersSelect) return;
+            const currentSelection = savedFiltersSelect.value; // Salva a seleção atual se houver
+            savedFiltersSelect.innerHTML = '<option value="">Carregar filtro...</option>';
+            for (const name in savedFilters) {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                savedFiltersSelect.appendChild(option);
+            }
+            if (currentSelection && savedFilters[currentSelection]) { // Restaura a seleção se ainda existir
+                savedFiltersSelect.value = currentSelection;
+            }
+        }
+
+        function loadSelectedFilter() {
+            if (!savedFiltersSelect) return;
+            const name = savedFiltersSelect.value;
+            if (name && savedFilters[name]) {
+                document.getElementById('filterOsNumber').value = savedFilters[name].numero;
+                document.getElementById('filterClient').value = savedFilters[name].cliente;
+                if(filterDescriptionInput) filterDescriptionInput.value = savedFilters[name].descricao || "";
+                filterProductSelect.value = savedFilters[name].produto;
+                document.getElementById('filterStatus').value = savedFilters[name].status;
+                applyFiltersAndRender();
+                addRecentActivity(`Filtro "${name}" carregado.`);
+            } else if (name) {
+                alert("Filtro selecionado não encontrado.");
+            }
+        }
+
+        function deleteSavedFilter() {
+            if (!savedFiltersSelect) return;
+            const name = savedFiltersSelect.value;
+            if (name && savedFilters[name]) {
+                if (confirm(`Tem certeza que deseja excluir o filtro salvo "${name}"?`)) {
+                    delete savedFilters[name];
+                    populateSavedFiltersSelect();
+                    saveDataToLocalStorage();
+                    addRecentActivity(`Filtro "${name}" excluído.`);
+                }
+            } else if (name) { 
+                alert("Nenhum filtro salvo selecionado para excluir ou filtro inválido.");
+            } else { 
+                 alert("Por favor, selecione um filtro salvo para excluir.");
+            }
+        }
+
+        // Ações em Massa
+        function updateSelectedCount() {
+            if(!selectedOsCountSpan || !bulkActionsContainer || !osTableBody) return;
+            const selectedCheckboxes = Array.from(osTableBody.querySelectorAll('input[type="checkbox"][data-id]:checked'));
+            selectedOsCountSpan.textContent = `${selectedCheckboxes.length} selecionadas`;
+            if (selectedCheckboxes.length > 0) {
+                bulkActionsContainer.classList.remove('hidden');
+            } else {
+                bulkActionsContainer.classList.add('hidden');
+                if(selectAllOsCheckbox) selectAllOsCheckbox.checked = false;
+            }
+        }
+
+        function toggleSelectAllOS(masterCheckbox) {
+            if(!osTableBody) return;
+            const checkboxes = osTableBody.querySelectorAll('input[type="checkbox"][data-id]'); 
+            checkboxes.forEach(checkbox => checkbox.checked = masterCheckbox.checked);
+            updateSelectedCount();
+        }
+
+        function applyBulkAction() {
+            if(!bulkActionStatusSelect || !osTableBody) return;
+            const newStatus = bulkActionStatusSelect.value;
+            if (!newStatus) {
+                alert("Por favor, selecione um status para aplicar.");
+                return;
+            }
+            const selectedCheckboxes = Array.from(osTableBody.querySelectorAll('input[type="checkbox"][data-id]:checked'));
+            if (selectedCheckboxes.length === 0) {
+                alert("Nenhuma OS selecionada.");
+                return;
+            }
+
+            selectedCheckboxes.forEach(checkbox => {
+                const osId = checkbox.dataset.id;
+                const osIndex = ordensServico.findIndex(os => os.id === osId);
+                if (osIndex !== -1) {
+                    ordensServico[osIndex].status = newStatus;
+                }
+            });
+            addRecentActivity(`${selectedCheckboxes.length} OSs tiveram status alterado para ${newStatus}.`);
+            saveDataToLocalStorage();
+            refreshAllViews();
+            if(selectAllOsCheckbox) selectAllOsCheckbox.checked = false; 
+            updateSelectedCount(); 
+        }
+
+        function bulkDeleteSelectedOS() {
+            if(!osTableBody) return;
+            const selectedCheckboxes = Array.from(osTableBody.querySelectorAll('input[type="checkbox"][data-id]:checked'));
+            if (selectedCheckboxes.length === 0) {
+                alert("Nenhuma OS selecionada para excluir.");
+                return;
+            }
+            if (confirm(`Tem certeza que deseja excluir ${selectedCheckboxes.length} OS(s) selecionada(s)? Esta ação não pode ser desfeita.`)) {
+                const idsToDelete = selectedCheckboxes.map(cb => cb.dataset.id);
+                ordensServico = ordensServico.filter(os => !idsToDelete.includes(os.id));
+                addRecentActivity(`${idsToDelete.length} OS(s) excluída(s) em massa.`);
+                saveDataToLocalStorage();
+                if (currentPage > 1 && paginateData(getFilteredOS(), currentPage, ITEMS_PER_PAGE).length === 0) {
+                    currentPage--;
+                }
+                refreshAllViews();
+                if(selectAllOsCheckbox) selectAllOsCheckbox.checked = false;
+                updateSelectedCount();
+            }
+        }
+
+        function renderOSTable(filteredData = getFilteredOS()) {
+            if (!osTableBody) return;
+            osTableBody.innerHTML = ''; 
+            if(selectAllOsCheckbox) selectAllOsCheckbox.checked = false; 
+            updateSelectedCount(); 
+
+            if (filteredData.length === 0) {
+                osTableBody.innerHTML = '<tr><td colspan="12" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma ordem de serviço encontrada.</td></tr>';
+                renderPagination(0, 0); 
+                return;
+            }
+
+            const paginatedData = paginateData(filteredData, currentPage, ITEMS_PER_PAGE); 
+
+            paginatedData.forEach(os => { 
+                const row = osTableBody.insertRow();
+                row.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-150'; 
+                row.innerHTML = `
+                    <td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4 text-sky-500 border-slate-300 rounded focus:ring-sky-500 dark:focus:ring-sky-600 dark:ring-offset-slate-800 dark:bg-slate-700 dark:border-slate-600"></td>
+                    <td class="py-3 px-4 text-sm font-medium">${os.numero}</td>
+                    <td class="py-3 px-4 text-sm">${os.cliente}</td>
+                    <td class="py-3 px-4 text-sm">${os.produto || 'N/A'}</td>
+                    <td class="py-3 px-4 text-sm truncate max-w-xs" title="${os.descricao}">${os.descricao}</td>
+                    <td class="py-3 px-4 text-sm whitespace-nowrap">${formatDateToBR(os.dataAbertura)}</td>
+                    <td class="py-3 px-4 text-sm whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td>
+                    <td class="py-3 px-4 text-sm">${os.responsavel}</td>
+                    <td class="py-3 px-4 text-sm">${os.solicitante || 'N/A'}</td>
+                    <td class="py-3 px-4 text-sm">
+                        <select class="select-field status-select p-1 rounded-md text-xs" data-id="${os.id}" onchange="updateStatus(this)">
+                            <option value="Aberta" ${os.status === 'Aberta' ? 'selected' : ''}>Aberta</option>
+                            <option value="Em Andamento" ${os.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
+                            <option value="Pendente Informação" ${os.status === 'Pendente Informação' ? 'selected' : ''}>Pendente Info</option>
+                            <option value="Aguardando Aprovação" ${os.status === 'Aguardando Aprovação' ? 'selected' : ''}>Aguard. Aprov.</option>
+                            <option value="Completa" ${os.status === 'Completa' ? 'selected' : ''}>Completa</option>
+                            <option value="Cancelada" ${os.status === 'Cancelada' ? 'selected' : ''}>Cancelada</option>
+                        </select>
+                    </td>
+                    <td class="py-3 px-4 text-sm">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span>
+                    </td>
+                    <td class="py-3 px-4 text-sm whitespace-nowrap">
+                        <button class="text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300 mr-2 p-1" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 mr-2 p-1" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button>
+                        <button class="text-green-600 hover:text-green-800 dark:text-emerald-400 dark:hover:text-emerald-300 p-1" title="Baixar .ics do Calendário" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button>
+                    </td>
+                `;
+            });
+            renderPagination(filteredData.length, currentPage); 
+        }
+
+        function paginateData(data, page, itemsPerPage) {
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            return data.slice(start, end);
+        }
+
+        function renderPagination(totalItems, page) {
+            if (!paginationControls) return;
+            paginationControls.innerHTML = ''; 
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+            if (totalPages <= 1) return; 
+
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i> Anterior';
+            prevButton.className = 'btn btn-sm btn-secondary disabled:opacity-50';
+            prevButton.disabled = page === 1;
+            prevButton.onclick = () => { if (page > 1) changePage(page - 1); };
+            paginationControls.appendChild(prevButton);
+
+            const pageInfo = document.createElement('span');
+            pageInfo.className = 'text-sm px-3';
+            pageInfo.textContent = `Página ${page} de ${totalPages}`;
+            paginationControls.appendChild(pageInfo);
+
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = 'Próximo <i class="fas fa-chevron-right"></i>';
+            nextButton.className = 'btn btn-sm btn-secondary disabled:opacity-50';
+            nextButton.disabled = page === totalPages;
+            nextButton.onclick = () => { if (page < totalPages) changePage(page + 1); };
+            paginationControls.appendChild(nextButton);
+        }
+
+        function changePage(newPage) {
+            currentPage = newPage;
+            renderOSTable(); 
+        }
+
+        function updateStatus(selectElement) {
+            const osId = selectElement.dataset.id; 
+            const newStatus = selectElement.value; 
+            const osIndex = ordensServico.findIndex(os => os.id === osId);
+            if (osIndex !== -1) {
+                ordensServico[osIndex].status = newStatus;
+                addRecentActivity(`Status da OS ${ordensServico[osIndex].numero} alterado para ${newStatus}.`);
+                saveDataToLocalStorage(); 
+                refreshAllViews(); 
+            }
+        }
+
+        function openAddOSModal() {
+            if (!osForm || !modalTitle || !osModal) return;
+            osForm.reset(); 
+            document.getElementById('osId').value = ''; 
+            modalTitle.textContent = 'Adicionar Nova Ordem de Serviço';
+            document.getElementById('osDataAberturaModal').value = new Date().toISOString().split('T')[0]; 
+            osModal.style.display = 'block'; 
+        }
+
+        function closeOSModal() {
+            if (!osModal) return;
+            osModal.style.display = 'none'; 
+        }
+
+        function editOS(id) {
+            if (!osModal || !modalTitle) return;
+            const os = ordensServico.find(o => o.id === id); 
+            if (os) {
+                modalTitle.textContent = `Editar Ordem de Serviço - ${os.numero}`;
+                document.getElementById('osId').value = os.id;
+                document.getElementById('osNumeroModal').value = os.numero;
+                document.getElementById('osClienteModal').value = os.cliente;
+                document.getElementById('osProdutoModal').value = os.produto || '';
+                document.getElementById('osSolicitanteModal').value = os.solicitante || '';
+                document.getElementById('osDescricaoModal').value = os.descricao;
+                document.getElementById('osDataAberturaModal').value = os.dataAbertura; 
+                document.getElementById('osPrazoFinalModal').value = os.prazoFinal;   
+                document.getElementById('osResponsavelModal').value = os.responsavel;
+                document.getElementById('osStatusModal').value = os.status;
+                document.getElementById('osPrioridadeModal').value = os.prioridade;
+                osModal.style.display = 'block'; 
+            }
+        }
+
+        function deleteOS(id) {
+            const osToDelete = ordensServico.find(os => os.id === id);
+            if (confirm(`Tem certeza que deseja excluir a OS ${osToDelete?.numero || id}? Esta ação não pode ser desfeita.`)) {
+                ordensServico = ordensServico.filter(os => os.id !== id); 
+                addRecentActivity(`OS ${osToDelete?.numero || id} excluída.`);
+                saveDataToLocalStorage(); 
+                if (currentPage > 1 && paginateData(getFilteredOS(), currentPage, ITEMS_PER_PAGE).length === 0) {
+                    currentPage--;
+                }
+                refreshAllViews(); 
+            }
+        }
+
+        if (osForm) {
+            osForm.addEventListener('submit', function(event) {
+                event.preventDefault(); 
+                const id = document.getElementById('osId').value; 
+                const osData = {
+                    numero: document.getElementById('osNumeroModal').value,
+                    cliente: document.getElementById('osClienteModal').value,
+                    produto: document.getElementById('osProdutoModal').value,
+                    solicitante: document.getElementById('osSolicitanteModal').value,
+                    descricao: document.getElementById('osDescricaoModal').value,
+                    dataAbertura: document.getElementById('osDataAberturaModal').value,
+                    prazoFinal: document.getElementById('osPrazoFinalModal').value,
+                    responsavel: document.getElementById('osResponsavelModal').value,
+                    status: document.getElementById('osStatusModal').value, 
+                    prioridade: document.getElementById('osPrioridadeModal').value, 
+                };
+
+                if (id) { 
+                    const osIndex = ordensServico.findIndex(o => o.id === id);
+                    if (osIndex !== -1) {
+                        ordensServico[osIndex] = { ...ordensServico[osIndex], ...osData }; 
+                        addRecentActivity(`OS ${osData.numero} editada.`);
+                    }
+                } else { 
+                    osData.id = generateId(); 
+                    ordensServico.unshift(osData); 
+                    addRecentActivity(`Nova OS ${osData.numero} adicionada.`);
+                }
+                saveDataToLocalStorage(); 
+                populateProductFilters(); 
+                refreshAllViews(); 
+                closeOSModal(); 
+                currentPage = 1; 
+                renderOSTable(); 
+            });
+        }
+
+        function showView(viewId, clickedElement) {
+            document.querySelectorAll('.view-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            const targetView = document.getElementById(viewId);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+            } else {
+                console.error(`View com ID '${viewId}' não encontrada.`);
+                return; 
+            }
+
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (clickedElement && typeof clickedElement.classList !== 'undefined' && clickedElement.classList.contains('sidebar-item')) {
+                clickedElement.classList.add('active');
+            }
+            
+            if (viewId === 'weeklyAnalysisView') {
+                setDefaultAnalysisMonth(); 
+                renderMonthlyAnalysisByWeek();
+            } else if (viewId === 'settingsView') {
+                // Carrega as configurações atuais ao abrir a aba
+                if(itemsPerPageSettingInput) itemsPerPageSettingInput.value = ITEMS_PER_PAGE;
+            }
+        }
+
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
+        const sidebarTitleDiv = document.getElementById('sidebar-title');
+
+        if (toggleSidebarBtn && sidebar && mainContent && sidebarTitleDiv) { 
+            toggleSidebarBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                toggleSidebarBtn.innerHTML = isCollapsed ? '<i class="fas fa-chevron-right text-lg"></i>' : '<i class="fas fa-bars text-lg"></i>'; 
+                if (sidebarTitleDiv.querySelector('span')) { 
+                    sidebarTitleDiv.querySelector('span').style.display = isCollapsed ? 'none' : 'inline'; 
+                }
+                if (sidebarTitleDiv.querySelector('i')) { 
+                     sidebarTitleDiv.querySelector('i').style.marginRight = isCollapsed ? '0' : '0.5rem'; 
+                }
+            });
+        }
+
+        if (analysisMonthYearInput) { 
+            analysisMonthYearInput.addEventListener('change', renderMonthlyAnalysisByWeek); 
+        }
+        
+        function renderMonthlyAnalysisByWeek() {
+            if (!weeklyAnalysisTableBody || !analysisMonthYearInput || !selectedMonthInfo) { 
+                console.error("Elementos da Análise Semanal/Mensal não encontrados no DOM.");
+                return;
+            }
+            weeklyAnalysisTableBody.innerHTML = ''; 
+            const monthYearValue = analysisMonthYearInput.value; 
+            
+            if (!monthYearValue) {
+                selectedMonthInfo.textContent = 'Por favor, selecione um mês/ano para análise.';
+                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500 dark:text-slate-400">Selecione um mês/ano.</td></tr>`;
+                return;
+            }
+
+            const [year, month] = monthYearValue.split('-').map(Number);
+            const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long' });
+            selectedMonthInfo.textContent = `Analisando pendências para ${monthName} de ${year}. Pendências são OSs não 'Completas' após a Quarta-Feira da respectiva semana do prazo.`;
+            
+            const weeksInSelectedMonth = getWeeksInMonth(year, month);
+            let allPendingOS = [];
+
+            weeksInSelectedMonth.forEach(week => {
+                const { start: weekStart, end: weekEnd, wednesday: weekWednesday, weekNumber } = week;
+                const today = new Date(); // Data atual para comparação
+                const hasWednesdayOfOSWeekPassed = today > weekWednesday || today > weekEnd;
+
+
+                const osInThisWeek = ordensServico.filter(os => {
+                    const prazoFinalDate = new Date(os.prazoFinal + 'T23:59:59');
+                    const isPrazoInThisSpecificWeek = prazoFinalDate >= weekStart && prazoFinalDate <= weekEnd;
+                    if (!isPrazoInThisSpecificWeek) return false;
+
+                    const isNotCompleteOrCancelled = os.status !== 'Completa' && os.status !== 'Cancelada';
+                    if (!isNotCompleteOrCancelled) return false;
+                    
+                    return hasWednesdayOfOSWeekPassed;
+                });
+                
+                osInThisWeek.forEach(os => allPendingOS.push({...os, weekNumberForAnalysis: weekNumber}));
+            });
+
+
+            if (allPendingOS.length === 0) {
+                weeklyAnalysisTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma OS pendente encontrada para o mês selecionado conforme os critérios.</td></tr>`;
+                return;
+            }
+
+            allPendingOS.sort((a, b) => { 
+                if (a.weekNumberForAnalysis !== b.weekNumberForAnalysis) {
+                    return a.weekNumberForAnalysis - b.weekNumberForAnalysis;
+                }
+                return new Date(a.prazoFinal) - new Date(b.prazoFinal);
+            }); 
+
+            allPendingOS.forEach(os => {
+                const row = weeklyAnalysisTableBody.insertRow();
+                row.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-150';
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-sm text-slate-500 dark:text-slate-400">Semana ${os.weekNumberForAnalysis}</td>
+                    <td class="py-3 px-4 text-sm font-medium">${os.numero}</td>
+                    <td class="py-3 px-4 text-sm">${os.cliente}</td>
+                    <td class="py-3 px-4 text-sm">${os.produto || 'N/A'}</td>
+                    <td class="py-3 px-4 text-sm whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td>
+                    <td class="py-3 px-4 text-sm">${os.status}</td>
+                    <td class="py-3 px-4 text-sm">${os.responsavel}</td>
+                    <td class="py-3 px-4 text-sm text-red-600">Não 'Completa' após Quarta-feira da semana do prazo.</td>
+                    <td class="py-3 px-4 text-sm whitespace-nowrap">
+                        <button class="btn btn-sm bg-sky-500 hover:bg-sky-600 text-white py-1 px-2 mr-1 rounded" onclick="editOS('${os.id}')" title="Ver/Editar OS"><i class="fas fa-edit"></i> Detalhes</button>
+                        <button class="btn btn-sm bg-amber-400 hover:bg-amber-500 text-black py-1 px-2 rounded" onclick="notifyCollaborator('${os.responsavel}', '${os.numero}')" title="Notificar Colaborador (Simulação)"><i class="fas fa-bell"></i> Notificar</button>
+                    </td>
+                `;
+            });
+        }
+        
+        function sendWeeklyReportAndGeneratePDF() {
+            if (!analysisMonthYearInput) {
+                alert("Elemento de seleção de mês não encontrado.");
+                return;
+            }
+            const monthYearValue = analysisMonthYearInput.value;
+            if (!monthYearValue) {
+                alert("Por favor, selecione um mês/ano para gerar o relatório de pendências.");
+                return;
+            }
+            const [year, month] = monthYearValue.split('-').map(Number);
+            const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long' });
+            const title = `Relatório de Pendências Mensal - ${monthName} de ${year}`;
+            
+            exportTableToPDF('weeklyAnalysisTable', title, 'weeklyAnalysisTableBody', true); 
+            addRecentActivity("PDF do relatório mensal de pendências gerado.");
+            alert(`PDF "${title}" gerado.\n\nEste arquivo está pronto para ser salvo e anexado ao seu e-mail no Outlook para envio aos responsáveis.`);
+        }
+
+        function notifyCollaborator(responsavel, osNumero) {
+            alert(`Simulação: Notificação para ${responsavel} sobre pendências na OS ${osNumero} seria preparada aqui para envio.`);
+            addRecentActivity(`Notificação (simulada) para ${responsavel} (OS ${osNumero}).`);
+        }
+
+        const filterOsNumEl = document.getElementById('filterOsNumber');
+        if (filterOsNumEl) filterOsNumEl.addEventListener('input', applyFiltersAndRender);
+        const filterClientEl = document.getElementById('filterClient');
+        if (filterClientEl) filterClientEl.addEventListener('input', applyFiltersAndRender);
+        const filterStatusEl = document.getElementById('filterStatus');
+        if (filterStatusEl) filterStatusEl.addEventListener('change', applyFiltersAndRender);
+        const filterProductEl = document.getElementById('filterProduct');
+        if (filterProductEl) filterProductEl.addEventListener('change', applyFiltersAndRender);
+        if (filterDescriptionInput) filterDescriptionInput.addEventListener('input', applyFiltersAndRender);
+
+
+        function getFilteredOS() {
+            const filterOsNumberValue = filterOsNumEl ? filterOsNumEl.value.toLowerCase() : "";
+            const filterClientValue = filterClientEl ? filterClientEl.value.toLowerCase() : "";
+            const filterStatusValue = filterStatusEl ? filterStatusEl.value : "";
+            const filterProductValue = filterProductEl ? filterProductEl.value : "";
+            const filterDescriptionValue = filterDescriptionInput ? filterDescriptionInput.value.toLowerCase() : "";
+
+            return ordensServico.filter(os => {
+                const matchesOsNumber = os.numero.toLowerCase().includes(filterOsNumberValue);
+                const matchesClient = os.cliente.toLowerCase().includes(filterClientValue);
+                const matchesStatus = filterStatusValue ? os.status === filterStatusValue : true;
+                const matchesProduct = filterProductValue ? os.produto === filterProductValue : true;
+                const matchesDescription = os.descricao.toLowerCase().includes(filterDescriptionValue);
+                return matchesOsNumber && matchesClient && matchesStatus && matchesProduct && matchesDescription;
+            });
+        }
+        function applyFiltersAndRender() {
+            currentPage = 1; 
+            renderOSTable();
+        }
+
+        let osStatusChartInstance = null; 
+        function updateDashboardCounts() {
+            const osAbertasEl = document.getElementById('osAbertasCount');
+            const osCompletasMesEl = document.getElementById('osCompletasMesCount');
+            const osPendentesEl = document.getElementById('osPendentesCount');
+            const osCanceladasEl = document.getElementById('osCanceladasCount');
+
+            if (osAbertasEl) osAbertasEl.textContent = ordensServico.filter(os => os.status === 'Aberta').length;
+            
+            const hoje = new Date();
+            if (osCompletasMesEl) osCompletasMesEl.textContent = ordensServico.filter(os => {
+                if (os.status !== 'Completa') return false;
+                const prazo = new Date(os.prazoFinal + 'T23:59:59');
+                return prazo.getMonth() === hoje.getMonth() && prazo.getFullYear() === hoje.getFullYear();
+            }).length;
+
+            if (osPendentesEl) osPendentesEl.textContent = ordensServico.filter(os => os.status === 'Pendente Informação' || os.status === 'Aguardando Aprovação').length;
+            if (osCanceladasEl) osCanceladasEl.textContent = ordensServico.filter(os => os.status === 'Cancelada').length;
+            
+            renderOSStatusChart(); 
+        }
+
+        function renderOSStatusChart() {
+            const chartContainer = document.getElementById('osStatusChartContainer');
+            const chartCanvas = document.getElementById('osStatusChart');
+            if (!chartContainer || !chartCanvas) {
+                return;
+            }
+            const ctx = chartCanvas.getContext('2d');
+            const isDarkMode = document.documentElement.classList.contains('dark');
+
+            const statusCounts = ordensServico.reduce((acc, os) => { 
+                acc[os.status] = (acc[os.status] || 0) + 1;
+                return acc;
+            }, {});
+
+            const data = {
+                labels: Object.keys(statusCounts),
+                datasets: [{
+                    label: 'OS por Status', data: Object.values(statusCounts),
+                    backgroundColor: ['rgba(54, 162, 235, 0.8)','rgba(255, 159, 64, 0.8)','rgba(255, 205, 86, 0.8)','rgba(153, 102, 255, 0.8)','rgba(75, 192, 192, 0.8)','rgba(255, 99, 132, 0.8)'],
+                    borderColor: isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim() : '#ffffff', 
+                    borderWidth: 2, hoverOffset: 4
+                }]
+            };
+            if (osStatusChartInstance) osStatusChartInstance.destroy(); 
+            osStatusChartInstance = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 }, color: isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim() : '#1e293b'}}, tooltip: { bodyFont: { color: isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim() : '#1e293b'}, titleFont: {color: isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim() : '#1e293b'}, callbacks: { label: function(c) { return `${c.label || ''}: ${c.parsed || 0}`; }}}}}});
+        }
+
+        const reportMonthYearEl = document.getElementById('reportMonthYear');
+        const reportStatusEl = document.getElementById('reportStatus');
+        const reportProductEl = document.getElementById('reportProduct');
+
+        if(reportMonthYearEl) reportMonthYearEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
+        if(reportStatusEl) reportStatusEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
+        if(reportProductEl) reportProductEl.addEventListener('change', () => { if(reportsTableBody) reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Clique em "Gerar Relatório" para atualizar.</td></tr>';});
+
+        function generateCustomReport() {
+            if(!reportsTableBody || !reportMonthYearEl || !reportStatusEl || !reportProductEl) {
+                return;
+            }
+            reportsTableBody.innerHTML = ''; 
+            const monthYearValue = reportMonthYearEl.value;
+            const statusValue = reportStatusEl.value;
+            const productValue = reportProductEl.value;
+            let [year, month] = [null, null]; if (monthYearValue) [year, month] = monthYearValue.split('-').map(Number);
+
+            const filteredReportData = ordensServico.filter(os => {
+                let matchesDate = true;
+                if (year && month) {
+                    const prazoFinalDate = new Date(os.prazoFinal + 'T23:59:59');
+                    matchesDate = prazoFinalDate.getFullYear() === year && (prazoFinalDate.getMonth() + 1) === month;
+                }
+                const matchesStatus = statusValue ? os.status === statusValue : true;
+                const matchesProduct = productValue ? os.produto === productValue : true;
+                return matchesDate && matchesStatus && matchesProduct;
+            });
+
+            if (filteredReportData.length === 0) { reportsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma OS encontrada para os filtros selecionados.</td></tr>'; return; }
+            filteredReportData.forEach(os => {
+                const row = reportsTableBody.insertRow(); row.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700';
+                row.innerHTML = `<td class="py-3 px-4 text-sm font-medium">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm whitespace-nowrap">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm">${os.responsavel}</td>`;
+            });
+            addRecentActivity("Relatório personalizado gerado.");
+        }
+
+        function exportTableToCSV(tableId, filename) {
+            const table = document.getElementById(tableId); if (!table) { alert("Tabela não encontrada para exportação CSV."); return; }
+            let csv = [];
+            table.querySelectorAll("tr").forEach(row => {
+                const rowData = [];
+                const headerCells = table.querySelectorAll("thead th");
+                row.querySelectorAll("th, td").forEach((cell, cellIndex) => {
+                    if (headerCells[cellIndex] && (headerCells[cellIndex].innerText.toUpperCase().includes("AÇÕES") || headerCells[cellIndex].innerText.toUpperCase().includes("AÇÃO SUGERIDA") || cell.querySelector('input[type="checkbox"]'))) { 
+                        return; 
+                    }
+                    if (cell.querySelector('select')) rowData.push(cell.querySelector('select').value);
+                    else rowData.push(`"${cell.innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/"/g, '""')}"`);
+                });
+                if(rowData.length > 0) csv.push(rowData.join(","));
+            });
+            const csvFile = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+            const downloadLink = document.createElement("a");
+            downloadLink.href = URL.createObjectURL(csvFile);
+            downloadLink.download = filename;
+            downloadLink.style.display = "none"; document.body.appendChild(downloadLink);
+            downloadLink.click(); document.body.removeChild(downloadLink);
+            addRecentActivity(`Tabela ${tableId} exportada para CSV.`);
+        }
+
+        function exportTableToPDF(tableId, title, tableBodyId, isWeeklyReport = false) {
+            const { jsPDF } = window.jspdf; 
+            if (typeof jsPDF === 'undefined' || typeof jsPDF.API === 'undefined' || typeof jsPDF.API.autoTable === 'undefined') {
+                alert("A biblioteca jsPDF ou o plugin autoTable não foram carregados corretamente.");
+                console.error("jsPDF ou jsPDF.autoTable não está definido."); return;
+            }
+            const table = document.getElementById(tableId); if (!table) { alert("Tabela não encontrada para exportação PDF."); return; }
+
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+            const head = []; const body = [];
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const textColor = isDarkMode ? [203, 213, 225] : [30, 41, 59]; // Ajustado para melhor contraste no PDF
+
+            const headerCells = table.querySelectorAll("thead th");
+            const headerRow = [];
+            headerCells.forEach(cell => { 
+                if (!cell.innerText.toUpperCase().includes("AÇÕES") && !(isWeeklyReport && cell.innerText.toUpperCase().includes("AÇÃO SUGERIDA")) && !cell.querySelector('input[type="checkbox"]')) {
+                    headerRow.push(cell.innerText);
+                }
+            });
+            head.push(headerRow);
+
+            const targetTableBody = document.getElementById(tableBodyId);
+            if (!targetTableBody) {
+                alert(`Corpo da tabela com ID '${tableBodyId}' não encontrado.`);
+                return;
+            }
+            const bodyRows = targetTableBody.querySelectorAll("tr");
+            bodyRows.forEach(row => {
+                const rowData = [];
+                const cells = row.querySelectorAll("td");
+                let cellOffset = 0; 
+                if (tableId === 'osTable' && cells[0] && cells[0].querySelector('input[type="checkbox"]')) {
+                    cellOffset = 1;
+                } else if (isWeeklyReport && tableId === 'weeklyAnalysisTable' && cells[0] && cells[0].innerText.toLowerCase().includes("semana")) {
+                    // Não há offset, pois a primeira coluna é informativa
+                }
+
+                for(let i = cellOffset; i < cells.length; i++) {
+                    const cell = cells[i];
+                    if (rowData.length < headerRow.length) { 
+                         if (cell.querySelector('select')) rowData.push(cell.querySelector('select').value);
+                         else rowData.push(cell.innerText);
+                    }
+                }
+                if (rowData.length > 0) body.push(rowData);
+            });
+
+            if (body.length === 0 && (!bodyRows.length || (bodyRows[0] && bodyRows[0].textContent.toLowerCase().includes("nenhuma")))) {
+                 alert("Não há dados na tabela para exportar para PDF."); return;
+            }
+
+            doc.autoTable({ 
+                head: head, body: body, startY: 60, 
+                headStyles: { fillColor: isDarkMode ? [45, 55, 72] : [30, 41, 59], fontSize: 8, textColor: [255,255,255] }, 
+                bodyStyles: { fontSize: 7, textColor: textColor }, 
+                alternateRowStyles: { fillColor: isDarkMode ? [30, 41, 59, 0.7] : [243, 244, 246] }, 
+                margin: { top: 50, right: 20, bottom: 30, left: 20 }, 
+                didDrawPage: function (data) { 
+                    doc.setFontSize(16); doc.setTextColor(textColor[0], textColor[1], textColor[2]); doc.text(title, data.settings.margin.left, 35); 
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.setFontSize(8); doc.text("Página " + doc.internal.getCurrentPageInfo().pageNumber + " de " + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 15); 
+                }
+            });
+            doc.save(`${title.replace(/[\s/:]+/g, '_').toLowerCase()}.pdf`); 
+        }
+
+        function refreshAllViews() {
+            renderOSTable(getFilteredOS()); 
+            updateDashboardCounts(); 
+            const weeklyAnalysisViewEl = document.getElementById('weeklyAnalysisView');
+            if (weeklyAnalysisViewEl && !weeklyAnalysisViewEl.classList.contains('hidden')) {
+                 renderMonthlyAnalysisByWeek(); 
+            }
+            const reportsViewEl = document.getElementById('reportsView');
+            if (reportsViewEl && !reportsViewEl.classList.contains('hidden')) {
+                generateCustomReport(); 
+            }
+        }
+        
+        function setDefaultAnalysisMonth() {
+            if (!analysisMonthYearInput) return; 
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0'); 
+            analysisMonthYearInput.value = `${year}-${month}`;
+        }
+
+        function downloadICS(osId) {
+            const os = ordensServico.find(o => o.id === osId);
+            if (!os) {
+                alert("OS não encontrada.");
+                return;
+            }
+            const formatDateToICS = (dateString, isEndOfDay = false) => {
+                const date = new Date(dateString);
+                if (isEndOfDay) { date.setUTCHours(23, 59, 59, 999); } 
+                else { date.setUTCHours(9,0,0,0); } 
+                return date.toISOString().replace(/-|:|\.\d{3}/g, "") + "Z";
+            };
+
+            const startDateICS = formatDateToICS(os.prazoFinal); 
+            const endDateICS = formatDateToICS(os.prazoFinal, true); 
+            const nowICS = formatDateToICS(new Date().toISOString());
+
+
+            const icsContent = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//SuaEmpresa//AppGestaoOS//PT",
+                "CALSCALE:GREGORIAN",
+                "BEGIN:VEVENT",
+                `UID:${os.id}@gestao-os.app`, 
+                `DTSTAMP:${nowICS}`, 
+                `DTSTART:${startDateICS}`,
+                `DTEND:${endDateICS}`,
+                `SUMMARY:Prazo OS: ${os.numero} - ${os.cliente}`,
+                `DESCRIPTION:Detalhes da OS:\\nCliente: ${os.cliente}\\nProduto: ${os.produto || 'N/A'}\\nDescrição: ${os.descricao.replace(/\n/g, "\\n")}\\nResponsável: ${os.responsavel}\\nStatus: ${os.status}`,
+                `LOCATION:${os.cliente || 'N/A'}`, 
+                "END:VEVENT",
+                "END:VCALENDAR"
+            ].join("\r\n");
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `OS_${os.numero}_prazo.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            addRecentActivity(`Arquivo .ics gerado para OS ${os.numero}.`);
+        }
+
+        // Funções da Página de Configurações
+        function confirmClearAllData() {
+            if (confirm("ATENÇÃO!\n\nVocê tem certeza que deseja apagar TODAS as Ordens de Serviço salvas localmente?\n\nEsta ação NÃO PODE SER DESFEITA.")) {
+                ordensServico = [];
+                savedFilters = {}; 
+                localStorage.removeItem('ordensServicoData_v5_2');
+                localStorage.removeItem('savedFilters_v5_2');
+                addRecentActivity("Todos os dados de OS foram limpos.");
+                populateSavedFiltersSelect(); 
+                refreshAllViews(); 
+                alert("Todos os dados foram limpos do LocalStorage.");
+            }
+        }
+
+        function applyItemsPerPageSetting() {
+            if (!itemsPerPageSettingInput) return;
+            const newItemsPerPage = parseInt(itemsPerPageSettingInput.value, 10);
+            if (newItemsPerPage >= 5 && newItemsPerPage <= 50) {
+                ITEMS_PER_PAGE = newItemsPerPage;
+                currentPage = 1; 
+                saveDataToLocalStorage(); 
+                renderOSTable(); 
+                addRecentActivity(`Itens por página alterado para ${ITEMS_PER_PAGE}.`);
+            } else {
+                alert("Por favor, insira um valor entre 5 e 50 para itens por página.");
+                itemsPerPageSettingInput.value = ITEMS_PER_PAGE; 
+            }
+        }
+        
+        // Navegação pelos cards do Dashboard
+        function navigateToOsListWithFilter(statusFilter, filterCurrentMonth = false) {
+            const filterStatusEl = document.getElementById('filterStatus');
+            const filterOsNumEl = document.getElementById('filterOsNumber');
+            const filterClientEl = document.getElementById('filterClient');
+            const filterProductEl = document.getElementById('filterProduct');
+            const filterDescriptionEl = document.getElementById('filterDescription');
+
+            // Limpa filtros anteriores
+            if(filterOsNumEl) filterOsNumEl.value = '';
+            if(filterClientEl) filterClientEl.value = '';
+            if(filterProductEl) filterProductEl.value = '';
+            if(filterDescriptionEl) filterDescriptionEl.value = '';
+
+
+            if (Array.isArray(statusFilter)) { // Para "Pendentes" que pode ser mais de um status
+                 // Como o select de filtro só aceita um, vamos priorizar o primeiro ou deixar em branco
+                 // Idealmente, o filtro de status deveria suportar múltiplos valores ou teríamos que filtrar programaticamente
+                 if(filterStatusEl) filterStatusEl.value = statusFilter[0] || "";
+            } else {
+                if(filterStatusEl) filterStatusEl.value = statusFilter;
+            }
+
+            // A filtragem por mês para "Completas (Mês)" é mais complexa de aplicar diretamente nos filtros da UI
+            // sem um filtro de data específico. Por enquanto, apenas o status será aplicado.
+            // Uma melhoria futura seria adicionar um filtro de intervalo de datas na lista de OS.
+
+            applyFiltersAndRender(); // Aplica o filtro de status e re-renderiza a tabela
+            
+            const osListSidebarItem = document.querySelector('.sidebar-item[onclick*="osListView"]');
+            showView('osListView', osListSidebarItem); // Muda para a aba de Ordens de Serviço
+        }
+
+
+        window.onload = () => {
+            loadDataFromLocalStorage(); 
+            populateProductFilters();   
+            
+            setDefaultAnalysisMonth(); 
+            
+            const dashboardSidebarItem = document.querySelector('.sidebar-item[onclick*="dashboardView"]');
+            if (dashboardSidebarItem) { // Garante que o elemento existe
+                showView('dashboardView', dashboardSidebarItem); 
+            } else { // Fallback se o elemento não for encontrado
+                showView('dashboardView', null);
+            }
+            
+            refreshAllViews(); 
+
+            const dataAberturaModalEl = document.getElementById('osDataAberturaModal');
+            if (dataAberturaModalEl) dataAberturaModalEl.value = new Date().toISOString().split('T')[0];
+            
+            const reportMonthYearEl = document.getElementById('reportMonthYear');
+            if (reportMonthYearEl) {
+                const todayForReport = new Date();
+                const currentMonthForReport = String(todayForReport.getMonth() + 1).padStart(2, '0');
+                const currentYearForReport = todayForReport.getFullYear();
+                reportMonthYearEl.value = `${currentYearForReport}-${currentMonthForReport}`;
+            }
+
+            if (window.innerWidth < 1024 && sidebar && mainContent && toggleSidebarBtn && sidebarTitleDiv) {
+                sidebar.classList.add('collapsed'); mainContent.classList.add('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                toggleSidebarBtn.innerHTML = isCollapsed ? '<i class="fas fa-chevron-right text-lg"></i>' : '<i class="fas fa-bars text-lg"></i>';
+                if (sidebarTitleDiv.querySelector('span')) sidebarTitleDiv.querySelector('span').style.display = isCollapsed ? 'none' : 'inline';
+                if (sidebarTitleDiv.querySelector('i')) sidebarTitleDiv.querySelector('i').style.marginRight = isCollapsed ? '0' : '0.5rem';
+            }
+            addRecentActivity("Sistema V1.5.2 inicializado e pronto.");
+            updateLoginUI(); 
+        };
+
+        window.onclick = function(event) { 
+            if (osModal && event.target == osModal) { 
+                closeOSModal();
+            }
+        }
+        window.onkeydown = function(event) { 
+            if (osModal && osModal.style.display === 'block' && event.key === "Escape") { 
+                closeOSModal();
+            }
+        };
+    </script>
+</body>
+</html>

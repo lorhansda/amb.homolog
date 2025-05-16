@@ -2,8 +2,7 @@
 <html lang="pt-BR" class=""> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento Interno de OS - V1.6.0</title>
-    <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
+    <title>Gerenciamento Interno de OS - V5.6</title> <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -11,7 +10,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -111,7 +109,7 @@
         <div class="mt-auto pb-2">
             <div class="sidebar-item" onclick="toggleDarkMode()"> <i id="darkModeIcon" class="fas fa-moon"></i> <span>Modo Escuro</span> </div>
             <div class="sidebar-item" onclick="showView('settingsView', this)"> <i class="fas fa-cog"></i> <span>Configurações</span> </div>
-            <div class="sidebar-item text-sm text-slate-500 dark:text-slate-400"> <i class="fas fa-info-circle"></i> <span>Versão 1.6.0</span> </div>
+            <div class="sidebar-item text-sm text-slate-500 dark:text-slate-400"> <i class="fas fa-info-circle"></i> <span>Versão 1.5.6</span> </div>
         </div>
     </aside>
 
@@ -125,7 +123,7 @@
                 <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"> Explore as diversas seções do sistema para ter controle total sobre suas Ordens de Serviço: </p>
                 <ul class="list-disc list-inside text-sm text-slate-700 dark:text-slate-300 mt-2 space-y-1 pl-4">
                     <li><strong>Home:</strong> Visão geral dos indicadores chave e acesso rápido às funcionalidades.</li>
-                    <li><strong>Ordens de Serviço:</strong> Liste, filtre, edite, gerencie e importe OS em lote.</li>
+                    <li><strong>Ordens de Serviço:</strong> Liste, filtre, edite e gerencie todas as OS cadastradas.</li>
                     <li><strong>Análise Mensal:</strong> Acompanhe as pendências de OS por semana dentro de um mês específico.</li>
                     <li><strong>Relatórios:</strong> Gere relatórios personalizados com gráficos para análises detalhadas.</li>
                     <li><strong>Nova OS:</strong> Crie novas Ordens de Serviço de forma rápida e intuitiva.</li>
@@ -157,18 +155,6 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end"> <input type="text" id="filterOsNumber" placeholder="Nº OS" class="input-field p-2 rounded-md"> <input type="text" id="filterClient" placeholder="Cliente" class="input-field p-2 rounded-md"> <input type="text" id="filterDescription" placeholder="Buscar na Descrição..." class="input-field p-2 rounded-md md:col-span-2 lg:col-span-1"> <select id="filterProduct" class="select-field p-2 rounded-md"> <option value="">Todos os Produtos</option> </select> <select id="filterStatus" class="select-field p-2 rounded-md"> <option value="">Todos os Status</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option> </select> </div>
                 <div class="mt-4 flex flex-wrap gap-2 items-center"> <label for="savedFilters" class="text-sm font-medium">Filtros Salvos:</label> <select id="savedFilters" class="select-field p-2 rounded-md text-sm"> <option value="">Carregar filtro...</option> </select> <button class="btn btn-sm btn-secondary" onclick="loadSelectedFilter()"><i class="fas fa-download"></i> Carregar</button> <input type="text" id="newFilterName" placeholder="Nome do novo filtro" class="input-field p-2 rounded-md text-sm"> <button class="btn btn-sm btn-primary" onclick="saveCurrentFilters()"><i class="fas fa-save"></i> Salvar Filtro</button> <button class="btn btn-sm btn-danger" onclick="deleteSavedFilter()" title="Excluir filtro"><i class="fas fa-trash-alt"></i></button> </div>
             </div>
-
-            <div id="importOsSection" class="mt-6 mb-6 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 shadow">
-                <h3 class="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100 border-b border-slate-300 dark:border-slate-700 pb-2"> <i class="fas fa-file-excel mr-2 text-green-600 dark:text-green-500"></i>Importar OS em Lote (Excel/CSV) </h3>
-                <p class="text-sm text-slate-600 dark:text-slate-400 mb-3"> Selecione um arquivo (.xlsx, .xls, .csv). Colunas esperadas: Código, Status, Cliente, Início, Término, Técnico, Solicitante, Cidade, Duração (h). </p>
-                <div class="flex flex-col sm:flex-row gap-4 items-center">
-                    <input type="file" id="excelFileInput" class="input-field p-2 rounded-md border-slate-300 dark:border-slate-600 text-sm w-full sm:w-auto flex-grow file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-100 dark:file:bg-sky-700 file:text-sky-700 dark:file:text-sky-200 hover:file:bg-sky-200 dark:hover:file:bg-sky-600 cursor-pointer" accept=".xlsx, .xls, .csv">
-                    <button id="processExcelButton" class="btn btn-success w-full sm:w-auto whitespace-nowrap"> <i class="fas fa-upload"></i> Processar Arquivo </button>
-                </div>
-                <div id="importStatusMessage" class="mt-4 text-sm"> </div>
-                <div id="importSummary" class="mt-3 text-xs hidden"> <p class="font-semibold mb-1"><strong>Resumo da Importação:</strong></p> <ul id="importSummaryList" class="list-disc list-inside pl-4 space-y-1 max-h-40 overflow-y-auto"></ul> </div>
-            </div>
-
             <div class="overflow-x-auto shadow-md rounded-lg"> <table id="osTable" class="min-w-full"> <thead class="table-header"> <tr> <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4"></th> <th class="py-3 px-4 text-left">Nº OS</th> <th class="py-3 px-4 text-left">Cliente</th> <th class="py-3 px-4 text-left">Produto</th> <th class="py-3 px-4 text-left">Descrição</th> <th class="py-3 px-4 text-left">Data Abertura</th> <th class="py-3 px-4 text-left">Prazo Final</th> <th class="py-3 px-4 text-left">Responsável</th> <th class="py-3 px-4 text-left">Solicitante</th> <th class="py-3 px-4 text-left">Status</th> <th class="py-3 px-4 text-left">Prioridade</th> <th class="py-3 px-4 text-left">Ações</th> </tr> </thead> <tbody id="osTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody> </table> </div>
             <div id="paginationControls" class="mt-6 flex justify-end items-center gap-2"></div>
         </div>
@@ -215,469 +201,63 @@
     </main>
     <div id="osModal" class="modal hidden"> <div class="modal-content"> <span class="close-button" onclick="closeOSModal()">&times;</span> <h3 id="modalTitle" class="text-2xl font-semibold mb-6">Adicionar Nova Ordem de Serviço</h3> <form id="osForm"> <input type="hidden" id="osId"> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4"> <div> <label for="osNumeroModal" class="block text-sm font-medium mb-1">Nº OS <span class="text-red-500">*</span></label> <input type="text" id="osNumeroModal" name="osNumeroModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osClienteModal" class="block text-sm font-medium mb-1">Cliente <span class="text-red-500">*</span></label> <input type="text" id="osClienteModal" name="osClienteModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osProdutoModal" class="block text-sm font-medium mb-1">Produto/Serviço <span class="text-red-500">*</span></label> <input type="text" id="osProdutoModal" name="osProdutoModal" list="productList" class="input-field w-full p-2 rounded-md" required> <datalist id="productList"></datalist> </div> <div> <label for="osSolicitanteModal" class="block text-sm font-medium mb-1">Solicitante</label> <input type="text" id="osSolicitanteModal" name="osSolicitanteModal" class="input-field w-full p-2 rounded-md"> </div> </div> <div class="mb-4"> <label for="osDescricaoModal" class="block text-sm font-medium mb-1">Descrição Detalhada <span class="text-red-500">*</span></label> <textarea id="osDescricaoModal" name="osDescricaoModal" rows="3" class="input-field w-full p-2 rounded-md" required></textarea> </div> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4"> <div> <label for="osDataAberturaModal" class="block text-sm font-medium mb-1">Data de Abertura <span class="text-red-500">*</span></label> <input type="date" id="osDataAberturaModal" name="osDataAberturaModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osPrazoFinalModal" class="block text-sm font-medium mb-1">Prazo Final <span class="text-red-500">*</span></label> <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osResponsavelModal" class="block text-sm font-medium mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label> <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osStatusModal" class="block text-sm font-medium mb-1">Status <span class="text-red-500">*</span></label> <select id="osStatusModal" name="osStatusModal" class="select-field w-full p-2 rounded-md" required> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option> </select> </div> </div> <div class="mb-6"> <label for="osPrioridadeModal" class="block text-sm font-medium mb-1">Prioridade <span class="text-red-500">*</span></label> <select id="osPrioridadeModal" name="osPrioridadeModal" class="select-field w-full p-2 rounded-md" required> <option value="Baixa">Baixa</option> <option value="Média">Média</option> <option value="Alta">Alta</option> <option value="Urgente">Urgente</option> </select> </div> <div class="flex justify-end gap-3"> <button type="button" class="btn btn-secondary" onclick="closeOSModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Salvar OS</button> </div> </form> </div> </div>
     <script>
-        // ==========================================================================
-        // VARIÁVEIS GLOBAIS E CONFIGURAÇÕES INICIAIS
-        // ==========================================================================
-        const ITEMS_PER_PAGE_DEFAULT = 10;
-        let ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
-        let currentPage = 1;
-        let ordensServico = [];
-        const defaultProducts = ["WORKNC", "EDGECAM", "ESPRIT", "ALPHACAM", "LANTEK", "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner", "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"];
-        let googleUser = null;
-        let savedFilters = {};
-        
-        let osStatusChartInstance = null; 
-        let reportChartByProductInstance = null;
-        let reportChartByUsuarioInstance = null;
-        let reportChartByStatusInstance = null;
-
-        // Elementos DOM principais (pegos uma vez para evitar múltiplas chamadas)
-        const osModal = document.getElementById('osModal');
-        const osForm = document.getElementById('osForm');
-        const modalTitle = document.getElementById('modalTitle');
-        const productDatalist = document.getElementById('productList');
-        const filterProductSelect = document.getElementById('filterProduct');
-        const reportProductSelect = document.getElementById('reportProduct');
-        const darkModeIcon = document.getElementById('darkModeIcon');
-        const sidebar = document.getElementById('sidebar'); // Renomeado no listener para mainSidebar
-        const mainContent = document.getElementById('mainContent'); // Renomeado no listener para mainContentArea
-        const toggleSidebarBtn = document.getElementById('toggleSidebar'); // Renomeado no listener para mainToggleSidebarBtn
-        const sidebarTitleDiv = document.getElementById('sidebar-title'); // Renomeado no listener para mainSidebarTitleDiv
-        const recentActivityList = document.getElementById('recentActivityList');
-        const excelFileInput = document.getElementById('excelFileInput');
-        const processExcelButton = document.getElementById('processExcelButton');
-        const importStatusMessage = document.getElementById('importStatusMessage');
-        const importSummaryDiv = document.getElementById('importSummary');
-        const importSummaryList = document.getElementById('importSummaryList');
-
-
-        // ==========================================================================
-        // FUNÇÕES AUXILIARES
-        // ==========================================================================
-        function formatDateToBR(dateString) {
-            if (!dateString) return 'N/A';
-            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) { // Already in DD/MM/YYYY
-                return dateString;
-            }
-            let date;
-            // Prioritize YYYY-MM-DD which is common from date inputs and our excelSerialDateToYYYYMMDD
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-                date = new Date(dateString + 'T00:00:00Z'); // Use T00:00:00Z for UTC consistency
-            } else {
-                // Fallback for other potential string formats or JS Date objects
-                date = new Date(dateString);
-            }
-            if (isNaN(date.getTime())) {
-                return 'N/A'; // Invalid date
-            }
-            // Use getUTCDate, getUTCMonth, getUTCFullYear to avoid timezone shifts in display
-            const day = String(date.getUTCDate()).padStart(2, '0');
-            const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-            const year = date.getUTCFullYear();
-            return `${day}/${month}/${year}`;
-        }
-        
-        function excelSerialDateToYYYYMMDD(serial) {
-            if (serial === null || serial === undefined || serial === '' || isNaN(parseFloat(serial))) {
-                return null;
-            }
-            // This formula is generally for Excel Windows 1900 date system.
-            // It accounts for Excel's erroneous February 29, 1900.
-            // Dates are days since 1899-12-30.
-            // JavaScript's Date epoch is 1970-01-01.
-            const excelEpochDiff = 25569; // Days between 1899-12-30 and 1970-01-01
-            
-            // If serial < 60, it's before March 1, 1900, and Excel's leap year bug doesn't apply in the same way.
-            // For simplicity and common use cases where dates are after 1900-03-01.
-            // However, SheetJS with cellDates: true often handles this better.
-            // This function is a fallback if a raw serial number is encountered.
-            let date;
-            if (serial >= 60) { // Adjust for Excel's 1900 leap year bug for dates Mar 1, 1900 and later
-                 date = new Date(Math.round((serial - excelEpochDiff -1) * 86400 * 1000));
-            } else { // For dates before Mar 1, 1900 (Jan and Feb 1900)
-                 date = new Date(Math.round((serial - excelEpochDiff) * 86400 * 1000));
-                 if (serial === 60) { // Excel considers 1900-02-29 to be serial 60, which is not a real date.
-                    return null; // Or handle as error
-                 }
-            }
-
-            const year = date.getUTCFullYear();
-            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-            const day = String(date.getUTCDate()).padStart(2, '0');
-            
-            if (year < 1890 || year > 2200) return null; // Basic sanity check for year
-            return `${year}-${month}-${day}`;
-        }
-
+        const ITEMS_PER_PAGE_DEFAULT=10;let ITEMS_PER_PAGE=ITEMS_PER_PAGE_DEFAULT;let currentPage=1;let ordensServico=[];const defaultProducts=["WORKNC","EDGECAM","ESPRIT","ALPHACAM","LANTEK","SOLIDWORKS CAD","SOLIDWORKS PDM","SYNECO","HEXAGON Scanner","Impressora 3D Markforged","Serviço de Consultoria","Treinamento Software X","Outro"];let googleUser=null;let savedFilters={};let osStatusChartInstance=null;let reportChartByProductInstance=null;let reportChartByUsuarioInstance=null;let reportChartByStatusInstance=null;const osModal=document.getElementById('osModal');const osForm=document.getElementById('osForm');const modalTitle=document.getElementById('modalTitle');const productDatalist=document.getElementById('productList');const filterProductSelect=document.getElementById('filterProduct');const reportProductSelect=document.getElementById('reportProduct');const darkModeIcon=document.getElementById('darkModeIcon');const sidebar=document.getElementById('sidebar');const mainContent=document.getElementById('mainContent');const toggleSidebarBtn=document.getElementById('toggleSidebar');const sidebarTitleDiv=document.getElementById('sidebar-title');const recentActivityList=document.getElementById('recentActivityList');
+        function formatDateToBR(d){if(!d)return'N/A';if(/^\d{2}\/\d{2}\/\d{4}$/.test(d))return d;let dt;if(/^\d{4}-\d{2}-\d{2}$/.test(d))dt=new Date(d+'T00:00:00');else dt=new Date(d);if(isNaN(dt.getTime()))return'N/A';return`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`}
         function getWeeksInMonth(y,m){const w=[],f=new Date(y,m-1,1),l=new Date(y,m,0);let cM=new Date(f);cM.setDate(f.getDate()-(f.getDay()===0?6:f.getDay()-1));while(cM<=l){const s=new Date(cM);s.setHours(0,0,0,0);const e=new Date(s);e.setDate(s.getDate()+6);e.setHours(23,59,59,999);const wd=new Date(s);wd.setDate(s.getDate()+2);wd.setHours(23,59,59,999);const t=new Date(s.valueOf());t.setDate(t.getDate()-((s.getDay()+6)%7)+3);const fT=t.valueOf();t.setMonth(0,1);if(t.getDay()!==4)t.setMonth(0,1+((4-t.getDay())+7)%7);const wN=1+Math.ceil((fT-t)/6048e5);w.push({start:s,end:e,wednesday:wd,weekNumber:wN});cM.setDate(cM.getDate()+7)}return w}
         function getPriorityClass(p){switch(p){case'Alta':return'priority-Alta';case'Urgente':return'priority-Urgente';case'Média':return'priority-Média';case'Baixa':return'priority-Baixa';default:return'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}}
         function generateId(){return'OS'+Date.now().toString(36)+Math.random().toString(36).substr(2,5).toUpperCase()}
-        
-        // ==========================================================================
-        // LOCALSTORAGE, PRODUTOS, ATIVIDADE RECENTE
-        // ==========================================================================
-        function saveDataToLocalStorage(){try{localStorage.setItem('ordensServicoData_v1_6_0',JSON.stringify(ordensServico));localStorage.setItem('googleUser_v1_6_0',JSON.stringify(googleUser));localStorage.setItem('darkMode_v1_6_0',document.documentElement.classList.contains('dark'));localStorage.setItem('savedFilters_v1_6_0',JSON.stringify(savedFilters));localStorage.setItem('itemsPerPage_v1_6_0',ITEMS_PER_PAGE)}catch(e){console.error("Erro ao salvar localStorage:",e);alert("Problema ao salvar dados.")}}
-        function loadDataFromLocalStorage(){const d=localStorage.getItem('ordensServicoData_v1_6_0');if(d){try{ordensServico=JSON.parse(d)}catch(e){console.error("Erro localStorage OS:",e);ordensServico=[{id:generateId(),numero:'OS-EX01',cliente:'Cliente Demo',produto:'Software CAD',descricao:'Instalação e config.',dataAbertura:'2025-05-01',prazoFinal:'2025-05-10',responsavel:'João Silva',solicitante:'Empresa X',status:'Aberta',prioridade:'Alta'}]}}else{ordensServico=[{id:generateId(),numero:'OS-EX01',cliente:'Cliente Demo',produto:'Software CAD',descricao:'Instalação e config.',dataAbertura:'2025-05-01',prazoFinal:'2025-05-10',responsavel:'João Silva',solicitante:'Empresa X',status:'Aberta',prioridade:'Alta'}]}const u=localStorage.getItem('googleUser_v1_6_0');if(u)try{googleUser=JSON.parse(u)}catch(e){googleUser=null}const dm=localStorage.getItem('darkMode_v1_6_0');if(dm==='true'){document.documentElement.classList.add('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-moon','fa-sun')}else{document.documentElement.classList.remove('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-sun','fa-moon')}const sf=localStorage.getItem('savedFilters_v1_6_0');if(sf)try{savedFilters=JSON.parse(sf)}catch(e){savedFilters={}}populateSavedFiltersSelect();const ip=localStorage.getItem('itemsPerPage_v1_6_0');const ips=document.getElementById('itemsPerPageSetting');if(ip){ITEMS_PER_PAGE=parseInt(ip,10)||ITEMS_PER_PAGE_DEFAULT;if(ips)ips.value=ITEMS_PER_PAGE}else{if(ips)ips.value=ITEMS_PER_PAGE_DEFAULT}populateProductFilters()}
+        function saveDataToLocalStorage(){try{localStorage.setItem('ordensServicoData_v5_6',JSON.stringify(ordensServico));localStorage.setItem('googleUser_v5_6',JSON.stringify(googleUser));localStorage.setItem('darkMode_v5_6',document.documentElement.classList.contains('dark'));localStorage.setItem('savedFilters_v5_6',JSON.stringify(savedFilters));localStorage.setItem('itemsPerPage_v5_6',ITEMS_PER_PAGE)}catch(e){console.error("Erro ao salvar localStorage:",e);alert("Problema ao salvar dados.")}}
+        function loadDataFromLocalStorage(){const d=localStorage.getItem('ordensServicoData_v5_6');if(d){try{ordensServico=JSON.parse(d)}catch(e){console.error("Erro localStorage OS:",e);ordensServico=[{id:generateId(),numero:'OS-EX01',cliente:'Cliente Demo',produto:'Software CAD',descricao:'Instalação e config.',dataAbertura:'2025-05-01',prazoFinal:'2025-05-10',responsavel:'João Silva',solicitante:'Empresa X',status:'Aberta',prioridade:'Alta'}]}}else{ordensServico=[{id:generateId(),numero:'OS-EX01',cliente:'Cliente Demo',produto:'Software CAD',descricao:'Instalação e config.',dataAbertura:'2025-05-01',prazoFinal:'2025-05-10',responsavel:'João Silva',solicitante:'Empresa X',status:'Aberta',prioridade:'Alta'}]}const u=localStorage.getItem('googleUser_v5_6');if(u)try{googleUser=JSON.parse(u)}catch(e){googleUser=null}const dm=localStorage.getItem('darkMode_v5_6');if(dm==='true'){document.documentElement.classList.add('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-moon','fa-sun')}else{document.documentElement.classList.remove('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-sun','fa-moon')}const sf=localStorage.getItem('savedFilters_v5_6');if(sf)try{savedFilters=JSON.parse(sf)}catch(e){savedFilters={}}populateSavedFiltersSelect();const ip=localStorage.getItem('itemsPerPage_v5_6');const ips=document.getElementById('itemsPerPageSetting');if(ip){ITEMS_PER_PAGE=parseInt(ip,10)||ITEMS_PER_PAGE_DEFAULT;if(ips)ips.value=ITEMS_PER_PAGE}else{if(ips)ips.value=ITEMS_PER_PAGE_DEFAULT}populateProductFilters()}
         function populateProductFilters(){if(!productDatalist||!filterProductSelect||!reportProductSelect)return;const p=[...new Set(ordensServico.map(os=>os.produto).concat(defaultProducts).filter(pr=>pr&&pr.trim()!==""))].sort((a,b)=>a.localeCompare(b));productDatalist.innerHTML='';filterProductSelect.innerHTML='<option value="">Todos Produtos</option>';reportProductSelect.innerHTML='<option value="">Todos Produtos</option>';p.forEach(pr=>{const o=document.createElement('option');o.value=pr;o.textContent=pr;productDatalist.appendChild(o.cloneNode(true));filterProductSelect.appendChild(o.cloneNode(true));reportProductSelect.appendChild(o.cloneNode(true))})}
         function addRecentActivity(a,uN=null){if(!recentActivityList)return;const li=document.createElement('li');const n=new Date();let uD=uN?` <span class="font-medium text-sky-600 dark:text-sky-400">(${uN})</span>`:(googleUser?` <span class="font-medium text-slate-500 dark:text-slate-400">(${googleUser.given_name||googleUser.name})</span>`:'');li.className='flex justify-between items-center text-sm pb-2 border-b border-slate-200 dark:border-slate-700';li.innerHTML=`<span>${a}${uD}</span><span class="text-slate-400 dark:text-slate-500 text-xs">${n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>`;const pl=recentActivityList.querySelector('.text-placeholder');if(pl)recentActivityList.innerHTML='';recentActivityList.insertBefore(li,recentActivityList.firstChild);if(recentActivityList.children.length>7)recentActivityList.removeChild(recentActivityList.lastChild)}
-        
-        // ==========================================================================
-        // GOOGLE SIGN-IN
-        // ==========================================================================
         function parseJwt(t){try{return JSON.parse(atob(t.split('.')[1]))}catch(e){return null}}
         function handleCredentialResponse(r){const pL=parseJwt(r.credential);googleUser={id:pL.sub,name:pL.name,given_name:pL.given_name,picture:pL.picture,email:pL.email};saveDataToLocalStorage();updateLoginUI();addRecentActivity(`Usuário ${googleUser.name} logado.`)}
         function handleSignOut(){const uN=googleUser?(googleUser.given_name||googleUser.name):"Usuário";googleUser=null;saveDataToLocalStorage();updateLoginUI();addRecentActivity(`${uN} deslogado.`);if(typeof google!=='undefined'&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect()}
         function updateLoginUI(){const uiD=document.getElementById('user-info');const gS=document.querySelector('.g_id_signin');const uNE=document.getElementById('user-name');const uPE=document.getElementById('user-pic');if(!uiD||!gS||!uNE||!uPE)return;if(googleUser){uNE.textContent=googleUser.given_name||googleUser.name;uPE.src=googleUser.picture;uiD.classList.remove('hidden');gS.classList.add('hidden')}else{uiD.classList.add('hidden');gS.classList.remove('hidden');uNE.textContent='';uPE.src=''}}
-        
-        // ==========================================================================
-        // DARK MODE
-        // ==========================================================================
         function toggleDarkMode(){document.documentElement.classList.toggle('dark');if(darkModeIcon){darkModeIcon.classList.toggle('fa-moon');darkModeIcon.classList.toggle('fa-sun')}saveDataToLocalStorage();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden')&&osStatusChartInstance)renderOSStatusChart();if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){const rTB=document.getElementById('reportsTableBody');if(rTB&&rTB.querySelectorAll('tr').length>0&&!rTB.querySelector('td[colspan="7"]'))generateCustomReport()}}
-        
-        // ==========================================================================
-        // FILTROS SALVOS
-        // ==========================================================================
         function populateSavedFiltersSelect(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const cS=sFS.value;sFS.innerHTML='<option value="">Carregar filtro...</option>';for(const n in savedFilters){const o=document.createElement('option');o.value=n;o.textContent=n;sFS.appendChild(o)}if(cS&&savedFilters[cS])sFS.value=cS}
         function saveCurrentFilters(){const nFIN=document.getElementById('newFilterName');if(!nFIN)return;const n=nFIN.value.trim();if(!n){alert("Nome para o filtro.");return}if(savedFilters[n]&&!confirm(`Filtro "${n}" já existe. Sobrescrever?`))return;const fDI=document.getElementById('filterDescription');savedFilters[n]={numero:document.getElementById('filterOsNumber').value,cliente:document.getElementById('filterClient').value,descricao:fDI?fDI.value:"",produto:document.getElementById('filterProduct').value,status:document.getElementById('filterStatus').value};nFIN.value='';populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" salvo.`)}
         function loadSelectedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){document.getElementById('filterOsNumber').value=savedFilters[n].numero||"";document.getElementById('filterClient').value=savedFilters[n].cliente||"";const fDI=document.getElementById('filterDescription');if(fDI)fDI.value=savedFilters[n].descricao||"";document.getElementById('filterProduct').value=savedFilters[n].produto||"";document.getElementById('filterStatus').value=savedFilters[n].status||"";applyFiltersAndRender();addRecentActivity(`Filtro "${n}" carregado.`)}else if(n)alert("Filtro não encontrado.")}
         function deleteSavedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){if(confirm(`Excluir filtro "${n}"?`)){delete savedFilters[n];populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" excluído.`)}}else if(n)alert("Filtro não existe.");else alert("Selecione filtro para excluir.")}
-        
-        // ==========================================================================
-        // AÇÕES EM MASSA
-        // ==========================================================================
         function updateSelectedCount(){const sOSC=document.getElementById('selectedOsCount');const bAC=document.getElementById('bulkActionsContainer');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!sOSC||!bAC||!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));sOSC.textContent=`${sC.length} selecionadas`;if(sC.length>0){bAC.classList.remove('hidden')}else{bAC.classList.add('hidden');sAOC.checked=false}}
         function toggleSelectAllOS(mC){const oSTB=document.getElementById('osTableBody');if(!oSTB||!mC)return;const c=oSTB.querySelectorAll('input[type="checkbox"][data-id]');c.forEach(cb=>cb.checked=mC.checked);updateSelectedCount()}
         function applyBulkAction(){const bAS=document.getElementById('bulkActionStatus');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!bAS||!oSTB||!sAOC)return;const nS=bAS.value;if(!nS){alert("Selecione status.");return}const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada.");return}sC.forEach(cb=>{const osI=cb.dataset.id;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1)ordensServico[osIX].status=nS});addRecentActivity(`${sC.length} OS(s) status alterado para ${nS}.`);saveDataToLocalStorage();refreshAllViews();sAOC.checked=false;updateSelectedCount()}
         function bulkDeleteSelectedOS(){const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada.");return}if(confirm(`Excluir ${sC.length} OS(s)? Ação irreversível.`)){const iTD=sC.map(cb=>cb.dataset.id);ordensServico=ordensServico.filter(os=>!iTD.includes(os.id));addRecentActivity(`${iTD.length} OS(s) excluídas.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews();sAOC.checked=false;updateSelectedCount()}}
-        
-        // ==========================================================================
-        // RENDERIZAÇÃO DA TABELA DE OS E PAGINAÇÃO
-        // ==========================================================================
         function renderOSTable(fD=getFilteredOS()){const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!oSTB||!sAOC){console.error("osTableBody ou selectAllOsCheckbox não encontrado!");return}oSTB.innerHTML='';sAOC.checked=false;updateSelectedCount();if(!fD||fD.length===0){oSTB.innerHTML='<tr><td colspan="12" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma OS encontrada.</td></tr>';renderPagination(0,0);return}const pD=paginateData(fD,currentPage,ITEMS_PER_PAGE);pD.forEach(os=>{const r=oSTB.insertRow();r.className='table-row hover:bg-slate-100 dark:hover:bg-slate-700';r.innerHTML=`<td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4"></td><td class="py-3 px-4 text-sm font-medium">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm truncate max-w-xs" title="${os.descricao}">${os.descricao}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.dataAbertura)}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.responsavel}</td><td class="py-3 px-4 text-sm">${os.solicitante||'N/A'}</td><td class="py-3 px-4 text-sm"><select class="select-field status-select p-1 text-xs" data-id="${os.id}" onchange="updateStatus(this)"><option value="Aberta" ${os.status==='Aberta'?'selected':''}>Aberta</option><option value="Em Andamento" ${os.status==='Em Andamento'?'selected':''}>Em Andamento</option><option value="Pendente Informação" ${os.status==='Pendente Informação'?'selected':''}>Pendente Info</option><option value="Aguardando Aprovação" ${os.status==='Aguardando Aprovação'?'selected':''}>Aguard. Aprov.</option><option value="Completa" ${os.status==='Completa'?'selected':''}>Completa</option><option value="Cancelada" ${os.status==='Cancelada'?'selected':''}>Cancelada</option></select></td><td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td><td class="py-3 px-4 text-sm"><button class="text-sky-600 hover:text-sky-800 p-1 mr-2" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button><button class="text-red-600 hover:text-red-800 p-1 mr-2" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button><button class="text-green-600 hover:text-green-800 p-1" title="Baixar .ics" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button></td>`});renderPagination(fD.length,currentPage)}
         function paginateData(d,p,iPP){const s=(p-1)*iPP;const e=s+iPP;return d.slice(s,e)}
         function renderPagination(tI,p){const pC=document.getElementById('paginationControls');if(!pC)return;pC.innerHTML='';const tP=Math.ceil(tI/ITEMS_PER_PAGE);if(tP<=1)return;const pB=document.createElement('button');pB.innerHTML='<i class="fas fa-chevron-left"></i> Anterior';pB.className='btn btn-sm btn-secondary disabled:opacity-50';pB.disabled=p===1;pB.onclick=()=>{if(p>1)changePage(p-1)};pC.appendChild(pB);const pI=document.createElement('span');pI.className='text-sm px-3';pI.textContent=`Página ${p} de ${tP}`;pC.appendChild(pI);const nB=document.createElement('button');nB.innerHTML='Próximo <i class="fas fa-chevron-right"></i>';nB.className='btn btn-sm btn-secondary disabled:opacity-50';nB.disabled=p===tP;nB.onclick=()=>{if(p<tP)changePage(p+1)};pC.appendChild(nB)}
         function changePage(nP){currentPage=nP;renderOSTable()}
-        
-        // ==========================================================================
-        // CRUD DE OS E MODAL
-        // ==========================================================================
         function updateStatus(sE){const osI=sE.dataset.id;const nS=sE.value;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1){ordensServico[osIX].status=nS;addRecentActivity(`Status OS ${ordensServico[osIX].numero} p/ ${nS}.`);saveDataToLocalStorage();refreshAllViews()}}
         function openAddOSModal(){if(!osForm||!modalTitle||!osModal)return;osForm.reset();document.getElementById('osId').value='';modalTitle.textContent='Adicionar Nova OS';const dA=document.getElementById('osDataAberturaModal');if(dA)dA.value=new Date().toISOString().split('T')[0];osModal.classList.remove('hidden')}
         function closeOSModal(){if(!osModal)return;osModal.classList.add('hidden')}
         function editOS(id){if(!osModal||!modalTitle||!osForm)return;const os=ordensServico.find(o=>o.id===id);if(os){modalTitle.textContent=`Editar OS - ${os.numero}`;document.getElementById('osId').value=os.id;document.getElementById('osNumeroModal').value=os.numero;document.getElementById('osClienteModal').value=os.cliente;document.getElementById('osProdutoModal').value=os.produto||'';document.getElementById('osSolicitanteModal').value=os.solicitante||'';document.getElementById('osDescricaoModal').value=os.descricao;document.getElementById('osDataAberturaModal').value=os.dataAbertura;document.getElementById('osPrazoFinalModal').value=os.prazoFinal;document.getElementById('osResponsavelModal').value=os.responsavel;document.getElementById('osStatusModal').value=os.status;document.getElementById('osPrioridadeModal').value=os.prioridade;osModal.classList.remove('hidden')}else alert("OS não encontrada.")}
         function deleteOS(id){const oTD=ordensServico.find(os=>os.id===id);if(confirm(`Excluir OS ${oTD?.numero||id}?`)){ordensServico=ordensServico.filter(os=>os.id!==id);addRecentActivity(`OS ${oTD?.numero||'ID '+id} excluída.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews()}}
         if(osForm)osForm.addEventListener('submit',function(e){e.preventDefault();try{const id=document.getElementById('osId').value;const osD={numero:document.getElementById('osNumeroModal').value.trim(),cliente:document.getElementById('osClienteModal').value.trim(),produto:document.getElementById('osProdutoModal').value.trim(),solicitante:document.getElementById('osSolicitanteModal').value.trim(),descricao:document.getElementById('osDescricaoModal').value.trim(),dataAbertura:document.getElementById('osDataAberturaModal').value,prazoFinal:document.getElementById('osPrazoFinalModal').value,responsavel:document.getElementById('osResponsavelModal').value.trim(),status:document.getElementById('osStatusModal').value,prioridade:document.getElementById('osPrioridadeModal').value};if(!osD.numero||!osD.cliente||!osD.produto||!osD.descricao||!osD.dataAbertura||!osD.prazoFinal||!osD.responsavel||!osD.status||!osD.prioridade){alert("Preencha campos obrigatórios (*).");return}if(new Date(osD.prazoFinal)<new Date(osD.dataAbertura)){alert("Prazo Final anterior à Data Abertura.");return}if(id){const osIX=ordensServico.findIndex(o=>o.id===id);if(osIX!==-1){ordensServico[osIX]={...ordensServico[osIX],...osD};addRecentActivity(`OS ${osD.numero} editada.`)}else{alert("Erro ao editar OS.");return}}else{osD.id=generateId();ordensServico.unshift(osD);addRecentActivity(`Nova OS ${osD.numero} adicionada.`)}saveDataToLocalStorage();populateProductFilters();closeOSModal();currentPage=1;refreshAllViews()}catch(er){console.error("Erro ao salvar OS:",er);alert("Erro ao salvar OS.")}})
-        
-        // ==========================================================================
-        // LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV (Função de processamento)
-        // ==========================================================================
-        function processAndValidateOSData(jsonData) {
-            const headersFromFile = jsonData[0].map(header => String(header).trim().toLowerCase());
-            const dataRows = jsonData.slice(1);
-            const validOSs = [];
-            const importLog = []; 
-            const expectedHeaderMapping = { codigo: 'código', status: 'status', cliente: 'cliente', inicio: 'início', termino: 'término', tecnico: 'técnico', solicitante: 'solicitante', cidade: 'cidade', duracao_h: 'duração (h)' };
-            const colIndices = {};
-            for (const internalKey in expectedHeaderMapping) { colIndices[internalKey] = headersFromFile.indexOf(expectedHeaderMapping[internalKey]); }
-            const essentialCols = ['codigo', 'cliente', 'inicio', 'termino', 'tecnico'];
-            for (const colKey of essentialCols) { if (colIndices[colKey] === -1) { importLog.push({ success: false, message: `Erro Crítico: Coluna "${expectedHeaderMapping[colKey]}" não encontrada. Importação interrompida.` }); return { validOSs, importLog }; } }
-            
-            dataRows.forEach((row, rowIndex) => {
-                if (row.every(cell => cell === null || String(cell).trim() === '')) return;
-                const newOS = { id: generateId() }; let rowIsValid = true; let currentLogMessages = [];
-                newOS.numero = colIndices.codigo !== -1 ? String(row[colIndices.codigo] || '').trim() : '';
-                if (!newOS.numero) { currentLogMessages.push("Nº OS (Código) ausente."); rowIsValid = false; }
-                newOS.cliente = colIndices.cliente !== -1 ? String(row[colIndices.cliente] || '').trim() : '';
-                if (!newOS.cliente) { currentLogMessages.push("Cliente ausente."); rowIsValid = false; }
-                newOS.status = colIndices.status !== -1 ? String(row[colIndices.status] || 'Aberta').trim() : 'Aberta';
-                const validStatuses = ["Aberta", "Em Andamento", "Pendente Informação", "Aguardando Aprovação", "Completa", "Cancelada", "Incompleta"];
-                if (!validStatuses.includes(newOS.status)) { currentLogMessages.push(`Status "${newOS.status}" inválido. Usando "Aberta".`); newOS.status = 'Aberta'; }
-                const inicioVal = colIndices.inicio !== -1 ? row[colIndices.inicio] : null;
-                const terminoVal = colIndices.termino !== -1 ? row[colIndices.termino] : null;
-                
-                function parseAndValidateDate(dateValue, fieldName) {
-                    if (dateValue === null || String(dateValue).trim() === '') { currentLogMessages.push(`${fieldName} ausente.`); return null; }
-                    let parsedDate = null;
-                    if (dateValue instanceof Date) { try { parsedDate = `${dateValue.getUTCFullYear()}-${String(dateValue.getUTCMonth() + 1).padStart(2, '0')}-${String(dateValue.getUTCDate()).padStart(2, '0')}`; } catch (e) {} }
-                    if (!parsedDate && typeof dateValue === 'number' && dateValue > 1 && dateValue < 100000 ) { parsedDate = excelSerialDateToYYYYMMDD(dateValue); }
-                    if (!parsedDate && typeof dateValue === 'string') { if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) { parsedDate = dateValue; } else { const parts = dateValue.match(/^(\d{1,2})[\\/\.-](\d{1,2})[\\/\.-](\d{2}|\d{4})$/); if (parts) { let year = parseInt(parts[3], 10); if (year < 100) year += 2000; parsedDate = `${year}-${String(parts[2]).padStart(2, '0')}-${String(parts[1]).padStart(2, '0')}`; } } }
-                    if (!parsedDate || isNaN(new Date(parsedDate+'T00:00:00Z').getTime())) { currentLogMessages.push(`${fieldName} ("${String(dateValue).substring(0,20)}") formato inválido.`); return null; }
-                    return parsedDate;
-                }
-                newOS.dataAbertura = parseAndValidateDate(inicioVal, "Data Início"); if (!newOS.dataAbertura) rowIsValid = false;
-                newOS.prazoFinal = parseAndValidateDate(terminoVal, "Data Término"); if (!newOS.prazoFinal) rowIsValid = false;
-                if (newOS.dataAbertura && newOS.prazoFinal && new Date(newOS.prazoFinal) < new Date(newOS.dataAbertura)) { currentLogMessages.push("Prazo Final < Data Abertura."); rowIsValid = false; }
-                newOS.responsavel = colIndices.tecnico !== -1 ? String(row[colIndices.tecnico] || '').trim() : '';
-                if (!newOS.responsavel) { currentLogMessages.push("Responsável (Técnico) ausente."); rowIsValid = false; }
-                newOS.solicitante = colIndices.solicitante !== -1 ? String(row[colIndices.solicitante] || '').trim() : '';
-                newOS.produto = "";
-                const cidadeVal = colIndices.cidade !== -1 ? String(row[colIndices.cidade] || '').trim() : '';
-                const duracaoVal = colIndices.duracao_h !== -1 ? String(row[colIndices.duracao_h] || '').trim() : '';
-                let desc = ""; if (cidadeVal) desc += `Cidade: ${cidadeVal}`; if (duracaoVal) { if (desc) desc += ", "; desc += `Duração: ${duracaoVal}h`; }
-                newOS.descricao = desc ? `${desc}.\n` : "\n";
-                newOS.prioridade = "Média";
-                if (rowIsValid) { validOSs.push(newOS); importLog.push({ success: true, message: `Linha ${rowIndex + 2}: OS "${newOS.numero}" pronta para importação.` });
-                } else { importLog.push({ success: false, message: `Linha ${rowIndex + 2} Ignorada: ${currentLogMessages.join('; ')}` }); }
-            });
-            return { validOSs, importLog };
-        }
-        
-        // (O restante do script, incluindo a finalização de handleExcelImport, showView, exports, onload, etc., virá na Parte 3)
-// (Conteúdo da Parte 1 e Parte 2 do JavaScript, incluindo processAndValidateOSData, 
-    //  deve estar aqui em cima, dentro da tag <script> iniciada na Parte 1 do HTML)
-
-        // ==========================================================================
-        // FINALIZAÇÃO DA LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV (handleExcelImport)
-        // ==========================================================================
-        
-        // Event listener para o botão de processar (já definido, mas garantindo que esteja no contexto)
-        // const processExcelButton = document.getElementById('processExcelButton'); // Já definido
-        // if (processExcelButton) { // Já definido
-        //     processExcelButton.addEventListener('click', handleExcelImport);
-        // }
-
-        // Função principal para lidar com a seleção, leitura e processamento final do arquivo
-        function handleExcelImport() {
-            const fileInput = document.getElementById('excelFileInput');
-            const importStatusMessage = document.getElementById('importStatusMessage');
-            const importSummaryDiv = document.getElementById('importSummary');
-            const importSummaryList = document.getElementById('importSummaryList');
-
-            // Assegura que os elementos da UI existem
-            if (!fileInput || !importStatusMessage || !importSummaryDiv || !importSummaryList) {
-                console.error("Elementos da interface de importação não encontrados no DOM.");
-                alert("Erro interno na interface de importação. Verifique o console.");
-                return;
-            }
-
-            importStatusMessage.textContent = ''; // Limpa mensagens anteriores
-            importSummaryList.innerHTML = ''; 
-            importSummaryDiv.classList.add('hidden');
-
-            if (!fileInput.files || fileInput.files.length === 0) {
-                importStatusMessage.textContent = 'Por favor, selecione um arquivo Excel ou CSV para importar.';
-                importStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            importStatusMessage.textContent = `Iniciando processamento do arquivo: ${file.name}...`;
-            importStatusMessage.className = 'mt-4 text-sm text-sky-600 dark:text-sky-400';
-
-            reader.onload = function(event) {
-                try {
-                    const data = event.target.result;
-                    if (typeof XLSX === 'undefined') {
-                        throw new Error("Biblioteca SheetJS (XLSX) não está carregada. Verifique o link CDN no HTML.");
-                    }
-                    const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF:'yyyy-mm-dd' }); 
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    // Usar {header: 1} para obter array de arrays, raw:false tenta formatar valores
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 , raw: false, defval: null}); 
-
-                    // Remove linhas finais completamente vazias que algumas exportações podem incluir
-                    while (jsonData.length > 0 && jsonData[jsonData.length - 1].every(cell => cell === null || String(cell).trim() === '')) {
-                        jsonData.pop();
-                    }
-
-                    if (jsonData.length < 2) { 
-                        throw new Error("Arquivo parece vazio ou contém apenas o cabeçalho. Nenhuma linha de dados para importar.");
-                    }
-                    
-                    const processingResult = processAndValidateOSData(jsonData); 
-                    const { validOSs, importLog } = processingResult;
-
-                    if (validOSs.length > 0) {
-                        ordensServico.unshift(...validOSs); 
-                        saveDataToLocalStorage();
-                        populateProductFilters(); 
-                        refreshAllViews();        
-                        addRecentActivity(`${validOSs.length} OS(s) importada(s) com sucesso via arquivo: ${file.name}.`);
-                    }
-
-                    let finalMessage = "";
-                    if (validOSs.length > 0) {
-                        finalMessage += `${validOSs.length} OS(s) importada(s) com sucesso! `;
-                        importStatusMessage.className = 'mt-4 text-sm text-green-600 dark:text-green-400';
-                    } else {
-                        finalMessage += "Nenhuma OS foi importada com sucesso. ";
-                         importStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
-                    }
-
-                    const errorsCount = importLog.filter(log => !log.success).length;
-                    if (errorsCount > 0) {
-                        finalMessage += `${errorsCount} linha(s) continham erros e foram ignoradas. Veja o resumo abaixo.`;
-                        if(validOSs.length > 0) { 
-                             importStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
-                        } else { 
-                             importStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                        }
-                    }
-                    
-                    const dataRowCount = jsonData.slice(1).filter(r => !r.every(c => c === null || String(c).trim() === '')).length;
-                    if (validOSs.length === 0 && errorsCount === 0 && dataRowCount > 0) {
-                        finalMessage = `Arquivo lido, mas nenhuma OS válida foi processada. Verifique o formato dos dados e se os cabeçalhos esperados (Código, Cliente, Início, Término, Técnico) estão corretos e presentes na primeira linha.`;
-                        importStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
-                    } else if (dataRowCount === 0 && jsonData.length > 1) { // Apenas cabeçalho, sem linhas de dados válidas
-                         finalMessage = "Nenhuma linha de dados encontrada no arquivo após o cabeçalho para processar.";
-                         importStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
-                    }
-
-                    importStatusMessage.textContent = finalMessage.trim();
-
-                    if (importLog.length > 0) {
-                        importSummaryDiv.classList.remove('hidden');
-                        importLog.forEach(log => {
-                            const listItem = document.createElement('li');
-                            listItem.textContent = log.message;
-                            listItem.className = log.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300';
-                            importSummaryList.appendChild(listItem);
-                        });
-                    } else if (validOSs.length === 0 && dataRowCount === 0 && jsonData.length > 0) { // Nenhuma OS válida e nenhuma linha de dados (ex: arquivo só com cabeçalho)
-                        const listItem = document.createElement('li');
-                        listItem.textContent = "Nenhuma OS encontrada para processar no arquivo (sem linhas de dados ou todas as linhas vazias).";
-                        importSummaryList.appendChild(listItem);
-                        importSummaryDiv.classList.remove('hidden');
-                    }
-
-
-                } catch (error) {
-                    console.error("Erro ao processar o arquivo Excel/CSV:", error);
-                    importStatusMessage.textContent = `Erro crítico ao processar: ${error.message}. Verifique o console.`;
-                    importStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                    importSummaryDiv.classList.add('hidden');
-                } finally {
-                    fileInput.value = ''; 
-                }
-            };
-            reader.onerror = function(error) { 
-                console.error("Erro ao ler o arquivo:", error); 
-                importStatusMessage.textContent = 'Erro ao ler o arquivo. Verifique se é um arquivo Excel/CSV válido.'; 
-                importStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                fileInput.value = ''; 
-            };
-            reader.readAsArrayBuffer(file);
-        }
-        
-        // ==========================================================================
-        // FUNÇÕES DE NAVEGAÇÃO E EXIBIÇÃO DE VIEWS (COMPLETA)
-        // ==========================================================================
-        function showView(vId,cE){
-            document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
-            const tV=document.getElementById(vId);
-            if(tV)tV.classList.remove('hidden');
-            else{ document.getElementById('homeView').classList.remove('hidden'); console.error(`View '${vId}' não encontrada, exibindo Home.`); }
-            document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
-            if(cE&&cE.classList.contains('sidebar-item'))cE.classList.add('active');
-            if(vId!=='reportsView'){ 
-                if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}
-                if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}
-                if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}
-            }
-            if(vId==='homeView'){updateHomeCounts();renderOSStatusChart()}
-            else if(vId==='osListView'){applyFiltersAndRender()}
-            else if(vId==='weeklyAnalysisView'){const aMYI=document.getElementById('analysisMonthYearInput');if(aMYI&&!aMYI.value)setDefaultAnalysisMonth();renderMonthlyAnalysisByWeek()}
-            else if(vId==='reportsView'){generateCustomReport()} 
-            else if(vId==='settingsView'){const iPSI=document.getElementById('itemsPerPageSetting');if(iPSI)iPSI.value=ITEMS_PER_PAGE}
-        }
-        
-        const mainSidebar = document.getElementById('sidebar'); 
-        const mainContentArea = document.getElementById('mainContent'); 
-        const mainToggleSidebarBtn = document.getElementById('toggleSidebar'); 
-        const mainSidebarTitleDiv = document.getElementById('sidebar-title'); 
-
-        if(mainToggleSidebarBtn && mainSidebar && mainContentArea && mainSidebarTitleDiv){
-            mainToggleSidebarBtn.addEventListener('click',()=>{
-                mainSidebar.classList.toggle('collapsed');
-                mainContentArea.classList.toggle('collapsed');
-                const iC=mainSidebar.classList.contains('collapsed');
-                mainToggleSidebarBtn.innerHTML=iC?'<i class="fas fa-chevron-right text-lg"></i>':'<i class="fas fa-bars text-lg"></i>';
-                const tS=mainSidebarTitleDiv.querySelector('span');if(tS)tS.style.display=iC?'none':'inline';
-                const tI=mainSidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem';
-                if(!iC && document.getElementById('homeView') && !document.getElementById('homeView').classList.contains('hidden'))setTimeout(()=>{if(osStatusChartInstance)osStatusChartInstance.resize()},310);
-                if(!iC && document.getElementById('reportsView') && !document.getElementById('reportsView').classList.contains('hidden'))setTimeout(()=>{if(reportChartByProductInstance)reportChartByProductInstance.resize();if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.resize();if(reportChartByStatusInstance)reportChartByStatusInstance.resize()},310);
-            });
-        }
-
-        const analysisMonthYearInputGlobal = document.getElementById('analysisMonthYearInput');if(analysisMonthYearInputGlobal)analysisMonthYearInputGlobal.addEventListener('change',renderMonthlyAnalysisByWeek);
-        const filterOsNumEl = document.getElementById('filterOsNumber');if(filterOsNumEl)filterOsNumEl.addEventListener('input',applyFiltersAndRender);
-        const filterClientEl = document.getElementById('filterClient');if(filterClientEl)filterClientEl.addEventListener('input',applyFiltersAndRender);
-        const filterStatusEl = document.getElementById('filterStatus');if(filterStatusEl)filterStatusEl.addEventListener('change',applyFiltersAndRender);
-        const filterProductSelectGlobal = document.getElementById('filterProduct');if(filterProductSelectGlobal)filterProductSelectGlobal.addEventListener('change',applyFiltersAndRender);
-        const filterDescriptionInput = document.getElementById('filterDescription');if(filterDescriptionInput)filterDescriptionInput.addEventListener('input',applyFiltersAndRender);
-        
-        // ==========================================================================
-        // LÓGICA DE FILTROS, HOME, ATUALIZAÇÃO GERAL (COMPLETAS)
-        // ==========================================================================
+        function showView(vId,cE){document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));const tV=document.getElementById(vId);if(tV)tV.classList.remove('hidden');else{document.getElementById('homeView').classList.remove('hidden');console.error(`View '${vId}' não encontrada, exibindo Home.`)}document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));if(cE&&cE.classList.contains('sidebar-item'))cE.classList.add('active');if(vId!=='reportsView'){if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}}if(vId==='homeView'){updateHomeCounts();renderOSStatusChart()}else if(vId==='osListView'){applyFiltersAndRender()}else if(vId==='weeklyAnalysisView'){const aMYI=document.getElementById('analysisMonthYearInput');if(aMYI&&!aMYI.value)setDefaultAnalysisMonth();renderMonthlyAnalysisByWeek()}else if(vId==='reportsView'){generateCustomReport()}else if(vId==='settingsView'){const iPSI=document.getElementById('itemsPerPageSetting');if(iPSI)iPSI.value=ITEMS_PER_PAGE}}
+        if(toggleSidebarBtn&&sidebar&&mainContent&&sidebarTitleDiv)toggleSidebarBtn.addEventListener('click',()=>{sidebar.classList.toggle('collapsed');mainContent.classList.toggle('collapsed');const iC=sidebar.classList.contains('collapsed');toggleSidebarBtn.innerHTML=iC?'<i class="fas fa-chevron-right text-lg"></i>':'<i class="fas fa-bars text-lg"></i>';const tS=sidebarTitleDiv.querySelector('span');if(tS)tS.style.display=iC?'none':'inline';const tI=sidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem';if(!iC&&document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))setTimeout(()=>{if(osStatusChartInstance)osStatusChartInstance.resize()},310);if(!iC&&document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden'))setTimeout(()=>{if(reportChartByProductInstance)reportChartByProductInstance.resize();if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.resize();if(reportChartByStatusInstance)reportChartByStatusInstance.resize()},310)})
+        const aMYIG=document.getElementById('analysisMonthYearInput');if(aMYIG)aMYIG.addEventListener('change',renderMonthlyAnalysisByWeek);
+        const fONE=document.getElementById('filterOsNumber');if(fONE)fONE.addEventListener('input',applyFiltersAndRender);const fCE=document.getElementById('filterClient');if(fCE)fCE.addEventListener('input',applyFiltersAndRender);const fSE=document.getElementById('filterStatus');if(fSE)fSE.addEventListener('change',applyFiltersAndRender);const fPSG=document.getElementById('filterProduct');if(fPSG)fPSG.addEventListener('change',applyFiltersAndRender);const fDI=document.getElementById('filterDescription');if(fDI)fDI.addEventListener('input',applyFiltersAndRender);
         function getFilteredOS(){const fONV=document.getElementById('filterOsNumber')?.value.toLowerCase()||"";const fCV=document.getElementById('filterClient')?.value.toLowerCase()||"";const fSV=document.getElementById('filterStatus')?.value||"";const fPV=document.getElementById('filterProduct')?.value||"";const fDV=document.getElementById('filterDescription')?.value.toLowerCase()||"";return ordensServico.filter(os=>(os.numero?.toLowerCase()||"").includes(fONV)&&(os.cliente?.toLowerCase()||"").includes(fCV)&&(fSV?os.status===fSV:true)&&(fPV?os.produto===fPV:true)&&(os.descricao?.toLowerCase()||"").includes(fDV))}
         function applyFiltersAndRender(){currentPage=1;renderOSTable()}
-        function updateHomeCounts(){const oAE=document.getElementById('osAbertasCount');const oCME=document.getElementById('osCompletasMesCount');const oPE=document.getElementById('osPendentesCount');const oCaE=document.getElementById('osCanceladasCount');if(oAE)oAE.textContent=ordensServico.filter(os=>os.status==='Aberta').length;const h=new Date();const pDM=new Date(h.getFullYear(),h.getMonth(),1);const uDM=new Date(h.getFullYear(),h.getMonth()+1,0,23,59,59,999);if(oCME)oCME.textContent=ordensServico.filter(os=>{if(os.status!=='Completa')return false;const dC=os.dataFechamento?new Date(os.dataFechamento+'T00:00:00Z'):(os.prazoFinal?new Date(os.prazoFinal+'T00:00:00Z'):null);if(!dC)return false;return dC>=pDM&&dC<=uDM}).length;if(oPE)oPE.textContent=ordensServico.filter(os=>os.status==='Pendente Informação'||os.status==='Aguardando Aprovação').length;if(oCaE)oCaE.textContent=ordensServico.filter(os=>os.status==='Cancelada').length}
+        function updateHomeCounts(){const oAE=document.getElementById('osAbertasCount');const oCME=document.getElementById('osCompletasMesCount');const oPE=document.getElementById('osPendentesCount');const oCaE=document.getElementById('osCanceladasCount');if(oAE)oAE.textContent=ordensServico.filter(os=>os.status==='Aberta').length;const h=new Date();const pDM=new Date(h.getFullYear(),h.getMonth(),1);const uDM=new Date(h.getFullYear(),h.getMonth()+1,0,23,59,59,999);if(oCME)oCME.textContent=ordensServico.filter(os=>{if(os.status!=='Completa')return false;const dC=os.dataFechamento?new Date(os.dataFechamento+'T00:00:00'):(os.prazoFinal?new Date(os.prazoFinal+'T00:00:00'):null);if(!dC)return false;return dC>=pDM&&dC<=uDM}).length;if(oPE)oPE.textContent=ordensServico.filter(os=>os.status==='Pendente Informação'||os.status==='Aguardando Aprovação').length;if(oCaE)oCaE.textContent=ordensServico.filter(os=>os.status==='Cancelada').length}
         function renderOSStatusChart(){const cC=document.getElementById('osStatusChart');const oSCCC=document.getElementById('osStatusChartContainer');if(!cC||!oSCCC||oSCCC.offsetParent===null)return;const ctx=cC.getContext('2d');const iDM=document.documentElement.classList.contains('dark');const sC=ordensServico.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCo={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)'};const bC=Object.keys(sC).map(s=>sCo[s]||'rgba(201,203,207,0.8)');const d={labels:Object.keys(sC),datasets:[{label:'OS por Status',data:Object.values(sC),backgroundColor:bC,borderColor:iDM?getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim():'#fff',borderWidth:2,hoverOffset:8}]};if(osStatusChartInstance)osStatusChartInstance.destroy();osStatusChartInstance=new Chart(ctx,{type:'doughnut',data:d,options:{responsive:true,maintainAspectRatio:false,animation:{animateScale:true,animateRotate:true},plugins:{legend:{position:'bottom',labels:{padding:15,font:{size:11},color:iDM?getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim():'#1e293b'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.9)':'rgba(255,255,255,0.9)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,callbacks:{label:function(c){const p=((c.parsed/c.chart.getDatasetMeta(0).total)*100).toFixed(1);return`${c.label||''}: ${c.parsed||0} (${p}%)`}}}}}})}
         function navigateToOsListWithFilter(sF,fCMP=false){const fSI=document.getElementById('filterStatus');const fONI=document.getElementById('filterOsNumber');const fCI=document.getElementById('filterClient');const fPI=document.getElementById('filterProduct');const fDI=document.getElementById('filterDescription');if(fONI)fONI.value="";if(fCI)fCI.value="";if(fPI)fPI.value="";if(fDI)fDI.value="";if(fSI){if(Array.isArray(sF)){fSI.value="";addRecentActivity("Visualizando OS. Refine filtros p/ pendentes.")}else{fSI.value=sF}}showView('osListView',document.querySelector('.sidebar-item[onclick*="osListView"]'))}
         function refreshAllViews(){renderOSTable();updateHomeCounts();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))renderOSStatusChart();const wAVE=document.getElementById('weeklyAnalysisView');if(wAVE&&!wAVE.classList.contains('hidden'))renderMonthlyAnalysisByWeek();const rVE=document.getElementById('reportsView');if(rVE&&!rVE.classList.contains('hidden'))generateCustomReport()}
-        
-        // ==========================================================================
-        // ANÁLISE MENSAL (COMPLETA)
-        // ==========================================================================
         function setDefaultAnalysisMonth(){const aMYI=document.getElementById('analysisMonthYearInput');if(!aMYI)return;const t=new Date();const y=t.getFullYear();const m=String(t.getMonth()+1).padStart(2,'0');aMYI.value=`${y}-${m}`}
-        function renderMonthlyAnalysisByWeek(){const wATB=document.getElementById('weeklyAnalysisTableBody');const aMYI=document.getElementById('analysisMonthYearInput');const sMI=document.getElementById('selectedMonthInfo');if(!wATB||!aMYI||!sMI)return;wATB.innerHTML='';const mYV=aMYI.value;if(!mYV){sMI.textContent='Selecione mês/ano.';wATB.innerHTML='<tr><td colspan="9" class="text-center py-10 text-slate-500">Selecione mês/ano.</td></tr>';return}const[y,m]=mYV.split('-').map(Number);const mN=new Date(y,m-1,1).toLocaleString('pt-BR',{month:'long'});sMI.textContent=`Analisando pendências para ${mN} de ${y}.`;const wISM=getWeeksInMonth(y,m);let aPO=[];wISM.forEach(w=>{const{start:wS,end:wE,wednesday:wW,weekNumber:wN}=w;const t=new Date();const hDFCP=t>wW||t>wE;const oITW=ordensServico.filter(os=>{const pFD=new Date(os.prazoFinal+'T23:59:59Z');const iPITSW=pFD>=wS&&pFD<=wE;if(!iPITSW)return false;const iNCOC=os.status!=='Completa'&&os.status!=='Cancelada';if(!iNCOC)return false;return hDFCP});oITW.forEach(os=>aPO.push({...os,weekNumberForAnalysis:wN,analysisWeekStart:wS,analysisWeekEnd:wE}))});if(aPO.length===0){wATB.innerHTML=`<tr><td colspan="9" class="text-center py-10 text-slate-500">Nenhuma OS pendente para ${mN} de ${y}.</td></tr>`;return}aPO.sort((a,b)=>{if(a.weekNumberForAnalysis!==b.weekNumberForAnalysis)return a.weekNumberForAnalysis-b.weekNumberForAnalysis;return new Date(a.prazoFinal)-new Date(b.prazoFinal)});aPO.forEach(os=>{const r=wATB.insertRow();r.className='table-row';const wRT=`Sem. ${os.weekNumberForAnalysis} (${formatDateToBR(os.analysisWeekStart.toISOString().split('T')[0])} - ${formatDateToBR(os.analysisWeekEnd.toISOString().split('T')[0])})`;r.innerHTML=`<td class="py-3 px-4 text-sm" title="${wRT}">Sem ${os.weekNumberForAnalysis}</td><td class="py-3 px-4 text-sm">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm">${os.responsavel}</td><td class="py-3 px-4 text-sm text-red-600">Não 'Completa'</td><td class="py-3 px-4 text-sm"><button class="btn btn-xs bg-sky-500 hover:bg-sky-600 !text-white !py-1 !px-2 mr-1 rounded-md" onclick="editOS('${os.id}')" title="Detalhes OS"><i class="fas fa-edit"></i></button><button class="btn btn-xs bg-amber-500 hover:bg-amber-600 !text-black !py-1 !px-2 rounded-md" onclick="notifyCollaborator('${os.responsavel}','${os.numero}')" title="Notificar Responsável"><i class="fas fa-bell"></i></button></td>`})}
+        function confirmClearAllData(){if(confirm("ATENÇÃO!\nLimpar TODOS os dados de OS?\nAção IRREVERSSÍVEL.")){if(confirm("CONFIRMAÇÃO FINAL:\nTodos dados de OS serão apagados. Continuar?")){ordensServico=[];savedFilters={};localStorage.removeItem('ordensServicoData_v5_6');localStorage.removeItem('savedFilters_v5_6');addRecentActivity("Dados OS limpos.");currentPage=1;refreshAllViews();populateSavedFiltersSelect();alert("Dados OS limpos.")}else alert("Limpeza cancelada.")}else alert("Limpeza cancelada.")}
+        function applyItemsPerPageSetting(){const iPSI=document.getElementById('itemsPerPageSetting');if(!iPSI)return;const nIPP=parseInt(iPSI.value,10);if(nIPP>=5&&nIPP<=50){ITEMS_PER_PAGE=nIPP;currentPage=1;saveDataToLocalStorage();renderOSTable();addRecentActivity(`Itens p/ página: ${ITEMS_PER_PAGE}.`)}else{alert("Valor entre 5 e 50.");iPSI.value=ITEMS_PER_PAGE}}
+        function renderMonthlyAnalysisByWeek(){const wATB=document.getElementById('weeklyAnalysisTableBody');const aMYI=document.getElementById('analysisMonthYearInput');const sMI=document.getElementById('selectedMonthInfo');if(!wATB||!aMYI||!sMI)return;wATB.innerHTML='';const mYV=aMYI.value;if(!mYV){sMI.textContent='Selecione mês/ano.';wATB.innerHTML='<tr><td colspan="9" class="text-center py-10 text-slate-500">Selecione mês/ano.</td></tr>';return}const[y,m]=mYV.split('-').map(Number);const mN=new Date(y,m-1,1).toLocaleString('pt-BR',{month:'long'});sMI.textContent=`Analisando pendências para ${mN} de ${y}.`;const wISM=getWeeksInMonth(y,m);let aPO=[];wISM.forEach(w=>{const{start:wS,end:wE,wednesday:wW,weekNumber:wN}=w;const t=new Date();const hDFCP=t>wW||t>wE;const oITW=ordensServico.filter(os=>{const pFD=new Date(os.prazoFinal+'T23:59:59');const iPITSW=pFD>=wS&&pFD<=wE;if(!iPITSW)return false;const iNCOC=os.status!=='Completa'&&os.status!=='Cancelada';if(!iNCOC)return false;return hDFCP});oITW.forEach(os=>aPO.push({...os,weekNumberForAnalysis:wN,analysisWeekStart:wS,analysisWeekEnd:wE}))});if(aPO.length===0){wATB.innerHTML=`<tr><td colspan="9" class="text-center py-10 text-slate-500">Nenhuma OS pendente para ${mN} de ${y}.</td></tr>`;return}aPO.sort((a,b)=>{if(a.weekNumberForAnalysis!==b.weekNumberForAnalysis)return a.weekNumberForAnalysis-b.weekNumberForAnalysis;return new Date(a.prazoFinal)-new Date(b.prazoFinal)});aPO.forEach(os=>{const r=wATB.insertRow();r.className='table-row';const wRT=`Sem. ${os.weekNumberForAnalysis} (${formatDateToBR(os.analysisWeekStart.toISOString().split('T')[0])} - ${formatDateToBR(os.analysisWeekEnd.toISOString().split('T')[0])})`;r.innerHTML=`<td class="py-3 px-4 text-sm" title="${wRT}">Sem ${os.weekNumberForAnalysis}</td><td class="py-3 px-4 text-sm">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm">${os.responsavel}</td><td class="py-3 px-4 text-sm text-red-600">Não 'Completa'</td><td class="py-3 px-4 text-sm"><button class="btn btn-xs bg-sky-500 hover:bg-sky-600 !text-white !py-1 !px-2 mr-1 rounded-md" onclick="editOS('${os.id}')" title="Detalhes OS"><i class="fas fa-edit"></i></button><button class="btn btn-xs bg-amber-500 hover:bg-amber-600 !text-black !py-1 !px-2 rounded-md" onclick="notifyCollaborator('${os.responsavel}','${os.numero}')" title="Notificar Responsável"><i class="fas fa-bell"></i></button></td>`})}
         function sendWeeklyReportAndGeneratePDF(){const aMYI=document.getElementById('analysisMonthYearInput');if(!aMYI||!aMYI.value){alert("Selecione mês/ano.");return}const[y,m]=aMYI.value.split('-').map(Number);const mN=new Date(y,m-1,1).toLocaleString('pt-BR',{month:'long'});const t=`Relatório Pendências - ${mN.charAt(0).toUpperCase()+mN.slice(1)} ${y}`;const wATB=document.getElementById('weeklyAnalysisTableBody');if(wATB&&wATB.querySelectorAll('tr').length>0&&!wATB.querySelector('td[colspan="9"]')){exportTableToPDF('weeklyAnalysisTable',t,'weeklyAnalysisTableBody',true);addRecentActivity(`PDF pendências (${mN}/${y}) gerado.`);alert(`PDF "${t}" gerado.`)}else alert(`Sem pendências para ${mN}/${y}.`)}
         function notifyCollaborator(r,oN){console.log(`Simulação: Notificando ${r} sobre OS ${oN}.`);alert(`Simulação: Notificação para ${r} (OS ${oN}).`);addRecentActivity(`Notificação (simulada) p/ ${r} (OS ${oN}).`)}
-        
-        // ==========================================================================
-        // RELATÓRIOS PERSONALIZADOS (COMPLETA)
-        // ==========================================================================
-        function generateCustomReport(){const rTB=document.getElementById('reportsTableBody');const rDSI=document.getElementById('reportDateStart');const rDEI=document.getElementById('reportDateEnd');const rSI=document.getElementById('reportStatus');const rPI=document.getElementById('reportProduct');if(!rTB||!rDSI||!rDEI||!rSI||!rPI)return;rTB.innerHTML='';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)});const dSV=rDSI.value;const dEV=rDEI.value;const sV=rSI.value;const pV=rPI.value;if(dSV&&dEV&&new Date(dEV)<new Date(dSV)){alert("Data Final anterior à Inicial.");rTB.innerHTML='<tr><td colspan="7" class="text-center py-10 text-red-500">Erro: Data Final anterior à Inicial.</td></tr>';return}const fRD=ordensServico.filter(os=>{let mD=true;if(os.prazoFinal){const pFD=new Date(os.prazoFinal+"T00:00:00Z");if(dSV&&dEV){mD=pFD>=new Date(dSV+"T00:00:00Z")&&pFD<=new Date(dEV+"T23:59:59Z")}else if(dSV){mD=pFD>=new Date(dSV+"T00:00:00Z")}else if(dEV){mD=pFD<=new Date(dEV+"T23:59:59Z")}}else if(dSV||dEV){mD=false}const mS=sV?os.status===sV:true;const mP=pV?os.produto===pV:true;return mD&&mS&&mP});if(fRD.length===0){rTB.innerHTML='<tr><td colspan="7" class="text-center py-10 text-slate-500">Nenhuma OS para os filtros.</td></tr>';return}fRD.sort((a,b)=>new Date(a.prazoFinal)-new Date(b.prazoFinal));fRD.forEach(os=>{const rw=rTB.insertRow();rw.className='table-row hover:bg-slate-100 dark:hover:bg-slate-700';rw.innerHTML=`<td class="py-3 px-4 text-sm">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td><td class="py-3 px-4 text-sm">${os.responsavel}</td>`});addRecentActivity("Relatório personalizado gerado.");renderReportCharts(fRD)}
+        function generateCustomReport(){const rTB=document.getElementById('reportsTableBody');const rDSI=document.getElementById('reportDateStart');const rDEI=document.getElementById('reportDateEnd');const rSI=document.getElementById('reportStatus');const rPI=document.getElementById('reportProduct');if(!rTB||!rDSI||!rDEI||!rSI||!rPI)return;rTB.innerHTML='';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)});const dSV=rDSI.value;const dEV=rDEI.value;const sV=rSI.value;const pV=rPI.value;if(dSV&&dEV&&new Date(dEV)<new Date(dSV)){alert("Data Final anterior à Inicial.");rTB.innerHTML='<tr><td colspan="7" class="text-center py-10 text-red-500">Erro: Data Final anterior à Inicial.</td></tr>';return}const fRD=ordensServico.filter(os=>{let mD=true;if(os.prazoFinal){const pFD=new Date(os.prazoFinal+"T00:00:00");if(dSV&&dEV){mD=pFD>=new Date(dSV+"T00:00:00")&&pFD<=new Date(dEV+"T23:59:59")}else if(dSV){mD=pFD>=new Date(dSV+"T00:00:00")}else if(dEV){mD=pFD<=new Date(dEV+"T23:59:59")}}else if(dSV||dEV){mD=false}const mS=sV?os.status===sV:true;const mP=pV?os.produto===pV:true;return mD&&mS&&mP});if(fRD.length===0){rTB.innerHTML='<tr><td colspan="7" class="text-center py-10 text-slate-500">Nenhuma OS para os filtros.</td></tr>';return}fRD.sort((a,b)=>new Date(a.prazoFinal)-new Date(b.prazoFinal));fRD.forEach(os=>{const rw=rTB.insertRow();rw.className='table-row hover:bg-slate-100 dark:hover:bg-slate-700';rw.innerHTML=`<td class="py-3 px-4 text-sm">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td><td class="py-3 px-4 text-sm">${os.responsavel}</td>`});addRecentActivity("Relatório personalizado gerado.");renderReportCharts(fRD)}
         function renderReportCharts(d){const iDM=document.documentElement.classList.contains('dark');const cCO=(tTJS=null)=>({responsive:true,maintainAspectRatio:false,animation:{duration:1e3,easing:'easeInOutQuart',animateScale:true,animateRotate:true},plugins:{legend:{display:true,position:'bottom',labels:{color:iDM?'#cbd5e1':'#1e293b',padding:15,boxWidth:12,font:{size:11}}},title:{display:!!tTJS,text:tTJS,color:iDM?'#cbd5e1':'#1e293b',font:{size:14,weight:'normal'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.95)':'rgba(255,255,255,0.95)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,padding:10,callbacks:{label:function(c){const t=c.chart.getDatasetMeta(0).total;const p=t>0?((c.parsed/t)*100).toFixed(1)+'%':'0%';return`${c.label||''}: ${c.parsed||0} (${p})`}}}},scales:{y:{beginAtZero:true,ticks:{color:iDM?'#94a3b8':'#475569',stepSize:1,precision:0},grid:{color:iDM?'#334155':'#e2e8f0',drawBorder:false}},x:{ticks:{color:iDM?'#94a3b8':'#475569',autoSkip:true,maxRotation:45,minRotation:0},grid:{display:false}}}});const cCl=['rgba(54,162,235,0.8)','rgba(255,159,64,0.8)','rgba(75,192,192,0.8)','rgba(255,99,132,0.8)','rgba(153,102,255,0.8)','rgba(255,205,86,0.8)','rgba(123,239,178,0.8)','rgba(250,130,49,0.8)','rgba(179,57,57,0.8)','rgba(72,126,176,0.8)','rgba(246,229,141,0.8)','rgba(113,88,226,0.8)'];const cBC=iDM?'rgba(15,23,42,0.8)':'rgba(255,255,255,0.8)';const pC=d.reduce((acc,os)=>{acc[os.produto||'N/Esp.']=(acc[os.produto||'N/Esp.']||0)+1;return acc},{});if(document.getElementById('reportChartByProduct')){if(reportChartByProductInstance)reportChartByProductInstance.destroy();reportChartByProductInstance=new Chart(document.getElementById('reportChartByProduct').getContext('2d'),{type:'bar',data:{labels:Object.keys(pC),datasets:[{label:'OS',data:Object.values(pC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5}]},options:cCO()})}const uC=d.reduce((acc,os)=>{acc[os.responsavel||'N/Atrib.']=(acc[os.responsavel||'N/Atrib.']||0)+1;return acc},{});if(document.getElementById('reportChartByUsuario')){if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=new Chart(document.getElementById('reportChartByUsuario').getContext('2d'),{type:'pie',data:{labels:Object.keys(uC),datasets:[{label:'OS',data:Object.values(uC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}const sCR=d.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCM={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)'};if(document.getElementById('reportChartByStatus')){if(reportChartByStatusInstance)reportChartByStatusInstance.destroy();reportChartByStatusInstance=new Chart(document.getElementById('reportChartByStatus').getContext('2d'),{type:'doughnut',data:{labels:Object.keys(sCR),datasets:[{label:'OS',data:Object.values(sCR),backgroundColor:Object.keys(sCR).map((s,i)=>sCM[s]||cCl[i%cCl.length]),borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}}
-        const clearReportOnChange=()=>{if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="7" class="text-center py-10 text-slate-500">Filtros alterados. Clique "Gerar Relatório".</td></tr>';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};const rDSL=document.getElementById('reportDateStart');if(rDSL)rDSL.addEventListener('change',clearReportOnChange);const rDEL=document.getElementById('reportDateEnd');if(rDEL)rDEL.addEventListener('change',clearReportOnChange);const rSL=document.getElementById('reportStatus');if(rSL&&!rSL.getAttribute('data-listener-set')){rSL.addEventListener('change',clearReportOnChange);rSL.setAttribute('data-listener-set','true')}const rPL=document.getElementById('reportProduct');if(rPL&&!rPL.getAttribute('data-listener-set')){rPL.addEventListener('change',clearReportOnChange);rPL.setAttribute('data-listener-set','true')}
-        
-        // ==========================================================================
-        // FUNÇÕES DE EXPORTAÇÃO (COMPLETAS)
-        // ==========================================================================
+        const cROnC=()=>{if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="7" class="text-center py-10 text-slate-500">Filtros alterados. Clique "Gerar Relatório".</td></tr>';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};const rDSL=document.getElementById('reportDateStart');if(rDSL)rDSL.addEventListener('change',cROnC);const rDEL=document.getElementById('reportDateEnd');if(rDEL)rDEL.addEventListener('change',cROnC);const rSL=document.getElementById('reportStatus');if(rSL&&!rSL.getAttribute('data-listener-set')){rSL.addEventListener('change',cROnC);rSL.setAttribute('data-listener-set','true')}const rPL=document.getElementById('reportProduct');if(rPL&&!rPL.getAttribute('data-listener-set')){rPL.addEventListener('change',cROnC);rPL.setAttribute('data-listener-set','true')}
         function exportTableToCSV(tId,fN){let c=[];const t=document.getElementById(tId);if(!t){console.error(`Tabela ${tId} não encontrada.`);return}const rS=t.querySelectorAll("tr");for(const r of rS){const cS=r.querySelectorAll("td,th");const rD=[];for(const col of cS){let cT=col.innerText;if(col.querySelector('select'))cT=col.querySelector('select').value;else if(col.querySelector('span[class*="priority-"]'))cT=col.querySelector('span').innerText;rD.push('"'+cT.replace(/\s+/g,' ').trim().replace(/"/g,'""')+'"')}c.push(rD.join(","))}const cF=new Blob([c.join("\n")],{type:"text/csv;charset=utf-8;"});const l=document.createElement("a");l.href=URL.createObjectURL(cF);l.download=fN;l.style.display="none";document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`CSV "${fN}" exportado.`)}
-        function exportTableToPDF(tId,t,tBId,iWR=false){const{jsPDF}=window.jspdf;const d=new jsPDF({orientation:iWR?'landscape':'portrait',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;d.setFontSize(18);d.setTextColor(tC);d.text(t,d.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>h.push(th.innerText));const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach(td=>{let cT=td.innerText;if(td.querySelector('select'))cT=td.querySelector('select').value;else if(td.querySelector('span[class*="priority-"]'))cT=td.querySelector('span').innerText;rD.push(cT)});b.push(rD)});if(b.length>0&&!(b[0].length===1&&b[0][0].includes("Nenhuma OS encontrada"))&&!(b[0].length > 0 && b[0][0].includes("Nenhuma OS para os filtros"))&&!(b[0].length > 0 && b[0][0].includes("Nenhuma OS pendente"))){d.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:iWR?7:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'}})}else d.setFontSize(12).text("Nenhum dado na tabela.",40,cY)}else d.setFontSize(12).text("Tabela não encontrada.",40,cY);const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;d.setFontSize(8).text(gD,d.internal.pageSize.getWidth()-40,d.internal.pageSize.getHeight()-20,{align:'right'});d.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');if(!iWR&&tId!=='reportsTable')addRecentActivity(`PDF "${t}" exportado.`);else if(tId==='reportsTable')addRecentActivity(`PDF (só tabela) "${t}" exportado.`)}
-        async function exportReportToPDFWithCharts(tId,t,tBId,cCI=[]){const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;doc.setFontSize(18);doc.setTextColor(tC);doc.text(t,doc.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const rDSV=document.getElementById('reportDateStart')?.value;const rDEV=document.getElementById('reportDateEnd')?.value;const rSV=document.getElementById('reportStatus')?.value;const rPV=document.getElementById('reportProduct')?.value;let fT="Filtros: ";let hF=false;if(rDSV||rDEV){fT+=`Período: ${rDSV||'*'} a ${rDEV||'*'}. `;hF=true}if(rSV){fT+=`Status: ${rSV}. `;hF=true}if(rPV){fT+=`Produto: ${rPV}. `;hF=true}if(hF){doc.setFontSize(10);doc.text(fT,40,cY);cY+=20}const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>h.push(th.innerText));const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach(td=>{let ct=td.innerText;if(td.querySelector('span[class*="priority-"]'))ct=td.querySelector('span').innerText;rD.push(ct)});b.push(rD)});if(b.length>0&&!b[0][0].includes("Nenhuma OS")){doc.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'},didDrawPage:(data)=>{cY=data.cursor.y+20}});cY=doc.autoTable.previous.finalY+30}else{doc.setFontSize(12);doc.text("Nenhum dado na tabela.",40,cY);cY+=20}}else{doc.setFontSize(12);doc.text("Tabela não encontrada.",40,cY);cY+=20}const pH=doc.internal.pageSize.getHeight();const pW=doc.internal.pageSize.getWidth();const m=40;const cW=(pW-(3*m))/2;const cH=cW*0.65;let cX=m;let cOCR=0;for(const cId of cCI){const cn=document.getElementById(cId);if(cn&&cn.offsetParent!==null&&cn.width>0&&cn.height>0){try{const iD=cn.toDataURL('image/png',1.0);if(cY+cH+m>pH){doc.addPage();cY=m;cX=m;cOCR=0}if(cOCR>=2){cY+=cH+m;cX=m;cOCR=0;if(cY+cH+m>pH){doc.addPage();cY=m}}doc.setFontSize(12);const cT=cn.closest('.card')?.querySelector('h4')?.innerText||cId.replace('reportChartBy','Gráfico ');doc.text(cT,cX+cW/2,cY-5,{align:'center'});doc.addImage(iD,'PNG',cX,cY,cW,cH);cX+=cW+m;cOCR++}catch(e){console.error("Erro add gráfico PDF:",e,cId);if(cY+20>pH){doc.addPage();cY=m}doc.setTextColor(255,0,0);doc.text(`Erro: ${cId.replace('reportChartBy','')}`,cX,cY);doc.setTextColor(tC);cY+=20}}}if(cOCR>0)cY+=cH+m;const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;doc.setFontSize(8);doc.text(gD,pW-m,pH-20,{align:'right'});doc.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');addRecentActivity(`PDF "${t}" c/ gráficos exportado.`)}
+        function exportTableToPDF(tId,t,tBId,iWR=false){const{jsPDF}=window.jspdf;const d=new jsPDF({orientation:iWR?'landscape':'portrait',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;d.setFontSize(18);d.setTextColor(tC);d.text(t,d.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>h.push(th.innerText));const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach(td=>{let cT=td.innerText;if(td.querySelector('select'))cT=td.querySelector('select').value;else if(td.querySelector('span[class*="priority-"]'))cT=td.querySelector('span').innerText;rD.push(cT)});b.push(rD)});if(b.length>0&&!(b[0].length===1&&b[0][0].includes("Nenhuma OS encontrada"))&&!(b[0].length > 0 && b[0][0].includes("Nenhuma OS para os filtros"))&&!(b[0].length > 0 && b[0][0].includes("Nenhuma OS pendente"))){d.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:iWR?7:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'}})}else d.setFontSize(12).text("Nenhum dado na tabela.",40,cY)}else d.setFontSize(12).text("Tabela não encontrada.",40,cY);const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;d.setFontSize(8).text(gD,d.internal.pageSize.getWidth()-40,d.internal.pageSize.getHeight()-20,{align:'right'});d.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');if(!iWR&&tId!=='reportsTable')addRecentActivity(`PDF "${t}" exportado.`);else if (tId==='reportsTable')addRecentActivity(`PDF (só tabela) "${t}" exportado.`)}
+        async function exportReportToPDFWithCharts(tId,t,tBId,cCI=[]){const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;doc.setFontSize(18);doc.setTextColor(tC);doc.text(t,doc.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const rDSV=document.getElementById('reportDateStart')?.value;const rDEV=document.getElementById('reportDateEnd')?.value;const rSV=document.getElementById('reportStatus')?.value;const rPV=document.getElementById('reportProduct')?.value;let fT="Filtros: ";let hF=false;if(rDSV||rDEV){fT+=`Período: ${rDSV||'*'} a ${rDEV||'*'}. `;hF=true}if(rSV){fT+=`Status: ${rSV}. `;hF=true}if(rPV){fT+=`Produto: ${rPV}. `;hF=true}if(hF){doc.setFontSize(10);doc.text(fT,40,cY);cY+=20}const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>h.push(th.innerText));const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach(td=>{let ct = td.innerText; if(td.querySelector('span[class*="priority-"]')) ct=td.querySelector('span').innerText; rD.push(ct)});b.push(rD)});if(b.length>0&&!b[0][0].includes("Nenhuma OS")){doc.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'},didDrawPage:(data)=>{cY=data.cursor.y+20}});cY=doc.autoTable.previous.finalY+30}else{doc.setFontSize(12);doc.text("Nenhum dado na tabela.",40,cY);cY+=20}}else{doc.setFontSize(12);doc.text("Tabela não encontrada.",40,cY);cY+=20}const pH=doc.internal.pageSize.getHeight();const pW=doc.internal.pageSize.getWidth();const m=40;const cW=(pW-(3*m))/2;const cH=cW*0.65;let cX=m;let cOCR=0;for(const cId of cCI){const cn=document.getElementById(cId);if(cn&&cn.offsetParent!==null&&cn.width>0&&cn.height>0){try{const iD=cn.toDataURL('image/png',1.0);if(cY+cH+m>pH){doc.addPage();cY=m;cX=m;cOCR=0}if(cOCR>=2){cY+=cH+m;cX=m;cOCR=0;if(cY+cH+m>pH){doc.addPage();cY=m}}doc.setFontSize(12);const cT=cn.closest('.card')?.querySelector('h4')?.innerText||cId.replace('reportChartBy','Gráfico ');doc.text(cT,cX+cW/2,cY-5,{align:'center'});doc.addImage(iD,'PNG',cX,cY,cW,cH);cX+=cW+m;cOCR++}catch(e){console.error("Erro add gráfico PDF:",e, cId);if(cY+20>pH){doc.addPage();cY=m}doc.setTextColor(255,0,0);doc.text(`Erro ao renderizar: ${cId.replace('reportChartBy','')}`,cX,cY);doc.setTextColor(tC);cY+=20}}}if(cOCR>0)cY+=cH+m;const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;doc.setFontSize(8);doc.text(gD,pW-m,pH-20,{align:'right'});doc.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');addRecentActivity(`PDF "${t}" c/ gráficos exportado.`)}
         function downloadICS(osI){const os=ordensServico.find(o=>o.id===osI);if(!os){alert("OS não encontrada p/ .ics");return}const nF=new Date().toISOString().replace(/-/g,'').replace(/:/g,'').substring(0,15)+'Z';const d=`OS: ${os.numero}\\nCliente: ${os.cliente}\\nProduto: ${os.produto}\\nDescrição: ${os.descricao.replace(/\n/g,'\\n')}\\nResp: ${os.responsavel}\\nPrio: ${os.prioridade}\\nStatus: ${os.status}`;const iC=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//hacksw/handcal//NONSGML v1.0//EN","BEGIN:VEVENT",`UID:${os.id}@${window.location.hostname||'gestao-os.com'}`,`DTSTAMP:${nF}`,`DTSTART;VALUE=DATE:${os.dataAbertura.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${new Date(new Date(os.prazoFinal).getTime()+864e5).toISOString().split('T')[0].replace(/-/g,'')}`,`SUMMARY:Prazo OS ${os.numero} - ${os.cliente}`,`DESCRIPTION:${d}`,"LOCATION:Cliente "+os.cliente,"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Lembrete Prazo OS","TRIGGER:-PT1D","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");const b=new Blob([iC],{type:'text/calendar;charset=utf-8'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download=`OS_${os.numero}_${os.cliente.replace(/ /g,'_')}.ics`;document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`.ics p/ OS ${os.numero} gerado.`)}
-        
-        // ==========================================================================
-        // FUNÇÕES DE CONFIGURAÇÕES
-        // ==========================================================================
-        function confirmClearAllData(){if(confirm("ATENÇÃO!\nLimpar TODOS os dados de OS?\nAção IRREVERSSÍVEL.")){if(confirm("CONFIRMAÇÃO FINAL:\nTodos dados de OS serão apagados. Continuar?")){ordensServico=[];savedFilters={};localStorage.removeItem('ordensServicoData_v1_6_0');localStorage.removeItem('savedFilters_v1_6_0');addRecentActivity("Dados OS limpos.");currentPage=1;refreshAllViews();populateSavedFiltersSelect();alert("Dados OS limpos.")}else alert("Limpeza cancelada.")}else alert("Limpeza cancelada.")}
-        function applyItemsPerPageSetting(){const iPSI=document.getElementById('itemsPerPageSetting');if(!iPSI)return;const nIPP=parseInt(iPSI.value,10);if(nIPP>=5&&nIPP<=50){ITEMS_PER_PAGE=nIPP;currentPage=1;saveDataToLocalStorage();renderOSTable();addRecentActivity(`Itens p/ página: ${ITEMS_PER_PAGE}.`)}else{alert("Valor entre 5 e 50.");iPSI.value=ITEMS_PER_PAGE}}
-        
-        // ==========================================================================
-        // INICIALIZAÇÃO DA APLICAÇÃO E EVENTOS GLOBAIS
-        // ==========================================================================
-        window.onload=()=>{
-            loadDataFromLocalStorage();
-            populateProductFilters();
-            const homeSidebarItem=document.querySelector('.sidebar-item[onclick*="homeView"]');
-            showView('homeView',homeSidebarItem||null); // Garante que a view inicial seja a home
-            const dataAberturaModalEl=document.getElementById('osDataAberturaModal');
-            if(dataAberturaModalEl&&!dataAberturaModalEl.value)dataAberturaModalEl.value=new Date().toISOString().split('T')[0];
-            
-            // Referenciando as variáveis globais corretas para o listener da sidebar
-            if(mainToggleSidebarBtn && mainSidebar && mainContentArea && mainSidebarTitleDiv){
-                 if(window.innerWidth<1024 && !mainSidebar.classList.contains('collapsed')){
-                    mainSidebar.classList.add('collapsed');
-                    mainContentArea.classList.add('collapsed');
-                    const iC=mainSidebar.classList.contains('collapsed');
-                    mainToggleSidebarBtn.innerHTML=iC?'<i class="fas fa-chevron-right text-lg"></i>':'<i class="fas fa-bars text-lg"></i>';
-                    const tS=mainSidebarTitleDiv.querySelector('span');if(tS)tS.style.display=iC?'none':'inline';
-                    const tI=mainSidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem';
-                }
-            }
-            addRecentActivity("Sistema V1.6.0 inicializado.");
-            updateLoginUI();
-        };
-        window.onclick=function(e){if(osModal&&e.target==osModal)closeOSModal()};
-        window.onkeydown=function(e){if(osModal&&!osModal.classList.contains('hidden')&&e.key==="Escape")closeOSModal()};
+        window.onload=()=>{loadDataFromLocalStorage();populateProductFilters();const hSI=document.querySelector('.sidebar-item[onclick*="homeView"]');showView('homeView',hSI||null);const dAMO=document.getElementById('osDataAberturaModal');if(dAMO&&!dAMO.value)dAMO.value=new Date().toISOString().split('T')[0];if(window.innerWidth<1024&&sidebar&&mainContent&&toggleSidebarBtn&&sidebarTitleDiv){if(!sidebar.classList.contains('collapsed')){sidebar.classList.add('collapsed');mainContent.classList.add('collapsed');const iC=sidebar.classList.contains('collapsed');toggleSidebarBtn.innerHTML=iC?'<i class="fas fa-chevron-right text-lg"></i>':'<i class="fas fa-bars text-lg"></i>';const tS=sidebarTitleDiv.querySelector('span');if(tS)tS.style.display=iC?'none':'inline';const tI=sidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem'}}addRecentActivity("Sistema V1.5.6 inicializado.");updateLoginUI()};
+        window.onclick=function(e){if(osModal&&e.target==osModal)closeOSModal()};window.onkeydown=function(e){if(osModal&&!osModal.classList.contains('hidden')&&e.key==="Escape")closeOSModal()};
     </script>
 </body>
-</html>
-    </script>
-    </body>
 </html>
