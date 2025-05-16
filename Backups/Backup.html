@@ -2,7 +2,7 @@
 <html lang="pt-BR" class=""> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento Interno de OS - V1.6.0</title>
+    <title>Gerenciamento Interno de OS - V1.8.0</title>
     <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -75,6 +75,8 @@
         .checkbox-cell { width: 1%; white-space: nowrap; }
         .priority-Alta { background-color: #fee2e2 !important; color: #b91c1c !important; } .priority-Urgente { background-color: #ffedd5 !important; color: #c2410c !important; animation: pulse 1.5s infinite; }
         .priority-Média { background-color: #fef3c7 !important; color: #a16207 !important; } .priority-Baixa { background-color: #dcfce7 !important; color: #15803d !important; }
+        .status-cell span { display: flex; align-items: center; }
+        .manual-flag-toggle { cursor: pointer; } /* Classe para o ícone de bandeira clicável */
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } } @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
         @keyframes slideIn { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
         ::-webkit-scrollbar { width: 8px; height: 8px;} html:not(.dark) ::-webkit-scrollbar-track { background: #e2e8f0; }
@@ -97,7 +99,6 @@
                 <ul>
                     <li class="sidebar-item active" onclick="showView('homeView', this)"> <i class="fas fa-home"></i> <span>Home</span> </li>
                     <li class="sidebar-item" onclick="showView('osListView', this)"> <i class="fas fa-list-alt"></i> <span>Ordens de Serviço</span> </li>
-                    <li class="sidebar-item" onclick="showView('weeklyAnalysisView', this)"> <i class="fas fa-calendar-check"></i> <span>Análise Mensal</span> </li>
                     <li class="sidebar-item" onclick="showView('reportsView', this)"> <i class="fas fa-chart-pie"></i> <span>Relatórios</span> </li>
                     <li class="sidebar-item mt-4" onclick="openAddOSModal()"> <i class="fas fa-plus-circle text-green-500"></i> <span class="text-green-500">Nova OS</span> </li>
                 </ul>
@@ -111,7 +112,7 @@
         <div class="mt-auto pb-2">
             <div class="sidebar-item" onclick="toggleDarkMode()"> <i id="darkModeIcon" class="fas fa-moon"></i> <span>Modo Escuro</span> </div>
             <div class="sidebar-item" onclick="showView('settingsView', this)"> <i class="fas fa-cog"></i> <span>Configurações</span> </div>
-            <div class="sidebar-item text-sm text-slate-500 dark:text-slate-400"> <i class="fas fa-info-circle"></i> <span>Versão 1.6.0</span> </div>
+            <div class="sidebar-item text-sm text-slate-500 dark:text-slate-400"> <i class="fas fa-info-circle"></i> <span>Versão 1.8.0</span> </div>
         </div>
     </aside>
 
@@ -125,10 +126,9 @@
                 <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"> Explore as diversas seções do sistema para ter controle total sobre suas Ordens de Serviço: </p>
                 <ul class="list-disc list-inside text-sm text-slate-700 dark:text-slate-300 mt-2 space-y-1 pl-4">
                     <li><strong>Home:</strong> Visão geral dos indicadores chave e acesso rápido às funcionalidades.</li>
-                    <li><strong>Ordens de Serviço:</strong> Liste, filtre, edite, gerencie e importe OS em lote.</li>
-                    <li><strong>Análise Mensal:</strong> Acompanhe as pendências de OS por semana dentro de um mês específico.</li>
-                    <li><strong>Relatórios:</strong> Gere relatórios personalizados com gráficos para análises detalhadas.</li>
-                    <li><strong>Nova OS:</strong> Crie novas Ordens de Serviço de forma rápida e intuitiva.</li>
+                    <li><strong>Ordens de Serviço:</strong> Liste, filtre (incluindo por marcador manual de "Não Realizada no Prazo"), edite, gerencie e importe OS em lote.</li>
+                    <li><strong>Relatórios:</strong> Gere relatórios personalizados com gráficos para análises detalhadas, incluindo filtro por marcador manual de OS "Não Realizada no Prazo".</li>
+                    <li><strong>Nova OS:</strong> Crie novas Ordens de Serviço de forma rápida e intuitiva, com opção de marcador manual "Não Realizada no Prazo".</li>
                 </ul>
                 <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mt-3"> Utilize os cards abaixo para uma navegação ágil pelas principais métricas e seções do sistema. </p>
             </div>
@@ -143,58 +143,82 @@
                 <div class="card"> <h3 class="text-xl font-semibold mb-3">Atividades Recentes</h3> <ul id="recentActivityList" class="space-y-3 max-h-80 overflow-y-auto"> <li class="text-sm text-placeholder">Nenhuma atividade recente.</li> </ul> </div>
             </div>
         </div>
+
         <div id="osListView" class="view-section card hidden">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h2 class="text-3xl font-bold">Ordens de Serviço</h2>
                 <div class="flex gap-2 flex-wrap items-center">
-                    <div id="bulkActionsContainer" class="hidden flex gap-2 items-center mr-4"> <span id="selectedOsCount" class="text-sm">0 selecionadas</span> <select id="bulkActionStatus" class="select-field p-2 rounded-md text-sm"> <option value="">Alterar Status para...</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option> </select> <button class="btn btn-sm btn-primary" onclick="applyBulkAction()"><i class="fas fa-check"></i> Aplicar</button> <button class="btn btn-sm btn-danger" onclick="bulkDeleteSelectedOS()"><i class="fas fa-trash"></i> Excluir</button> </div>
+                    <div id="bulkActionsContainer" class="hidden flex gap-2 items-center mr-4"> <span id="selectedOsCount" class="text-sm">0 selecionadas</span> <select id="bulkActionStatus" class="select-field p-2 rounded-md text-sm"> <option value="">Alterar Status para...</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option> <option value="Incompleta">Incompleta</option> </select> <button class="btn btn-sm btn-primary" onclick="applyBulkAction()"><i class="fas fa-check"></i> Aplicar</button> <button class="btn btn-sm btn-danger" onclick="bulkDeleteSelectedOS()"><i class="fas fa-trash"></i> Excluir</button> </div>
                     <button class="btn btn-success" onclick="exportTableToCSV('osTable', 'lista_os.csv')"><i class="fas fa-file-csv"></i>Exportar CSV</button>
                     <button class="btn btn-danger" onclick="exportTableToPDF('osTable', 'Lista de Ordens de Serviço', 'osTableBody')"><i class="fas fa-file-pdf"></i>Exportar PDF</button>
                     <button class="btn btn-primary" onclick="openAddOSModal()"> <i class="fas fa-plus"></i> Adicionar OS </button>
                 </div>
             </div>
-            <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end"> <input type="text" id="filterOsNumber" placeholder="Nº OS" class="input-field p-2 rounded-md"> <input type="text" id="filterClient" placeholder="Cliente" class="input-field p-2 rounded-md"> <input type="text" id="filterDescription" placeholder="Buscar na Descrição..." class="input-field p-2 rounded-md md:col-span-2 lg:col-span-1"> <select id="filterProduct" class="select-field p-2 rounded-md"> <option value="">Todos os Produtos</option> </select> <select id="filterStatus" class="select-field p-2 rounded-md"> <option value="">Todos os Status</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option> </select> </div>
-                <div class="mt-4 flex flex-wrap gap-2 items-center"> <label for="savedFilters" class="text-sm font-medium">Filtros Salvos:</label> <select id="savedFilters" class="select-field p-2 rounded-md text-sm"> <option value="">Carregar filtro...</option> </select> <button class="btn btn-sm btn-secondary" onclick="loadSelectedFilter()"><i class="fas fa-download"></i> Carregar</button> <input type="text" id="newFilterName" placeholder="Nome do novo filtro" class="input-field p-2 rounded-md text-sm"> <button class="btn btn-sm btn-primary" onclick="saveCurrentFilters()"><i class="fas fa-save"></i> Salvar Filtro</button> <button class="btn btn-sm btn-danger" onclick="deleteSavedFilter()" title="Excluir filtro"><i class="fas fa-trash-alt"></i></button> </div>
-            </div>
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="w-full md:flex-grow">
+                    <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+                            <input type="text" id="filterOsNumber" placeholder="Nº OS" class="input-field p-2 rounded-md">
+                            <input type="text" id="filterClient" placeholder="Cliente" class="input-field p-2 rounded-md">
+                            <input type="text" id="filterDescription" placeholder="Buscar na Descrição..." class="input-field p-2 rounded-md">
+                            <select id="filterProduct" class="select-field p-2 rounded-md"> <option value="">Todos os Produtos</option> </select>
+                            <select id="filterStatus" class="select-field p-2 rounded-md"> <option value="">Todos os Status</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option><option value="Incompleta">Incompleta</option></select>
+                            <div>
+                                <label for="filterMarcadorAtraso" class="block text-xs font-medium mb-0.5">Marcador Manual Atraso:</label>
+                                <select id="filterMarcadorAtraso" class="select-field p-2 rounded-md w-full text-sm">
+                                    <option value="">Todos</option>
+                                    <option value="marcada">Marcada</option>
+                                    <option value="nao_marcada">Não Marcada</option>
+                                </select>
+                            </div>
+                        </div>
+                         <div class="mt-4 flex flex-wrap gap-2 items-center"> <label for="savedFilters" class="text-sm font-medium">Filtros Salvos:</label> <select id="savedFilters" class="select-field p-2 rounded-md text-sm"> <option value="">Carregar filtro...</option> </select> <button class="btn btn-sm btn-secondary" onclick="loadSelectedFilter()"><i class="fas fa-download"></i> Carregar</button> <input type="text" id="newFilterName" placeholder="Nome do novo filtro" class="input-field p-2 rounded-md text-sm"> <button class="btn btn-sm btn-primary" onclick="saveCurrentFilters()"><i class="fas fa-save"></i> Salvar Filtro</button> <button class="btn btn-sm btn-danger" onclick="deleteSavedFilter()" title="Excluir filtro"><i class="fas fa-trash-alt"></i></button> </div>
+                    </div>
 
-            <div id="importOsSection" class="mt-6 mb-6 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 shadow">
-                <h3 class="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100 border-b border-slate-300 dark:border-slate-700 pb-2"> <i class="fas fa-file-excel mr-2 text-green-600 dark:text-green-500"></i>Importar OS em Lote (Excel/CSV) </h3>
-                <p class="text-sm text-slate-600 dark:text-slate-400 mb-3"> Selecione um arquivo (.xlsx, .xls, .csv). Colunas esperadas: Código, Status, Cliente, Início, Término, Técnico, Solicitante, Cidade, Duração (h). </p>
-                <div class="flex flex-col sm:flex-row gap-4 items-center">
-                    <input type="file" id="excelFileInput" class="input-field p-2 rounded-md border-slate-300 dark:border-slate-600 text-sm w-full sm:w-auto flex-grow file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-100 dark:file:bg-sky-700 file:text-sky-700 dark:file:text-sky-200 hover:file:bg-sky-200 dark:hover:file:bg-sky-600 cursor-pointer" accept=".xlsx, .xls, .csv">
-                    <button id="processExcelButton" class="btn btn-success w-full sm:w-auto whitespace-nowrap"> <i class="fas fa-upload"></i> Processar Arquivo </button>
+                    <div class="overflow-x-auto shadow-md rounded-lg">
+                        <table id="osTable" class="min-w-full">
+                           <thead class="table-header"> <tr> <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4"></th><th class="py-3 px-4 text-left">Nº OS</th> <th class="py-3 px-4 text-left">Cliente</th> <th class="py-3 px-4 text-left">Produto</th> <th class="py-3 px-4 text-left">Descrição</th> <th class="py-3 px-4 text-left">Data Abertura</th> <th class="py-3 px-4 text-left">Prazo Final</th> <th class="py-3 px-4 text-left">Responsável</th> <th class="py-3 px-4 text-left">Solicitante</th> <th class="py-3 px-4 text-left">Status</th> <th class="py-3 px-4 text-left">Prioridade</th> <th class="py-3 px-4 text-left">Ações</th> </tr> </thead> <tbody id="osTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                        </table>
+                    </div>
+                    <div id="paginationControls" class="mt-6 flex justify-end items-center gap-2"></div>
                 </div>
-                <div id="importStatusMessage" class="mt-4 text-sm"> </div>
-                <div id="importSummary" class="mt-3 text-xs hidden"> <p class="font-semibold mb-1"><strong>Resumo da Importação:</strong></p> <ul id="importSummaryList" class="list-disc list-inside pl-4 space-y-1 max-h-40 overflow-y-auto"></ul> </div>
-            </div>
 
-            <div class="overflow-x-auto shadow-md rounded-lg"> <table id="osTable" class="min-w-full"> <thead class="table-header"> <tr> <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4"></th> <th class="py-3 px-4 text-left">Nº OS</th> <th class="py-3 px-4 text-left">Cliente</th> <th class="py-3 px-4 text-left">Produto</th> <th class="py-3 px-4 text-left">Descrição</th> <th class="py-3 px-4 text-left">Data Abertura</th> <th class="py-3 px-4 text-left">Prazo Final</th> <th class="py-3 px-4 text-left">Responsável</th> <th class="py-3 px-4 text-left">Solicitante</th> <th class="py-3 px-4 text-left">Status</th> <th class="py-3 px-4 text-left">Prioridade</th> <th class="py-3 px-4 text-left">Ações</th> </tr> </thead> <tbody id="osTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody> </table> </div>
-            <div id="paginationControls" class="mt-6 flex justify-end items-center gap-2"></div>
-        </div>
-        <div id="weeklyAnalysisView" class="view-section card hidden">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-3xl font-bold">Análise Mensal de Pendências</h2>
-                <div class="flex items-center gap-3 flex-wrap"> <div> <label for="analysisMonthYearInput" class="text-sm font-medium mr-2">Mês/Ano:</label> <input type="month" id="analysisMonthYearInput" name="analysisMonthYearInput" class="input-field p-2 rounded-md"> </div> <button class="btn btn-warning" onclick="sendWeeklyReportAndGeneratePDF()"><i class="fas fa-paper-plane"></i> Gerar PDF Pendências</button> </div>
+                <div id="importOsSection" class="w-full md:w-1/3 md:max-w-sm p-4 bg-slate-100 dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 shadow md:sticky md:top-6 self-start">
+                    <h3 class="text-lg font-semibold mb-3 text-slate-800 dark:text-slate-100 border-b border-slate-300 dark:border-slate-700 pb-2"> <i class="fas fa-file-excel mr-2 text-green-600 dark:text-green-500"></i>Importar OS em Lote </h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mb-3"> Selecione (.xlsx, .xls, .csv). Colunas primárias: Código, Status, Cliente, Início, Término, Técnico, Solicitante. </p>
+                    <div class="flex flex-col gap-3">
+                        <input type="file" id="excelFileInput" class="input-field p-2 rounded-md border-slate-300 dark:border-slate-600 text-sm w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-100 dark:file:bg-sky-700 file:text-sky-700 dark:file:text-sky-200 hover:file:bg-sky-200 dark:hover:file:bg-sky-600 cursor-pointer" accept=".xlsx, .xls, .csv">
+                        <button id="processExcelButton" class="btn btn-sm btn-success w-full whitespace-nowrap"> <i class="fas fa-upload"></i> Processar Arquivo </button>
+                    </div>
+                    <div id="importStatusMessage" class="mt-3 text-xs"> </div>
+                    <div id="importSummary" class="mt-2 text-xs hidden"> <p class="font-semibold mb-1"><strong>Resumo da Importação:</strong></p> <ul id="importSummaryList" class="list-disc list-inside pl-3 space-y-0.5 max-h-32 overflow-y-auto"></ul> </div>
+                </div>
             </div>
-            <p class="text-base mb-2">OSs com prazo no mês selecionado não 'Completas' após Quarta-Feira da semana do prazo.</p> <p id="selectedMonthInfo" class="text-sm text-sky-600 dark:text-sky-400 font-semibold mb-4"></p>
-            <div class="overflow-x-auto shadow-md rounded-lg"> <table id="weeklyAnalysisTable" class="min-w-full"> <thead class="table-header"> <tr> <th class="py-3 px-4 text-left">Semana Prazo</th> <th class="py-3 px-4 text-left">Nº OS</th> <th class="py-3 px-4 text-left">Cliente</th> <th class="py-3 px-4 text-left">Produto</th> <th class="py-3 px-4 text-left">Prazo Final</th> <th class="py-3 px-4 text-left">Status Atual</th> <th class="py-3 px-4 text-left">Responsável</th> <th class="py-3 px-4 text-left">Pendência</th> <th class="py-3 px-4 text-left">Ação</th> </tr> </thead> <tbody id="weeklyAnalysisTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody> </table> </div>
         </div>
+
         <div id="reportsView" class="view-section card hidden">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h2 class="text-3xl font-bold">Relatórios Personalizados</h2>
-                <div class="flex gap-2 flex-wrap items-center"> 
-                    <button class="btn btn-success" onclick="exportTableToCSV('reportsTable', 'relatorio_os_personalizado.csv')"><i class="fas fa-file-csv"></i> CSV</button> 
+                <div class="flex gap-2 flex-wrap items-center">
+                    <button class="btn btn-success" onclick="exportTableToCSV('reportsTable', 'relatorio_os_personalizado.csv')"><i class="fas fa-file-csv"></i> CSV</button>
                     <button class="btn btn-info" onclick="exportTableToPDF('reportsTable', 'Relatório Personalizado de OS (somente tabela)', 'reportsTableBody')"><i class="fas fa-file-alt"></i> PDF (só tabela)</button>
-                    <button class="btn btn-danger" onclick="exportReportToPDFWithCharts('reportsTable', 'Relatório Personalizado de OS (com gráficos)', 'reportsTableBody', ['reportChartByProduct', 'reportChartByUsuario', 'reportChartByStatus'])"><i class="fas fa-file-pdf"></i> PDF (c/ Gráficos)</button> 
+                    <button class="btn btn-danger" onclick="exportReportToPDFWithCharts('reportsTable', 'Relatório Personalizado de OS (com gráficos)', 'reportsTableBody', ['reportChartByProduct', 'reportChartByUsuario', 'reportChartByStatus'])"><i class="fas fa-file-pdf"></i> PDF (c/ Gráficos)</button>
                 </div>
             </div>
             <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end"> 
-                    <div> <label for="reportDateStart" class="block text-sm font-medium mb-1">Data Inicial (Prazo):</label> <input type="date" id="reportDateStart" name="reportDateStart" class="input-field w-full p-2 rounded-md"> </div> 
-                    <div> <label for="reportDateEnd" class="block text-sm font-medium mb-1">Data Final (Prazo):</label> <input type="date" id="reportDateEnd" name="reportDateEnd" class="input-field w-full p-2 rounded-md"> </div> 
-                    <div> <label for="reportStatus" class="block text-sm font-medium mb-1">Status:</label> <select id="reportStatus" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option> </select> </div> 
-                    <div class="md:col-span-3"> <label for="reportProduct" class="block text-sm font-medium mb-1">Produto:</label> <select id="reportProduct" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option></select> </div> 
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    <div> <label for="reportDateStart" class="block text-sm font-medium mb-1">Data Inicial (Prazo):</label> <input type="date" id="reportDateStart" name="reportDateStart" class="input-field w-full p-2 rounded-md"> </div>
+                    <div> <label for="reportDateEnd" class="block text-sm font-medium mb-1">Data Final (Prazo):</label> <input type="date" id="reportDateEnd" name="reportDateEnd" class="input-field w-full p-2 rounded-md"> </div>
+                    <div> <label for="reportStatus" class="block text-sm font-medium mb-1">Status:</label> <select id="reportStatus" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option><option value="Incompleta">Incompleta</option></select> </div>
+                    <div>
+                        <label for="reportFilterMarcadorAtraso" class="block text-sm font-medium mb-1">Marcador Manual Atraso:</label>
+                        <select id="reportFilterMarcadorAtraso" class="select-field w-full p-2 rounded-md">
+                            <option value="">Todos</option>
+                            <option value="marcada">Marcada</option>
+                            <option value="nao_marcada">Não Marcada</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-4"> <label for="reportProduct" class="block text-sm font-medium mb-1">Produto:</label> <select id="reportProduct" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option></select> </div>
                 </div>
                 <div class="mt-4"> <button class="btn btn-primary" onclick="generateCustomReport()"><i class="fas fa-filter"></i> Gerar Relatório</button> </div>
             </div>
@@ -213,7 +237,7 @@
             </div>
         </div>
     </main>
-    <div id="osModal" class="modal hidden"> <div class="modal-content"> <span class="close-button" onclick="closeOSModal()">&times;</span> <h3 id="modalTitle" class="text-2xl font-semibold mb-6">Adicionar Nova Ordem de Serviço</h3> <form id="osForm"> <input type="hidden" id="osId"> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4"> <div> <label for="osNumeroModal" class="block text-sm font-medium mb-1">Nº OS <span class="text-red-500">*</span></label> <input type="text" id="osNumeroModal" name="osNumeroModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osClienteModal" class="block text-sm font-medium mb-1">Cliente <span class="text-red-500">*</span></label> <input type="text" id="osClienteModal" name="osClienteModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osProdutoModal" class="block text-sm font-medium mb-1">Produto/Serviço <span class="text-red-500">*</span></label> <input type="text" id="osProdutoModal" name="osProdutoModal" list="productList" class="input-field w-full p-2 rounded-md" required> <datalist id="productList"></datalist> </div> <div> <label for="osSolicitanteModal" class="block text-sm font-medium mb-1">Solicitante</label> <input type="text" id="osSolicitanteModal" name="osSolicitanteModal" class="input-field w-full p-2 rounded-md"> </div> </div> <div class="mb-4"> <label for="osDescricaoModal" class="block text-sm font-medium mb-1">Descrição Detalhada <span class="text-red-500">*</span></label> <textarea id="osDescricaoModal" name="osDescricaoModal" rows="3" class="input-field w-full p-2 rounded-md" required></textarea> </div> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4"> <div> <label for="osDataAberturaModal" class="block text-sm font-medium mb-1">Data de Abertura <span class="text-red-500">*</span></label> <input type="date" id="osDataAberturaModal" name="osDataAberturaModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osPrazoFinalModal" class="block text-sm font-medium mb-1">Prazo Final <span class="text-red-500">*</span></label> <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osResponsavelModal" class="block text-sm font-medium mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label> <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osStatusModal" class="block text-sm font-medium mb-1">Status <span class="text-red-500">*</span></label> <select id="osStatusModal" name="osStatusModal" class="select-field w-full p-2 rounded-md" required> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option> </select> </div> </div> <div class="mb-6"> <label for="osPrioridadeModal" class="block text-sm font-medium mb-1">Prioridade <span class="text-red-500">*</span></label> <select id="osPrioridadeModal" name="osPrioridadeModal" class="select-field w-full p-2 rounded-md" required> <option value="Baixa">Baixa</option> <option value="Média">Média</option> <option value="Alta">Alta</option> <option value="Urgente">Urgente</option> </select> </div> <div class="flex justify-end gap-3"> <button type="button" class="btn btn-secondary" onclick="closeOSModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Salvar OS</button> </div> </form> </div> </div>
+    <div id="osModal" class="modal hidden"> <div class="modal-content"> <span class="close-button" onclick="closeOSModal()">&times;</span> <h3 id="modalTitle" class="text-2xl font-semibold mb-6">Adicionar Nova Ordem de Serviço</h3> <form id="osForm"> <input type="hidden" id="osId"> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4"> <div> <label for="osNumeroModal" class="block text-sm font-medium mb-1">Nº OS <span class="text-red-500">*</span></label> <input type="text" id="osNumeroModal" name="osNumeroModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osClienteModal" class="block text-sm font-medium mb-1">Cliente <span class="text-red-500">*</span></label> <input type="text" id="osClienteModal" name="osClienteModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osProdutoModal" class="block text-sm font-medium mb-1">Produto/Serviço <span class="text-red-500">*</span></label> <input type="text" id="osProdutoModal" name="osProdutoModal" list="productList" class="input-field w-full p-2 rounded-md" required> <datalist id="productList"></datalist> </div> <div> <label for="osSolicitanteModal" class="block text-sm font-medium mb-1">Solicitante</label> <input type="text" id="osSolicitanteModal" name="osSolicitanteModal" class="input-field w-full p-2 rounded-md"> </div> </div> <div class="mb-4"> <label for="osDescricaoModal" class="block text-sm font-medium mb-1">Descrição Detalhada <span class="text-red-500">*</span></label> <textarea id="osDescricaoModal" name="osDescricaoModal" rows="3" class="input-field w-full p-2 rounded-md" required></textarea> </div> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4"> <div> <label for="osDataAberturaModal" class="block text-sm font-medium mb-1">Data de Abertura <span class="text-red-500">*</span></label> <input type="date" id="osDataAberturaModal" name="osDataAberturaModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osPrazoFinalModal" class="block text-sm font-medium mb-1">Prazo Final <span class="text-red-500">*</span></label> <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osResponsavelModal" class="block text-sm font-medium mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label> <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osStatusModal" class="block text-sm font-medium mb-1">Status <span class="text-red-500">*</span></label> <select id="osStatusModal" name="osStatusModal" class="select-field w-full p-2 rounded-md" required> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Cancelada">Cancelada</option> <option value="Incompleta">Incompleta</option></select> </div> </div> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-6"> <div> <label for="osPrioridadeModal" class="block text-sm font-medium mb-1">Prioridade <span class="text-red-500">*</span></label> <select id="osPrioridadeModal" name="osPrioridadeModal" class="select-field w-full p-2 rounded-md" required> <option value="Baixa">Baixa</option> <option value="Média" selected>Média</option> <option value="Alta">Alta</option> <option value="Urgente">Urgente</option> </select> </div> <div class="flex items-center pt-5"> <input type="checkbox" id="osMarcadorAtrasoModal" name="osMarcadorAtrasoModal" class="form-checkbox h-4 w-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500 mr-2"> <label for="osMarcadorAtrasoModal" class="text-sm font-medium">Marcar Manualmente "Não Realizada no Prazo"</label> </div> </div> <div class="flex justify-end gap-3"> <button type="button" class="btn btn-secondary" onclick="closeOSModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Salvar OS</button> </div> </form> </div> </div>
     <script>
         // ==========================================================================
         // VARIÁVEIS GLOBAIS E CONFIGURAÇÕES INICIAIS
@@ -225,13 +249,13 @@
         const defaultProducts = ["WORKNC", "EDGECAM", "ESPRIT", "ALPHACAM", "LANTEK", "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner", "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"];
         let googleUser = null;
         let savedFilters = {};
-        
-        let osStatusChartInstance = null; 
+
+        let osStatusChartInstance = null;
         let reportChartByProductInstance = null;
         let reportChartByUsuarioInstance = null;
         let reportChartByStatusInstance = null;
 
-        // Elementos DOM principais (pegos uma vez para evitar múltiplas chamadas)
+        // Elementos DOM principais
         const osModal = document.getElementById('osModal');
         const osForm = document.getElementById('osForm');
         const modalTitle = document.getElementById('modalTitle');
@@ -239,88 +263,138 @@
         const filterProductSelect = document.getElementById('filterProduct');
         const reportProductSelect = document.getElementById('reportProduct');
         const darkModeIcon = document.getElementById('darkModeIcon');
-        const sidebar = document.getElementById('sidebar'); // Renomeado no listener para mainSidebar
-        const mainContent = document.getElementById('mainContent'); // Renomeado no listener para mainContentArea
-        const toggleSidebarBtn = document.getElementById('toggleSidebar'); // Renomeado no listener para mainToggleSidebarBtn
-        const sidebarTitleDiv = document.getElementById('sidebar-title'); // Renomeado no listener para mainSidebarTitleDiv
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
+        const sidebarTitleDiv = document.getElementById('sidebar-title');
         const recentActivityList = document.getElementById('recentActivityList');
-        const excelFileInput = document.getElementById('excelFileInput');
-        const processExcelButton = document.getElementById('processExcelButton');
         const importStatusMessage = document.getElementById('importStatusMessage');
         const importSummaryDiv = document.getElementById('importSummary');
         const importSummaryList = document.getElementById('importSummaryList');
 
 
         // ==========================================================================
-        // FUNÇÕES AUXILIARES
+        // FUNÇÕES AUXILIARES DE DATA E FORMATO
         // ==========================================================================
-        function formatDateToBR(dateString) {
-            if (!dateString) return 'N/A';
-            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) { // Already in DD/MM/YYYY
-                return dateString;
+        function formatDateToBR(dateString) { // Exibe como DD/MM/AAAA
+            if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                 // Se não for AAAA-MM-DD, tenta converter o que vier para objeto Date e depois formata
+                const d = new Date(dateString);
+                if (isNaN(d.getTime())) return 'N/A';
+                const day = String(d.getUTCDate()).padStart(2, '0');
+                const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+                const year = d.getUTCFullYear();
+                return `${day}/${month}/${year}`;
             }
-            let date;
-            // Prioritize YYYY-MM-DD which is common from date inputs and our excelSerialDateToYYYYMMDD
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-                date = new Date(dateString + 'T00:00:00Z'); // Use T00:00:00Z for UTC consistency
-            } else {
-                // Fallback for other potential string formats or JS Date objects
-                date = new Date(dateString);
-            }
-            if (isNaN(date.getTime())) {
-                return 'N/A'; // Invalid date
-            }
-            // Use getUTCDate, getUTCMonth, getUTCFullYear to avoid timezone shifts in display
-            const day = String(date.getUTCDate()).padStart(2, '0');
-            const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-            const year = date.getUTCFullYear();
+            const [year, month, day] = dateString.split('-');
             return `${day}/${month}/${year}`;
         }
-        
-        function excelSerialDateToYYYYMMDD(serial) {
-            if (serial === null || serial === undefined || serial === '' || isNaN(parseFloat(serial))) {
-                return null;
-            }
-            // This formula is generally for Excel Windows 1900 date system.
-            // It accounts for Excel's erroneous February 29, 1900.
-            // Dates are days since 1899-12-30.
-            // JavaScript's Date epoch is 1970-01-01.
-            const excelEpochDiff = 25569; // Days between 1899-12-30 and 1970-01-01
-            
-            // If serial < 60, it's before March 1, 1900, and Excel's leap year bug doesn't apply in the same way.
-            // For simplicity and common use cases where dates are after 1900-03-01.
-            // However, SheetJS with cellDates: true often handles this better.
-            // This function is a fallback if a raw serial number is encountered.
-            let date;
-            if (serial >= 60) { // Adjust for Excel's 1900 leap year bug for dates Mar 1, 1900 and later
-                 date = new Date(Math.round((serial - excelEpochDiff -1) * 86400 * 1000));
-            } else { // For dates before Mar 1, 1900 (Jan and Feb 1900)
-                 date = new Date(Math.round((serial - excelEpochDiff) * 86400 * 1000));
-                 if (serial === 60) { // Excel considers 1900-02-29 to be serial 60, which is not a real date.
-                    return null; // Or handle as error
-                 }
-            }
 
+        function excelSerialDateToYYYYMMDD(serial) { // Converte Data Serial Excel para AAAA-MM-DD
+            if (serial === null || serial === undefined || serial === '' || isNaN(parseFloat(serial))) return null;
+            const excelEpochDiff = 25569;
+            let date;
+            if (serial >= 60) { date = new Date(Math.round((serial - excelEpochDiff -1) * 86400 * 1000));
+            } else { date = new Date(Math.round((serial - excelEpochDiff) * 86400 * 1000)); if (serial === 60) return null; }
             const year = date.getUTCFullYear();
             const month = String(date.getUTCMonth() + 1).padStart(2, '0');
             const day = String(date.getUTCDate()).padStart(2, '0');
-            
-            if (year < 1890 || year > 2200) return null; // Basic sanity check for year
+            if (year < 1890 || year > 2200) return null;
             return `${year}-${month}-${day}`;
         }
 
-        function getWeeksInMonth(y,m){const w=[],f=new Date(y,m-1,1),l=new Date(y,m,0);let cM=new Date(f);cM.setDate(f.getDate()-(f.getDay()===0?6:f.getDay()-1));while(cM<=l){const s=new Date(cM);s.setHours(0,0,0,0);const e=new Date(s);e.setDate(s.getDate()+6);e.setHours(23,59,59,999);const wd=new Date(s);wd.setDate(s.getDate()+2);wd.setHours(23,59,59,999);const t=new Date(s.valueOf());t.setDate(t.getDate()-((s.getDay()+6)%7)+3);const fT=t.valueOf();t.setMonth(0,1);if(t.getDay()!==4)t.setMonth(0,1+((4-t.getDay())+7)%7);const wN=1+Math.ceil((fT-t)/6048e5);w.push({start:s,end:e,wednesday:wd,weekNumber:wN});cM.setDate(cM.getDate()+7)}return w}
+        // Função parseAndValidateDate robusta para diversos formatos de entrada, sempre retornando AAAA-MM-DD
+        function parseAndValidateDate(dateValue, fieldNameForLog = "Data") {
+            if (dateValue === null || String(dateValue || '').trim() === '') {
+                return { date: null, error: `${fieldNameForLog} ausente.` };
+            }
+
+            let parsedDateObj = null;
+
+            if (dateValue instanceof Date) { // Se já for um objeto Date (ex: cellDates:true do XLSX)
+                if (!isNaN(dateValue.getTime())) {
+                    parsedDateObj = dateValue;
+                }
+            } else if (typeof dateValue === 'number' && dateValue > 1 && dateValue < 200000) { // Número serial do Excel
+                const ymd = excelSerialDateToYYYYMMDD(dateValue);
+                if (ymd) {
+                    // Adiciona 'T00:00:00Z' para evitar problemas de fuso horário ao criar o objeto Date
+                    parsedDateObj = new Date(ymd + 'T00:00:00Z');
+                }
+            } else if (typeof dateValue === 'string') {
+                let tempDateStr = String(dateValue).trim();
+                // Remove a parte da hora, se houver (ex: "5/19/25 8:00" ou "19/05/2025 08:00:00")
+                tempDateStr = tempDateStr.split(' ')[0];
+
+                let parts;
+                // 1. Tentar AAAA-MM-DD (ou AAAA/MM/DD, AAAA.MM.DD)
+                if ((parts = tempDateStr.match(/^(\d{4})[\\/\.-](\d{1,2})[\\/\.-](\d{1,2})$/))) {
+                    const year = parseInt(parts[1], 10);
+                    const month = parseInt(parts[2], 10) - 1; // JS month is 0-indexed
+                    const day = parseInt(parts[3], 10);
+                    parsedDateObj = new Date(Date.UTC(year, month, day));
+                }
+                // 2. Tentar DD/MM/AAAA ou DD/MM/AA (ou com . ou -)
+                else if ((parts = tempDateStr.match(/^(\d{1,2})[\\/\.-](\d{1,2})[\\/\.-](\d{2}|\d{4})$/))) {
+                    const day = parseInt(parts[1], 10);
+                    const month = parseInt(parts[2], 10) - 1; // JS month is 0-indexed
+                    let year = parseInt(parts[3], 10);
+                    if (year < 100) year += 2000; // yy -> yyyy (e.g., 25 -> 2025)
+                    parsedDateObj = new Date(Date.UTC(year, month, day));
+                }
+                 // 3. Tentar MM/DD/AAAA ou MM/DD/AA (formato americano, comum em algumas exportações)
+                else if ((parts = tempDateStr.match(/^(\d{1,2})[\\/\.-](\d{1,2})[\\/\.-](\d{2}|\d{4})$/))) {
+                    // Supondo que esta é a segunda tentativa, é mais provável ser MM/DD
+                    const month = parseInt(parts[1], 10) - 1; // JS month is 0-indexed
+                    const day = parseInt(parts[2], 10);
+                    let year = parseInt(parts[3], 10);
+                    if (year < 100) year += 2000;
+                     // Verificação extra para MM/DD vs DD/MM: se month > 11 (pois é 0-indexado)
+                     // e day <=12, provavelmente era DD/MM e o parse anterior falhou por algum motivo.
+                     // Esta é uma heurística e pode não ser perfeita.
+                    if (month > 11 && day <=12) {
+                        // Se entrou aqui, o formato anterior DD/MM/AAAA deveria ter pego.
+                        // Isso sugere um formato ambíguo ou um erro no regex anterior.
+                        // Para segurança, invalidamos se month > 11.
+                         parsedDateObj = null;
+                    } else {
+                        parsedDateObj = new Date(Date.UTC(year, month, day));
+                    }
+                }
+            }
+
+            // Validar e formatar o objeto Date para AAAA-MM-DD
+            if (parsedDateObj && !isNaN(parsedDateObj.getTime())) {
+                // Verifica se o objeto Date realmente corresponde aos componentes originais (evita estouro de dia/mês)
+                // Por exemplo, new Date(Date.UTC(2023, 1, 30)) se torna 2 de Março.
+                // Esta validação é um pouco complexa de fazer genericamente aqui sem saber qual formato original foi usado.
+                // A principal validação é o isNaN.
+                const year = parsedDateObj.getUTCFullYear();
+                const month = String(parsedDateObj.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(parsedDateObj.getUTCDate()).padStart(2, '0');
+
+                // Sanity check final do ano
+                if (year < 1890 || year > 2200) {
+                    return { date: null, error: `${fieldNameForLog} ("${String(dateValue).substring(0,20)}") ano inválido (${year}).` };
+                }
+                return { date: `${year}-${month}-${day}`, error: null };
+            }
+
+            return { date: null, error: `${fieldNameForLog} ("${String(dateValue).substring(0,20)}") formato inválido/não reconhecido.` };
+        }
+
+
         function getPriorityClass(p){switch(p){case'Alta':return'priority-Alta';case'Urgente':return'priority-Urgente';case'Média':return'priority-Média';case'Baixa':return'priority-Baixa';default:return'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}}
         function generateId(){return'OS'+Date.now().toString(36)+Math.random().toString(36).substr(2,5).toUpperCase()}
-        
+
         // ==========================================================================
         // LOCALSTORAGE, PRODUTOS, ATIVIDADE RECENTE
         // ==========================================================================
-        function saveDataToLocalStorage(){try{localStorage.setItem('ordensServicoData_v1_6_0',JSON.stringify(ordensServico));localStorage.setItem('googleUser_v1_6_0',JSON.stringify(googleUser));localStorage.setItem('darkMode_v1_6_0',document.documentElement.classList.contains('dark'));localStorage.setItem('savedFilters_v1_6_0',JSON.stringify(savedFilters));localStorage.setItem('itemsPerPage_v1_6_0',ITEMS_PER_PAGE)}catch(e){console.error("Erro ao salvar localStorage:",e);alert("Problema ao salvar dados.")}}
-        function loadDataFromLocalStorage(){const d=localStorage.getItem('ordensServicoData_v1_6_0');if(d){try{ordensServico=JSON.parse(d)}catch(e){console.error("Erro localStorage OS:",e);ordensServico=[{id:generateId(),numero:'OS-EX01',cliente:'Cliente Demo',produto:'Software CAD',descricao:'Instalação e config.',dataAbertura:'2025-05-01',prazoFinal:'2025-05-10',responsavel:'João Silva',solicitante:'Empresa X',status:'Aberta',prioridade:'Alta'}]}}else{ordensServico=[{id:generateId(),numero:'OS-EX01',cliente:'Cliente Demo',produto:'Software CAD',descricao:'Instalação e config.',dataAbertura:'2025-05-01',prazoFinal:'2025-05-10',responsavel:'João Silva',solicitante:'Empresa X',status:'Aberta',prioridade:'Alta'}]}const u=localStorage.getItem('googleUser_v1_6_0');if(u)try{googleUser=JSON.parse(u)}catch(e){googleUser=null}const dm=localStorage.getItem('darkMode_v1_6_0');if(dm==='true'){document.documentElement.classList.add('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-moon','fa-sun')}else{document.documentElement.classList.remove('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-sun','fa-moon')}const sf=localStorage.getItem('savedFilters_v1_6_0');if(sf)try{savedFilters=JSON.parse(sf)}catch(e){savedFilters={}}populateSavedFiltersSelect();const ip=localStorage.getItem('itemsPerPage_v1_6_0');const ips=document.getElementById('itemsPerPageSetting');if(ip){ITEMS_PER_PAGE=parseInt(ip,10)||ITEMS_PER_PAGE_DEFAULT;if(ips)ips.value=ITEMS_PER_PAGE}else{if(ips)ips.value=ITEMS_PER_PAGE_DEFAULT}populateProductFilters()}
+        function saveDataToLocalStorage(){try{localStorage.setItem('ordensServicoData_v1_8_0',JSON.stringify(ordensServico));localStorage.setItem('googleUser_v1_8_0',JSON.stringify(googleUser));localStorage.setItem('darkMode_v1_8_0',document.documentElement.classList.contains('dark'));localStorage.setItem('savedFilters_v1_8_0',JSON.stringify(savedFilters));localStorage.setItem('itemsPerPage_v1_8_0',ITEMS_PER_PAGE)}catch(e){console.error("Erro ao salvar localStorage:",e);alert("Problema ao salvar dados.")}}
+        function loadDataFromLocalStorage(){const d=localStorage.getItem('ordensServicoData_v1_8_0');if(d){try{ordensServico=JSON.parse(d); ordensServico.forEach(os => { if(os.marcadorAtrasoManual === undefined) os.marcadorAtrasoManual = false; }); }catch(e){console.error("Erro localStorage OS:",e);ordensServico=[]}}const u=localStorage.getItem('googleUser_v1_8_0');if(u)try{googleUser=JSON.parse(u)}catch(e){googleUser=null}const dm=localStorage.getItem('darkMode_v1_8_0');if(dm==='true'){document.documentElement.classList.add('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-moon','fa-sun')}else{document.documentElement.classList.remove('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-sun','fa-moon')}const sf=localStorage.getItem('savedFilters_v1_8_0');if(sf)try{savedFilters=JSON.parse(sf)}catch(e){savedFilters={}}populateSavedFiltersSelect();const ip=localStorage.getItem('itemsPerPage_v1_8_0');const ips=document.getElementById('itemsPerPageSetting');if(ip){ITEMS_PER_PAGE=parseInt(ip,10)||ITEMS_PER_PAGE_DEFAULT;if(ips)ips.value=ITEMS_PER_PAGE}else{if(ips)ips.value=ITEMS_PER_PAGE_DEFAULT}populateProductFilters()}
         function populateProductFilters(){if(!productDatalist||!filterProductSelect||!reportProductSelect)return;const p=[...new Set(ordensServico.map(os=>os.produto).concat(defaultProducts).filter(pr=>pr&&pr.trim()!==""))].sort((a,b)=>a.localeCompare(b));productDatalist.innerHTML='';filterProductSelect.innerHTML='<option value="">Todos Produtos</option>';reportProductSelect.innerHTML='<option value="">Todos Produtos</option>';p.forEach(pr=>{const o=document.createElement('option');o.value=pr;o.textContent=pr;productDatalist.appendChild(o.cloneNode(true));filterProductSelect.appendChild(o.cloneNode(true));reportProductSelect.appendChild(o.cloneNode(true))})}
         function addRecentActivity(a,uN=null){if(!recentActivityList)return;const li=document.createElement('li');const n=new Date();let uD=uN?` <span class="font-medium text-sky-600 dark:text-sky-400">(${uN})</span>`:(googleUser?` <span class="font-medium text-slate-500 dark:text-slate-400">(${googleUser.given_name||googleUser.name})</span>`:'');li.className='flex justify-between items-center text-sm pb-2 border-b border-slate-200 dark:border-slate-700';li.innerHTML=`<span>${a}${uD}</span><span class="text-slate-400 dark:text-slate-500 text-xs">${n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>`;const pl=recentActivityList.querySelector('.text-placeholder');if(pl)recentActivityList.innerHTML='';recentActivityList.insertBefore(li,recentActivityList.firstChild);if(recentActivityList.children.length>7)recentActivityList.removeChild(recentActivityList.lastChild)}
-        
+
         // ==========================================================================
         // GOOGLE SIGN-IN
         // ==========================================================================
@@ -328,130 +402,219 @@
         function handleCredentialResponse(r){const pL=parseJwt(r.credential);googleUser={id:pL.sub,name:pL.name,given_name:pL.given_name,picture:pL.picture,email:pL.email};saveDataToLocalStorage();updateLoginUI();addRecentActivity(`Usuário ${googleUser.name} logado.`)}
         function handleSignOut(){const uN=googleUser?(googleUser.given_name||googleUser.name):"Usuário";googleUser=null;saveDataToLocalStorage();updateLoginUI();addRecentActivity(`${uN} deslogado.`);if(typeof google!=='undefined'&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect()}
         function updateLoginUI(){const uiD=document.getElementById('user-info');const gS=document.querySelector('.g_id_signin');const uNE=document.getElementById('user-name');const uPE=document.getElementById('user-pic');if(!uiD||!gS||!uNE||!uPE)return;if(googleUser){uNE.textContent=googleUser.given_name||googleUser.name;uPE.src=googleUser.picture;uiD.classList.remove('hidden');gS.classList.add('hidden')}else{uiD.classList.add('hidden');gS.classList.remove('hidden');uNE.textContent='';uPE.src=''}}
-        
-        // ==========================================================================
+// ==========================================================================
         // DARK MODE
         // ==========================================================================
         function toggleDarkMode(){document.documentElement.classList.toggle('dark');if(darkModeIcon){darkModeIcon.classList.toggle('fa-moon');darkModeIcon.classList.toggle('fa-sun')}saveDataToLocalStorage();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden')&&osStatusChartInstance)renderOSStatusChart();if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){const rTB=document.getElementById('reportsTableBody');if(rTB&&rTB.querySelectorAll('tr').length>0&&!rTB.querySelector('td[colspan="7"]'))generateCustomReport()}}
-        
+
         // ==========================================================================
         // FILTROS SALVOS
         // ==========================================================================
         function populateSavedFiltersSelect(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const cS=sFS.value;sFS.innerHTML='<option value="">Carregar filtro...</option>';for(const n in savedFilters){const o=document.createElement('option');o.value=n;o.textContent=n;sFS.appendChild(o)}if(cS&&savedFilters[cS])sFS.value=cS}
-        function saveCurrentFilters(){const nFIN=document.getElementById('newFilterName');if(!nFIN)return;const n=nFIN.value.trim();if(!n){alert("Nome para o filtro.");return}if(savedFilters[n]&&!confirm(`Filtro "${n}" já existe. Sobrescrever?`))return;const fDI=document.getElementById('filterDescription');savedFilters[n]={numero:document.getElementById('filterOsNumber').value,cliente:document.getElementById('filterClient').value,descricao:fDI?fDI.value:"",produto:document.getElementById('filterProduct').value,status:document.getElementById('filterStatus').value};nFIN.value='';populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" salvo.`)}
-        function loadSelectedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){document.getElementById('filterOsNumber').value=savedFilters[n].numero||"";document.getElementById('filterClient').value=savedFilters[n].cliente||"";const fDI=document.getElementById('filterDescription');if(fDI)fDI.value=savedFilters[n].descricao||"";document.getElementById('filterProduct').value=savedFilters[n].produto||"";document.getElementById('filterStatus').value=savedFilters[n].status||"";applyFiltersAndRender();addRecentActivity(`Filtro "${n}" carregado.`)}else if(n)alert("Filtro não encontrado.")}
-        function deleteSavedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){if(confirm(`Excluir filtro "${n}"?`)){delete savedFilters[n];populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" excluído.`)}}else if(n)alert("Filtro não existe.");else alert("Selecione filtro para excluir.")}
-        
+        function saveCurrentFilters(){const nFIN=document.getElementById('newFilterName');if(!nFIN)return;const n=nFIN.value.trim();if(!n){alert("Especifique um nome para o filtro salvo.");return}if(savedFilters[n]&&!confirm(`O filtro salvo "${n}" já existe. Deseja sobrescrevê-lo?`))return;const fDI=document.getElementById('filterDescription');savedFilters[n]={numero:document.getElementById('filterOsNumber').value,cliente:document.getElementById('filterClient').value,descricao:fDI?fDI.value:"",produto:document.getElementById('filterProduct').value,status:document.getElementById('filterStatus').value, marcadorAtraso: document.getElementById('filterMarcadorAtraso').value};nFIN.value='';populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" salvo.`)}
+        function loadSelectedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){document.getElementById('filterOsNumber').value=savedFilters[n].numero||"";document.getElementById('filterClient').value=savedFilters[n].cliente||"";const fDI=document.getElementById('filterDescription');if(fDI)fDI.value=savedFilters[n].descricao||"";document.getElementById('filterProduct').value=savedFilters[n].produto||"";document.getElementById('filterStatus').value=savedFilters[n].status||""; document.getElementById('filterMarcadorAtraso').value = savedFilters[n].marcadorAtraso || ""; applyFiltersAndRender();addRecentActivity(`Filtro "${n}" carregado.`)}else if(n)alert("Filtro salvo não encontrado.")}
+        function deleteSavedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){if(confirm(`Tem certeza que deseja excluir o filtro salvo "${n}"?`)){delete savedFilters[n];populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" excluído.`)}}else if(n)alert("O filtro salvo não existe.");else alert("Por favor, selecione um filtro salvo para excluir.")}
+
         // ==========================================================================
-        // AÇÕES EM MASSA
+        // AÇÕES EM MASSA PARA ORDENS DE SERVIÇO
         // ==========================================================================
         function updateSelectedCount(){const sOSC=document.getElementById('selectedOsCount');const bAC=document.getElementById('bulkActionsContainer');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!sOSC||!bAC||!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));sOSC.textContent=`${sC.length} selecionadas`;if(sC.length>0){bAC.classList.remove('hidden')}else{bAC.classList.add('hidden');sAOC.checked=false}}
         function toggleSelectAllOS(mC){const oSTB=document.getElementById('osTableBody');if(!oSTB||!mC)return;const c=oSTB.querySelectorAll('input[type="checkbox"][data-id]');c.forEach(cb=>cb.checked=mC.checked);updateSelectedCount()}
-        function applyBulkAction(){const bAS=document.getElementById('bulkActionStatus');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!bAS||!oSTB||!sAOC)return;const nS=bAS.value;if(!nS){alert("Selecione status.");return}const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada.");return}sC.forEach(cb=>{const osI=cb.dataset.id;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1)ordensServico[osIX].status=nS});addRecentActivity(`${sC.length} OS(s) status alterado para ${nS}.`);saveDataToLocalStorage();refreshAllViews();sAOC.checked=false;updateSelectedCount()}
-        function bulkDeleteSelectedOS(){const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada.");return}if(confirm(`Excluir ${sC.length} OS(s)? Ação irreversível.`)){const iTD=sC.map(cb=>cb.dataset.id);ordensServico=ordensServico.filter(os=>!iTD.includes(os.id));addRecentActivity(`${iTD.length} OS(s) excluídas.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews();sAOC.checked=false;updateSelectedCount()}}
-        
+        function applyBulkAction(){const bAS=document.getElementById('bulkActionStatus');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!bAS||!oSTB||!sAOC)return;const nS=bAS.value;if(!nS){alert("Por favor, selecione um status para aplicar.");return}const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada para a ação em massa.");return}sC.forEach(cb=>{const osI=cb.dataset.id;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1)ordensServico[osIX].status=nS});addRecentActivity(`${sC.length} OS(s) tiveram o status alterado para ${nS}.`);saveDataToLocalStorage();refreshAllViews();sAOC.checked=false;updateSelectedCount()}
+        function bulkDeleteSelectedOS(){const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada para exclusão.");return}if(confirm(`Tem certeza que deseja excluir ${sC.length} OS(s) selecionada(s)? Esta ação é irreversível.`)){const iTD=sC.map(cb=>cb.dataset.id);ordensServico=ordensServico.filter(os=>!iTD.includes(os.id));addRecentActivity(`${iTD.length} OS(s) foram excluídas.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews();sAOC.checked=false;updateSelectedCount()}}
+
         // ==========================================================================
         // RENDERIZAÇÃO DA TABELA DE OS E PAGINAÇÃO
         // ==========================================================================
-        function renderOSTable(fD=getFilteredOS()){const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!oSTB||!sAOC){console.error("osTableBody ou selectAllOsCheckbox não encontrado!");return}oSTB.innerHTML='';sAOC.checked=false;updateSelectedCount();if(!fD||fD.length===0){oSTB.innerHTML='<tr><td colspan="12" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma OS encontrada.</td></tr>';renderPagination(0,0);return}const pD=paginateData(fD,currentPage,ITEMS_PER_PAGE);pD.forEach(os=>{const r=oSTB.insertRow();r.className='table-row hover:bg-slate-100 dark:hover:bg-slate-700';r.innerHTML=`<td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4"></td><td class="py-3 px-4 text-sm font-medium">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm truncate max-w-xs" title="${os.descricao}">${os.descricao}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.dataAbertura)}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.responsavel}</td><td class="py-3 px-4 text-sm">${os.solicitante||'N/A'}</td><td class="py-3 px-4 text-sm"><select class="select-field status-select p-1 text-xs" data-id="${os.id}" onchange="updateStatus(this)"><option value="Aberta" ${os.status==='Aberta'?'selected':''}>Aberta</option><option value="Em Andamento" ${os.status==='Em Andamento'?'selected':''}>Em Andamento</option><option value="Pendente Informação" ${os.status==='Pendente Informação'?'selected':''}>Pendente Info</option><option value="Aguardando Aprovação" ${os.status==='Aguardando Aprovação'?'selected':''}>Aguard. Aprov.</option><option value="Completa" ${os.status==='Completa'?'selected':''}>Completa</option><option value="Cancelada" ${os.status==='Cancelada'?'selected':''}>Cancelada</option></select></td><td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td><td class="py-3 px-4 text-sm"><button class="text-sky-600 hover:text-sky-800 p-1 mr-2" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button><button class="text-red-600 hover:text-red-800 p-1 mr-2" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button><button class="text-green-600 hover:text-green-800 p-1" title="Baixar .ics" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button></td>`});renderPagination(fD.length,currentPage)}
+        function toggleMarcadorAtrasoManual(osId, event) {
+            event.stopPropagation(); // Impede que o clique no ícone propague para outros elementos.
+            const osIndex = ordensServico.findIndex(os => os.id === osId);
+            if (osIndex !== -1) {
+                ordensServico[osIndex].marcadorAtrasoManual = !ordensServico[osIndex].marcadorAtrasoManual;
+                addRecentActivity(`Marcador manual de "Não Realizada no Prazo" ${ordensServico[osIndex].marcadorAtrasoManual ? 'aplicado' : 'removido'} para OS ${ordensServico[osIndex].numero}.`);
+                saveDataToLocalStorage();
+
+                // Re-renderiza a tabela para refletir a mudança no ícone e possivelmente na filtragem
+                applyFiltersAndRender();
+            }
+        }
+
+        function renderOSTable(fD=getFilteredOS()){
+            const oSTB=document.getElementById('osTableBody');
+            const sAOC=document.getElementById('selectAllOsCheckbox');
+            if(!oSTB||!sAOC){console.error("Elemento osTableBody ou selectAllOsCheckbox não encontrado no DOM!");return}
+            oSTB.innerHTML='';
+            sAOC.checked=false;
+            updateSelectedCount();
+            if(!fD||fD.length===0){oSTB.innerHTML='<tr><td colspan="12" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma Ordem de Serviço encontrada com os filtros atuais.</td></tr>';renderPagination(0,0);return}
+
+            const pD=paginateData(fD,currentPage,ITEMS_PER_PAGE);
+            pD.forEach(os=>{
+                const r=oSTB.insertRow();
+                r.className='table-row hover:bg-slate-100 dark:hover:bg-slate-700';
+
+                const markerIconHTML = `
+                    <span class="manual-flag-toggle" onclick="toggleMarcadorAtrasoManual('${os.id}', event)" title="${os.marcadorAtrasoManual ? 'Desmarcar OS como Não Realizada no Prazo' : 'Marcar OS como Não Realizada no Prazo'}">
+                        ${os.marcadorAtrasoManual ? '<i class="fas fa-flag text-purple-500"></i>' : '<i class="far fa-flag text-gray-400 hover:text-purple-500"></i>'}
+                    </span>`;
+
+                r.innerHTML=`<td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4"></td>
+                            <td class="py-3 px-4 text-sm font-medium">${markerIconHTML} ${os.numero}</td>
+                            <td class="py-3 px-4 text-sm">${os.cliente}</td>
+                            <td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td>
+                            <td class="py-3 px-4 text-sm truncate max-w-xs" title="${os.descricao}">${os.descricao}</td>
+                            <td class="py-3 px-4 text-sm">${formatDateToBR(os.dataAbertura)}</td>
+                            <td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td>
+                            <td class="py-3 px-4 text-sm">${os.responsavel}</td>
+                            <td class="py-3 px-4 text-sm">${os.solicitante||'N/A'}</td>
+                            <td class="py-3 px-4 text-sm"><select class="select-field status-select p-1 text-xs" data-id="${os.id}" onchange="updateStatus(this)">
+                                <option value="Aberta" ${os.status==='Aberta'?'selected':''}>Aberta</option>
+                                <option value="Em Andamento" ${os.status==='Em Andamento'?'selected':''}>Em Andamento</option>
+                                <option value="Pendente Informação" ${os.status==='Pendente Informação'?'selected':''}>Pendente Info</option>
+                                <option value="Aguardando Aprovação" ${os.status==='Aguardando Aprovação'?'selected':''}>Aguard. Aprov.</option>
+                                <option value="Completa" ${os.status==='Completa'?'selected':''}>Completa</option>
+                                <option value="Cancelada" ${os.status==='Cancelada'?'selected':''}>Cancelada</option>
+                                <option value="Incompleta" ${os.status==='Incompleta'?'selected':''}>Incompleta</option>
+                            </select></td>
+                            <td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td>
+                            <td class="py-3 px-4 text-sm"><button class="text-sky-600 hover:text-sky-800 p-1 mr-2" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button><button class="text-red-600 hover:text-red-800 p-1 mr-2" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button><button class="text-green-600 hover:text-green-800 p-1" title="Baixar .ics" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button></td>`
+            });
+            renderPagination(fD.length,currentPage);
+        }
         function paginateData(d,p,iPP){const s=(p-1)*iPP;const e=s+iPP;return d.slice(s,e)}
         function renderPagination(tI,p){const pC=document.getElementById('paginationControls');if(!pC)return;pC.innerHTML='';const tP=Math.ceil(tI/ITEMS_PER_PAGE);if(tP<=1)return;const pB=document.createElement('button');pB.innerHTML='<i class="fas fa-chevron-left"></i> Anterior';pB.className='btn btn-sm btn-secondary disabled:opacity-50';pB.disabled=p===1;pB.onclick=()=>{if(p>1)changePage(p-1)};pC.appendChild(pB);const pI=document.createElement('span');pI.className='text-sm px-3';pI.textContent=`Página ${p} de ${tP}`;pC.appendChild(pI);const nB=document.createElement('button');nB.innerHTML='Próximo <i class="fas fa-chevron-right"></i>';nB.className='btn btn-sm btn-secondary disabled:opacity-50';nB.disabled=p===tP;nB.onclick=()=>{if(p<tP)changePage(p+1)};pC.appendChild(nB)}
         function changePage(nP){currentPage=nP;renderOSTable()}
-        
+
         // ==========================================================================
-        // CRUD DE OS E MODAL
+        // CRUD DE OS E MODAL (CRIAÇÃO, EDIÇÃO, EXCLUSÃO)
         // ==========================================================================
-        function updateStatus(sE){const osI=sE.dataset.id;const nS=sE.value;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1){ordensServico[osIX].status=nS;addRecentActivity(`Status OS ${ordensServico[osIX].numero} p/ ${nS}.`);saveDataToLocalStorage();refreshAllViews()}}
-        function openAddOSModal(){if(!osForm||!modalTitle||!osModal)return;osForm.reset();document.getElementById('osId').value='';modalTitle.textContent='Adicionar Nova OS';const dA=document.getElementById('osDataAberturaModal');if(dA)dA.value=new Date().toISOString().split('T')[0];osModal.classList.remove('hidden')}
+        function updateStatus(sE){const osI=sE.dataset.id;const nS=sE.value;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1){ordensServico[osIX].status=nS;addRecentActivity(`Status da OS ${ordensServico[osIX].numero} alterado para ${nS}.`);saveDataToLocalStorage();refreshAllViews()}}
+        function openAddOSModal(){if(!osForm||!modalTitle||!osModal)return;osForm.reset();document.getElementById('osId').value='';modalTitle.textContent='Adicionar Nova Ordem de Serviço';const dA=document.getElementById('osDataAberturaModal');if(dA)dA.value=new Date().toISOString().split('T')[0]; document.getElementById('osMarcadorAtrasoModal').checked = false; osModal.classList.remove('hidden')}
         function closeOSModal(){if(!osModal)return;osModal.classList.add('hidden')}
-        function editOS(id){if(!osModal||!modalTitle||!osForm)return;const os=ordensServico.find(o=>o.id===id);if(os){modalTitle.textContent=`Editar OS - ${os.numero}`;document.getElementById('osId').value=os.id;document.getElementById('osNumeroModal').value=os.numero;document.getElementById('osClienteModal').value=os.cliente;document.getElementById('osProdutoModal').value=os.produto||'';document.getElementById('osSolicitanteModal').value=os.solicitante||'';document.getElementById('osDescricaoModal').value=os.descricao;document.getElementById('osDataAberturaModal').value=os.dataAbertura;document.getElementById('osPrazoFinalModal').value=os.prazoFinal;document.getElementById('osResponsavelModal').value=os.responsavel;document.getElementById('osStatusModal').value=os.status;document.getElementById('osPrioridadeModal').value=os.prioridade;osModal.classList.remove('hidden')}else alert("OS não encontrada.")}
-        function deleteOS(id){const oTD=ordensServico.find(os=>os.id===id);if(confirm(`Excluir OS ${oTD?.numero||id}?`)){ordensServico=ordensServico.filter(os=>os.id!==id);addRecentActivity(`OS ${oTD?.numero||'ID '+id} excluída.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews()}}
-        if(osForm)osForm.addEventListener('submit',function(e){e.preventDefault();try{const id=document.getElementById('osId').value;const osD={numero:document.getElementById('osNumeroModal').value.trim(),cliente:document.getElementById('osClienteModal').value.trim(),produto:document.getElementById('osProdutoModal').value.trim(),solicitante:document.getElementById('osSolicitanteModal').value.trim(),descricao:document.getElementById('osDescricaoModal').value.trim(),dataAbertura:document.getElementById('osDataAberturaModal').value,prazoFinal:document.getElementById('osPrazoFinalModal').value,responsavel:document.getElementById('osResponsavelModal').value.trim(),status:document.getElementById('osStatusModal').value,prioridade:document.getElementById('osPrioridadeModal').value};if(!osD.numero||!osD.cliente||!osD.produto||!osD.descricao||!osD.dataAbertura||!osD.prazoFinal||!osD.responsavel||!osD.status||!osD.prioridade){alert("Preencha campos obrigatórios (*).");return}if(new Date(osD.prazoFinal)<new Date(osD.dataAbertura)){alert("Prazo Final anterior à Data Abertura.");return}if(id){const osIX=ordensServico.findIndex(o=>o.id===id);if(osIX!==-1){ordensServico[osIX]={...ordensServico[osIX],...osD};addRecentActivity(`OS ${osD.numero} editada.`)}else{alert("Erro ao editar OS.");return}}else{osD.id=generateId();ordensServico.unshift(osD);addRecentActivity(`Nova OS ${osD.numero} adicionada.`)}saveDataToLocalStorage();populateProductFilters();closeOSModal();currentPage=1;refreshAllViews()}catch(er){console.error("Erro ao salvar OS:",er);alert("Erro ao salvar OS.")}})
-        
+        function editOS(id){if(!osModal||!modalTitle||!osForm)return;const os=ordensServico.find(o=>o.id===id);if(os){modalTitle.textContent=`Editar OS - ${os.numero}`;document.getElementById('osId').value=os.id;document.getElementById('osNumeroModal').value=os.numero;document.getElementById('osClienteModal').value=os.cliente;document.getElementById('osProdutoModal').value=os.produto||'';document.getElementById('osSolicitanteModal').value=os.solicitante||'';document.getElementById('osDescricaoModal').value=os.descricao;document.getElementById('osDataAberturaModal').value=os.dataAbertura;document.getElementById('osPrazoFinalModal').value=os.prazoFinal;document.getElementById('osResponsavelModal').value=os.responsavel;document.getElementById('osStatusModal').value=os.status;document.getElementById('osPrioridadeModal').value=os.prioridade; document.getElementById('osMarcadorAtrasoModal').checked = os.marcadorAtrasoManual || false; osModal.classList.remove('hidden')}else alert("OS não encontrada para edição.")}
+        function deleteOS(id){const oTD=ordensServico.find(os=>os.id===id);if(confirm(`Tem certeza que deseja excluir a OS ${oTD?.numero||id}? Esta ação é irreversível.`)){ordensServico=ordensServico.filter(os=>os.id!==id);addRecentActivity(`OS ${oTD?.numero||'ID '+id} foi excluída.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews()}}
+        if(osForm)osForm.addEventListener('submit',function(e){e.preventDefault();try{const id=document.getElementById('osId').value;const osD={numero:document.getElementById('osNumeroModal').value.trim(),cliente:document.getElementById('osClienteModal').value.trim(),produto:document.getElementById('osProdutoModal').value.trim(),solicitante:document.getElementById('osSolicitanteModal').value.trim(),descricao:document.getElementById('osDescricaoModal').value.trim(),dataAbertura:document.getElementById('osDataAberturaModal').value,prazoFinal:document.getElementById('osPrazoFinalModal').value,responsavel:document.getElementById('osResponsavelModal').value.trim(),status:document.getElementById('osStatusModal').value,prioridade:document.getElementById('osPrioridadeModal').value, marcadorAtrasoManual: document.getElementById('osMarcadorAtrasoModal').checked };if(!osD.numero||!osD.cliente||!osD.produto||!osD.descricao||!osD.dataAbertura||!osD.prazoFinal||!osD.responsavel||!osD.status||!osD.prioridade){alert("Por favor, preencha todos os campos obrigatórios (*).");return}if(new Date(osD.prazoFinal)<new Date(osD.dataAbertura)){alert("A Data de Prazo Final não pode ser anterior à Data de Abertura.");return}if(id){const osIX=ordensServico.findIndex(o=>o.id===id);if(osIX!==-1){ordensServico[osIX]={...ordensServico[osIX],...osD};addRecentActivity(`OS ${osD.numero} foi editada.`)}else{alert("Erro ao tentar editar a OS. OS não encontrada.");return}}else{osD.id=generateId();ordensServico.unshift(osD);addRecentActivity(`Nova OS ${osD.numero} foi adicionada.`)}saveDataToLocalStorage();populateProductFilters();closeOSModal();currentPage=1;refreshAllViews()}catch(er){console.error("Erro ao salvar OS:",er);alert("Ocorreu um erro ao tentar salvar a Ordem de Serviço.")}})
+
         // ==========================================================================
-        // LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV (Função de processamento)
+        // LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV (Função de processamento de dados)
         // ==========================================================================
         function processAndValidateOSData(jsonData) {
-            const headersFromFile = jsonData[0].map(header => String(header).trim().toLowerCase());
+            const headersFromFile = jsonData[0].map(header => String(header || '').trim().toLowerCase());
             const dataRows = jsonData.slice(1);
             const validOSs = [];
-            const importLog = []; 
-            const expectedHeaderMapping = { codigo: 'código', status: 'status', cliente: 'cliente', inicio: 'início', termino: 'término', tecnico: 'técnico', solicitante: 'solicitante', cidade: 'cidade', duracao_h: 'duração (h)' };
-            const colIndices = {};
-            for (const internalKey in expectedHeaderMapping) { colIndices[internalKey] = headersFromFile.indexOf(expectedHeaderMapping[internalKey]); }
-            const essentialCols = ['codigo', 'cliente', 'inicio', 'termino', 'tecnico'];
-            for (const colKey of essentialCols) { if (colIndices[colKey] === -1) { importLog.push({ success: false, message: `Erro Crítico: Coluna "${expectedHeaderMapping[colKey]}" não encontrada. Importação interrompida.` }); return { validOSs, importLog }; } }
-            
+            const importLog = [];
+
+            const expectedHeaderMapping = { // Mapeamento dos nomes de coluna esperados (em minúsculo) para chaves internas
+                codigo: 'código', status: 'status', cliente: 'cliente', inicio: 'início', termino: 'término',
+                tecnico: 'técnico', solicitante: 'solicitante', cidade: 'cidade', duracao_h: 'duração (h)'
+                // Adicione mais colunas aqui se precisar delas para a descrição ou outros campos.
+            };
+            const colIndices = {}; // Para armazenar os índices das colunas encontradas
+            for (const internalKey in expectedHeaderMapping) {
+                colIndices[internalKey] = headersFromFile.indexOf(expectedHeaderMapping[internalKey]);
+            }
+
+            // Verifica se as colunas essenciais foram encontradas
+            const essentialCols = ['codigo', 'cliente', 'inicio', 'termino', 'tecnico', 'solicitante']; // Solicitante agora é essencial
+            for (const colKey of essentialCols) {
+                if (colIndices[colKey] === -1) {
+                    importLog.push({ success: false, message: `Erro Crítico: A coluna essencial "${expectedHeaderMapping[colKey]}" não foi encontrada no arquivo. A importação foi interrompida.` });
+                    return { validOSs, importLog }; // Interrompe se uma coluna essencial faltar
+                }
+            }
+
             dataRows.forEach((row, rowIndex) => {
-                if (row.every(cell => cell === null || String(cell).trim() === '')) return;
-                const newOS = { id: generateId() }; let rowIsValid = true; let currentLogMessages = [];
+                // Pula linhas completamente vazias
+                if (row.every(cell => cell === null || String(cell || '').trim() === '')) return;
+
+                const newOS = { 
+                    id: generateId(), 
+                    produto: "", // Produto será selecionado manualmente no site
+                    prioridade: "Média", // Prioridade padrão, selecionável manualmente no site
+                    marcadorAtrasoManual: false // Marcador padrão
+                };
+                let rowIsValid = true;
+                let currentLogMessages = [];
+
                 newOS.numero = colIndices.codigo !== -1 ? String(row[colIndices.codigo] || '').trim() : '';
-                if (!newOS.numero) { currentLogMessages.push("Nº OS (Código) ausente."); rowIsValid = false; }
+                if (!newOS.numero) { currentLogMessages.push("Nº OS (Coluna 'Código') ausente ou vazia."); rowIsValid = false; }
+
                 newOS.cliente = colIndices.cliente !== -1 ? String(row[colIndices.cliente] || '').trim() : '';
-                if (!newOS.cliente) { currentLogMessages.push("Cliente ausente."); rowIsValid = false; }
-                newOS.status = colIndices.status !== -1 ? String(row[colIndices.status] || 'Aberta').trim() : 'Aberta';
+                if (!newOS.cliente) { currentLogMessages.push("Cliente (Coluna 'Cliente') ausente ou vazio."); rowIsValid = false; }
+
+                // Status: usa o valor da planilha ou 'Aberta' como padrão se vazio/inválido
+                newOS.status = colIndices.status !== -1 && String(row[colIndices.status] || '').trim() !== '' ? String(row[colIndices.status]).trim() : 'Aberta';
                 const validStatuses = ["Aberta", "Em Andamento", "Pendente Informação", "Aguardando Aprovação", "Completa", "Cancelada", "Incompleta"];
-                if (!validStatuses.includes(newOS.status)) { currentLogMessages.push(`Status "${newOS.status}" inválido. Usando "Aberta".`); newOS.status = 'Aberta'; }
+                if (!validStatuses.includes(newOS.status)) {
+                    currentLogMessages.push(`Status "${newOS.status}" inválido. Será usado "Aberta".`); newOS.status = 'Aberta';
+                }
+
+                // Processamento de Datas
                 const inicioVal = colIndices.inicio !== -1 ? row[colIndices.inicio] : null;
                 const terminoVal = colIndices.termino !== -1 ? row[colIndices.termino] : null;
-                
-                function parseAndValidateDate(dateValue, fieldName) {
-                    if (dateValue === null || String(dateValue).trim() === '') { currentLogMessages.push(`${fieldName} ausente.`); return null; }
-                    let parsedDate = null;
-                    if (dateValue instanceof Date) { try { parsedDate = `${dateValue.getUTCFullYear()}-${String(dateValue.getUTCMonth() + 1).padStart(2, '0')}-${String(dateValue.getUTCDate()).padStart(2, '0')}`; } catch (e) {} }
-                    if (!parsedDate && typeof dateValue === 'number' && dateValue > 1 && dateValue < 100000 ) { parsedDate = excelSerialDateToYYYYMMDD(dateValue); }
-                    if (!parsedDate && typeof dateValue === 'string') { if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) { parsedDate = dateValue; } else { const parts = dateValue.match(/^(\d{1,2})[\\/\.-](\d{1,2})[\\/\.-](\d{2}|\d{4})$/); if (parts) { let year = parseInt(parts[3], 10); if (year < 100) year += 2000; parsedDate = `${year}-${String(parts[2]).padStart(2, '0')}-${String(parts[1]).padStart(2, '0')}`; } } }
-                    if (!parsedDate || isNaN(new Date(parsedDate+'T00:00:00Z').getTime())) { currentLogMessages.push(`${fieldName} ("${String(dateValue).substring(0,20)}") formato inválido.`); return null; }
-                    return parsedDate;
+
+                const dataAberturaResult = parseAndValidateDate(inicioVal, "Data Início (Coluna 'Início')");
+                if (dataAberturaResult.error) { currentLogMessages.push(dataAberturaResult.error); rowIsValid = false; }
+                newOS.dataAbertura = dataAberturaResult.date;
+
+                const prazoFinalResult = parseAndValidateDate(terminoVal, "Data Término (Coluna 'Término')");
+                if (prazoFinalResult.error) { currentLogMessages.push(prazoFinalResult.error); rowIsValid = false; }
+                newOS.prazoFinal = prazoFinalResult.date;
+
+                if (newOS.dataAbertura && newOS.prazoFinal && new Date(newOS.prazoFinal) < new Date(newOS.dataAbertura)) {
+                    currentLogMessages.push("Data de Prazo Final não pode ser anterior à Data de Início."); rowIsValid = false;
                 }
-                newOS.dataAbertura = parseAndValidateDate(inicioVal, "Data Início"); if (!newOS.dataAbertura) rowIsValid = false;
-                newOS.prazoFinal = parseAndValidateDate(terminoVal, "Data Término"); if (!newOS.prazoFinal) rowIsValid = false;
-                if (newOS.dataAbertura && newOS.prazoFinal && new Date(newOS.prazoFinal) < new Date(newOS.dataAbertura)) { currentLogMessages.push("Prazo Final < Data Abertura."); rowIsValid = false; }
+
                 newOS.responsavel = colIndices.tecnico !== -1 ? String(row[colIndices.tecnico] || '').trim() : '';
-                if (!newOS.responsavel) { currentLogMessages.push("Responsável (Técnico) ausente."); rowIsValid = false; }
+                if (!newOS.responsavel) { currentLogMessages.push("Responsável (Coluna 'Técnico') ausente ou vazio."); rowIsValid = false; }
+
                 newOS.solicitante = colIndices.solicitante !== -1 ? String(row[colIndices.solicitante] || '').trim() : '';
-                newOS.produto = "";
-                const cidadeVal = colIndices.cidade !== -1 ? String(row[colIndices.cidade] || '').trim() : '';
-                const duracaoVal = colIndices.duracao_h !== -1 ? String(row[colIndices.duracao_h] || '').trim() : '';
-                let desc = ""; if (cidadeVal) desc += `Cidade: ${cidadeVal}`; if (duracaoVal) { if (desc) desc += ", "; desc += `Duração: ${duracaoVal}h`; }
-                newOS.descricao = desc ? `${desc}.\n` : "\n";
-                newOS.prioridade = "Média";
-                if (rowIsValid) { validOSs.push(newOS); importLog.push({ success: true, message: `Linha ${rowIndex + 2}: OS "${newOS.numero}" pronta para importação.` });
-                } else { importLog.push({ success: false, message: `Linha ${rowIndex + 2} Ignorada: ${currentLogMessages.join('; ')}` }); }
+                 if (!newOS.solicitante && essentialCols.includes('solicitante')) { // Verifica se é essencial e está faltando
+                    currentLogMessages.push("Solicitante (Coluna 'Solicitante') ausente ou vazio."); rowIsValid = false;
+                }
+
+
+                // Descrição: Combina Cidade e Duração, se disponíveis, e adiciona um placeholder.
+                let descParts = [];
+                const cidadeVal = colIndices.cidade !== -1 && row[colIndices.cidade] ? String(row[colIndices.cidade]).trim() : '';
+                if (cidadeVal) descParts.push(`Cidade: ${cidadeVal}`);
+                
+                const duracaoVal = colIndices.duracao_h !== -1 && row[colIndices.duracao_h] ? String(row[colIndices.duracao_h]).trim() : '';
+                if (duracaoVal) descParts.push(`Duração: ${duracaoVal}h`);
+                
+                if (descParts.length > 0) {
+                    newOS.descricao = descParts.join(', ') + ". (Importado via Excel)";
+                } else {
+                    newOS.descricao = "(Importado via Excel)";
+                }
+                // Adiciona um espaço para o usuário adicionar mais informações manualmente depois.
+                newOS.descricao += "\n";
+
+
+                if (rowIsValid) {
+                    validOSs.push(newOS);
+                    // Log de sucesso não é mais adicionado individualmente para não poluir muito.
+                    // Apenas um resumo no final.
+                } else {
+                    importLog.push({ success: false, message: `Linha ${rowIndex + 2} da planilha (${newOS.numero || 'OS sem número'}) ignorada: ${currentLogMessages.join('; ')}` });
+                }
             });
             return { validOSs, importLog };
         }
-        
-        // (O restante do script, incluindo a finalização de handleExcelImport, showView, exports, onload, etc., virá na Parte 3)
-// (Conteúdo da Parte 1 e Parte 2 do JavaScript, incluindo processAndValidateOSData, 
-    //  deve estar aqui em cima, dentro da tag <script> iniciada na Parte 1 do HTML)
-
+// ==========================================================================
+        // FUNÇÃO PRINCIPAL PARA LIDAR COM A IMPORTAÇÃO DE ARQUIVO EXCEL/CSV
         // ==========================================================================
-        // FINALIZAÇÃO DA LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV (handleExcelImport)
-        // ==========================================================================
-        
-        // Event listener para o botão de processar (já definido, mas garantindo que esteja no contexto)
-        // const processExcelButton = document.getElementById('processExcelButton'); // Já definido
-        // if (processExcelButton) { // Já definido
-        //     processExcelButton.addEventListener('click', handleExcelImport);
-        // }
-
-        // Função principal para lidar com a seleção, leitura e processamento final do arquivo
         function handleExcelImport() {
             const fileInput = document.getElementById('excelFileInput');
-            const importStatusMessage = document.getElementById('importStatusMessage');
-            const importSummaryDiv = document.getElementById('importSummary');
-            const importSummaryList = document.getElementById('importSummaryList');
-
-            // Assegura que os elementos da UI existem
+            // importStatusMessage, importSummaryDiv, importSummaryList já definidos globalmente
             if (!fileInput || !importStatusMessage || !importSummaryDiv || !importSummaryList) {
                 console.error("Elementos da interface de importação não encontrados no DOM.");
-                alert("Erro interno na interface de importação. Verifique o console.");
+                alert("Erro interno na interface de importação. Verifique o console para mais detalhes.");
                 return;
             }
 
             importStatusMessage.textContent = ''; // Limpa mensagens anteriores
-            importSummaryList.innerHTML = ''; 
+            importSummaryList.innerHTML = '';
             importSummaryDiv.classList.add('hidden');
 
             if (!fileInput.files || fileInput.files.length === 0) {
@@ -470,100 +633,84 @@
                 try {
                     const data = event.target.result;
                     if (typeof XLSX === 'undefined') {
-                        throw new Error("Biblioteca SheetJS (XLSX) não está carregada. Verifique o link CDN no HTML.");
+                        throw new Error("A biblioteca SheetJS (XLSX) não está carregada. Verifique o link CDN no HTML.");
                     }
-                    const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF:'yyyy-mm-dd' }); 
+                    // Tenta ler datas como objetos Date e especifica um formato de data se a biblioteca precisar
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF:'dd/mm/yyyy;@' });
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
-                    // Usar {header: 1} para obter array de arrays, raw:false tenta formatar valores
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 , raw: false, defval: null}); 
+                    // Usar {header: 1} para obter array de arrays; raw: false tenta formatar valores (incluindo datas)
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 , raw: false, defval: null});
 
                     // Remove linhas finais completamente vazias que algumas exportações podem incluir
-                    while (jsonData.length > 0 && jsonData[jsonData.length - 1].every(cell => cell === null || String(cell).trim() === '')) {
+                    while (jsonData.length > 0 && jsonData[jsonData.length - 1].every(cell => cell === null || String(cell || '').trim() === '')) {
                         jsonData.pop();
                     }
 
-                    if (jsonData.length < 2) { 
-                        throw new Error("Arquivo parece vazio ou contém apenas o cabeçalho. Nenhuma linha de dados para importar.");
+                    if (jsonData.length < 2) { // Deve ter cabeçalho + pelo menos uma linha de dados
+                        throw new Error("O arquivo parece estar vazio ou contém apenas o cabeçalho. Nenhuma linha de dados para importar.");
                     }
-                    
-                    const processingResult = processAndValidateOSData(jsonData); 
-                    const { validOSs, importLog } = processingResult;
+
+                    const { validOSs, importLog } = processAndValidateOSData(jsonData); // Chama a função de validação
 
                     if (validOSs.length > 0) {
-                        ordensServico.unshift(...validOSs); 
+                        ordensServico.unshift(...validOSs); // Adiciona novas OS no início da lista
                         saveDataToLocalStorage();
-                        populateProductFilters(); 
-                        refreshAllViews();        
-                        addRecentActivity(`${validOSs.length} OS(s) importada(s) com sucesso via arquivo: ${file.name}.`);
+                        populateProductFilters(); // Atualiza filtros de produto caso novos apareçam
+                        refreshAllViews(); // Atualiza a visualização da tabela e outros componentes
+                        addRecentActivity(`${validOSs.length} OS(s) foram importada(s) com sucesso do arquivo: ${file.name}.`);
                     }
 
-                    let finalMessage = "";
-                    if (validOSs.length > 0) {
-                        finalMessage += `${validOSs.length} OS(s) importada(s) com sucesso! `;
-                        importStatusMessage.className = 'mt-4 text-sm text-green-600 dark:text-green-400';
-                    } else {
-                        finalMessage += "Nenhuma OS foi importada com sucesso. ";
-                         importStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
-                    }
+                    // Prepara mensagem final para o usuário
+                    let finalMessage = validOSs.length > 0 ? `${validOSs.length} OS(s) importada(s) com sucesso! ` : "Nenhuma OS foi importada com sucesso. ";
+                    importStatusMessage.className = `mt-4 text-sm ${validOSs.length > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`;
 
                     const errorsCount = importLog.filter(log => !log.success).length;
                     if (errorsCount > 0) {
-                        finalMessage += `${errorsCount} linha(s) continham erros e foram ignoradas. Veja o resumo abaixo.`;
-                        if(validOSs.length > 0) { 
-                             importStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
-                        } else { 
-                             importStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                        }
+                        finalMessage += `${errorsCount} linha(s) da planilha continham erros e foram ignoradas. Veja o resumo abaixo para detalhes.`;
+                        // Se houve erros, a mensagem deve ser de alerta ou erro, dependendo se algo foi importado
+                        importStatusMessage.className = `mt-4 text-sm ${validOSs.length > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`;
                     }
-                    
-                    const dataRowCount = jsonData.slice(1).filter(r => !r.every(c => c === null || String(c).trim() === '')).length;
-                    if (validOSs.length === 0 && errorsCount === 0 && dataRowCount > 0) {
-                        finalMessage = `Arquivo lido, mas nenhuma OS válida foi processada. Verifique o formato dos dados e se os cabeçalhos esperados (Código, Cliente, Início, Término, Técnico) estão corretos e presentes na primeira linha.`;
+                     if (validOSs.length === 0 && errorsCount === 0 && jsonData.slice(1).filter(r => !r.every(c => c === null || String(c || '').trim() === '')).length > 0) {
+                        finalMessage = `Arquivo lido, mas nenhuma OS válida foi processada. Verifique o formato dos dados e se as colunas essenciais (Código, Cliente, Início, Término, Técnico, Solicitante) estão corretas e presentes na primeira linha da planilha.`;
                         importStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
-                    } else if (dataRowCount === 0 && jsonData.length > 1) { // Apenas cabeçalho, sem linhas de dados válidas
-                         finalMessage = "Nenhuma linha de dados encontrada no arquivo após o cabeçalho para processar.";
-                         importStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
                     }
+
 
                     importStatusMessage.textContent = finalMessage.trim();
 
+                    // Exibe o log de importação detalhado
                     if (importLog.length > 0) {
                         importSummaryDiv.classList.remove('hidden');
                         importLog.forEach(log => {
                             const listItem = document.createElement('li');
                             listItem.textContent = log.message;
+                            // Adiciona classes para destacar sucesso ou falha no log
                             listItem.className = log.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300';
                             importSummaryList.appendChild(listItem);
                         });
-                    } else if (validOSs.length === 0 && dataRowCount === 0 && jsonData.length > 0) { // Nenhuma OS válida e nenhuma linha de dados (ex: arquivo só com cabeçalho)
-                        const listItem = document.createElement('li');
-                        listItem.textContent = "Nenhuma OS encontrada para processar no arquivo (sem linhas de dados ou todas as linhas vazias).";
-                        importSummaryList.appendChild(listItem);
-                        importSummaryDiv.classList.remove('hidden');
                     }
 
-
                 } catch (error) {
-                    console.error("Erro ao processar o arquivo Excel/CSV:", error);
-                    importStatusMessage.textContent = `Erro crítico ao processar: ${error.message}. Verifique o console.`;
+                    console.error("Erro detalhado ao processar o arquivo Excel/CSV:", error);
+                    importStatusMessage.textContent = `Erro crítico durante o processamento: ${error.message}. Verifique o console para mais informações.`;
                     importStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                    importSummaryDiv.classList.add('hidden');
+                    importSummaryDiv.classList.add('hidden'); // Esconde o resumo se houver erro crítico
                 } finally {
-                    fileInput.value = ''; 
+                    fileInput.value = ''; // Limpa o input de arquivo para permitir nova seleção do mesmo arquivo
                 }
             };
-            reader.onerror = function(error) { 
-                console.error("Erro ao ler o arquivo:", error); 
-                importStatusMessage.textContent = 'Erro ao ler o arquivo. Verifique se é um arquivo Excel/CSV válido.'; 
+            reader.onerror = function(error) { // Trata erros na leitura do arquivo em si
+                console.error("Erro ao ler o arquivo:", error);
+                importStatusMessage.textContent = 'Ocorreu um erro ao tentar ler o arquivo. Verifique se é um arquivo Excel/CSV válido e tente novamente.';
                 importStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                fileInput.value = ''; 
+                fileInput.value = ''; // Limpa o input
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(file); // Inicia a leitura do arquivo
         }
-        
+
         // ==========================================================================
-        // FUNÇÕES DE NAVEGAÇÃO E EXIBIÇÃO DE VIEWS (COMPLETA)
+        // FUNÇÕES DE NAVEGAÇÃO E EXIBIÇÃO DE VIEWS
         // ==========================================================================
         function showView(vId,cE){
             document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
@@ -572,22 +719,22 @@
             else{ document.getElementById('homeView').classList.remove('hidden'); console.error(`View '${vId}' não encontrada, exibindo Home.`); }
             document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
             if(cE&&cE.classList.contains('sidebar-item'))cE.classList.add('active');
-            if(vId!=='reportsView'){ 
+            if(vId!=='reportsView'){ // Limpa gráficos de relatórios se não estiver na view de relatórios
                 if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}
                 if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}
                 if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}
             }
             if(vId==='homeView'){updateHomeCounts();renderOSStatusChart()}
             else if(vId==='osListView'){applyFiltersAndRender()}
-            else if(vId==='weeklyAnalysisView'){const aMYI=document.getElementById('analysisMonthYearInput');if(aMYI&&!aMYI.value)setDefaultAnalysisMonth();renderMonthlyAnalysisByWeek()}
-            else if(vId==='reportsView'){generateCustomReport()} 
+            else if(vId==='reportsView'){generateCustomReport()} // Gera relatório ao entrar na view
             else if(vId==='settingsView'){const iPSI=document.getElementById('itemsPerPageSetting');if(iPSI)iPSI.value=ITEMS_PER_PAGE}
         }
-        
-        const mainSidebar = document.getElementById('sidebar'); 
-        const mainContentArea = document.getElementById('mainContent'); 
-        const mainToggleSidebarBtn = document.getElementById('toggleSidebar'); 
-        const mainSidebarTitleDiv = document.getElementById('sidebar-title'); 
+
+        // Gerenciamento da Sidebar responsiva
+        const mainSidebar = document.getElementById('sidebar');
+        const mainContentArea = document.getElementById('mainContent');
+        const mainToggleSidebarBtn = document.getElementById('toggleSidebar');
+        const mainSidebarTitleDiv = document.getElementById('sidebar-title');
 
         if(mainToggleSidebarBtn && mainSidebar && mainContentArea && mainSidebarTitleDiv){
             mainToggleSidebarBtn.addEventListener('click',()=>{
@@ -597,71 +744,183 @@
                 mainToggleSidebarBtn.innerHTML=iC?'<i class="fas fa-chevron-right text-lg"></i>':'<i class="fas fa-bars text-lg"></i>';
                 const tS=mainSidebarTitleDiv.querySelector('span');if(tS)tS.style.display=iC?'none':'inline';
                 const tI=mainSidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem';
+                // Redesenha gráficos após transição da sidebar para responsividade
                 if(!iC && document.getElementById('homeView') && !document.getElementById('homeView').classList.contains('hidden'))setTimeout(()=>{if(osStatusChartInstance)osStatusChartInstance.resize()},310);
                 if(!iC && document.getElementById('reportsView') && !document.getElementById('reportsView').classList.contains('hidden'))setTimeout(()=>{if(reportChartByProductInstance)reportChartByProductInstance.resize();if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.resize();if(reportChartByStatusInstance)reportChartByStatusInstance.resize()},310);
             });
         }
 
-        const analysisMonthYearInputGlobal = document.getElementById('analysisMonthYearInput');if(analysisMonthYearInputGlobal)analysisMonthYearInputGlobal.addEventListener('change',renderMonthlyAnalysisByWeek);
+        // Event listeners para filtros da lista de OS
         const filterOsNumEl = document.getElementById('filterOsNumber');if(filterOsNumEl)filterOsNumEl.addEventListener('input',applyFiltersAndRender);
         const filterClientEl = document.getElementById('filterClient');if(filterClientEl)filterClientEl.addEventListener('input',applyFiltersAndRender);
         const filterStatusEl = document.getElementById('filterStatus');if(filterStatusEl)filterStatusEl.addEventListener('change',applyFiltersAndRender);
         const filterProductSelectGlobal = document.getElementById('filterProduct');if(filterProductSelectGlobal)filterProductSelectGlobal.addEventListener('change',applyFiltersAndRender);
         const filterDescriptionInput = document.getElementById('filterDescription');if(filterDescriptionInput)filterDescriptionInput.addEventListener('input',applyFiltersAndRender);
-        
+        const filterMarcadorAtrasoEl = document.getElementById('filterMarcadorAtraso'); if(filterMarcadorAtrasoEl) filterMarcadorAtrasoEl.addEventListener('change', applyFiltersAndRender);
+
+
         // ==========================================================================
-        // LÓGICA DE FILTROS, HOME, ATUALIZAÇÃO GERAL (COMPLETAS)
+        // LÓGICA DE FILTROS DA LISTA PRINCIPAL, HOME VIEW E ATUALIZAÇÃO GERAL
         // ==========================================================================
-        function getFilteredOS(){const fONV=document.getElementById('filterOsNumber')?.value.toLowerCase()||"";const fCV=document.getElementById('filterClient')?.value.toLowerCase()||"";const fSV=document.getElementById('filterStatus')?.value||"";const fPV=document.getElementById('filterProduct')?.value||"";const fDV=document.getElementById('filterDescription')?.value.toLowerCase()||"";return ordensServico.filter(os=>(os.numero?.toLowerCase()||"").includes(fONV)&&(os.cliente?.toLowerCase()||"").includes(fCV)&&(fSV?os.status===fSV:true)&&(fPV?os.produto===fPV:true)&&(os.descricao?.toLowerCase()||"").includes(fDV))}
-        function applyFiltersAndRender(){currentPage=1;renderOSTable()}
+        function getFilteredOS() {
+            const fONV = document.getElementById('filterOsNumber')?.value.toLowerCase() || "";
+            const fCV = document.getElementById('filterClient')?.value.toLowerCase() || "";
+            const fSV = document.getElementById('filterStatus')?.value || "";
+            const fPV = document.getElementById('filterProduct')?.value || "";
+            const fDV = document.getElementById('filterDescription')?.value.toLowerCase() || "";
+            const fMAV = document.getElementById('filterMarcadorAtraso')?.value || "";
+
+            return ordensServico.filter(os => {
+                const matchNumero = (os.numero?.toLowerCase() || "").includes(fONV);
+                const matchCliente = (os.cliente?.toLowerCase() || "").includes(fCV);
+                const matchStatus = fSV ? os.status === fSV : true;
+                const matchProduto = fPV ? os.produto === fPV : true;
+                const matchDescricao = (os.descricao?.toLowerCase() || "").includes(fDV);
+                let matchMarcador = true;
+                if (fMAV === "marcada") {
+                    matchMarcador = os.marcadorAtrasoManual === true;
+                } else if (fMAV === "nao_marcada") {
+                    matchMarcador = os.marcadorAtrasoManual === false; // Explicitamente não marcada
+                }
+                return matchNumero && matchCliente && matchStatus && matchProduto && matchDescricao && matchMarcador;
+            });
+        }
+        function applyFiltersAndRender(){currentPage=1;renderOSTable()} // Reseta para página 1 ao aplicar filtros
         function updateHomeCounts(){const oAE=document.getElementById('osAbertasCount');const oCME=document.getElementById('osCompletasMesCount');const oPE=document.getElementById('osPendentesCount');const oCaE=document.getElementById('osCanceladasCount');if(oAE)oAE.textContent=ordensServico.filter(os=>os.status==='Aberta').length;const h=new Date();const pDM=new Date(h.getFullYear(),h.getMonth(),1);const uDM=new Date(h.getFullYear(),h.getMonth()+1,0,23,59,59,999);if(oCME)oCME.textContent=ordensServico.filter(os=>{if(os.status!=='Completa')return false;const dC=os.dataFechamento?new Date(os.dataFechamento+'T00:00:00Z'):(os.prazoFinal?new Date(os.prazoFinal+'T00:00:00Z'):null);if(!dC)return false;return dC>=pDM&&dC<=uDM}).length;if(oPE)oPE.textContent=ordensServico.filter(os=>os.status==='Pendente Informação'||os.status==='Aguardando Aprovação').length;if(oCaE)oCaE.textContent=ordensServico.filter(os=>os.status==='Cancelada').length}
-        function renderOSStatusChart(){const cC=document.getElementById('osStatusChart');const oSCCC=document.getElementById('osStatusChartContainer');if(!cC||!oSCCC||oSCCC.offsetParent===null)return;const ctx=cC.getContext('2d');const iDM=document.documentElement.classList.contains('dark');const sC=ordensServico.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCo={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)'};const bC=Object.keys(sC).map(s=>sCo[s]||'rgba(201,203,207,0.8)');const d={labels:Object.keys(sC),datasets:[{label:'OS por Status',data:Object.values(sC),backgroundColor:bC,borderColor:iDM?getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim():'#fff',borderWidth:2,hoverOffset:8}]};if(osStatusChartInstance)osStatusChartInstance.destroy();osStatusChartInstance=new Chart(ctx,{type:'doughnut',data:d,options:{responsive:true,maintainAspectRatio:false,animation:{animateScale:true,animateRotate:true},plugins:{legend:{position:'bottom',labels:{padding:15,font:{size:11},color:iDM?getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim():'#1e293b'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.9)':'rgba(255,255,255,0.9)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,callbacks:{label:function(c){const p=((c.parsed/c.chart.getDatasetMeta(0).total)*100).toFixed(1);return`${c.label||''}: ${c.parsed||0} (${p}%)`}}}}}})}
-        function navigateToOsListWithFilter(sF,fCMP=false){const fSI=document.getElementById('filterStatus');const fONI=document.getElementById('filterOsNumber');const fCI=document.getElementById('filterClient');const fPI=document.getElementById('filterProduct');const fDI=document.getElementById('filterDescription');if(fONI)fONI.value="";if(fCI)fCI.value="";if(fPI)fPI.value="";if(fDI)fDI.value="";if(fSI){if(Array.isArray(sF)){fSI.value="";addRecentActivity("Visualizando OS. Refine filtros p/ pendentes.")}else{fSI.value=sF}}showView('osListView',document.querySelector('.sidebar-item[onclick*="osListView"]'))}
-        function refreshAllViews(){renderOSTable();updateHomeCounts();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))renderOSStatusChart();const wAVE=document.getElementById('weeklyAnalysisView');if(wAVE&&!wAVE.classList.contains('hidden'))renderMonthlyAnalysisByWeek();const rVE=document.getElementById('reportsView');if(rVE&&!rVE.classList.contains('hidden'))generateCustomReport()}
-        
+        function renderOSStatusChart(){const cC=document.getElementById('osStatusChart');const oSCCC=document.getElementById('osStatusChartContainer');if(!cC||!oSCCC||oSCCC.offsetParent===null)return;const ctx=cC.getContext('2d');const iDM=document.documentElement.classList.contains('dark');const sC=ordensServico.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCo={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)', 'Incompleta':'rgba(201, 203, 207, 0.8)'};const bC=Object.keys(sC).map(s=>sCo[s]||'rgba(201,203,207,0.8)');const d={labels:Object.keys(sC),datasets:[{label:'OS por Status',data:Object.values(sC),backgroundColor:bC,borderColor:iDM?getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim():'#fff',borderWidth:2,hoverOffset:8}]};if(osStatusChartInstance)osStatusChartInstance.destroy();osStatusChartInstance=new Chart(ctx,{type:'doughnut',data:d,options:{responsive:true,maintainAspectRatio:false,animation:{animateScale:true,animateRotate:true},plugins:{legend:{position:'bottom',labels:{padding:15,font:{size:11},color:iDM?getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim():'#1e293b'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.9)':'rgba(255,255,255,0.9)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,callbacks:{label:function(c){const p=((c.parsed/c.chart.getDatasetMeta(0).total)*100).toFixed(1);return`${c.label||''}: ${c.parsed||0} (${p}%)`}}}}}})}
+        function navigateToOsListWithFilter(sF,fCMP=false){const fSI=document.getElementById('filterStatus');const fONI=document.getElementById('filterOsNumber');const fCI=document.getElementById('filterClient');const fPI=document.getElementById('filterProduct');const fDI=document.getElementById('filterDescription'); const fMAI = document.getElementById('filterMarcadorAtraso'); if(fONI)fONI.value="";if(fCI)fCI.value="";if(fPI)fPI.value="";if(fDI)fDI.value=""; if(fMAI) fMAI.value = ""; if(fSI){if(Array.isArray(sF)){fSI.value="";addRecentActivity("Visualizando OS. Refine os filtros para visualizar OS pendentes.")}else{fSI.value=sF}}showView('osListView',document.querySelector('.sidebar-item[onclick*="osListView"]'))}
+        function refreshAllViews(){renderOSTable();updateHomeCounts();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))renderOSStatusChart();const rVE=document.getElementById('reportsView');if(rVE&&!rVE.classList.contains('hidden'))generateCustomReport()}
+
+
         // ==========================================================================
-        // ANÁLISE MENSAL (COMPLETA)
+        // RELATÓRIOS PERSONALIZADOS
         // ==========================================================================
-        function setDefaultAnalysisMonth(){const aMYI=document.getElementById('analysisMonthYearInput');if(!aMYI)return;const t=new Date();const y=t.getFullYear();const m=String(t.getMonth()+1).padStart(2,'0');aMYI.value=`${y}-${m}`}
-        function renderMonthlyAnalysisByWeek(){const wATB=document.getElementById('weeklyAnalysisTableBody');const aMYI=document.getElementById('analysisMonthYearInput');const sMI=document.getElementById('selectedMonthInfo');if(!wATB||!aMYI||!sMI)return;wATB.innerHTML='';const mYV=aMYI.value;if(!mYV){sMI.textContent='Selecione mês/ano.';wATB.innerHTML='<tr><td colspan="9" class="text-center py-10 text-slate-500">Selecione mês/ano.</td></tr>';return}const[y,m]=mYV.split('-').map(Number);const mN=new Date(y,m-1,1).toLocaleString('pt-BR',{month:'long'});sMI.textContent=`Analisando pendências para ${mN} de ${y}.`;const wISM=getWeeksInMonth(y,m);let aPO=[];wISM.forEach(w=>{const{start:wS,end:wE,wednesday:wW,weekNumber:wN}=w;const t=new Date();const hDFCP=t>wW||t>wE;const oITW=ordensServico.filter(os=>{const pFD=new Date(os.prazoFinal+'T23:59:59Z');const iPITSW=pFD>=wS&&pFD<=wE;if(!iPITSW)return false;const iNCOC=os.status!=='Completa'&&os.status!=='Cancelada';if(!iNCOC)return false;return hDFCP});oITW.forEach(os=>aPO.push({...os,weekNumberForAnalysis:wN,analysisWeekStart:wS,analysisWeekEnd:wE}))});if(aPO.length===0){wATB.innerHTML=`<tr><td colspan="9" class="text-center py-10 text-slate-500">Nenhuma OS pendente para ${mN} de ${y}.</td></tr>`;return}aPO.sort((a,b)=>{if(a.weekNumberForAnalysis!==b.weekNumberForAnalysis)return a.weekNumberForAnalysis-b.weekNumberForAnalysis;return new Date(a.prazoFinal)-new Date(b.prazoFinal)});aPO.forEach(os=>{const r=wATB.insertRow();r.className='table-row';const wRT=`Sem. ${os.weekNumberForAnalysis} (${formatDateToBR(os.analysisWeekStart.toISOString().split('T')[0])} - ${formatDateToBR(os.analysisWeekEnd.toISOString().split('T')[0])})`;r.innerHTML=`<td class="py-3 px-4 text-sm" title="${wRT}">Sem ${os.weekNumberForAnalysis}</td><td class="py-3 px-4 text-sm">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm">${os.responsavel}</td><td class="py-3 px-4 text-sm text-red-600">Não 'Completa'</td><td class="py-3 px-4 text-sm"><button class="btn btn-xs bg-sky-500 hover:bg-sky-600 !text-white !py-1 !px-2 mr-1 rounded-md" onclick="editOS('${os.id}')" title="Detalhes OS"><i class="fas fa-edit"></i></button><button class="btn btn-xs bg-amber-500 hover:bg-amber-600 !text-black !py-1 !px-2 rounded-md" onclick="notifyCollaborator('${os.responsavel}','${os.numero}')" title="Notificar Responsável"><i class="fas fa-bell"></i></button></td>`})}
-        function sendWeeklyReportAndGeneratePDF(){const aMYI=document.getElementById('analysisMonthYearInput');if(!aMYI||!aMYI.value){alert("Selecione mês/ano.");return}const[y,m]=aMYI.value.split('-').map(Number);const mN=new Date(y,m-1,1).toLocaleString('pt-BR',{month:'long'});const t=`Relatório Pendências - ${mN.charAt(0).toUpperCase()+mN.slice(1)} ${y}`;const wATB=document.getElementById('weeklyAnalysisTableBody');if(wATB&&wATB.querySelectorAll('tr').length>0&&!wATB.querySelector('td[colspan="9"]')){exportTableToPDF('weeklyAnalysisTable',t,'weeklyAnalysisTableBody',true);addRecentActivity(`PDF pendências (${mN}/${y}) gerado.`);alert(`PDF "${t}" gerado.`)}else alert(`Sem pendências para ${mN}/${y}.`)}
-        function notifyCollaborator(r,oN){console.log(`Simulação: Notificando ${r} sobre OS ${oN}.`);alert(`Simulação: Notificação para ${r} (OS ${oN}).`);addRecentActivity(`Notificação (simulada) p/ ${r} (OS ${oN}).`)}
-        
+        function generateCustomReport() {
+            const rTB = document.getElementById('reportsTableBody');
+            const rDSI = document.getElementById('reportDateStart');
+            const rDEI = document.getElementById('reportDateEnd');
+            const rSI = document.getElementById('reportStatus');
+            const rPI = document.getElementById('reportProduct');
+            const rFMAI = document.getElementById('reportFilterMarcadorAtraso'); 
+
+            if (!rTB || !rDSI || !rDEI || !rSI || !rPI || !rFMAI) return;
+            rTB.innerHTML = ''; // Limpa tabela anterior
+            // Limpa gráficos anteriores
+            if (reportChartByProductInstance) { reportChartByProductInstance.destroy(); reportChartByProductInstance = null; }
+            if (reportChartByUsuarioInstance) { reportChartByUsuarioInstance.destroy(); reportChartByUsuarioInstance = null; }
+            if (reportChartByStatusInstance) { reportChartByStatusInstance.destroy(); reportChartByStatusInstance = null; }
+            document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c => {
+                const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
+            });
+
+            const dSV = rDSI.value;
+            const dEV = rDEI.value;
+            const sV = rSI.value;
+            const pV = rPI.value;
+            const fMAVal = rFMAI.value; 
+
+            if (dSV && dEV && new Date(dEV) < new Date(dSV)) {
+                alert("A Data Final do relatório não pode ser anterior à Data Inicial.");
+                rTB.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-red-500">Erro: Data Final anterior à Data Inicial.</td></tr>';
+                return;
+            }
+
+            const fRD = ordensServico.filter(os => {
+                let matchPrazo = true;
+                if (os.prazoFinal) { // Só filtra por prazo se a OS tiver um prazo
+                    const prazoFinalDate = new Date(os.prazoFinal + "T00:00:00Z"); // Usa UTC para consistência
+                    if (dSV && dEV) { // Ambas as datas do filtro preenchidas
+                        matchPrazo = prazoFinalDate >= new Date(dSV + "T00:00:00Z") && prazoFinalDate <= new Date(dEV + "T23:59:59Z");
+                    } else if (dSV) { // Apenas data inicial
+                        matchPrazo = prazoFinalDate >= new Date(dSV + "T00:00:00Z");
+                    } else if (dEV) { // Apenas data final
+                        matchPrazo = prazoFinalDate <= new Date(dEV + "T23:59:59Z");
+                    }
+                } else if (dSV || dEV) { // Se há filtro de data mas a OS não tem prazo, não deve corresponder
+                    matchPrazo = false;
+                }
+
+                const matchStatus = sV ? os.status === sV : true; // Se filtro de status, OS deve ter esse status
+                const matchProduct = pV ? os.produto === pV : true; // Se filtro de produto, OS deve ter esse produto
+                
+                let matchMarcadorAtraso = true; // Filtro para o marcador manual
+                if (fMAVal === "marcada") {
+                    matchMarcadorAtraso = os.marcadorAtrasoManual === true;
+                } else if (fMAVal === "nao_marcada") {
+                    matchMarcadorAtraso = os.marcadorAtrasoManual === false;
+                }
+                return matchPrazo && matchStatus && matchProduct && matchMarcadorAtraso;
+            });
+
+            if (fRD.length === 0) {
+                rTB.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma Ordem de Serviço encontrada para os filtros selecionados.</td></tr>';
+                return;
+            }
+
+            fRD.sort((a, b) => new Date(a.prazoFinal) - new Date(b.prazoFinal)); // Ordena por prazo final
+            fRD.forEach(os => {
+                const rw = rTB.insertRow();
+                rw.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700';
+                let osNumeroContent = os.marcadorAtrasoManual ? `<i class="fas fa-flag text-purple-500 mr-2" title="Marcada Manualmente Não Realizada no Prazo"></i>${os.numero}` : os.numero;
+                
+                rw.innerHTML = `<td class="py-3 px-4 text-sm">${osNumeroContent}</td>
+                                <td class="py-3 px-4 text-sm">${os.cliente}</td>
+                                <td class="py-3 px-4 text-sm">${os.produto || 'N/A'}</td>
+                                <td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td>
+                                <td class="py-3 px-4 text-sm">${os.status}</td>
+                                <td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td>
+                                <td class="py-3 px-4 text-sm">${os.responsavel}</td>`;
+            });
+            addRecentActivity("Relatório personalizado gerado com sucesso.");
+            renderReportCharts(fRD); // Renderiza os gráficos com os dados filtrados
+        }
+
+        function renderReportCharts(d){const iDM=document.documentElement.classList.contains('dark');const cCO=(tTJS=null)=>({responsive:true,maintainAspectRatio:false,animation:{duration:1e3,easing:'easeInOutQuart',animateScale:true,animateRotate:true},plugins:{legend:{display:true,position:'bottom',labels:{color:iDM?'#cbd5e1':'#1e293b',padding:15,boxWidth:12,font:{size:11}}},title:{display:!!tTJS,text:tTJS,color:iDM?'#cbd5e1':'#1e293b',font:{size:14,weight:'normal'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.95)':'rgba(255,255,255,0.95)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,padding:10,callbacks:{label:function(c){const t=c.chart.getDatasetMeta(0).total;const p=t>0?((c.parsed/t)*100).toFixed(1)+'%':'0%';return`${c.label||''}: ${c.parsed||0} (${p})`}}}},scales:{y:{beginAtZero:true,ticks:{color:iDM?'#94a3b8':'#475569',stepSize:1,precision:0},grid:{color:iDM?'#334155':'#e2e8f0',drawBorder:false}},x:{ticks:{color:iDM?'#94a3b8':'#475569',autoSkip:true,maxRotation:45,minRotation:0},grid:{display:false}}}});const cCl=['rgba(54,162,235,0.8)','rgba(255,159,64,0.8)','rgba(75,192,192,0.8)','rgba(255,99,132,0.8)','rgba(153,102,255,0.8)','rgba(255,205,86,0.8)','rgba(123,239,178,0.8)','rgba(250,130,49,0.8)','rgba(179,57,57,0.8)','rgba(72,126,176,0.8)','rgba(246,229,141,0.8)','rgba(113,88,226,0.8)'];const cBC=iDM?'rgba(15,23,42,0.8)':'rgba(255,255,255,0.8)';const pC=d.reduce((acc,os)=>{acc[os.produto||'N/Esp.']=(acc[os.produto||'N/Esp.']||0)+1;return acc},{});if(document.getElementById('reportChartByProduct')){if(reportChartByProductInstance)reportChartByProductInstance.destroy();reportChartByProductInstance=new Chart(document.getElementById('reportChartByProduct').getContext('2d'),{type:'bar',data:{labels:Object.keys(pC),datasets:[{label:'OS',data:Object.values(pC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5}]},options:cCO()})}const uC=d.reduce((acc,os)=>{acc[os.responsavel||'N/Atrib.']=(acc[os.responsavel||'N/Atrib.']||0)+1;return acc},{});if(document.getElementById('reportChartByUsuario')){if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=new Chart(document.getElementById('reportChartByUsuario').getContext('2d'),{type:'pie',data:{labels:Object.keys(uC),datasets:[{label:'OS',data:Object.values(uC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}const sCR=d.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCM={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)', 'Incompleta':'rgba(201, 203, 207, 0.8)'};if(document.getElementById('reportChartByStatus')){if(reportChartByStatusInstance)reportChartByStatusInstance.destroy();reportChartByStatusInstance=new Chart(document.getElementById('reportChartByStatus').getContext('2d'),{type:'doughnut',data:{labels:Object.keys(sCR),datasets:[{label:'OS',data:Object.values(sCR),backgroundColor:Object.keys(sCR).map((s,i)=>sCM[s]||cCl[i%cCl.length]),borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}}
+        // Limpa a tabela de relatório se qualquer filtro for alterado
+        const clearReportOnChange=()=>{if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="7" class="text-center py-10 text-slate-500">Os filtros foram alterados. Clique em "Gerar Relatório" para atualizar.</td></tr>';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};
+        const rDSL=document.getElementById('reportDateStart');if(rDSL)rDSL.addEventListener('change',clearReportOnChange);
+        const rDEL=document.getElementById('reportDateEnd');if(rDEL)rDEL.addEventListener('change',clearReportOnChange);
+        const rSL=document.getElementById('reportStatus');if(rSL&&!rSL.getAttribute('data-listener-set')){rSL.addEventListener('change',clearReportOnChange);rSL.setAttribute('data-listener-set','true')}
+        const rPL=document.getElementById('reportProduct');if(rPL&&!rPL.getAttribute('data-listener-set')){rPL.addEventListener('change',clearReportOnChange);rPL.setAttribute('data-listener-set','true')} 
+        const rFMAIL = document.getElementById('reportFilterMarcadorAtraso'); if(rFMAIL) rFMAIL.addEventListener('change', clearReportOnChange);
+
+
         // ==========================================================================
-        // RELATÓRIOS PERSONALIZADOS (COMPLETA)
+        // FUNÇÕES DE EXPORTAÇÃO (CSV, PDF)
         // ==========================================================================
-        function generateCustomReport(){const rTB=document.getElementById('reportsTableBody');const rDSI=document.getElementById('reportDateStart');const rDEI=document.getElementById('reportDateEnd');const rSI=document.getElementById('reportStatus');const rPI=document.getElementById('reportProduct');if(!rTB||!rDSI||!rDEI||!rSI||!rPI)return;rTB.innerHTML='';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)});const dSV=rDSI.value;const dEV=rDEI.value;const sV=rSI.value;const pV=rPI.value;if(dSV&&dEV&&new Date(dEV)<new Date(dSV)){alert("Data Final anterior à Inicial.");rTB.innerHTML='<tr><td colspan="7" class="text-center py-10 text-red-500">Erro: Data Final anterior à Inicial.</td></tr>';return}const fRD=ordensServico.filter(os=>{let mD=true;if(os.prazoFinal){const pFD=new Date(os.prazoFinal+"T00:00:00Z");if(dSV&&dEV){mD=pFD>=new Date(dSV+"T00:00:00Z")&&pFD<=new Date(dEV+"T23:59:59Z")}else if(dSV){mD=pFD>=new Date(dSV+"T00:00:00Z")}else if(dEV){mD=pFD<=new Date(dEV+"T23:59:59Z")}}else if(dSV||dEV){mD=false}const mS=sV?os.status===sV:true;const mP=pV?os.produto===pV:true;return mD&&mS&&mP});if(fRD.length===0){rTB.innerHTML='<tr><td colspan="7" class="text-center py-10 text-slate-500">Nenhuma OS para os filtros.</td></tr>';return}fRD.sort((a,b)=>new Date(a.prazoFinal)-new Date(b.prazoFinal));fRD.forEach(os=>{const rw=rTB.insertRow();rw.className='table-row hover:bg-slate-100 dark:hover:bg-slate-700';rw.innerHTML=`<td class="py-3 px-4 text-sm">${os.numero}</td><td class="py-3 px-4 text-sm">${os.cliente}</td><td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td><td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td><td class="py-3 px-4 text-sm">${os.status}</td><td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td><td class="py-3 px-4 text-sm">${os.responsavel}</td>`});addRecentActivity("Relatório personalizado gerado.");renderReportCharts(fRD)}
-        function renderReportCharts(d){const iDM=document.documentElement.classList.contains('dark');const cCO=(tTJS=null)=>({responsive:true,maintainAspectRatio:false,animation:{duration:1e3,easing:'easeInOutQuart',animateScale:true,animateRotate:true},plugins:{legend:{display:true,position:'bottom',labels:{color:iDM?'#cbd5e1':'#1e293b',padding:15,boxWidth:12,font:{size:11}}},title:{display:!!tTJS,text:tTJS,color:iDM?'#cbd5e1':'#1e293b',font:{size:14,weight:'normal'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.95)':'rgba(255,255,255,0.95)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,padding:10,callbacks:{label:function(c){const t=c.chart.getDatasetMeta(0).total;const p=t>0?((c.parsed/t)*100).toFixed(1)+'%':'0%';return`${c.label||''}: ${c.parsed||0} (${p})`}}}},scales:{y:{beginAtZero:true,ticks:{color:iDM?'#94a3b8':'#475569',stepSize:1,precision:0},grid:{color:iDM?'#334155':'#e2e8f0',drawBorder:false}},x:{ticks:{color:iDM?'#94a3b8':'#475569',autoSkip:true,maxRotation:45,minRotation:0},grid:{display:false}}}});const cCl=['rgba(54,162,235,0.8)','rgba(255,159,64,0.8)','rgba(75,192,192,0.8)','rgba(255,99,132,0.8)','rgba(153,102,255,0.8)','rgba(255,205,86,0.8)','rgba(123,239,178,0.8)','rgba(250,130,49,0.8)','rgba(179,57,57,0.8)','rgba(72,126,176,0.8)','rgba(246,229,141,0.8)','rgba(113,88,226,0.8)'];const cBC=iDM?'rgba(15,23,42,0.8)':'rgba(255,255,255,0.8)';const pC=d.reduce((acc,os)=>{acc[os.produto||'N/Esp.']=(acc[os.produto||'N/Esp.']||0)+1;return acc},{});if(document.getElementById('reportChartByProduct')){if(reportChartByProductInstance)reportChartByProductInstance.destroy();reportChartByProductInstance=new Chart(document.getElementById('reportChartByProduct').getContext('2d'),{type:'bar',data:{labels:Object.keys(pC),datasets:[{label:'OS',data:Object.values(pC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5}]},options:cCO()})}const uC=d.reduce((acc,os)=>{acc[os.responsavel||'N/Atrib.']=(acc[os.responsavel||'N/Atrib.']||0)+1;return acc},{});if(document.getElementById('reportChartByUsuario')){if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=new Chart(document.getElementById('reportChartByUsuario').getContext('2d'),{type:'pie',data:{labels:Object.keys(uC),datasets:[{label:'OS',data:Object.values(uC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}const sCR=d.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCM={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)'};if(document.getElementById('reportChartByStatus')){if(reportChartByStatusInstance)reportChartByStatusInstance.destroy();reportChartByStatusInstance=new Chart(document.getElementById('reportChartByStatus').getContext('2d'),{type:'doughnut',data:{labels:Object.keys(sCR),datasets:[{label:'OS',data:Object.values(sCR),backgroundColor:Object.keys(sCR).map((s,i)=>sCM[s]||cCl[i%cCl.length]),borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}}
-        const clearReportOnChange=()=>{if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="7" class="text-center py-10 text-slate-500">Filtros alterados. Clique "Gerar Relatório".</td></tr>';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};const rDSL=document.getElementById('reportDateStart');if(rDSL)rDSL.addEventListener('change',clearReportOnChange);const rDEL=document.getElementById('reportDateEnd');if(rDEL)rDEL.addEventListener('change',clearReportOnChange);const rSL=document.getElementById('reportStatus');if(rSL&&!rSL.getAttribute('data-listener-set')){rSL.addEventListener('change',clearReportOnChange);rSL.setAttribute('data-listener-set','true')}const rPL=document.getElementById('reportProduct');if(rPL&&!rPL.getAttribute('data-listener-set')){rPL.addEventListener('change',clearReportOnChange);rPL.setAttribute('data-listener-set','true')}
-        
+        function exportTableToCSV(tId,fN){let c=[];const t=document.getElementById(tId);if(!t){console.error(`Tabela com ID '${tId}' não encontrada para exportação CSV.`);return}const rS=t.querySelectorAll("tr");for(const r of rS){const cS=r.querySelectorAll("td,th");const rD=[];for(const col of cS){let cT=col.innerText;if(col.querySelector('select'))cT=col.querySelector('select').value;else if(col.querySelector('span[class*="priority-"]'))cT=col.querySelector('span').innerText; if(col.querySelector('.fa-flag')) cT = "[M] " + cT.replace(/\[M\]\s*/, '').trim(); /* Adiciona [M] se tiver a flag e remove duplicatas */ rD.push('"'+cT.replace(/\s+/g,' ').trim().replace(/"/g,'""')+'"')}c.push(rD.join(","))}const cF=new Blob(["\uFEFF"+c.join("\n")],{type:"text/csv;charset=utf-8;"}); /* Adicionado BOM para Excel */ const l=document.createElement("a");l.href=URL.createObjectURL(cF);l.download=fN;l.style.display="none";document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`Arquivo CSV "${fN}" exportado com sucesso.`)}
+        function exportTableToPDF(tId,t,tBId,iWR=false){const{jsPDF}=window.jspdf;const d=new jsPDF({orientation:iWR?'landscape':'portrait',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;d.setFontSize(18);d.setTextColor(tC);d.text(t,d.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>h.push(th.innerText));const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach(td=>{let cT=td.innerText;if(td.querySelector('select'))cT=td.querySelector('select').value;else if(td.querySelector('span[class*="priority-"]'))cT=td.querySelector('span').innerText; if(td.querySelector('.fa-flag')) cT = "[M] " + cT.replace(/\[M\]\s*/, '').trim(); rD.push(cT)});b.push(rD)});if(b.length>0&&!(b[0].length===1&&b[0][0].includes("Nenhuma OS encontrada"))&&!(b[0].length > 0 && b[0][0].includes("Nenhuma OS para os filtros"))&&!(b[0].length > 0 && b[0][0].includes("Nenhuma OS pendente"))){d.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:iWR?7:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'}})}else d.setFontSize(12).text("Nenhum dado na tabela para exportar.",40,cY)}else d.setFontSize(12).text("Tabela não encontrada para exportação.",40,cY);const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;d.setFontSize(8).text(gD,d.internal.pageSize.getWidth()-40,d.internal.pageSize.getHeight()-20,{align:'right'});d.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');if(!iWR&&tId!=='reportsTable')addRecentActivity(`Arquivo PDF "${t}" exportado com sucesso.`);else if(tId==='reportsTable')addRecentActivity(`Arquivo PDF (apenas tabela) "${t}" exportado com sucesso.`)}
+        async function exportReportToPDFWithCharts(tId,t,tBId,cCI=[]){const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;doc.setFontSize(18);doc.setTextColor(tC);doc.text(t,doc.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const rDSV=document.getElementById('reportDateStart')?.value;const rDEV=document.getElementById('reportDateEnd')?.value;const rSV=document.getElementById('reportStatus')?.value;const rPV=document.getElementById('reportProduct')?.value; const rFMAVal = document.getElementById('reportFilterMarcadorAtraso')?.value; let fT="Filtros Aplicados: ";let hF=false;if(rDSV||rDEV){fT+=`Período de Prazo: ${rDSV?formatDateToBR(rDSV):'*'} a ${rDEV?formatDateToBR(rDEV):'*'}. `;hF=true}if(rSV){fT+=`Status: ${rSV}. `;hF=true}if(rPV){fT+=`Produto: ${rPV}. `;hF=true} if(rFMAVal){fT+=`Marcador Atraso: ${rFMAVal === "marcada" ? "Apenas Marcadas" : (rFMAVal === "nao_marcada" ? "Apenas Não Marcadas" : "Todos")}. `; hF=true;} if(!hF){fT="Filtros: Nenhum filtro de data, status, produto ou marcador aplicado."} if(hF){doc.setFontSize(10);doc.text(fT,40,cY);cY+=20}const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>h.push(th.innerText));const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach(td=>{let ct=td.innerText;if(td.querySelector('span[class*="priority-"]'))ct=td.querySelector('span').innerText; if(td.querySelector('.fa-flag')) ct = "[M] " + ct.replace(/\[M\]\s*/, '').trim(); rD.push(ct)});b.push(rD)});if(b.length>0&&!b[0][0].includes("Nenhuma OS")){doc.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'},didDrawPage:(data)=>{cY=data.cursor.y+20}});cY=doc.autoTable.previous.finalY+30}else{doc.setFontSize(12);doc.text("Nenhum dado na tabela para os filtros atuais.",40,cY);cY+=20}}else{doc.setFontSize(12);doc.text("Tabela de relatório não encontrada.",40,cY);cY+=20}const pH=doc.internal.pageSize.getHeight();const pW=doc.internal.pageSize.getWidth();const m=40;const cW=(pW-(3*m))/2;const cH=cW*0.65;let cX=m;let cOCR=0;for(const cId of cCI){const cn=document.getElementById(cId);if(cn&&cn.offsetParent!==null&&cn.width>0&&cn.height>0){try{const iD=cn.toDataURL('image/png',1.0);if(cY+cH+m>pH && cOCR > 0){doc.addPage();cY=m;cX=m;cOCR=0} /* Adiciona nova página se não couber e já tem algo */ else if (cY+cH+m > pH && cOCR === 0) {cY = m; } /* Se for o primeiro gráfico e não couber, só reseta Y */ if(cOCR>=2){cY+=cH+m;cX=m;cOCR=0;if(cY+cH+m>pH){doc.addPage();cY=m}}doc.setFontSize(12);const cT=cn.closest('.card')?.querySelector('h4')?.innerText||cId.replace('reportChartBy','Gráfico ');doc.text(cT,cX+cW/2,cY-5,{align:'center'});doc.addImage(iD,'PNG',cX,cY,cW,cH);cX+=cW+m;cOCR++}catch(e){console.error("Erro ao adicionar gráfico ao PDF:",e,cId);if(cY+20>pH){doc.addPage();cY=m}doc.setTextColor(255,0,0);doc.text(`Erro ao renderizar gráfico: ${cId.replace('reportChartBy','')}`,cX,cY);doc.setTextColor(tC);cY+=20}}}if(cOCR>0 && cY + cH + m <= pH) { /* Verifica se o último conjunto de gráficos deixou espaço suficiente */ } else if (cOCR > 0 && cY + cH + m > pH ) { /* Se não, move para o que seria a próxima posição Y ou nova página */ cY = pH; /* Força final da página para nota de rodapé */ } const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;doc.setFontSize(8);doc.text(gD,pW-m,pH-20,{align:'right'});doc.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');addRecentActivity(`Arquivo PDF "${t}" com gráficos exportado com sucesso.`)}
+        function downloadICS(osI){const os=ordensServico.find(o=>o.id===osI);if(!os){alert("OS não encontrada para gerar arquivo .ics.");return}const nF=new Date().toISOString().replace(/-/g,'').replace(/:/g,'').substring(0,15)+'Z';const d=`OS: ${os.numero}\\nCliente: ${os.cliente}\\nProduto: ${os.produto||'N/A'}\\nDescrição: ${os.descricao.replace(/\n/g,'\\n')}\\nResponsável: ${os.responsavel}\\nPrioridade: ${os.prioridade}\\nStatus: ${os.status}${os.marcadorAtrasoManual ? '\\nMARCADA: NÃO REALIZADA NO PRAZO' : ''}`;const iC=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//hacksw/handcal//NONSGML v1.0//EN","BEGIN:VEVENT",`UID:${os.id}@${window.location.hostname||'gestao-os.com'}`,`DTSTAMP:${nF}`,`DTSTART;VALUE=DATE:${os.dataAbertura.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${new Date(new Date(os.prazoFinal).getTime()+864e5).toISOString().split('T')[0].replace(/-/g,'')}`,`SUMMARY:Prazo OS ${os.numero} - ${os.cliente}`,`DESCRIPTION:${d}`,"LOCATION:Cliente "+os.cliente,"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Lembrete Prazo OS","TRIGGER:-PT1D","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");const b=new Blob([iC],{type:'text/calendar;charset=utf-8'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download=`OS_${os.numero}_${os.cliente.replace(/ /g,'_')}.ics`;document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`Arquivo .ics para OS ${os.numero} gerado.`)}
+
         // ==========================================================================
-        // FUNÇÕES DE EXPORTAÇÃO (COMPLETAS)
+        // FUNÇÕES DE CONFIGURAÇÕES DA APLICAÇÃO
         // ==========================================================================
-        function exportTableToCSV(tId,fN){let c=[];const t=document.getElementById(tId);if(!t){console.error(`Tabela ${tId} não encontrada.`);return}const rS=t.querySelectorAll("tr");for(const r of rS){const cS=r.querySelectorAll("td,th");const rD=[];for(const col of cS){let cT=col.innerText;if(col.querySelector('select'))cT=col.querySelector('select').value;else if(col.querySelector('span[class*="priority-"]'))cT=col.querySelector('span').innerText;rD.push('"'+cT.replace(/\s+/g,' ').trim().replace(/"/g,'""')+'"')}c.push(rD.join(","))}const cF=new Blob([c.join("\n")],{type:"text/csv;charset=utf-8;"});const l=document.createElement("a");l.href=URL.createObjectURL(cF);l.download=fN;l.style.display="none";document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`CSV "${fN}" exportado.`)}
-        function exportTableToPDF(tId,t,tBId,iWR=false){const{jsPDF}=window.jspdf;const d=new jsPDF({orientation:iWR?'landscape':'portrait',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;d.setFontSize(18);d.setTextColor(tC);d.text(t,d.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>h.push(th.innerText));const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach(td=>{let cT=td.innerText;if(td.querySelector('select'))cT=td.querySelector('select').value;else if(td.querySelector('span[class*="priority-"]'))cT=td.querySelector('span').innerText;rD.push(cT)});b.push(rD)});if(b.length>0&&!(b[0].length===1&&b[0][0].includes("Nenhuma OS encontrada"))&&!(b[0].length > 0 && b[0][0].includes("Nenhuma OS para os filtros"))&&!(b[0].length > 0 && b[0][0].includes("Nenhuma OS pendente"))){d.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:iWR?7:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'}})}else d.setFontSize(12).text("Nenhum dado na tabela.",40,cY)}else d.setFontSize(12).text("Tabela não encontrada.",40,cY);const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;d.setFontSize(8).text(gD,d.internal.pageSize.getWidth()-40,d.internal.pageSize.getHeight()-20,{align:'right'});d.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');if(!iWR&&tId!=='reportsTable')addRecentActivity(`PDF "${t}" exportado.`);else if(tId==='reportsTable')addRecentActivity(`PDF (só tabela) "${t}" exportado.`)}
-        async function exportReportToPDFWithCharts(tId,t,tBId,cCI=[]){const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;doc.setFontSize(18);doc.setTextColor(tC);doc.text(t,doc.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const rDSV=document.getElementById('reportDateStart')?.value;const rDEV=document.getElementById('reportDateEnd')?.value;const rSV=document.getElementById('reportStatus')?.value;const rPV=document.getElementById('reportProduct')?.value;let fT="Filtros: ";let hF=false;if(rDSV||rDEV){fT+=`Período: ${rDSV||'*'} a ${rDEV||'*'}. `;hF=true}if(rSV){fT+=`Status: ${rSV}. `;hF=true}if(rPV){fT+=`Produto: ${rPV}. `;hF=true}if(hF){doc.setFontSize(10);doc.text(fT,40,cY);cY+=20}const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>h.push(th.innerText));const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach(td=>{let ct=td.innerText;if(td.querySelector('span[class*="priority-"]'))ct=td.querySelector('span').innerText;rD.push(ct)});b.push(rD)});if(b.length>0&&!b[0][0].includes("Nenhuma OS")){doc.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'},didDrawPage:(data)=>{cY=data.cursor.y+20}});cY=doc.autoTable.previous.finalY+30}else{doc.setFontSize(12);doc.text("Nenhum dado na tabela.",40,cY);cY+=20}}else{doc.setFontSize(12);doc.text("Tabela não encontrada.",40,cY);cY+=20}const pH=doc.internal.pageSize.getHeight();const pW=doc.internal.pageSize.getWidth();const m=40;const cW=(pW-(3*m))/2;const cH=cW*0.65;let cX=m;let cOCR=0;for(const cId of cCI){const cn=document.getElementById(cId);if(cn&&cn.offsetParent!==null&&cn.width>0&&cn.height>0){try{const iD=cn.toDataURL('image/png',1.0);if(cY+cH+m>pH){doc.addPage();cY=m;cX=m;cOCR=0}if(cOCR>=2){cY+=cH+m;cX=m;cOCR=0;if(cY+cH+m>pH){doc.addPage();cY=m}}doc.setFontSize(12);const cT=cn.closest('.card')?.querySelector('h4')?.innerText||cId.replace('reportChartBy','Gráfico ');doc.text(cT,cX+cW/2,cY-5,{align:'center'});doc.addImage(iD,'PNG',cX,cY,cW,cH);cX+=cW+m;cOCR++}catch(e){console.error("Erro add gráfico PDF:",e,cId);if(cY+20>pH){doc.addPage();cY=m}doc.setTextColor(255,0,0);doc.text(`Erro: ${cId.replace('reportChartBy','')}`,cX,cY);doc.setTextColor(tC);cY+=20}}}if(cOCR>0)cY+=cH+m;const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;doc.setFontSize(8);doc.text(gD,pW-m,pH-20,{align:'right'});doc.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');addRecentActivity(`PDF "${t}" c/ gráficos exportado.`)}
-        function downloadICS(osI){const os=ordensServico.find(o=>o.id===osI);if(!os){alert("OS não encontrada p/ .ics");return}const nF=new Date().toISOString().replace(/-/g,'').replace(/:/g,'').substring(0,15)+'Z';const d=`OS: ${os.numero}\\nCliente: ${os.cliente}\\nProduto: ${os.produto}\\nDescrição: ${os.descricao.replace(/\n/g,'\\n')}\\nResp: ${os.responsavel}\\nPrio: ${os.prioridade}\\nStatus: ${os.status}`;const iC=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//hacksw/handcal//NONSGML v1.0//EN","BEGIN:VEVENT",`UID:${os.id}@${window.location.hostname||'gestao-os.com'}`,`DTSTAMP:${nF}`,`DTSTART;VALUE=DATE:${os.dataAbertura.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${new Date(new Date(os.prazoFinal).getTime()+864e5).toISOString().split('T')[0].replace(/-/g,'')}`,`SUMMARY:Prazo OS ${os.numero} - ${os.cliente}`,`DESCRIPTION:${d}`,"LOCATION:Cliente "+os.cliente,"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Lembrete Prazo OS","TRIGGER:-PT1D","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");const b=new Blob([iC],{type:'text/calendar;charset=utf-8'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download=`OS_${os.numero}_${os.cliente.replace(/ /g,'_')}.ics`;document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`.ics p/ OS ${os.numero} gerado.`)}
-        
-        // ==========================================================================
-        // FUNÇÕES DE CONFIGURAÇÕES
-        // ==========================================================================
-        function confirmClearAllData(){if(confirm("ATENÇÃO!\nLimpar TODOS os dados de OS?\nAção IRREVERSSÍVEL.")){if(confirm("CONFIRMAÇÃO FINAL:\nTodos dados de OS serão apagados. Continuar?")){ordensServico=[];savedFilters={};localStorage.removeItem('ordensServicoData_v1_6_0');localStorage.removeItem('savedFilters_v1_6_0');addRecentActivity("Dados OS limpos.");currentPage=1;refreshAllViews();populateSavedFiltersSelect();alert("Dados OS limpos.")}else alert("Limpeza cancelada.")}else alert("Limpeza cancelada.")}
-        function applyItemsPerPageSetting(){const iPSI=document.getElementById('itemsPerPageSetting');if(!iPSI)return;const nIPP=parseInt(iPSI.value,10);if(nIPP>=5&&nIPP<=50){ITEMS_PER_PAGE=nIPP;currentPage=1;saveDataToLocalStorage();renderOSTable();addRecentActivity(`Itens p/ página: ${ITEMS_PER_PAGE}.`)}else{alert("Valor entre 5 e 50.");iPSI.value=ITEMS_PER_PAGE}}
-        
+        function confirmClearAllData(){if(confirm("ATENÇÃO!\nTem certeza que deseja limpar TODOS os dados de Ordens de Serviço?\nEsta ação é IRREVERSÍVEL e todos os dados salvos localmente serão perdidos.")){if(confirm("CONFIRMAÇÃO FINAL:\nTodos os dados de OS serão permanentemente apagados. Deseja continuar?")){ordensServico=[];savedFilters={};localStorage.removeItem('ordensServicoData_v1_8_0');localStorage.removeItem('savedFilters_v1_8_0');addRecentActivity("Todos os dados de OS foram limpos do sistema.");currentPage=1;refreshAllViews();populateSavedFiltersSelect();alert("Todos os dados de Ordens de Serviço foram limpos com sucesso.")}else alert("Limpeza de dados cancelada pelo usuário.")}else alert("Limpeza de dados cancelada pelo usuário.")}
+        function applyItemsPerPageSetting(){const iPSI=document.getElementById('itemsPerPageSetting');if(!iPSI)return;const nIPP=parseInt(iPSI.value,10);if(nIPP>=5&&nIPP<=50){ITEMS_PER_PAGE=nIPP;currentPage=1;saveDataToLocalStorage();renderOSTable();addRecentActivity(`Número de itens por página alterado para ${ITEMS_PER_PAGE}.`)}else{alert("Por favor, insira um valor entre 5 e 50 para itens por página.");iPSI.value=ITEMS_PER_PAGE}}
+
         // ==========================================================================
         // INICIALIZAÇÃO DA APLICAÇÃO E EVENTOS GLOBAIS
         // ==========================================================================
         window.onload=()=>{
-            loadDataFromLocalStorage();
-            populateProductFilters();
+            loadDataFromLocalStorage(); // Carrega dados salvos, incluindo o novo marcadorAtrasoManual
+            populateProductFilters();   // Preenche filtros de produto
             const homeSidebarItem=document.querySelector('.sidebar-item[onclick*="homeView"]');
-            showView('homeView',homeSidebarItem||null); // Garante que a view inicial seja a home
+            showView('homeView',homeSidebarItem||null); // Exibe a view inicial (Home)
+            
+            // Define data de abertura padrão no modal para hoje
             const dataAberturaModalEl=document.getElementById('osDataAberturaModal');
             if(dataAberturaModalEl&&!dataAberturaModalEl.value)dataAberturaModalEl.value=new Date().toISOString().split('T')[0];
-            
-            // Referenciando as variáveis globais corretas para o listener da sidebar
+
+            // Adiciona listener para o botão de processar arquivo Excel
+            const processExcelButton = document.getElementById('processExcelButton');
+            if (processExcelButton) {
+                processExcelButton.addEventListener('click', handleExcelImport);
+            }
+
+            // Lógica para colapsar sidebar em telas menores ao carregar
             if(mainToggleSidebarBtn && mainSidebar && mainContentArea && mainSidebarTitleDiv){
-                 if(window.innerWidth<1024 && !mainSidebar.classList.contains('collapsed')){
+                 if(window.innerWidth<1024 && !mainSidebar.classList.contains('collapsed')){ // LG breakpoint Tailwind
                     mainSidebar.classList.add('collapsed');
                     mainContentArea.classList.add('collapsed');
                     const iC=mainSidebar.classList.contains('collapsed');
@@ -670,14 +929,13 @@
                     const tI=mainSidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem';
                 }
             }
-            addRecentActivity("Sistema V1.6.0 inicializado.");
-            updateLoginUI();
+            addRecentActivity(`Sistema V${document.querySelector('.sidebar-item span:last-of-type') ? document.querySelector('.sidebar-item span:last-of-type').textContent.match(/(\d+\.\d+\.\d+)/)[0] : '1.8.0'} inicializado.`);
+            updateLoginUI(); // Atualiza UI de login do Google
         };
+        // Fecha modal se clicar fora do conteúdo
         window.onclick=function(e){if(osModal&&e.target==osModal)closeOSModal()};
+        // Fecha modal com a tecla Escape
         window.onkeydown=function(e){if(osModal&&!osModal.classList.contains('hidden')&&e.key==="Escape")closeOSModal()};
     </script>
 </body>
-</html>
-    </script>
-    </body>
 </html>
