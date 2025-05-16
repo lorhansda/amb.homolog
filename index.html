@@ -272,1023 +272,1123 @@
         </div>
     </main>
     <div id="osModal" class="modal hidden"> <div class="modal-content"> <span class="close-button" onclick="closeOSModal()">&times;</span> <h3 id="modalTitle" class="text-2xl font-semibold mb-6">Adicionar Nova Ordem de Serviço</h3> <form id="osForm"> <input type="hidden" id="osId"> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4"> <div> <label for="osNumeroModal" class="block text-sm font-medium mb-1">Nº OS <span class="text-red-500">*</span></label> <input type="text" id="osNumeroModal" name="osNumeroModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osClienteModal" class="block text-sm font-medium mb-1">Cliente <span class="text-red-500">*</span></label> <input type="text" id="osClienteModal" name="osClienteModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osProdutoModal" class="block text-sm font-medium mb-1">Produto/Serviço <span class="text-red-500">*</span></label> <input type="text" id="osProdutoModal" name="osProdutoModal" list="productList" class="input-field w-full p-2 rounded-md" required> <datalist id="productList"></datalist> </div> <div> <label for="osSolicitanteModal" class="block text-sm font-medium mb-1">Solicitante</label> <input type="text" id="osSolicitanteModal" name="osSolicitanteModal" class="input-field w-full p-2 rounded-md"> </div> </div> <div class="mb-4"> <label for="osDescricaoModal" class="block text-sm font-medium mb-1">Descrição Detalhada <span class="text-red-500">*</span></label> <textarea id="osDescricaoModal" name="osDescricaoModal" rows="3" class="input-field w-full p-2 rounded-md" required></textarea> </div> <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4"> <div> <label for="osDataAberturaModal" class="block text-sm font-medium mb-1">Data de Abertura <span class="text-red-500">*</span></label> <input type="date" id="osDataAberturaModal" name="osDataAberturaModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osPrazoFinalModal" class="block text-sm font-medium mb-1">Prazo Final <span class="text-red-500">*</span></label> <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osResponsavelModal" class="block text-sm font-medium mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label> <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="input-field w-full p-2 rounded-md" required> </div> <div> <label for="osStatusModal" class="block text-sm font-medium mb-1">Status <span class="text-red-500">*</span></label> <select id="osStatusModal" name="osStatusModal" class="select-field w-full p-2 rounded-md" required> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option><option value="Provisória">Provisória</option> <option value="Cancelada">Cancelada</option></select> </div> </div> <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mb-6 items-center"> <div> <label for="osPrioridadeModal" class="block text-sm font-medium mb-1">Prioridade <span class="text-red-500">*</span></label> <select id="osPrioridadeModal" name="osPrioridadeModal" class="select-field w-full p-2 rounded-md" required> <option value="Baixa">Baixa</option> <option value="Média" selected>Média</option> <option value="Alta">Alta</option> <option value="Urgente">Urgente</option> </select> </div> <div class="flex items-center pt-5"> <input type="checkbox" id="osMarcadorAtrasoModal" name="osMarcadorAtrasoModal" class="form-checkbox h-4 w-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500 mr-2"> <label for="osMarcadorAtrasoModal" class="text-sm font-medium">Marcar "Não Realizada no Prazo"</label> </div> <div class="flex items-center pt-5"> <input type="checkbox" id="osLogisticaOkModal" name="osLogisticaOkModal" class="form-checkbox h-4 w-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500 mr-2"> <label for="osLogisticaOkModal" class="text-sm font-medium">Logística Pronta/OK</label> </div></div> <div class="flex justify-end gap-3"> <button type="button" class="btn btn-secondary" onclick="closeOSModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Salvar OS</button> </div> </form> </div> </div>
-    <script>
-        // ==========================================================================
-        // VARIÁVEIS GLOBAIS E CONFIGURAÇÕES INICIAIS
-        // ==========================================================================
-        const ITEMS_PER_PAGE_DEFAULT = 10;
-        let ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
-        let currentPage = 1;
-        let ordensServico = [];
-        const defaultProducts = ["WORKNC", "EDGECAM", "ESPRIT", "ALPHACAM", "LANTEK", "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner", "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"];
-        let googleUser = null;
-        let savedFilters = {};
+<script>
+    // ==========================================================================
+    // VARIÁVEIS GLOBAIS E CONFIGURAÇÕES INICIAIS
+    // ==========================================================================
+    const ITEMS_PER_PAGE_DEFAULT = 10;
+    let ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
+    let currentPage = 1;
+    let ordensServico = [];
+    const defaultProducts = ["WORKNC", "EDGECAM", "ESPRIT", "ALPHACAM", "LANTEK", "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner", "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"];
+    let googleUser = null;
+    let savedFilters = {};
 
-        let osStatusChartInstance = null;
-        let reportChartByProductInstance = null;
-        let reportChartByUsuarioInstance = null;
-        let reportChartByStatusInstance = null;
+    let osStatusChartInstance = null;
+    let reportChartByProductInstance = null;
+    let reportChartByUsuarioInstance = null;
+    let reportChartByStatusInstance = null;
 
-        // Elementos DOM principais (alguns são definidos no DOMContentLoaded ou quando a view é mostrada)
-        let osModal; 
-        let osForm; 
-        let modalTitle; 
-        let productDatalist; 
-        let filterProductSelect; 
-        let reportProductSelect; 
-        const darkModeIcon = document.getElementById('darkModeIcon');
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('mainContent');
-        const toggleSidebarBtn = document.getElementById('toggleSidebar');
-        const sidebarTitleDiv = document.getElementById('sidebar-title');
-        let recentActivityList; 
-        let importStatusMessage; 
-        let importSummaryDiv; 
-        let importSummaryList; 
+    // Elementos DOM principais (alguns são definidos no DOMContentLoaded ou quando a view é mostrada)
+    let osModal;
+    let osForm;
+    let modalTitle;
+    let productDatalist;
+    let filterProductSelect;
+    let reportProductSelect;
+    const darkModeIcon = document.getElementById('darkModeIcon');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleSidebarBtn = document.getElementById('toggleSidebar');
+    const sidebarTitleDiv = document.getElementById('sidebar-title');
+    let recentActivityList;
+    let importStatusMessage;
+    let importSummaryDiv;
+    let importSummaryList;
 
 
-        // ==========================================================================
-        // FUNÇÕES AUXILIARES DE DATA E FORMATO
-        // ==========================================================================
-        function formatDateToBR(dateString) { 
-            if (!dateString) return 'N/A';
-            if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-                const [year, month, day] = dateString.split('-');
-                return `${day}/${month}/${year}`;
-            }
-            const d = new Date(dateString);
-            if (isNaN(d.getTime())) return 'N/A'; 
-            
-            let day, month, year;
+    // ==========================================================================
+    // FUNÇÕES AUXILIARES DE DATA E FORMATO
+    // ==========================================================================
+    function formatDateToBR(dateString) {
+        if (!dateString) return 'N/A';
+        // Check if the dateString is already in YYYY-MM-DD format from parsing
+        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        }
+        // Fallback for other types of date inputs (e.g., Date objects if they ever appear here)
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return 'N/A'; // Invalid date
+
+        let day, month, year;
+        // Use UTC methods if the dateString was a YYYY-MM-DD and converted to Date object locally
+        // For consistency, assuming dateString (if not YYYY-MM-DD) might need offset handling,
+        // but usually, it's already what we want.
+        // If it was a 'YYYY-MM-DD' string, creating new Date() might use local timezone.
+        // To be safe with 'YYYY-MM-DD' (which is what parseAndValidateDate produces):
+        if (typeof dateString === 'string' && dateString.includes('-')) { // Likely 'YYYY-MM-DD'
+            const parts = dateString.split('-');
+            year = parseInt(parts[0],10);
+            month = parseInt(parts[1],10);
+            day = parseInt(parts[2],10);
+             return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+        } else { // General Date object
             day = String(d.getUTCDate()).padStart(2, '0');
-            month = String(d.getUTCMonth() + 1).padStart(2, '0'); 
+            month = String(d.getUTCMonth() + 1).padStart(2, '0'); // Month is 0-indexed
             year = d.getUTCFullYear();
             return `${day}/${month}/${year}`;
         }
+    }
 
-        function excelSerialDateToYYYYMMDD(serial) { 
-            if (serial === null || serial === undefined || serial === '' || isNaN(parseFloat(serial))) return null;
-            const excelEpochDiff = 25569; 
-            let date;
-             if (serial >= 60) { 
-                date = new Date(Math.round((serial - excelEpochDiff -1) * 86400 * 1000));
-            } else { 
-                 if (serial === 60) return null; 
-                date = new Date(Math.round((serial - excelEpochDiff) * 86400 * 1000));
-            }
-            const year = date.getUTCFullYear();
-            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-            const day = String(date.getUTCDate()).padStart(2, '0');
-            if (year < 1890 || year > 2300) return null; 
-            return `${year}-${month}-${day}`;
+    function excelSerialDateToYYYYMMDD(serial) {
+        if (serial === null || serial === undefined || serial === '' || isNaN(parseFloat(serial))) return null;
+        const excelEpochDiff = 25569; // Days between 1970-01-01 and 1900-01-01 (Excel's epoch)
+        let date;
+         // Excel thinks 1900 is a leap year. Dates after Feb 28, 1900 need adjustment.
+         if (serial >= 60) { // 60 is Feb 29, 1900 in Excel's incorrect calendar
+            date = new Date(Math.round((serial - excelEpochDiff -1) * 86400 * 1000)); // The -1 adjusts for the fictional Feb 29, 1900
+        } else { // Dates before March 1, 1900 (serial < 60) or serial = 60 (which is bad)
+             if (serial === 60) return null; // Excel's representation of "Feb 29, 1900" which doesn't exist
+            date = new Date(Math.round((serial - excelEpochDiff) * 86400 * 1000)); // No -1 needed for Jan and Feb 1900
         }
-        
-        function parseAndValidateDate(dateValue, fieldNameForLog = "Data") {
-            if (dateValue === null || String(dateValue || '').trim() === '') {
-                return { date: null, error: `${fieldNameForLog} ausente.` };
+        // Ensure the date is valid after conversion
+        if (isNaN(date.getTime())) return null;
+
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // getUTCMonth is 0-indexed
+        const day = String(date.getUTCDate()).padStart(2, '0');
+
+        if (year < 1890 || year > 2300) return null; // Basic sanity check for year range
+        return `${year}-${month}-${day}`;
+    }
+
+    // This function is the core of date parsing for import and potentially modal saving.
+    // It tries to convert various inputs (JS Date, Excel serial number, common date strings)
+    // into a 'YYYY-MM-DD' string.
+    function parseAndValidateDate(dateValue, fieldNameForLog = "Data") {
+        if (dateValue === null || String(dateValue || '').trim() === '') {
+            return { date: null, error: `${fieldNameForLog} ausente.` };
+        }
+
+        let parsedDateObj = null;
+
+        // 1. If it's already a JavaScript Date object
+        if (dateValue instanceof Date) {
+            if (!isNaN(dateValue.getTime())) {
+                parsedDateObj = dateValue;
             }
-            let parsedDateObj = null;
-            if (dateValue instanceof Date) { 
-                if (!isNaN(dateValue.getTime())) {
-                    parsedDateObj = dateValue;
-                }
-            } else if (typeof dateValue === 'number' && dateValue > 1 && dateValue < 200000) { 
-                const ymd = excelSerialDateToYYYYMMDD(dateValue);
-                if (ymd) {
-                    const [year, month, day] = ymd.split('-').map(Number);
-                    parsedDateObj = new Date(Date.UTC(year, month - 1, day));
-                }
-            } else if (typeof dateValue === 'string') {
-                let tempDateStr = String(dateValue).trim();
-                let parts;
-                const dateTimeRegex = /^(\d{1,2})[\\/\.-](\d{1,2})[\\/\.-](\d{2}|\d{4})(?:[ T_](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/;
-                if ((parts = tempDateStr.match(dateTimeRegex))) {
-                    const day = parseInt(parts[1], 10);
-                    const month = parseInt(parts[2], 10) - 1; 
-                    let year = parseInt(parts[3], 10);
-                    if (year < 100) year += 2000; 
-                    const hour = parts[4] ? parseInt(parts[4], 10) : 0;
-                    const minute = parts[5] ? parseInt(parts[5], 10) : 0;
-                    const second = parts[6] ? parseInt(parts[6], 10) : 0;
+        }
+        // 2. If it's an Excel serial number (a positive number, often with decimals for time)
+        //    SheetJS with `raw: true` will provide numbers for date cells.
+        else if (typeof dateValue === 'number' && dateValue > 0 && dateValue < 200000) { // Common range for Excel dates
+            const ymd = excelSerialDateToYYYYMMDD(dateValue); // Extracts YYYY-MM-DD from serial
+            if (ymd) {
+                const [year, month, day] = ymd.split('-').map(Number);
+                // Create Date object at UTC midnight for the extracted date
+                parsedDateObj = new Date(Date.UTC(year, month - 1, day));
+            }
+        }
+        // 3. If it's a string, try to parse common formats
+        else if (typeof dateValue === 'string') {
+            let tempDateStr = String(dateValue).trim();
+            let parts;
+
+            // Try dd/mm/yyyy (or dd.mm.yyyy, dd-mm-yyyy) with optional time hh:mm:ss
+            // This regex is flexible with day/month/year order and separators.
+            const dateTimeRegex = /^(\d{1,2})[\\/\.-](\d{1,2})[\\/\.-](\d{2}|\d{4})(?:[ T_](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/;
+            if ((parts = tempDateStr.match(dateTimeRegex))) {
+                const day = parseInt(parts[1], 10);
+                const month = parseInt(parts[2], 10) - 1; // JS month is 0-indexed
+                let year = parseInt(parts[3], 10);
+                if (year < 100) year += 2000; // Convert yy to yyyy
+
+                const hour = parts[4] ? parseInt(parts[4], 10) : 0;
+                const minute = parts[5] ? parseInt(parts[5], 10) : 0;
+                const second = parts[6] ? parseInt(parts[6], 10) : 0;
+
+                // Validate day and month ranges before creating Date object
+                if (month < 0 || month > 11 || day < 1 || day > 31) {
+                    // Invalid month or day
+                } else {
                     parsedDateObj = new Date(Date.UTC(year, month, day, hour, minute, second));
+                    // Double check if the created date is valid and matches input (e.g. no Feb 30th)
                     if (parsedDateObj.getUTCFullYear() !== year ||
                         parsedDateObj.getUTCMonth() !== month ||
                         parsedDateObj.getUTCDate() !== day) {
-                        parsedDateObj = null; 
+                        parsedDateObj = null; // Invalid date created
                     }
-                } else {
-                    const dateOnlyStr = tempDateStr.split(' ')[0];
-                    if ((parts = dateOnlyStr.match(/^(\d{4})[\\/\.-](\d{1,2})[\\/\.-](\d{1,2})$/))) {
-                        const year = parseInt(parts[1], 10);
-                        const month = parseInt(parts[2], 10) - 1; 
-                        const day = parseInt(parts[3], 10);
-                        parsedDateObj = new Date(Date.UTC(year, month, day));
+                }
+            } else {
+                // Try yyyy-mm-dd (or yyyy/mm/dd, yyyy.mm.dd) as another common format (ISO-like)
+                // This is also the format used by <input type="date">
+                const isoDateRegex = /^(\d{4})[\\/\.-](\d{1,2})[\\/\.-](\d{1,2})(?:[ T_](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/;
+                if ((parts = tempDateStr.match(isoDateRegex))) {
+                    const year = parseInt(parts[1], 10);
+                    const month = parseInt(parts[2], 10) - 1; // JS month is 0-indexed
+                    const day = parseInt(parts[3], 10);
+
+                    const hour = parts[4] ? parseInt(parts[4], 10) : 0;
+                    const minute = parts[5] ? parseInt(parts[5], 10) : 0;
+                    const second = parts[6] ? parseInt(parts[6], 10) : 0;
+
+                    if (month < 0 || month > 11 || day < 1 || day > 31) {
+                        // invalid
+                    } else {
+                        parsedDateObj = new Date(Date.UTC(year, month, day, hour, minute, second));
                         if (parsedDateObj.getUTCFullYear() !== year ||
                             parsedDateObj.getUTCMonth() !== month ||
                             parsedDateObj.getUTCDate() !== day) {
-                            parsedDateObj = null; 
+                            parsedDateObj = null;
                         }
                     }
                 }
             }
-            if (parsedDateObj && !isNaN(parsedDateObj.getTime())) {
-                const year = parsedDateObj.getUTCFullYear();
-                const monthStr = String(parsedDateObj.getUTCMonth() + 1).padStart(2, '0');
-                const dayStr = String(parsedDateObj.getUTCDate()).padStart(2, '0');
-                if (year < 1890 || year > 2300) { 
-                    return { date: null, error: `${fieldNameForLog} ("${String(dateValue).substring(0,20)}") ano inválido (${year}).` };
+        }
+
+        // If a valid Date object was created, format it to YYYY-MM-DD string
+        if (parsedDateObj && !isNaN(parsedDateObj.getTime())) {
+            const year = parsedDateObj.getUTCFullYear();
+            const monthStr = String(parsedDateObj.getUTCMonth() + 1).padStart(2, '0');
+            const dayStr = String(parsedDateObj.getUTCDate()).padStart(2, '0');
+
+            if (year < 1890 || year > 2300) { // Sanity check year range
+                return { date: null, error: `${fieldNameForLog} ("${String(dateValue).substring(0,20)}") ano inválido (${year}).` };
+            }
+            return { date: `${year}-${monthStr}-${dayStr}`, error: null };
+        }
+
+        // If no valid date could be parsed
+        return { date: null, error: `${fieldNameForLog} ("${String(dateValue).substring(0,30)}") formato inválido/não reconhecido.` };
+    }
+
+    function getPriorityClass(p){switch(p){case'Alta':return'priority-Alta';case'Urgente':return'priority-Urgente';case'Média':return'priority-Média';case'Baixa':return'priority-Baixa';default:return'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}}
+    function generateId(){return'OS'+Date.now().toString(36)+Math.random().toString(36).substr(2,5).toUpperCase()}
+
+    // ==========================================================================
+    // LOCALSTORAGE, PRODUTOS, ATIVIDADE RECENTE
+    // ==========================================================================
+    function saveDataToLocalStorage(){try{localStorage.setItem('ordensServicoData_v1_9_0',JSON.stringify(ordensServico));localStorage.setItem('googleUser_v1_9_0',JSON.stringify(googleUser));localStorage.setItem('darkMode_v1_9_0',document.documentElement.classList.contains('dark'));localStorage.setItem('savedFilters_v1_9_0',JSON.stringify(savedFilters));localStorage.setItem('itemsPerPage_v1_9_0',ITEMS_PER_PAGE)}catch(e){console.error("Erro ao salvar localStorage:",e);alert("Problema ao salvar dados.")}}
+    function loadDataFromLocalStorage(){
+        const d=localStorage.getItem('ordensServicoData_v1_9_0');
+        if(d){
+            try{
+                ordensServico=JSON.parse(d);
+                ordensServico.forEach(os => { // Data migration/defaulting for older items
+                    if(os.marcadorAtrasoManual === undefined) os.marcadorAtrasoManual = false;
+                    if(os.logisticaOk === undefined) os.logisticaOk = false;
+                    if(os.produto === undefined) os.produto = ''; // Ensure 'produto' exists
+                });
+            } catch(e) {
+                console.error("Erro localStorage OS:",e);ordensServico=[];
+            }
+        }
+        const u=localStorage.getItem('googleUser_v1_9_0');if(u)try{googleUser=JSON.parse(u)}catch(e){googleUser=null}
+        const dm=localStorage.getItem('darkMode_v1_9_0');if(dm==='true'){document.documentElement.classList.add('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-moon','fa-sun')}else{document.documentElement.classList.remove('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-sun','fa-moon')}
+        const sf=localStorage.getItem('savedFilters_v1_9_0');if(sf)try{savedFilters=JSON.parse(sf)}catch(e){savedFilters={}}
+
+        // Elementos dos filtros são populados depois que o DOM está pronto e as views são mostradas
+        // populateSavedFiltersSelect();
+        const ip=localStorage.getItem('itemsPerPage_v1_9_0');
+        const ipsElement = document.getElementById('itemsPerPageSetting');
+        if(ip){ITEMS_PER_PAGE=parseInt(ip,10)||ITEMS_PER_PAGE_DEFAULT;if(ipsElement)ipsElement.value=ITEMS_PER_PAGE}else{if(ipsElement)ipsElement.value=ITEMS_PER_PAGE_DEFAULT}
+        // populateProductFilters(); // Called when views are shown
+    }
+    function populateProductFilters(){
+        if(!productDatalist||!filterProductSelect||!reportProductSelect) return; // Ensure elements exist
+        const p=[...new Set(ordensServico.map(os=>os.produto).concat(defaultProducts).filter(pr=>pr&&pr.trim()!==""))].sort((a,b)=>a.localeCompare(b));
+        productDatalist.innerHTML='';filterProductSelect.innerHTML='<option value="">Todos Produtos</option>';reportProductSelect.innerHTML='<option value="">Todos Produtos</option>';
+        p.forEach(pr=>{const o=document.createElement('option');o.value=pr;o.textContent=pr;productDatalist.appendChild(o.cloneNode(true));filterProductSelect.appendChild(o.cloneNode(true));reportProductSelect.appendChild(o.cloneNode(true))})
+    }
+    function addRecentActivity(a,uN=null){
+        if(!recentActivityList) return; // Será definido quando a homeView for ativa
+        const li=document.createElement('li');const n=new Date();let uD=uN?` <span class="font-medium text-sky-600 dark:text-sky-400">(${uN})</span>`:(googleUser?` <span class="font-medium text-slate-500 dark:text-slate-400">(${googleUser.given_name||googleUser.name})</span>`:'');
+        li.className='flex justify-between items-center text-sm pb-2 border-b border-slate-200 dark:border-slate-700';
+        li.innerHTML=`<span>${a}${uD}</span><span class="text-slate-400 dark:text-slate-500 text-xs">${n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>`;
+        const pl=recentActivityList.querySelector('.text-placeholder');if(pl)recentActivityList.innerHTML='';
+        recentActivityList.insertBefore(li,recentActivityList.firstChild);
+        if(recentActivityList.children.length>7)recentActivityList.removeChild(recentActivityList.lastChild)
+    }
+
+    // ==========================================================================
+    // GOOGLE SIGN-IN
+    // ==========================================================================
+    function parseJwt(t){try{return JSON.parse(atob(t.split('.')[1]))}catch(e){return null}}
+    function handleCredentialResponse(r){const pL=parseJwt(r.credential);googleUser={id:pL.sub,name:pL.name,given_name:pL.given_name,picture:pL.picture,email:pL.email};saveDataToLocalStorage();updateLoginUI();addRecentActivity(`Usuário ${googleUser.name} logado.`)}
+    function handleSignOut(){const uN=googleUser?(googleUser.given_name||googleUser.name):"Usuário";googleUser=null;saveDataToLocalStorage();updateLoginUI();addRecentActivity(`${uN} deslogado.`);if(typeof google!=='undefined'&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect()}
+    function updateLoginUI(){const uiD=document.getElementById('user-info');const gS=document.querySelector('.g_id_signin');const uNE=document.getElementById('user-name');const uPE=document.getElementById('user-pic');if(!uiD||!gS||!uNE||!uPE)return;if(googleUser){uNE.textContent=googleUser.given_name||googleUser.name;uPE.src=googleUser.picture;uiD.classList.remove('hidden');gS.classList.add('hidden')}else{uiD.classList.add('hidden');gS.classList.remove('hidden');uNE.textContent='';uPE.src=''}}
+
+    // ==========================================================================
+    // DARK MODE
+    // ==========================================================================
+    function toggleDarkMode(){document.documentElement.classList.toggle('dark');if(darkModeIcon){darkModeIcon.classList.toggle('fa-moon');darkModeIcon.classList.toggle('fa-sun')}saveDataToLocalStorage();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden')&&osStatusChartInstance)renderOSStatusChart();if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){const rTB=document.getElementById('reportsTableBody');if(rTB&&rTB.querySelectorAll('tr').length>0&&!rTB.querySelector('td[colspan="8"]'))generateCustomReport()}}
+
+    // ==========================================================================
+    // FILTROS SALVOS
+    // ==========================================================================
+    function populateSavedFiltersSelect(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const cS=sFS.value;sFS.innerHTML='<option value="">Carregar filtro...</option>';for(const n in savedFilters){const o=document.createElement('option');o.value=n;o.textContent=n;sFS.appendChild(o)}if(cS&&savedFilters[cS])sFS.value=cS}
+    function saveCurrentFilters(){const nFIN=document.getElementById('newFilterName');if(!nFIN)return;const n=nFIN.value.trim();if(!n){alert("Especifique um nome para o filtro salvo.");return}if(savedFilters[n]&&!confirm(`O filtro salvo "${n}" já existe. Deseja sobrescrevê-lo?`))return;const fDI=document.getElementById('filterDescription');savedFilters[n]={numero:document.getElementById('filterOsNumber').value,cliente:document.getElementById('filterClient').value,descricao:fDI?fDI.value:"",produto:document.getElementById('filterProduct').value,status:document.getElementById('filterStatus').value, marcadorAtraso: document.getElementById('filterMarcadorAtraso').value, logisticaOk: document.getElementById('filterLogisticaOk').value };nFIN.value='';populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" salvo.`)}
+    function loadSelectedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){document.getElementById('filterOsNumber').value=savedFilters[n].numero||"";document.getElementById('filterClient').value=savedFilters[n].cliente||"";const fDI=document.getElementById('filterDescription');if(fDI)fDI.value=savedFilters[n].descricao||"";document.getElementById('filterProduct').value=savedFilters[n].produto||"";document.getElementById('filterStatus').value=savedFilters[n].status||""; document.getElementById('filterMarcadorAtraso').value = savedFilters[n].marcadorAtraso || ""; document.getElementById('filterLogisticaOk').value = savedFilters[n].logisticaOk || ""; applyFiltersAndRender();addRecentActivity(`Filtro "${n}" carregado.`)}else if(n)alert("Filtro salvo não encontrado.")}
+    function deleteSavedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){if(confirm(`Tem certeza que deseja excluir o filtro salvo "${n}"?`)){delete savedFilters[n];populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" excluído.`)}}else if(n)alert("O filtro salvo não existe.");else alert("Por favor, selecione um filtro salvo para excluir.")}
+
+    // ==========================================================================
+    // AÇÕES EM MASSA PARA ORDENS DE SERVIÇO
+    // ==========================================================================
+    function updateSelectedCount(){const sOSC=document.getElementById('selectedOsCount');const bAC=document.getElementById('bulkActionsContainer');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!sOSC||!bAC||!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));sOSC.textContent=`${sC.length} selecionadas`;if(sC.length>0){bAC.classList.remove('hidden')}else{bAC.classList.add('hidden');sAOC.checked=false}}
+    function toggleSelectAllOS(mC){const oSTB=document.getElementById('osTableBody');if(!oSTB||!mC)return;const c=oSTB.querySelectorAll('input[type="checkbox"][data-id]');c.forEach(cb=>cb.checked=mC.checked);updateSelectedCount()}
+    function applyBulkAction(){const bAS=document.getElementById('bulkActionStatus');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!bAS||!oSTB||!sAOC)return;const nS=bAS.value;if(!nS){alert("Por favor, selecione um status para aplicar.");return}const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada para a ação em massa.");return}sC.forEach(cb=>{const osI=cb.dataset.id;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1)ordensServico[osIX].status=nS});addRecentActivity(`${sC.length} OS(s) tiveram o status alterado para ${nS}.`);saveDataToLocalStorage();refreshAllViews();sAOC.checked=false;updateSelectedCount()}
+    function bulkDeleteSelectedOS(){const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada para exclusão.");return}if(confirm(`Tem certeza que deseja excluir ${sC.length} OS(s) selecionada(s)? Esta ação é irreversível.`)){const iTD=sC.map(cb=>cb.dataset.id);ordensServico=ordensServico.filter(os=>!iTD.includes(os.id));addRecentActivity(`${iTD.length} OS(s) foram excluídas.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews();sAOC.checked=false;updateSelectedCount()}}
+
+    // ==========================================================================
+    // RENDERIZAÇÃO DA TABELA DE OS E PAGINAÇÃO
+    // ==========================================================================
+    function toggleMarcadorAtrasoManual(osId, event) {
+        event.stopPropagation(); // Impede que o clique propague para a linha da tabela (se houver listener)
+        const osIndex = ordensServico.findIndex(os => os.id === osId);
+        if (osIndex !== -1) {
+            ordensServico[osIndex].marcadorAtrasoManual = !ordensServico[osIndex].marcadorAtrasoManual;
+            addRecentActivity(`Marcador "Não Realizada no Prazo" ${ordensServico[osIndex].marcadorAtrasoManual ? 'aplicado' : 'removido'} para OS ${ordensServico[osIndex].numero}.`);
+            saveDataToLocalStorage();
+            applyFiltersAndRender(); // Re-renderiza a tabela para refletir a mudança no ícone e filtro
+        }
+    }
+
+    function toggleLogisticaOkManual(osId, event) {
+        event.stopPropagation();
+        const osIndex = ordensServico.findIndex(os => os.id === osId);
+        if (osIndex !== -1) {
+            ordensServico[osIndex].logisticaOk = !ordensServico[osIndex].logisticaOk;
+            addRecentActivity(`Marcador "Logística Pronta" ${ordensServico[osIndex].logisticaOk ? 'aplicado' : 'removido'} para OS ${ordensServico[osIndex].numero}.`);
+            saveDataToLocalStorage();
+            applyFiltersAndRender(); // Re-renderiza para atualizar ícone e filtro
+        }
+    }
+
+    function renderOSTable(fD=getFilteredOS()){
+        const oSTB=document.getElementById('osTableBody');
+        const sAOC=document.getElementById('selectAllOsCheckbox');
+        if(!oSTB||!sAOC){console.error("Elemento osTableBody ou selectAllOsCheckbox não encontrado no DOM!");return}
+        oSTB.innerHTML='';
+        sAOC.checked=false; // Desmarcar o checkbox "selecionar todos"
+        updateSelectedCount(); // Atualiza a contagem de selecionados (deve ir para 0)
+        if(!fD||fD.length===0){oSTB.innerHTML=`<tr><td colspan="13" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma Ordem de Serviço encontrada com os filtros atuais.</td></tr>`;renderPagination(0,0);return}
+
+        const pD=paginateData(fD,currentPage,ITEMS_PER_PAGE);
+        pD.forEach(os=>{
+            const r=oSTB.insertRow();
+            r.className='table-row hover:bg-slate-100 dark:hover:bg-slate-700';
+
+            // Ícone para o marcador de atraso manual
+            const markerAtrasoIconHTML = `
+                <span class="manual-flag-toggle" onclick="toggleMarcadorAtrasoManual('${os.id}', event)" title="${os.marcadorAtrasoManual ? 'Desmarcar OS como Não Realizada no Prazo' : 'Marcar OS como Não Realizada no Prazo'}">
+                    ${os.marcadorAtrasoManual ? '<i class="fas fa-flag text-purple-500"></i>' : '<i class="far fa-flag text-gray-400 hover:text-purple-500"></i>'}
+                </span>`;
+
+            // Ícone para logística OK manual
+            const logisticaIconHTML = `
+                <span class="logistica-toggle" onclick="toggleLogisticaOkManual('${os.id}', event)" title="${os.logisticaOk ? 'Marcar Logística como Não Pronta' : 'Marcar Logística como Pronta/OK'}">
+                    ${os.logisticaOk ? '<i class="fas fa-truck text-teal-500"></i>' : '<i class="fas fa-truck text-gray-400 hover:text-teal-500"></i>'}
+                </span>`;
+
+            r.innerHTML=`<td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4"></td>
+                        <td class="py-3 px-4 text-sm font-medium">${markerAtrasoIconHTML} ${os.numero}</td>
+                        <td class="py-3 px-4 text-sm">${os.cliente}</td>
+                        <td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td>
+                        <td class="py-3 px-4 text-sm truncate max-w-xs" title="${os.descricao}">${os.descricao}</td>
+                        <td class="py-3 px-4 text-sm">${formatDateToBR(os.dataAbertura)}</td>
+                        <td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td>
+                        <td class="py-3 px-4 text-sm">${os.responsavel}</td>
+                        <td class="py-3 px-4 text-sm">${os.solicitante||'N/A'}</td>
+                        <td class="py-3 px-4 text-sm"><select class="select-field status-select p-1 text-xs" data-id="${os.id}" onchange="updateStatus(this)">
+                            <option value="Aberta" ${os.status==='Aberta'?'selected':''}>Aberta</option>
+                            <option value="Em Andamento" ${os.status==='Em Andamento'?'selected':''}>Em Andamento</option>
+                            <option value="Pendente Informação" ${os.status==='Pendente Informação'?'selected':''}>Pendente Info</option>
+                            <option value="Aguardando Aprovação" ${os.status==='Aguardando Aprovação'?'selected':''}>Aguard. Aprov.</option>
+                            <option value="Completa" ${os.status==='Completa'?'selected':''}>Completa</option>
+                            <option value="Incompleta" ${os.status==='Incompleta'?'selected':''}>Incompleta</option>
+                            <option value="Provisória" ${os.status==='Provisória'?'selected':''}>Provisória</option>
+                            <option value="Cancelada" ${os.status==='Cancelada'?'selected':''}>Cancelada</option>
+                        </select></td>
+                        <td class="py-3 px-4 text-sm text-center">${logisticaIconHTML}</td>
+                        <td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td>
+                        <td class="py-3 px-4 text-sm"><button class="text-sky-600 hover:text-sky-800 p-1 mr-2" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button><button class="text-red-600 hover:text-red-800 p-1 mr-2" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button><button class="text-green-600 hover:text-green-800 p-1" title="Baixar .ics" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button></td>`
+        });
+        renderPagination(fD.length,currentPage);
+    }
+    function paginateData(d,p,iPP){const s=(p-1)*iPP;const e=s+iPP;return d.slice(s,e)}
+    function renderPagination(tI,p){const pC=document.getElementById('paginationControls');if(!pC)return;pC.innerHTML='';const tP=Math.ceil(tI/ITEMS_PER_PAGE);if(tP<=1)return;const pB=document.createElement('button');pB.innerHTML='<i class="fas fa-chevron-left"></i> Anterior';pB.className='btn btn-sm btn-secondary disabled:opacity-50';pB.disabled=p===1;pB.onclick=()=>{if(p>1)changePage(p-1)};pC.appendChild(pB);const pI=document.createElement('span');pI.className='text-sm px-3';pI.textContent=`Página ${p} de ${tP}`;pC.appendChild(pI);const nB=document.createElement('button');nB.innerHTML='Próximo <i class="fas fa-chevron-right"></i>';nB.className='btn btn-sm btn-secondary disabled:opacity-50';nB.disabled=p===tP;nB.onclick=()=>{if(p<tP)changePage(p+1)};pC.appendChild(nB)}
+    function changePage(nP){currentPage=nP;renderOSTable()}
+
+    // ==========================================================================
+    // CRUD DE OS E MODAL (CRIAÇÃO, EDIÇÃO, EXCLUSÃO)
+    // ==========================================================================
+    function updateStatus(sE){const osI=sE.dataset.id;const nS=sE.value;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1){ordensServico[osIX].status=nS;addRecentActivity(`Status da OS ${ordensServico[osIX].numero} alterado para ${nS}.`);saveDataToLocalStorage();refreshAllViews()}}
+    function openAddOSModal(){
+        const currentOsForm = document.getElementById('osForm'); // osForm é global, mas pegar aqui garante
+        const currentModalTitle = document.getElementById('modalTitle'); // modalTitle é global
+        const currentOsModal = document.getElementById('osModal'); // osModal é global
+
+        if(!currentOsForm||!currentModalTitle||!currentOsModal)return;
+        currentOsForm.reset();
+        document.getElementById('osId').value='';
+        currentModalTitle.textContent='Adicionar Nova Ordem de Serviço';
+        const dA=document.getElementById('osDataAberturaModal');
+        if(dA)dA.value=new Date().toISOString().split('T')[0]; // Data atual no formato YYYY-MM-DD
+        document.getElementById('osMarcadorAtrasoModal').checked = false; // Resetar checkbox
+        document.getElementById('osLogisticaOkModal').checked = false; // Resetar checkbox
+        currentOsModal.classList.remove('hidden');
+    }
+    function closeOSModal(){
+        const currentOsModal = document.getElementById('osModal');
+        if(!currentOsModal)return;currentOsModal.classList.add('hidden');
+    }
+    function editOS(id){
+        const currentOsModal = document.getElementById('osModal');
+        const currentModalTitle = document.getElementById('modalTitle');
+        // const currentOsForm = document.getElementById('osForm'); // Não é necessário aqui
+        if(!currentOsModal||!currentModalTitle)return;
+
+        const os=ordensServico.find(o=>o.id===id);
+        if(os){
+            currentModalTitle.textContent=`Editar OS - ${os.numero}`;
+            document.getElementById('osId').value=os.id;
+            document.getElementById('osNumeroModal').value=os.numero;
+            document.getElementById('osClienteModal').value=os.cliente;
+            document.getElementById('osProdutoModal').value=os.produto||'';
+            document.getElementById('osSolicitanteModal').value=os.solicitante||'';
+            document.getElementById('osDescricaoModal').value=os.descricao;
+            document.getElementById('osDataAberturaModal').value=os.dataAbertura; // Deve ser YYYY-MM-DD
+            document.getElementById('osPrazoFinalModal').value=os.prazoFinal;   // Deve ser YYYY-MM-DD
+            document.getElementById('osResponsavelModal').value=os.responsavel;
+            document.getElementById('osStatusModal').value=os.status;
+            document.getElementById('osPrioridadeModal').value=os.prioridade;
+            document.getElementById('osMarcadorAtrasoModal').checked = os.marcadorAtrasoManual || false;
+            document.getElementById('osLogisticaOkModal').checked = os.logisticaOk || false;
+            currentOsModal.classList.remove('hidden');
+        } else alert("OS não encontrada para edição.");
+    }
+    function deleteOS(id){const oTD=ordensServico.find(os=>os.id===id);if(confirm(`Tem certeza que deseja excluir a OS ${oTD?.numero||id}? Esta ação é irreversível.`)){ordensServico=ordensServico.filter(os=>os.id!==id);addRecentActivity(`OS ${oTD?.numero||'ID '+id} foi excluída.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews()}}
+// ==========================================================================
+    // LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV (Função de processamento de dados)
+    // ==========================================================================
+    function processAndValidateOSData(jsonData) {
+        // jsonData[0] são os cabeçalhos, jsonData.slice(1) são as linhas de dados
+        const headersFromFile = jsonData[0].map(header => String(header || '').trim().toLowerCase());
+        const dataRows = jsonData.slice(1);
+        const validOSs = [];
+        const importLog = [];
+
+        // Mapeamento esperado das colunas do CSV para as chaves internas do objeto OS
+        // Certifique-se que 'início' e 'término' correspondem aos nomes exatos (case-insensitive)
+        // das colunas no seu arquivo CSV que contêm as datas.
+        const expectedHeaderMapping = {
+            codigo: 'código', status: 'status', cliente: 'cliente', inicio: 'início', termino: 'término',
+            tecnico: 'técnico', solicitante: 'solicitante', cidade: 'cidade', duracao_h: 'duração (h)',
+            produto_import: 'produto' // 'produto_import' para evitar conflito com os.produto se já existir
+        };
+        const colIndices = {};
+        for (const internalKey in expectedHeaderMapping) {
+            colIndices[internalKey] = headersFromFile.indexOf(expectedHeaderMapping[internalKey]);
+        }
+
+        // Verificar se as colunas essenciais para datas foram encontradas
+        const essentialCols = ['codigo', 'cliente', 'inicio', 'termino', 'tecnico', 'solicitante'];
+        for (const colKey of essentialCols) {
+            if (colIndices[colKey] === -1) {
+                importLog.push({ success: false, message: `Erro Crítico: A coluna essencial "${expectedHeaderMapping[colKey]}" não foi encontrada no arquivo. A importação foi interrompida.` });
+                return { validOSs, importLog }; // Interrompe se colunas cruciais faltam
+            }
+        }
+
+        dataRows.forEach((row, rowIndex) => {
+            // Pular linhas completamente vazias
+            if (row.every(cell => cell === null || String(cell || '').trim() === '')) return;
+
+            const newOS = {
+                id: generateId(), // Gera um ID único para a nova OS
+                produto: colIndices.produto_import !== -1 && String(row[colIndices.produto_import] || '').trim() !== '' ? String(row[colIndices.produto_import]).trim() : "N/A (Importado)",
+                prioridade: "Média", // Default, pode ser ajustado se houver no CSV
+                marcadorAtrasoManual: false,
+                logisticaOk: false
+            };
+            let rowIsValid = true;
+            let currentLogMessages = [];
+
+            // Nº OS (Código)
+            newOS.numero = colIndices.codigo !== -1 ? String(row[colIndices.codigo] || '').trim() : '';
+            if (!newOS.numero) { currentLogMessages.push("Nº OS (Coluna 'Código') ausente ou vazia."); rowIsValid = false; }
+
+            // Cliente
+            newOS.cliente = colIndices.cliente !== -1 ? String(row[colIndices.cliente] || '').trim() : '';
+            if (!newOS.cliente) { currentLogMessages.push("Cliente (Coluna 'Cliente') ausente ou vazio."); rowIsValid = false; }
+
+            // Status
+            newOS.status = colIndices.status !== -1 && String(row[colIndices.status] || '').trim() !== '' ? String(row[colIndices.status]).trim() : 'Aberta';
+            const validStatuses = ["Aberta", "Em Andamento", "Pendente Informação", "Aguardando Aprovação", "Completa", "Incompleta", "Provisória", "Cancelada"];
+            if (!validStatuses.includes(newOS.status)) {
+                currentLogMessages.push(`Status "${newOS.status}" inválido. Será usado "Aberta".`); newOS.status = 'Aberta';
+            }
+
+            // Data Início e Término
+            const inicioVal = colIndices.inicio !== -1 ? row[colIndices.inicio] : null;
+            const terminoVal = colIndices.termino !== -1 ? row[colIndices.termino] : null;
+
+            const dataAberturaResult = parseAndValidateDate(inicioVal, "Data Início (Coluna 'Início')");
+            if (dataAberturaResult.error) { currentLogMessages.push(dataAberturaResult.error); rowIsValid = false; }
+            newOS.dataAbertura = dataAberturaResult.date; // Deve ser 'YYYY-MM-DD' ou null
+
+            const prazoFinalResult = parseAndValidateDate(terminoVal, "Data Término (Coluna 'Término')");
+            if (prazoFinalResult.error) { currentLogMessages.push(prazoFinalResult.error); rowIsValid = false; }
+            newOS.prazoFinal = prazoFinalResult.date; // Deve ser 'YYYY-MM-DD' ou null
+
+            if (newOS.dataAbertura && newOS.prazoFinal && new Date(newOS.prazoFinal) < new Date(newOS.dataAbertura)) {
+                currentLogMessages.push("Data de Prazo Final não pode ser anterior à Data de Início."); rowIsValid = false;
+            }
+
+            // Responsável (Técnico)
+            newOS.responsavel = colIndices.tecnico !== -1 ? String(row[colIndices.tecnico] || '').trim() : '';
+            if (!newOS.responsavel) { currentLogMessages.push("Responsável (Coluna 'Técnico') ausente ou vazio."); rowIsValid = false; }
+
+            // Solicitante
+            newOS.solicitante = colIndices.solicitante !== -1 ? String(row[colIndices.solicitante] || '').trim() : '';
+             if (!newOS.solicitante && essentialCols.includes('solicitante')) { // Se for uma coluna essencial e estiver faltando
+                currentLogMessages.push("Solicitante (Coluna 'Solicitante') ausente ou vazio."); rowIsValid = false;
+            }
+
+
+            // Descrição (pode ser concatenada de outras colunas ou padrão)
+            let descParts = [];
+            const cidadeVal = colIndices.cidade !== -1 && row[colIndices.cidade] ? String(row[colIndices.cidade]).trim() : '';
+            if (cidadeVal) descParts.push(`Cidade: ${cidadeVal}`);
+
+            const duracaoVal = colIndices.duracao_h !== -1 && row[colIndices.duracao_h] ? String(row[colIndices.duracao_h]).trim() : '';
+            if (duracaoVal) descParts.push(`Duração: ${duracaoVal}h`);
+
+            if (descParts.length > 0) {
+                newOS.descricao = descParts.join(', ') + ". (Importado via Excel)";
+            } else {
+                newOS.descricao = "(Importado via Excel)"; // Descrição padrão
+            }
+             newOS.descricao += "\n"; // Adiciona uma nova linha para melhor formatação se necessário
+
+
+            if (rowIsValid) {
+                validOSs.push(newOS);
+            } else {
+                importLog.push({ success: false, message: `Linha ${rowIndex + 2} da planilha (${newOS.numero || 'OS sem número'}) ignorada: ${currentLogMessages.join('; ')}` });
+            }
+        });
+        return { validOSs, importLog };
+    }
+
+    // ==========================================================================
+    // FUNÇÃO PRINCIPAL PARA LIDAR COM A IMPORTAÇÃO DE ARQUIVO EXCEL/CSV
+    // ==========================================================================
+    function handleExcelImport() {
+        const fileInput = document.getElementById('excelFileInput');
+        const currentImportStatusMessage = document.getElementById('importStatusMessage');
+        const currentImportSummaryDiv = document.getElementById('importSummary');
+        const currentImportSummaryList = document.getElementById('importSummaryList');
+
+        if (!fileInput || !currentImportStatusMessage || !currentImportSummaryDiv || !currentImportSummaryList) {
+            console.error("Elementos da interface de importação não encontrados no DOM.");
+            alert("Erro interno na interface de importação. Verifique o console para mais detalhes.");
+            return;
+        }
+
+        currentImportStatusMessage.textContent = ''; // Limpar mensagens anteriores
+        currentImportSummaryList.innerHTML = '';
+        currentImportSummaryDiv.classList.add('hidden');
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            currentImportStatusMessage.textContent = 'Por favor, selecione um arquivo Excel ou CSV para importar.';
+            currentImportStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        currentImportStatusMessage.textContent = `Iniciando processamento do arquivo: ${file.name}...`;
+        currentImportStatusMessage.className = 'mt-4 text-sm text-sky-600 dark:text-sky-400';
+
+        reader.onload = function(event) {
+            try {
+                const data = event.target.result;
+                if (typeof XLSX === 'undefined') {
+                    throw new Error("A biblioteca SheetJS (XLSX) não está carregada. Verifique o link CDN no HTML.");
                 }
-                return { date: `${year}-${monthStr}-${dayStr}`, error: null };
-            }
-            return { date: null, error: `${fieldNameForLog} ("${String(dateValue).substring(0,30)}") formato inválido/não reconhecido.` };
-        }
+                // Usar cellDates:false (ou omitir) para que o raw:true abaixo possa pegar os números de série do Excel.
+                // dateNF é mais para formatação de saída, não afeta a leitura para raw numbers.
+                const workbook = XLSX.read(data, { type: 'array' }); // Simplificado, cellDates default é false
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
 
-        function getPriorityClass(p){switch(p){case'Alta':return'priority-Alta';case'Urgente':return'priority-Urgente';case'Média':return'priority-Média';case'Baixa':return'priority-Baixa';default:return'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}}
-        function generateId(){return'OS'+Date.now().toString(36)+Math.random().toString(36).substr(2,5).toUpperCase()}
+                // **** ALTERAÇÃO PRINCIPAL AQUI: raw: true ****
+                // Isso garante que os números de série do Excel sejam passados como números
+                // para a função parseAndValidateDate, que já os manipula corretamente.
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 , raw: true, defval: null});
 
-        // ==========================================================================
-        // LOCALSTORAGE, PRODUTOS, ATIVIDADE RECENTE
-        // ==========================================================================
-        function saveDataToLocalStorage(){try{localStorage.setItem('ordensServicoData_v1_9_0',JSON.stringify(ordensServico));localStorage.setItem('googleUser_v1_9_0',JSON.stringify(googleUser));localStorage.setItem('darkMode_v1_9_0',document.documentElement.classList.contains('dark'));localStorage.setItem('savedFilters_v1_9_0',JSON.stringify(savedFilters));localStorage.setItem('itemsPerPage_v1_9_0',ITEMS_PER_PAGE)}catch(e){console.error("Erro ao salvar localStorage:",e);alert("Problema ao salvar dados.")}}
-        function loadDataFromLocalStorage(){
-            const d=localStorage.getItem('ordensServicoData_v1_9_0');
-            if(d){
-                try{
-                    ordensServico=JSON.parse(d); 
-                    ordensServico.forEach(os => { 
-                        if(os.marcadorAtrasoManual === undefined) os.marcadorAtrasoManual = false; 
-                        if(os.logisticaOk === undefined) os.logisticaOk = false; 
-                        if(os.produto === undefined) os.produto = ''; 
-                    }); 
-                } catch(e) {
-                    console.error("Erro localStorage OS:",e);ordensServico=[];
+                // Remover linhas finais completamente vazias que o XLSX pode incluir
+                while (jsonData.length > 0 && jsonData[jsonData.length - 1].every(cell => cell === null || String(cell || '').trim() === '')) {
+                    jsonData.pop();
                 }
+
+                if (jsonData.length < 2) { // Precisa de cabeçalho + pelo menos uma linha de dados
+                    throw new Error("O arquivo parece estar vazio ou contém apenas o cabeçalho. Nenhuma linha de dados para importar.");
+                }
+
+                const { validOSs, importLog } = processAndValidateOSData(jsonData);
+
+                if (validOSs.length > 0) {
+                    ordensServico.unshift(...validOSs); // Adiciona as novas OS no início da lista
+                    saveDataToLocalStorage();
+                    populateProductFilters(); // Atualizar filtros de produto com novos dados
+                    refreshAllViews(); // Atualiza a tabela e outras visualizações
+                    addRecentActivity(`${validOSs.length} OS(s) foram importada(s) com sucesso do arquivo: ${file.name}.`);
+                }
+
+                let finalMessage = validOSs.length > 0 ? `${validOSs.length} OS(s) importada(s) com sucesso! ` : "Nenhuma OS foi importada com sucesso. ";
+                currentImportStatusMessage.className = `mt-4 text-sm ${validOSs.length > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`;
+
+                const errorsCount = importLog.filter(log => !log.success).length;
+                if (errorsCount > 0) {
+                    finalMessage += `${errorsCount} linha(s) da planilha continham erros e foram ignoradas. Veja o resumo abaixo para detalhes.`;
+                    // Mudar a cor se houver erros, mesmo que algumas OSs tenham sido importadas
+                    currentImportStatusMessage.className = `mt-4 text-sm ${validOSs.length > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`;
+                }
+                 // Caso o arquivo tenha dados mas nada foi validado (ex: problema geral de formato)
+                 if (validOSs.length === 0 && errorsCount === 0 && jsonData.slice(1).filter(r => !r.every(c => c === null || String(c || '').trim() === '')).length > 0) {
+                    finalMessage = `Arquivo lido, mas nenhuma OS válida foi processada. Verifique o formato dos dados e se as colunas essenciais (Código, Cliente, Início, Término, Técnico, Solicitante) estão corretas e presentes na primeira linha da planilha.`;
+                    currentImportStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
+                }
+
+
+                currentImportStatusMessage.textContent = finalMessage.trim();
+
+                if (importLog.length > 0) {
+                    currentImportSummaryDiv.classList.remove('hidden');
+                    importLog.forEach(log => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = log.message;
+                        listItem.className = log.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300';
+                        currentImportSummaryList.appendChild(listItem);
+                    });
+                }
+
+            } catch (error) {
+                console.error("Erro detalhado ao processar o arquivo Excel/CSV:", error);
+                currentImportStatusMessage.textContent = `Erro crítico durante o processamento: ${error.message}. Verifique o console para mais informações.`;
+                currentImportStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
+                currentImportSummaryDiv.classList.add('hidden'); // Esconder resumo em caso de erro catastrófico
+            } finally {
+                fileInput.value = ''; // Limpar o input de arquivo para permitir nova seleção do mesmo arquivo
             }
-            const u=localStorage.getItem('googleUser_v1_9_0');if(u)try{googleUser=JSON.parse(u)}catch(e){googleUser=null}
-            const dm=localStorage.getItem('darkMode_v1_9_0');if(dm==='true'){document.documentElement.classList.add('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-moon','fa-sun')}else{document.documentElement.classList.remove('dark');if(darkModeIcon)darkModeIcon.classList.replace('fa-sun','fa-moon')}
-            const sf=localStorage.getItem('savedFilters_v1_9_0');if(sf)try{savedFilters=JSON.parse(sf)}catch(e){savedFilters={}}
-            
-            // Elementos dos filtros são populados depois que o DOM está pronto e as views são mostradas
-            // populateSavedFiltersSelect(); 
-            const ip=localStorage.getItem('itemsPerPage_v1_9_0');
-            const ipsElement = document.getElementById('itemsPerPageSetting');
-            if(ip){ITEMS_PER_PAGE=parseInt(ip,10)||ITEMS_PER_PAGE_DEFAULT;if(ipsElement)ipsElement.value=ITEMS_PER_PAGE}else{if(ipsElement)ipsElement.value=ITEMS_PER_PAGE_DEFAULT}
-            // populateProductFilters();
-        }
-        function populateProductFilters(){
-            if(!productDatalist||!filterProductSelect||!reportProductSelect) return;
-            const p=[...new Set(ordensServico.map(os=>os.produto).concat(defaultProducts).filter(pr=>pr&&pr.trim()!==""))].sort((a,b)=>a.localeCompare(b));
-            productDatalist.innerHTML='';filterProductSelect.innerHTML='<option value="">Todos Produtos</option>';reportProductSelect.innerHTML='<option value="">Todos Produtos</option>';
-            p.forEach(pr=>{const o=document.createElement('option');o.value=pr;o.textContent=pr;productDatalist.appendChild(o.cloneNode(true));filterProductSelect.appendChild(o.cloneNode(true));reportProductSelect.appendChild(o.cloneNode(true))})
-        }
-        function addRecentActivity(a,uN=null){
-            if(!recentActivityList) return; // Será definido quando a homeView for ativa
-            const li=document.createElement('li');const n=new Date();let uD=uN?` <span class="font-medium text-sky-600 dark:text-sky-400">(${uN})</span>`:(googleUser?` <span class="font-medium text-slate-500 dark:text-slate-400">(${googleUser.given_name||googleUser.name})</span>`:'');
-            li.className='flex justify-between items-center text-sm pb-2 border-b border-slate-200 dark:border-slate-700';
-            li.innerHTML=`<span>${a}${uD}</span><span class="text-slate-400 dark:text-slate-500 text-xs">${n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>`;
-            const pl=recentActivityList.querySelector('.text-placeholder');if(pl)recentActivityList.innerHTML='';
-            recentActivityList.insertBefore(li,recentActivityList.firstChild);
-            if(recentActivityList.children.length>7)recentActivityList.removeChild(recentActivityList.lastChild)
-        }
+        };
+        reader.onerror = function(error) { // Adicionado para tratar erros de leitura do arquivo em si
+            console.error("Erro ao ler o arquivo:", error);
+            currentImportStatusMessage.textContent = 'Ocorreu um erro ao tentar ler o arquivo. Verifique se é um arquivo Excel/CSV válido e tente novamente.';
+            currentImportStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
+            fileInput.value = ''; // Limpar o input
+        };
+        reader.readAsArrayBuffer(file); // Inicia a leitura do arquivo
+    }
 
-        // ==========================================================================
-        // GOOGLE SIGN-IN
-        // ==========================================================================
-        function parseJwt(t){try{return JSON.parse(atob(t.split('.')[1]))}catch(e){return null}}
-        function handleCredentialResponse(r){const pL=parseJwt(r.credential);googleUser={id:pL.sub,name:pL.name,given_name:pL.given_name,picture:pL.picture,email:pL.email};saveDataToLocalStorage();updateLoginUI();addRecentActivity(`Usuário ${googleUser.name} logado.`)}
-        function handleSignOut(){const uN=googleUser?(googleUser.given_name||googleUser.name):"Usuário";googleUser=null;saveDataToLocalStorage();updateLoginUI();addRecentActivity(`${uN} deslogado.`);if(typeof google!=='undefined'&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect()}
-        function updateLoginUI(){const uiD=document.getElementById('user-info');const gS=document.querySelector('.g_id_signin');const uNE=document.getElementById('user-name');const uPE=document.getElementById('user-pic');if(!uiD||!gS||!uNE||!uPE)return;if(googleUser){uNE.textContent=googleUser.given_name||googleUser.name;uPE.src=googleUser.picture;uiD.classList.remove('hidden');gS.classList.add('hidden')}else{uiD.classList.add('hidden');gS.classList.remove('hidden');uNE.textContent='';uPE.src=''}}
-        
-        // ==========================================================================
-        // DARK MODE
-        // ==========================================================================
-        function toggleDarkMode(){document.documentElement.classList.toggle('dark');if(darkModeIcon){darkModeIcon.classList.toggle('fa-moon');darkModeIcon.classList.toggle('fa-sun')}saveDataToLocalStorage();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden')&&osStatusChartInstance)renderOSStatusChart();if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){const rTB=document.getElementById('reportsTableBody');if(rTB&&rTB.querySelectorAll('tr').length>0&&!rTB.querySelector('td[colspan="8"]'))generateCustomReport()}}
-
-        // ==========================================================================
-        // FILTROS SALVOS
-        // ==========================================================================
-        function populateSavedFiltersSelect(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const cS=sFS.value;sFS.innerHTML='<option value="">Carregar filtro...</option>';for(const n in savedFilters){const o=document.createElement('option');o.value=n;o.textContent=n;sFS.appendChild(o)}if(cS&&savedFilters[cS])sFS.value=cS}
-        function saveCurrentFilters(){const nFIN=document.getElementById('newFilterName');if(!nFIN)return;const n=nFIN.value.trim();if(!n){alert("Especifique um nome para o filtro salvo.");return}if(savedFilters[n]&&!confirm(`O filtro salvo "${n}" já existe. Deseja sobrescrevê-lo?`))return;const fDI=document.getElementById('filterDescription');savedFilters[n]={numero:document.getElementById('filterOsNumber').value,cliente:document.getElementById('filterClient').value,descricao:fDI?fDI.value:"",produto:document.getElementById('filterProduct').value,status:document.getElementById('filterStatus').value, marcadorAtraso: document.getElementById('filterMarcadorAtraso').value, logisticaOk: document.getElementById('filterLogisticaOk').value };nFIN.value='';populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" salvo.`)}
-        function loadSelectedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){document.getElementById('filterOsNumber').value=savedFilters[n].numero||"";document.getElementById('filterClient').value=savedFilters[n].cliente||"";const fDI=document.getElementById('filterDescription');if(fDI)fDI.value=savedFilters[n].descricao||"";document.getElementById('filterProduct').value=savedFilters[n].produto||"";document.getElementById('filterStatus').value=savedFilters[n].status||""; document.getElementById('filterMarcadorAtraso').value = savedFilters[n].marcadorAtraso || ""; document.getElementById('filterLogisticaOk').value = savedFilters[n].logisticaOk || ""; applyFiltersAndRender();addRecentActivity(`Filtro "${n}" carregado.`)}else if(n)alert("Filtro salvo não encontrado.")}
-        function deleteSavedFilter(){const sFS=document.getElementById('savedFilters');if(!sFS)return;const n=sFS.value;if(n&&savedFilters[n]){if(confirm(`Tem certeza que deseja excluir o filtro salvo "${n}"?`)){delete savedFilters[n];populateSavedFiltersSelect();saveDataToLocalStorage();addRecentActivity(`Filtro "${n}" excluído.`)}}else if(n)alert("O filtro salvo não existe.");else alert("Por favor, selecione um filtro salvo para excluir.")}
-
-        // ==========================================================================
-        // AÇÕES EM MASSA PARA ORDENS DE SERVIÇO
-        // ==========================================================================
-        function updateSelectedCount(){const sOSC=document.getElementById('selectedOsCount');const bAC=document.getElementById('bulkActionsContainer');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!sOSC||!bAC||!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));sOSC.textContent=`${sC.length} selecionadas`;if(sC.length>0){bAC.classList.remove('hidden')}else{bAC.classList.add('hidden');sAOC.checked=false}}
-        function toggleSelectAllOS(mC){const oSTB=document.getElementById('osTableBody');if(!oSTB||!mC)return;const c=oSTB.querySelectorAll('input[type="checkbox"][data-id]');c.forEach(cb=>cb.checked=mC.checked);updateSelectedCount()}
-        function applyBulkAction(){const bAS=document.getElementById('bulkActionStatus');const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!bAS||!oSTB||!sAOC)return;const nS=bAS.value;if(!nS){alert("Por favor, selecione um status para aplicar.");return}const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada para a ação em massa.");return}sC.forEach(cb=>{const osI=cb.dataset.id;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1)ordensServico[osIX].status=nS});addRecentActivity(`${sC.length} OS(s) tiveram o status alterado para ${nS}.`);saveDataToLocalStorage();refreshAllViews();sAOC.checked=false;updateSelectedCount()}
-        function bulkDeleteSelectedOS(){const oSTB=document.getElementById('osTableBody');const sAOC=document.getElementById('selectAllOsCheckbox');if(!oSTB||!sAOC)return;const sC=Array.from(oSTB.querySelectorAll('input[type="checkbox"][data-id]:checked'));if(sC.length===0){alert("Nenhuma OS selecionada para exclusão.");return}if(confirm(`Tem certeza que deseja excluir ${sC.length} OS(s) selecionada(s)? Esta ação é irreversível.`)){const iTD=sC.map(cb=>cb.dataset.id);ordensServico=ordensServico.filter(os=>!iTD.includes(os.id));addRecentActivity(`${iTD.length} OS(s) foram excluídas.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews();sAOC.checked=false;updateSelectedCount()}}
-
-        // ==========================================================================
-        // RENDERIZAÇÃO DA TABELA DE OS E PAGINAÇÃO
-        // ==========================================================================
-        function toggleMarcadorAtrasoManual(osId, event) {
-            event.stopPropagation(); 
-            const osIndex = ordensServico.findIndex(os => os.id === osId);
-            if (osIndex !== -1) {
-                ordensServico[osIndex].marcadorAtrasoManual = !ordensServico[osIndex].marcadorAtrasoManual;
-                addRecentActivity(`Marcador "Não Realizada no Prazo" ${ordensServico[osIndex].marcadorAtrasoManual ? 'aplicado' : 'removido'} para OS ${ordensServico[osIndex].numero}.`);
-                saveDataToLocalStorage();
-                applyFiltersAndRender();
-            }
-        }
-
-        function toggleLogisticaOkManual(osId, event) {
-            event.stopPropagation();
-            const osIndex = ordensServico.findIndex(os => os.id === osId);
-            if (osIndex !== -1) {
-                ordensServico[osIndex].logisticaOk = !ordensServico[osIndex].logisticaOk;
-                addRecentActivity(`Marcador "Logística Pronta" ${ordensServico[osIndex].logisticaOk ? 'aplicado' : 'removido'} para OS ${ordensServico[osIndex].numero}.`);
-                saveDataToLocalStorage();
-                applyFiltersAndRender(); 
+    function toggleImportSection() {
+        const importSection = document.getElementById('importOsLoteContainer');
+        if (importSection) {
+            importSection.classList.toggle('hidden');
+            if (!importSection.classList.contains('hidden')) {
+                addRecentActivity("Interface de importação em lote aberta.");
+            } else {
+                addRecentActivity("Interface de importação em lote fechada.");
+                 // Limpar mensagens de status ao fechar
+                const currentImportStatusMessage = document.getElementById('importStatusMessage');
+                const currentImportSummaryDiv = document.getElementById('importSummary');
+                const currentImportSummaryList = document.getElementById('importSummaryList');
+                if(currentImportStatusMessage) currentImportStatusMessage.textContent = '';
+                if(currentImportSummaryList) currentImportSummaryList.innerHTML = '';
+                if(currentImportSummaryDiv) currentImportSummaryDiv.classList.add('hidden');
             }
         }
+    }
 
-        function renderOSTable(fD=getFilteredOS()){
-            const oSTB=document.getElementById('osTableBody');
-            const sAOC=document.getElementById('selectAllOsCheckbox');
-            if(!oSTB||!sAOC){console.error("Elemento osTableBody ou selectAllOsCheckbox não encontrado no DOM!");return}
-            oSTB.innerHTML='';
-            sAOC.checked=false;
-            updateSelectedCount();
-            if(!fD||fD.length===0){oSTB.innerHTML=`<tr><td colspan="13" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma Ordem de Serviço encontrada com os filtros atuais.</td></tr>`;renderPagination(0,0);return}
+    // ==========================================================================
+    // FUNÇÕES DE NAVEGAÇÃO E EXIBIÇÃO DE VIEWS
+    // ==========================================================================
+    function showView(vId,cE){ // cE é o elemento do sidebar clicado
+        document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
+        const tV=document.getElementById(vId); // Target View
+        if(tV)tV.classList.remove('hidden');
+        else{ document.getElementById('homeView').classList.remove('hidden'); console.error(`View '${vId}' não encontrada, exibindo Home.`); } // Fallback
+        document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
+        if(cE&&cE.classList.contains('sidebar-item'))cE.classList.add('active');
 
-            const pD=paginateData(fD,currentPage,ITEMS_PER_PAGE);
-            pD.forEach(os=>{
-                const r=oSTB.insertRow();
-                r.className='table-row hover:bg-slate-100 dark:hover:bg-slate-700';
+        // Inicializa elementos específicos da view aqui, pois agora eles estão visíveis
+        if (vId === 'homeView') {
+            recentActivityList = document.getElementById('recentActivityList'); // Garante que está atualizado
+        } else if (vId === 'osListView') {
+            importStatusMessage = document.getElementById('importStatusMessage');
+            importSummaryDiv = document.getElementById('importSummary');
+            importSummaryList = document.getElementById('importSummaryList');
+             // Garantir que filtros salvos e de produto sejam populados se a view for osListView ou reportsView
+            populateSavedFiltersSelect();
+            populateProductFilters();
+        } else if (vId === 'reportsView') {
+            populateProductFilters(); // Produtos também são usados em relatórios
+        }
 
-                const markerAtrasoIconHTML = `
-                    <span class="manual-flag-toggle" onclick="toggleMarcadorAtrasoManual('${os.id}', event)" title="${os.marcadorAtrasoManual ? 'Desmarcar OS como Não Realizada no Prazo' : 'Marcar OS como Não Realizada no Prazo'}">
-                        ${os.marcadorAtrasoManual ? '<i class="fas fa-flag text-purple-500"></i>' : '<i class="far fa-flag text-gray-400 hover:text-purple-500"></i>'}
-                    </span>`;
-                
-                const logisticaIconHTML = `
-                    <span class="logistica-toggle" onclick="toggleLogisticaOkManual('${os.id}', event)" title="${os.logisticaOk ? 'Marcar Logística como Não Pronta' : 'Marcar Logística como Pronta/OK'}">
-                        ${os.logisticaOk ? '<i class="fas fa-truck text-teal-500"></i>' : '<i class="fas fa-truck text-gray-400 hover:text-teal-500"></i>'}
-                    </span>`;
 
-                r.innerHTML=`<td class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" data-id="${os.id}" onchange="updateSelectedCount()" class="form-checkbox h-4 w-4"></td>
-                            <td class="py-3 px-4 text-sm font-medium">${markerAtrasoIconHTML} ${os.numero}</td>
+        // Se sair da view de OS, esconder a seção de importação se estiver aberta.
+        const importOsLoteContainer = document.getElementById('importOsLoteContainer');
+        if (vId !== 'osListView' && importOsLoteContainer && !importOsLoteContainer.classList.contains('hidden')) {
+             importOsLoteContainer.classList.add('hidden');
+             // Limpar mensagens de status ao esconder
+             if(importStatusMessage) importStatusMessage.textContent = '';
+             if(importSummaryList) importSummaryList.innerHTML = '';
+             if(importSummaryDiv) importSummaryDiv.classList.add('hidden');
+        }
+
+        // Limpar instâncias de gráficos se não estiver na view de relatórios
+        if(vId!=='reportsView'){
+            if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}
+            if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}
+            if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}
+        }
+        // Lógica específica de cada view
+        if(vId==='homeView'){updateHomeCounts();renderOSStatusChart()}
+        else if(vId==='osListView'){applyFiltersAndRender()} // Renderiza a tabela de OS com filtros
+        else if(vId==='reportsView'){generateCustomReport()} // Gera ou limpa relatórios
+        else if(vId==='settingsView'){const iPSI=document.getElementById('itemsPerPageSetting');if(iPSI)iPSI.value=ITEMS_PER_PAGE}
+    }
+
+    // Lógica da Sidebar (Toggle)
+    const mainSidebar = document.getElementById('sidebar');
+    const mainContentArea = document.getElementById('mainContent');
+    const mainToggleSidebarBtn = document.getElementById('toggleSidebar');
+    // const mainSidebarTitleDiv = document.getElementById('sidebar-title'); // Já definido globalmente
+
+    if(mainToggleSidebarBtn && mainSidebar && mainContentArea && sidebarTitleDiv){ // sidebarTitleDiv é global
+        mainToggleSidebarBtn.addEventListener('click',()=>{
+            mainSidebar.classList.toggle('collapsed');
+            mainContentArea.classList.toggle('collapsed');
+            const iC=mainSidebar.classList.contains('collapsed'); // isCollapsed
+            mainToggleSidebarBtn.innerHTML=iC?'<i class="fas fa-chevron-right text-lg"></i>':'<i class="fas fa-bars text-lg"></i>';
+            const tS=sidebarTitleDiv.querySelector('span');if(tS)tS.style.display=iC?'none':'inline';
+            const tI=sidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem';
+            // Redesenhar gráficos se a sidebar for expandida e os gráficos estiverem visíveis
+            if(!iC && document.getElementById('homeView') && !document.getElementById('homeView').classList.contains('hidden'))setTimeout(()=>{if(osStatusChartInstance)osStatusChartInstance.resize()},310); // Delay para transição
+            if(!iC && document.getElementById('reportsView') && !document.getElementById('reportsView').classList.contains('hidden'))setTimeout(()=>{if(reportChartByProductInstance)reportChartByProductInstance.resize();if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.resize();if(reportChartByStatusInstance)reportChartByStatusInstance.resize()},310);
+        });
+    }
+// ==========================================================================
+    // LÓGICA DE FILTROS DA LISTA PRINCIPAL, HOME VIEW E ATUALIZAÇÃO GERAL
+    // ==========================================================================
+    function getFilteredOS() {
+        // Valores dos filtros, convertidos para minúsculas para busca case-insensitive
+        const fONV = document.getElementById('filterOsNumber')?.value.toLowerCase() || "";
+        const fCV = document.getElementById('filterClient')?.value.toLowerCase() || "";
+        const fSV = document.getElementById('filterStatus')?.value || ""; // Status é case-sensitive
+        const fPV = document.getElementById('filterProduct')?.value || ""; // Produto é case-sensitive
+        const fDV = document.getElementById('filterDescription')?.value.toLowerCase() || "";
+        const fMAV = document.getElementById('filterMarcadorAtraso')?.value || ""; // 'marcada', 'nao_marcada', ''
+        const fLOV = document.getElementById('filterLogisticaOk')?.value || "";  // 'sim', 'nao', ''
+
+        return ordensServico.filter(os => {
+            const matchNumero = (os.numero?.toLowerCase() || "").includes(fONV);
+            const matchCliente = (os.cliente?.toLowerCase() || "").includes(fCV);
+            const matchStatus = fSV ? os.status === fSV : true;
+            const matchProduto = fPV ? os.produto === fPV : true;
+            const matchDescricao = (os.descricao?.toLowerCase() || "").includes(fDV);
+
+            let matchMarcadorAtraso = true;
+            if (fMAV === "marcada") matchMarcadorAtraso = os.marcadorAtrasoManual === true;
+            else if (fMAV === "nao_marcada") matchMarcadorAtraso = os.marcadorAtrasoManual === false;
+
+            let matchLogisticaOk = true;
+            if (fLOV === "sim") matchLogisticaOk = os.logisticaOk === true;
+            else if (fLOV === "nao") matchLogisticaOk = os.logisticaOk === false;
+
+            return matchNumero && matchCliente && matchStatus && matchProduto && matchDescricao && matchMarcadorAtraso && matchLogisticaOk;
+        });
+    }
+    function applyFiltersAndRender(){currentPage=1;renderOSTable()} // Reseta para a primeira página ao aplicar filtros
+    function updateHomeCounts(){const oAE=document.getElementById('osAbertasCount');const oCME=document.getElementById('osCompletasMesCount');const oPE=document.getElementById('osPendentesCount');const oCaE=document.getElementById('osCanceladasCount');if(oAE)oAE.textContent=ordensServico.filter(os=>os.status==='Aberta').length;const h=new Date();const pDM=new Date(h.getFullYear(),h.getMonth(),1);const uDM=new Date(h.getFullYear(),h.getMonth()+1,0,23,59,59,999);if(oCME)oCME.textContent=ordensServico.filter(os=>{if(os.status!=='Completa')return false;const dC=os.dataFechamento?new Date(os.dataFechamento+'T00:00:00Z'):(os.prazoFinal?new Date(os.prazoFinal+'T00:00:00Z'):null);if(!dC)return false;return dC>=pDM&&dC<=uDM}).length;if(oPE)oPE.textContent=ordensServico.filter(os=>os.status==='Pendente Informação'||os.status==='Aguardando Aprovação').length;if(oCaE)oCaE.textContent=ordensServico.filter(os=>os.status==='Cancelada').length}
+    function renderOSStatusChart(){const cC=document.getElementById('osStatusChart');const oSCCC=document.getElementById('osStatusChartContainer');if(!cC||!oSCCC||oSCCC.offsetParent===null)return;const ctx=cC.getContext('2d');const iDM=document.documentElement.classList.contains('dark');const sC=ordensServico.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCo={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)', 'Incompleta':'rgba(201, 203, 207, 0.8)', 'Provisória': 'rgba(160, 160, 160, 0.8)'};const bC=Object.keys(sC).map(s=>sCo[s]||'rgba(201,203,207,0.8)');const d={labels:Object.keys(sC),datasets:[{label:'OS por Status',data:Object.values(sC),backgroundColor:bC,borderColor:iDM?getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim():'#fff',borderWidth:2,hoverOffset:8}]};if(osStatusChartInstance)osStatusChartInstance.destroy();osStatusChartInstance=new Chart(ctx,{type:'doughnut',data:d,options:{responsive:true,maintainAspectRatio:false,animation:{animateScale:true,animateRotate:true},plugins:{legend:{position:'bottom',labels:{padding:15,font:{size:11},color:iDM?getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim():'#1e293b'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.9)':'rgba(255,255,255,0.9)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,callbacks:{label:function(c){const p=((c.parsed/c.chart.getDatasetMeta(0).total)*100).toFixed(1);return`${c.label||''}: ${c.parsed||0} (${p}%)`}}}}}})}
+    function navigateToOsListWithFilter(sF,fCMP=false){const fSI=document.getElementById('filterStatus');const fONI=document.getElementById('filterOsNumber');const fCI=document.getElementById('filterClient');const fPI=document.getElementById('filterProduct');const fDI=document.getElementById('filterDescription'); const fMAI = document.getElementById('filterMarcadorAtraso'); const fLOKI = document.getElementById('filterLogisticaOk'); if(fONI)fONI.value="";if(fCI)fCI.value="";if(fPI)fPI.value="";if(fDI)fDI.value=""; if(fMAI) fMAI.value = ""; if(fLOKI) fLOKI.value=""; if(fSI){if(Array.isArray(sF)){fSI.value="";addRecentActivity("Visualizando OS. Refine os filtros para visualizar OS pendentes.")}else{fSI.value=sF}}showView('osListView',document.querySelector('.sidebar-item[onclick*="osListView"]'))}
+    function refreshAllViews(){renderOSTable();updateHomeCounts();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))renderOSStatusChart();const rVE=document.getElementById('reportsView');if(rVE&&!rVE.classList.contains('hidden'))generateCustomReport()}
+
+
+    // ==========================================================================
+    // RELATÓRIOS PERSONALIZADOS
+    // ==========================================================================
+    function generateCustomReport() {
+        const rTB = document.getElementById('reportsTableBody');
+        const rDSI = document.getElementById('reportDateStartFilter');
+        const rDEI = document.getElementById('reportDateEndFilter');
+        const rSI = document.getElementById('reportStatusFilter');
+        const rPI = document.getElementById('reportProductFilter');
+        const rFMAI = document.getElementById('reportFilterMarcadorAtraso');
+        const rFLOKI = document.getElementById('reportFilterLogisticaOk');
+
+        if (!rTB || !rDSI || !rDEI || !rSI || !rPI || !rFMAI || !rFLOKI) return;
+        rTB.innerHTML = ''; // Limpar tabela
+        // Limpar gráficos anteriores
+        if (reportChartByProductInstance) { reportChartByProductInstance.destroy(); reportChartByProductInstance = null; }
+        if (reportChartByUsuarioInstance) { reportChartByUsuarioInstance.destroy(); reportChartByUsuarioInstance = null; }
+        if (reportChartByStatusInstance) { reportChartByStatusInstance.destroy(); reportChartByStatusInstance = null; }
+        document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c => {
+            const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
+        });
+
+        const dSV = rDSI.value; // Data Start Value
+        const dEV = rDEI.value; // Data End Value
+        const sV = rSI.value;   // Status Value
+        const pV = rPI.value;   // Product Value
+        const fMAVal = rFMAI.value; // Filtro Marcador Atraso Value
+        const fLOKVal = rFLOKI.value; // Filtro Logística OK Value
+
+        if (dSV && dEV && new Date(dEV) < new Date(dSV)) {
+            alert("A Data Final do relatório não pode ser anterior à Data Inicial.");
+            rTB.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-red-500">Erro: Data Final anterior à Data Inicial.</td></tr>';
+            return;
+        }
+
+        const fRD = ordensServico.filter(os => { // Filtered Report Data
+            let matchPrazo = true;
+            if (os.prazoFinal) { // OS deve ter um prazo final para ser filtrada por data
+                const prazoFinalDate = new Date(os.prazoFinal + "T00:00:00Z"); // Considerar como data UTC
+                if (dSV && dEV) { // Ambas as datas do filtro preenchidas
+                    matchPrazo = prazoFinalDate >= new Date(dSV + "T00:00:00Z") && prazoFinalDate <= new Date(dEV + "T23:59:59Z");
+                } else if (dSV) { // Apenas data inicial do filtro
+                    matchPrazo = prazoFinalDate >= new Date(dSV + "T00:00:00Z");
+                } else if (dEV) { // Apenas data final do filtro
+                    matchPrazo = prazoFinalDate <= new Date(dEV + "T23:59:59Z");
+                }
+            } else if (dSV || dEV) { // Se filtro de data está ativo mas OS não tem prazo, não incluir
+                matchPrazo = false;
+            }
+
+            const matchStatus = sV ? os.status === sV : true; // Filtro de status
+            const matchProduct = pV ? os.produto === pV : true; // Filtro de produto
+
+            let matchMarcadorAtraso = true; // Filtro de marcador de atraso
+            if (fMAVal === "marcada") matchMarcadorAtraso = os.marcadorAtrasoManual === true;
+            else if (fMAVal === "nao_marcada") matchMarcadorAtraso = os.marcadorAtrasoManual === false;
+
+            let matchLogistica = true; // Filtro de logística
+            if (fLOKVal === "sim") matchLogistica = os.logisticaOk === true;
+            else if (fLOKVal === "nao") matchLogistica = os.logisticaOk === false;
+
+            return matchPrazo && matchStatus && matchProduct && matchMarcadorAtraso && matchLogistica;
+        });
+
+        if (fRD.length === 0) {
+            rTB.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma Ordem de Serviço encontrada para os filtros selecionados.</td></tr>';
+            return;
+        }
+
+        fRD.sort((a, b) => new Date(a.dataAbertura) - new Date(b.dataAbertura)); // Ordenar por data de abertura
+        fRD.forEach(os => {
+            const rw = rTB.insertRow();
+            rw.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700';
+            // Código OS, Solicitante, Cliente, Data Início, Data Término, Técnico/Responsável, Logística Pronta, Produto
+            rw.innerHTML = `<td class="py-3 px-4 text-sm">${os.numero}</td>
+                            <td class="py-3 px-4 text-sm">${os.solicitante || 'N/A'}</td>
                             <td class="py-3 px-4 text-sm">${os.cliente}</td>
-                            <td class="py-3 px-4 text-sm">${os.produto||'N/A'}</td>
-                            <td class="py-3 px-4 text-sm truncate max-w-xs" title="${os.descricao}">${os.descricao}</td>
                             <td class="py-3 px-4 text-sm">${formatDateToBR(os.dataAbertura)}</td>
                             <td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td>
                             <td class="py-3 px-4 text-sm">${os.responsavel}</td>
-                            <td class="py-3 px-4 text-sm">${os.solicitante||'N/A'}</td>
-                            <td class="py-3 px-4 text-sm"><select class="select-field status-select p-1 text-xs" data-id="${os.id}" onchange="updateStatus(this)">
-                                <option value="Aberta" ${os.status==='Aberta'?'selected':''}>Aberta</option>
-                                <option value="Em Andamento" ${os.status==='Em Andamento'?'selected':''}>Em Andamento</option>
-                                <option value="Pendente Informação" ${os.status==='Pendente Informação'?'selected':''}>Pendente Info</option>
-                                <option value="Aguardando Aprovação" ${os.status==='Aguardando Aprovação'?'selected':''}>Aguard. Aprov.</option>
-                                <option value="Completa" ${os.status==='Completa'?'selected':''}>Completa</option>
-                                <option value="Incompleta" ${os.status==='Incompleta'?'selected':''}>Incompleta</option>
-                                <option value="Provisória" ${os.status==='Provisória'?'selected':''}>Provisória</option>
-                                <option value="Cancelada" ${os.status==='Cancelada'?'selected':''}>Cancelada</option>
-                            </select></td>
-                            <td class="py-3 px-4 text-sm text-center">${logisticaIconHTML}</td>
-                            <td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td>
-                            <td class="py-3 px-4 text-sm"><button class="text-sky-600 hover:text-sky-800 p-1 mr-2" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button><button class="text-red-600 hover:text-red-800 p-1 mr-2" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button><button class="text-green-600 hover:text-green-800 p-1" title="Baixar .ics" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button></td>`
-            });
-            renderPagination(fD.length,currentPage);
-        }
-        function paginateData(d,p,iPP){const s=(p-1)*iPP;const e=s+iPP;return d.slice(s,e)}
-        function renderPagination(tI,p){const pC=document.getElementById('paginationControls');if(!pC)return;pC.innerHTML='';const tP=Math.ceil(tI/ITEMS_PER_PAGE);if(tP<=1)return;const pB=document.createElement('button');pB.innerHTML='<i class="fas fa-chevron-left"></i> Anterior';pB.className='btn btn-sm btn-secondary disabled:opacity-50';pB.disabled=p===1;pB.onclick=()=>{if(p>1)changePage(p-1)};pC.appendChild(pB);const pI=document.createElement('span');pI.className='text-sm px-3';pI.textContent=`Página ${p} de ${tP}`;pC.appendChild(pI);const nB=document.createElement('button');nB.innerHTML='Próximo <i class="fas fa-chevron-right"></i>';nB.className='btn btn-sm btn-secondary disabled:opacity-50';nB.disabled=p===tP;nB.onclick=()=>{if(p<tP)changePage(p+1)};pC.appendChild(nB)}
-        function changePage(nP){currentPage=nP;renderOSTable()}
+                            <td class="py-3 px-4 text-sm">${os.logisticaOk ? 'Sim' : 'Não'}</td>
+                            <td class="py-3 px-4 text-sm">${os.produto || 'N/A'}</td>`;
+        });
+        addRecentActivity("Relatório personalizado gerado com sucesso.");
+        renderReportCharts(fRD); // Renderiza os gráficos com os dados filtrados
+    }
 
-        // ==========================================================================
-        // CRUD DE OS E MODAL (CRIAÇÃO, EDIÇÃO, EXCLUSÃO)
-        // ==========================================================================
-        function updateStatus(sE){const osI=sE.dataset.id;const nS=sE.value;const osIX=ordensServico.findIndex(os=>os.id===osI);if(osIX!==-1){ordensServico[osIX].status=nS;addRecentActivity(`Status da OS ${ordensServico[osIX].numero} alterado para ${nS}.`);saveDataToLocalStorage();refreshAllViews()}}
-        function openAddOSModal(){
-            const currentOsForm = document.getElementById('osForm'); // osForm é global, mas pegar aqui garante
-            const currentModalTitle = document.getElementById('modalTitle'); // modalTitle é global
-            const currentOsModal = document.getElementById('osModal'); // osModal é global
+    function renderReportCharts(d){const iDM=document.documentElement.classList.contains('dark');const cCO=(tTJS=null)=>({responsive:true,maintainAspectRatio:false,animation:{duration:1e3,easing:'easeInOutQuart',animateScale:true,animateRotate:true},plugins:{legend:{display:true,position:'bottom',labels:{color:iDM?'#cbd5e1':'#1e293b',padding:15,boxWidth:12,font:{size:11}}},title:{display:!!tTJS,text:tTJS,color:iDM?'#cbd5e1':'#1e293b',font:{size:14,weight:'normal'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.95)':'rgba(255,255,255,0.95)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,padding:10,callbacks:{label:function(c){const t=c.chart.getDatasetMeta(0).total;const p=t>0?((c.parsed/t)*100).toFixed(1)+'%':'0%';return`${c.label||''}: ${c.parsed||0} (${p})`}}}},scales:{y:{beginAtZero:true,ticks:{color:iDM?'#94a3b8':'#475569',stepSize:1,precision:0},grid:{color:iDM?'#334155':'#e2e8f0',drawBorder:false}},x:{ticks:{color:iDM?'#94a3b8':'#475569',autoSkip:true,maxRotation:45,minRotation:0},grid:{display:false}}}});const cCl=['rgba(54,162,235,0.8)','rgba(255,159,64,0.8)','rgba(75,192,192,0.8)','rgba(255,99,132,0.8)','rgba(153,102,255,0.8)','rgba(255,205,86,0.8)','rgba(123,239,178,0.8)','rgba(250,130,49,0.8)','rgba(179,57,57,0.8)','rgba(72,126,176,0.8)','rgba(246,229,141,0.8)','rgba(113,88,226,0.8)'];const cBC=iDM?'rgba(15,23,42,0.8)':'rgba(255,255,255,0.8)';const pC=d.reduce((acc,os)=>{acc[os.produto||'N/Esp.']=(acc[os.produto||'N/Esp.']||0)+1;return acc},{});if(document.getElementById('reportChartByProduct')){if(reportChartByProductInstance)reportChartByProductInstance.destroy();reportChartByProductInstance=new Chart(document.getElementById('reportChartByProduct').getContext('2d'),{type:'bar',data:{labels:Object.keys(pC),datasets:[{label:'OS',data:Object.values(pC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5}]},options:cCO()})}const uC=d.reduce((acc,os)=>{acc[os.responsavel||'N/Atrib.']=(acc[os.responsavel||'N/Atrib.']||0)+1;return acc},{});if(document.getElementById('reportChartByUsuario')){if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=new Chart(document.getElementById('reportChartByUsuario').getContext('2d'),{type:'pie',data:{labels:Object.keys(uC),datasets:[{label:'OS',data:Object.values(uC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}const sCR=d.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCM={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)', 'Incompleta':'rgba(201, 203, 207, 0.8)', 'Provisória': 'rgba(160, 160, 160, 0.8)'};if(document.getElementById('reportChartByStatus')){if(reportChartByStatusInstance)reportChartByStatusInstance.destroy();reportChartByStatusInstance=new Chart(document.getElementById('reportChartByStatus').getContext('2d'),{type:'doughnut',data:{labels:Object.keys(sCR),datasets:[{label:'OS',data:Object.values(sCR),backgroundColor:Object.keys(sCR).map((s,i)=>sCM[s]||cCl[i%cCl.length]),borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}}
+    const clearReportOnChange=()=>{if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="8" class="text-center py-10 text-slate-500 dark:text-slate-400">Os filtros foram alterados. Clique em "Gerar Relatório" para atualizar.</td></tr>';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};
 
-            if(!currentOsForm||!currentModalTitle||!currentOsModal)return;
-            currentOsForm.reset();
-            document.getElementById('osId').value='';
-            currentModalTitle.textContent='Adicionar Nova Ordem de Serviço';
-            const dA=document.getElementById('osDataAberturaModal');
-            if(dA)dA.value=new Date().toISOString().split('T')[0]; 
-            document.getElementById('osMarcadorAtrasoModal').checked = false; 
-            document.getElementById('osLogisticaOkModal').checked = false; 
-            currentOsModal.classList.remove('hidden');
-        }
-        function closeOSModal(){
-            const currentOsModal = document.getElementById('osModal');
-            if(!currentOsModal)return;currentOsModal.classList.add('hidden');
-        }
-        function editOS(id){
-            const currentOsModal = document.getElementById('osModal');
-            const currentModalTitle = document.getElementById('modalTitle');
-            // const currentOsForm = document.getElementById('osForm'); // Não é necessário aqui
-            if(!currentOsModal||!currentModalTitle)return;
 
-            const os=ordensServico.find(o=>o.id===id);
-            if(os){
-                currentModalTitle.textContent=`Editar OS - ${os.numero}`;
-                document.getElementById('osId').value=os.id;
-                document.getElementById('osNumeroModal').value=os.numero;
-                document.getElementById('osClienteModal').value=os.cliente;
-                document.getElementById('osProdutoModal').value=os.produto||'';
-                document.getElementById('osSolicitanteModal').value=os.solicitante||'';
-                document.getElementById('osDescricaoModal').value=os.descricao;
-                document.getElementById('osDataAberturaModal').value=os.dataAbertura;
-                document.getElementById('osPrazoFinalModal').value=os.prazoFinal;
-                document.getElementById('osResponsavelModal').value=os.responsavel;
-                document.getElementById('osStatusModal').value=os.status;
-                document.getElementById('osPrioridadeModal').value=os.prioridade; 
-                document.getElementById('osMarcadorAtrasoModal').checked = os.marcadorAtrasoManual || false; 
-                document.getElementById('osLogisticaOkModal').checked = os.logisticaOk || false; 
-                currentOsModal.classList.remove('hidden');
-            } else alert("OS não encontrada para edição.");
-        }
-        function deleteOS(id){const oTD=ordensServico.find(os=>os.id===id);if(confirm(`Tem certeza que deseja excluir a OS ${oTD?.numero||id}? Esta ação é irreversível.`)){ordensServico=ordensServico.filter(os=>os.id!==id);addRecentActivity(`OS ${oTD?.numero||'ID '+id} foi excluída.`);saveDataToLocalStorage();if(currentPage>1&&paginateData(getFilteredOS(),currentPage,ITEMS_PER_PAGE).length===0)currentPage--;refreshAllViews()}}
-        
-        
-        // ==========================================================================
-        // LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV (Função de processamento de dados)
-        // ==========================================================================
-        function processAndValidateOSData(jsonData) {
-            const headersFromFile = jsonData[0].map(header => String(header || '').trim().toLowerCase());
-            const dataRows = jsonData.slice(1);
-            const validOSs = [];
-            const importLog = [];
+    // ==========================================================================
+    // FUNÇÕES DE EXPORTAÇÃO (CSV, PDF)
+    // ==========================================================================
+    function exportTableToCSV(tId,fN){let c=[];const t=document.getElementById(tId);if(!t){console.error(`Tabela com ID '${tId}' não encontrada para exportação CSV.`);return}const rS=t.querySelectorAll("tr");for(const r of rS){const cS=r.querySelectorAll("td,th");const rD=[];for(const col of cS){let cT=col.innerText;if(col.querySelector('select'))cT=col.querySelector('select').value;else if(col.querySelector('span[class*="priority-"]'))cT=col.querySelector('span').innerText; if(col.querySelector('.fa-flag')) cT = "[M.Atraso] " + cT.replace(/\[M\.Atraso\]\s*/, '').trim(); if(col.querySelector('.fa-truck')) cT = (col.querySelector('.fa-truck.text-teal-500') ? "[L.OK]" : "[L.Pendente]") + cT.replace(/\[L\.(OK|Pendente)\]\s*/, '').trim(); rD.push('"'+cT.replace(/\s+/g,' ').trim().replace(/"/g,'""')+'"')}c.push(rD.join(","))}const cF=new Blob(["\uFEFF"+c.join("\n")],{type:"text/csv;charset=utf-8;"});const l=document.createElement("a");l.href=URL.createObjectURL(cF);l.download=fN;l.style.display="none";document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`Arquivo CSV "${fN}" exportado com sucesso.`)}
+    function exportTableToPDF(tId,t,tBId,iWR=false){const{jsPDF}=window.jspdf;const d=new jsPDF({orientation:iWR?'landscape':'portrait',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;d.setFontSize(18);d.setTextColor(tC);d.text(t,d.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>{if(th.innerText.toLowerCase() !== 'ações' && !th.querySelector('input[type=checkbox]')) h.push(th.innerText)});const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach((td, index)=>{let ths = Array.from(tbl.querySelectorAll('thead th')); if(ths[index] && (ths[index].innerText.toLowerCase() === 'ações' || ths[index].querySelector('input[type=checkbox]'))) return; let cT=td.innerText;if(td.querySelector('select'))cT=td.querySelector('select').value;else if(td.querySelector('span[class*="priority-"]'))cT=td.querySelector('span').innerText; if(td.querySelector('.fa-flag')) cT = "[M.A] " + cT.replace(/\[M\.A\]\s*/, '').trim(); if(td.querySelector('.fa-truck')) cT = (td.querySelector('.fa-truck.text-teal-500') ? "Sim" : "Não"); rD.push(cT)});if(rD.length > 0)b.push(rD)});if(b.length>0&&!(b[0].length===1&&b[0][0].includes("Nenhuma OS encontrada"))){d.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:iWR?7:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'}})}else d.setFontSize(12).text("Nenhum dado na tabela para exportar.",40,cY)}else d.setFontSize(12).text("Tabela não encontrada para exportação.",40,cY);const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;d.setFontSize(8).text(gD,d.internal.pageSize.getWidth()-40,d.internal.pageSize.getHeight()-20,{align:'right'});d.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');addRecentActivity(`Arquivo PDF "${t}" exportado com sucesso.`)}
 
-            const expectedHeaderMapping = { 
-                codigo: 'código', status: 'status', cliente: 'cliente', inicio: 'início', termino: 'término',
-                tecnico: 'técnico', solicitante: 'solicitante', cidade: 'cidade', duracao_h: 'duração (h)',
-                produto_import: 'produto' 
-            };
-            const colIndices = {}; 
-            for (const internalKey in expectedHeaderMapping) {
-                colIndices[internalKey] = headersFromFile.indexOf(expectedHeaderMapping[internalKey]);
+    async function exportReportToPDFWithCharts(tId,t,tBId,cCI=[]){
+        const{jsPDF}=window.jspdf;
+        const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+        const iDM=document.documentElement.classList.contains('dark');
+        const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';
+        const pH=doc.internal.pageSize.getHeight();
+        const pW=doc.internal.pageSize.getWidth();
+        const m=40;
+        let cY=m;
+
+        doc.setFontSize(16);
+        doc.setTextColor(tC);
+        doc.text(t, pW/2, cY, {align:'center'});
+        cY+=25;
+
+        const rDSV=document.getElementById('reportDateStartFilter')?.value;
+        const rDEV=document.getElementById('reportDateEndFilter')?.value;
+        const rSV=document.getElementById('reportStatusFilter')?.value;
+        const rPV=document.getElementById('reportProductFilter')?.value;
+        const rFMAVal = document.getElementById('reportFilterMarcadorAtraso')?.value;
+        const rFLOKVal = document.getElementById('reportFilterLogisticaOk')?.value;
+
+        let fT="Filtros Aplicados: ";
+        let hF=false;
+        if(rDSV||rDEV){fT+=`Período: ${rDSV?formatDateToBR(rDSV):'*'} a ${rDEV?formatDateToBR(rDEV):'*'}. `;hF=true}
+        if(rSV){fT+=`Status: ${rSV}. `;hF=true}
+        if(rPV){fT+=`Produto: ${rPV}. `;hF=true}
+        if(rFMAVal){fT+=`Atraso: ${rFMAVal === "marcada" ? "Marcadas" : (rFMAVal === "nao_marcada" ? "Não Marcadas" : "Todos")}. `; hF=true;}
+        if(rFLOKVal){fT+=`Logística: ${rFLOKVal === "sim" ? "Pronta" : (rFLOKVal === "nao" ? "Não Pronta" : "Todas")}. `; hF=true;}
+        if(!hF){fT="Filtros: Nenhum filtro específico aplicado."}
+
+        doc.setFontSize(9);
+        doc.setTextColor(iDM ? '#bdc3c7' : '#34495e');
+        let splitFilters = doc.splitTextToSize(fT, pW - (2*m));
+        doc.text(splitFilters, m, cY);
+        cY += (splitFilters.length * 10) + 10;
+
+
+        const tbl=document.getElementById(tId);
+        if(tbl){
+            const head = [['Cód. OS', 'Solicitante', 'Cliente', 'Início', 'Término', 'Responsável', 'Logística', 'Produto']];
+            const body = [];
+            const tBd=document.getElementById(tBId);
+            if(tBd) {
+                tBd.querySelectorAll('tr').forEach(tr => {
+                    if (tr.querySelector('td[colspan="8"]')) return;
+                    const rD=[];
+                    rD.push(tr.cells[0]?.innerText || '');
+                    rD.push(tr.cells[1]?.innerText || '');
+                    rD.push(tr.cells[2]?.innerText || '');
+                    rD.push(tr.cells[3]?.innerText || '');
+                    rD.push(tr.cells[4]?.innerText || '');
+                    rD.push(tr.cells[5]?.innerText || '');
+                    rD.push(tr.cells[6]?.innerText || '');
+                    rD.push(tr.cells[7]?.innerText || '');
+                    body.push(rD);
+                });
             }
 
-            const essentialCols = ['codigo', 'cliente', 'inicio', 'termino', 'tecnico', 'solicitante'];
-            for (const colKey of essentialCols) {
-                if (colIndices[colKey] === -1) {
-                    importLog.push({ success: false, message: `Erro Crítico: A coluna essencial "${expectedHeaderMapping[colKey]}" não foi encontrada no arquivo. A importação foi interrompida.` });
-                    return { validOSs, importLog }; 
-                }
-            }
+            if(body.length>0){
+                doc.autoTable({
+                    startY:cY, head:head, body:body, theme:'striped',
+                    headStyles:{fillColor: hC, textColor:hTC, fontStyle:'bold', halign: 'center', fontSize: 8},
+                    styles:{textColor:tC, cellPadding:4, fontSize:7, overflow:'linebreak', halign: 'left'},
+                    alternateRowStyles:{fillColor: iDM?'#2c3e50':'#ecf0f1'},
+                    columnStyles: {
+                        0: { cellWidth: 60 },
+                        1: { cellWidth: 80 },
+                        2: { cellWidth: 100 },
+                        3: { cellWidth: 60 },
+                        4: { cellWidth: 60 },
+                        5: { cellWidth: 90 },
+                        6: { cellWidth: 60, halign: 'center' },
+                        7: { cellWidth: 'auto' }
+                    },
+                    didDrawPage:(data)=>{cY = data.cursor.y + 20; if(cY > pH - m - 50) cY = m; }
+                });
+                cY = doc.autoTable.previous.finalY + 30;
+            }else{doc.setFontSize(10);doc.text("Nenhum dado na tabela para os filtros atuais.",m,cY);cY+=20}
+        }else{doc.setFontSize(10);doc.text("Tabela de relatório não encontrada.",m,cY);cY+=20}
 
-            dataRows.forEach((row, rowIndex) => {
-                if (row.every(cell => cell === null || String(cell || '').trim() === '')) return;
+        const chartWidth = (pW - (3*m)) / 2;
+        const chartHeight = chartWidth * 0.60;
+        let chartX = m;
+        let chartsOnCurrentPage = 0;
 
-                const newOS = { 
-                    id: generateId(), 
-                    produto: colIndices.produto_import !== -1 && String(row[colIndices.produto_import] || '').trim() !== '' ? String(row[colIndices.produto_import]).trim() : "N/A (Importado)", 
-                    prioridade: "Média", 
-                    marcadorAtrasoManual: false,
-                    logisticaOk: false 
-                };
-                let rowIsValid = true;
-                let currentLogMessages = [];
-
-                newOS.numero = colIndices.codigo !== -1 ? String(row[colIndices.codigo] || '').trim() : '';
-                if (!newOS.numero) { currentLogMessages.push("Nº OS (Coluna 'Código') ausente ou vazia."); rowIsValid = false; }
-
-                newOS.cliente = colIndices.cliente !== -1 ? String(row[colIndices.cliente] || '').trim() : '';
-                if (!newOS.cliente) { currentLogMessages.push("Cliente (Coluna 'Cliente') ausente ou vazio."); rowIsValid = false; }
-
-                newOS.status = colIndices.status !== -1 && String(row[colIndices.status] || '').trim() !== '' ? String(row[colIndices.status]).trim() : 'Aberta';
-                const validStatuses = ["Aberta", "Em Andamento", "Pendente Informação", "Aguardando Aprovação", "Completa", "Incompleta", "Provisória", "Cancelada"]; 
-                if (!validStatuses.includes(newOS.status)) {
-                    currentLogMessages.push(`Status "${newOS.status}" inválido. Será usado "Aberta".`); newOS.status = 'Aberta';
-                }
-
-                const inicioVal = colIndices.inicio !== -1 ? row[colIndices.inicio] : null;
-                const terminoVal = colIndices.termino !== -1 ? row[colIndices.termino] : null;
-
-                const dataAberturaResult = parseAndValidateDate(inicioVal, "Data Início (Coluna 'Início')");
-                if (dataAberturaResult.error) { currentLogMessages.push(dataAberturaResult.error); rowIsValid = false; }
-                newOS.dataAbertura = dataAberturaResult.date;
-
-                const prazoFinalResult = parseAndValidateDate(terminoVal, "Data Término (Coluna 'Término')");
-                if (prazoFinalResult.error) { currentLogMessages.push(prazoFinalResult.error); rowIsValid = false; }
-                newOS.prazoFinal = prazoFinalResult.date;
-
-                if (newOS.dataAbertura && newOS.prazoFinal && new Date(newOS.prazoFinal) < new Date(newOS.dataAbertura)) {
-                    currentLogMessages.push("Data de Prazo Final não pode ser anterior à Data de Início."); rowIsValid = false;
+        for(const chartId of cCI){
+            const canvas = document.getElementById(chartId);
+            if(canvas && canvas.offsetParent !== null && canvas.width > 0 && canvas.height > 0){
+                if (cY + chartHeight + 20 > pH - m) { // Check if new page needed for chart
+                    doc.addPage();
+                    cY = m;
+                    chartX = m;
+                    chartsOnCurrentPage = 0;
+                } else if (chartsOnCurrentPage >= 2) { // Max 2 charts per row, then new line
+                    cY += chartHeight + 30;
+                    chartX = m;
+                    chartsOnCurrentPage = 0;
+                     if (cY + chartHeight + 20 > pH - m) { // Check again if new page needed after moving Y
+                        doc.addPage();
+                        cY = m;
+                    }
                 }
 
-                newOS.responsavel = colIndices.tecnico !== -1 ? String(row[colIndices.tecnico] || '').trim() : '';
-                if (!newOS.responsavel) { currentLogMessages.push("Responsável (Coluna 'Técnico') ausente ou vazio."); rowIsValid = false; }
-
-                newOS.solicitante = colIndices.solicitante !== -1 ? String(row[colIndices.solicitante] || '').trim() : '';
-                 if (!newOS.solicitante && essentialCols.includes('solicitante')) { 
-                    currentLogMessages.push("Solicitante (Coluna 'Solicitante') ausente ou vazio."); rowIsValid = false;
-                }
-
-                let descParts = [];
-                const cidadeVal = colIndices.cidade !== -1 && row[colIndices.cidade] ? String(row[colIndices.cidade]).trim() : '';
-                if (cidadeVal) descParts.push(`Cidade: ${cidadeVal}`);
-                
-                const duracaoVal = colIndices.duracao_h !== -1 && row[colIndices.duracao_h] ? String(row[colIndices.duracao_h]).trim() : '';
-                if (duracaoVal) descParts.push(`Duração: ${duracaoVal}h`);
-                
-                if (descParts.length > 0) {
-                    newOS.descricao = descParts.join(', ') + ". (Importado via Excel)";
-                } else {
-                    newOS.descricao = "(Importado via Excel)";
-                }
-                newOS.descricao += "\n";
-
-
-                if (rowIsValid) {
-                    validOSs.push(newOS);
-                } else {
-                    importLog.push({ success: false, message: `Linha ${rowIndex + 2} da planilha (${newOS.numero || 'OS sem número'}) ignorada: ${currentLogMessages.join('; ')}` });
-                }
-            });
-            return { validOSs, importLog };
-        }
-        
-        // ==========================================================================
-        // FUNÇÃO PRINCIPAL PARA LIDAR COM A IMPORTAÇÃO DE ARQUIVO EXCEL/CSV
-        // ==========================================================================
-        function handleExcelImport() {
-            const fileInput = document.getElementById('excelFileInput');
-            const currentImportStatusMessage = document.getElementById('importStatusMessage');
-            const currentImportSummaryDiv = document.getElementById('importSummary');
-            const currentImportSummaryList = document.getElementById('importSummaryList');
-
-            if (!fileInput || !currentImportStatusMessage || !currentImportSummaryDiv || !currentImportSummaryList) {
-                console.error("Elementos da interface de importação não encontrados no DOM.");
-                alert("Erro interno na interface de importação. Verifique o console para mais detalhes.");
-                return;
-            }
-
-            currentImportStatusMessage.textContent = ''; 
-            currentImportSummaryList.innerHTML = '';
-            currentImportSummaryDiv.classList.add('hidden');
-
-            if (!fileInput.files || fileInput.files.length === 0) {
-                currentImportStatusMessage.textContent = 'Por favor, selecione um arquivo Excel ou CSV para importar.';
-                currentImportStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            currentImportStatusMessage.textContent = `Iniciando processamento do arquivo: ${file.name}...`;
-            currentImportStatusMessage.className = 'mt-4 text-sm text-sky-600 dark:text-sky-400';
-
-            reader.onload = function(event) {
                 try {
-                    const data = event.target.result;
-                    if (typeof XLSX === 'undefined') {
-                        throw new Error("A biblioteca SheetJS (XLSX) não está carregada. Verifique o link CDN no HTML.");
-                    }
-                    const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF:'dd/mm/yyyy hh:mm:ss'}); 
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 , raw: false, defval: null});
+                    const imgData = canvas.toDataURL('image/png', 1.0);
+                    const chartTitleElement = canvas.closest('.card')?.querySelector('h4');
+                    const chartTitle = chartTitleElement ? chartTitleElement.innerText : chartId.replace('reportChartBy','Gráfico ');
 
-                    while (jsonData.length > 0 && jsonData[jsonData.length - 1].every(cell => cell === null || String(cell || '').trim() === '')) {
-                        jsonData.pop();
-                    }
+                    doc.setFontSize(10);
+                    doc.setTextColor(tC);
+                    doc.text(chartTitle, chartX + chartWidth/2, cY - 8, {align:'center'});
+                    doc.addImage(imgData, 'PNG', chartX, cY, chartWidth, chartHeight);
 
-                    if (jsonData.length < 2) { 
-                        throw new Error("O arquivo parece estar vazio ou contém apenas o cabeçalho. Nenhuma linha de dados para importar.");
-                    }
+                    chartX += chartWidth + m;
+                    chartsOnCurrentPage++;
 
-                    const { validOSs, importLog } = processAndValidateOSData(jsonData); 
-
-                    if (validOSs.length > 0) {
-                        ordensServico.unshift(...validOSs); 
-                        saveDataToLocalStorage();
-                        populateProductFilters(); 
-                        refreshAllViews(); 
-                        addRecentActivity(`${validOSs.length} OS(s) foram importada(s) com sucesso do arquivo: ${file.name}.`);
-                    }
-
-                    let finalMessage = validOSs.length > 0 ? `${validOSs.length} OS(s) importada(s) com sucesso! ` : "Nenhuma OS foi importada com sucesso. ";
-                    currentImportStatusMessage.className = `mt-4 text-sm ${validOSs.length > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`;
-
-                    const errorsCount = importLog.filter(log => !log.success).length;
-                    if (errorsCount > 0) {
-                        finalMessage += `${errorsCount} linha(s) da planilha continham erros e foram ignoradas. Veja o resumo abaixo para detalhes.`;
-                        currentImportStatusMessage.className = `mt-4 text-sm ${validOSs.length > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`;
-                    }
-                     if (validOSs.length === 0 && errorsCount === 0 && jsonData.slice(1).filter(r => !r.every(c => c === null || String(c || '').trim() === '')).length > 0) {
-                        finalMessage = `Arquivo lido, mas nenhuma OS válida foi processada. Verifique o formato dos dados e se as colunas essenciais (Código, Cliente, Início, Término, Técnico, Solicitante) estão corretas e presentes na primeira linha da planilha. Formato de data esperado: dd/mm/aaaa hh:mm.`;
-                        currentImportStatusMessage.className = 'mt-4 text-sm text-amber-600 dark:text-amber-400';
-                    }
-
-                    currentImportStatusMessage.textContent = finalMessage.trim();
-
-                    if (importLog.length > 0) {
-                        currentImportSummaryDiv.classList.remove('hidden');
-                        importLog.forEach(log => {
-                            const listItem = document.createElement('li');
-                            listItem.textContent = log.message;
-                            listItem.className = log.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300';
-                            currentImportSummaryList.appendChild(listItem);
-                        });
-                    }
-
-                } catch (error) {
-                    console.error("Erro detalhado ao processar o arquivo Excel/CSV:", error);
-                    currentImportStatusMessage.textContent = `Erro crítico durante o processamento: ${error.message}. Verifique o console para mais informações. Formato de data esperado dd/mm/aaaa hh:mm.`;
-                    currentImportStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                    currentImportSummaryDiv.classList.add('hidden'); 
-                } finally {
-                    fileInput.value = ''; 
-                }
-            };
-            reader.onerror = function(error) { 
-                console.error("Erro ao ler o arquivo:", error);
-                currentImportStatusMessage.textContent = 'Ocorreu um erro ao tentar ler o arquivo. Verifique se é um arquivo Excel/CSV válido e tente novamente.';
-                currentImportStatusMessage.className = 'mt-4 text-sm text-red-600 dark:text-red-400';
-                fileInput.value = ''; 
-            };
-            reader.readAsArrayBuffer(file); 
-        }
-
-        function toggleImportSection() {
-            const importSection = document.getElementById('importOsLoteContainer');
-            if (importSection) {
-                importSection.classList.toggle('hidden');
-                if (!importSection.classList.contains('hidden')) {
-                    addRecentActivity("Interface de importação em lote aberta.");
-                } else {
-                    addRecentActivity("Interface de importação em lote fechada.");
+                } catch(e) {
+                    console.error("Erro ao adicionar gráfico ao PDF:", e, chartId);
+                    doc.setTextColor(255,0,0); // Red for error
+                    doc.text(`Erro: ${chartId}`, chartX, cY);
+                    doc.setTextColor(tC); // Reset color
+                    chartX += chartWidth + m;
+                    chartsOnCurrentPage++;
                 }
             }
         }
 
-        // ==========================================================================
-        // FUNÇÕES DE NAVEGAÇÃO E EXIBIÇÃO DE VIEWS
-        // ==========================================================================
-        function showView(vId,cE){
-            document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
-            const tV=document.getElementById(vId);
-            if(tV)tV.classList.remove('hidden');
-            else{ document.getElementById('homeView').classList.remove('hidden'); console.error(`View '${vId}' não encontrada, exibindo Home.`); }
-            document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
-            if(cE&&cE.classList.contains('sidebar-item'))cE.classList.add('active');
-            
-            // Inicializa elementos específicos da view aqui, pois agora eles estão visíveis
-            if (vId === 'homeView') {
-                recentActivityList = document.getElementById('recentActivityList');
-            } else if (vId === 'osListView') {
-                importStatusMessage = document.getElementById('importStatusMessage');
-                importSummaryDiv = document.getElementById('importSummary');
-                importSummaryList = document.getElementById('importSummaryList');
-                 // Garantir que filtros salvos e de produto sejam populados se a view for osListView ou reportsView
-                populateSavedFiltersSelect();
-                populateProductFilters();
-            } else if (vId === 'reportsView') {
-                populateProductFilters(); // Produtos também são usados em relatórios
-            }
-
-
-            const importOsLoteContainer = document.getElementById('importOsLoteContainer');
-            if (vId !== 'osListView' && importOsLoteContainer && !importOsLoteContainer.classList.contains('hidden')) {
-                 importOsLoteContainer.classList.add('hidden'); 
-            }
-
-            if(vId!=='reportsView'){ 
-                if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}
-                if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}
-                if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}
-            }
-            if(vId==='homeView'){updateHomeCounts();renderOSStatusChart()}
-            else if(vId==='osListView'){applyFiltersAndRender()}
-            else if(vId==='reportsView'){generateCustomReport()} 
-            else if(vId==='settingsView'){const iPSI=document.getElementById('itemsPerPageSetting');if(iPSI)iPSI.value=ITEMS_PER_PAGE}
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(iDM ? '#95a5a6' : '#7f8c8d');
+            const footerText = `Gerado em: ${new Date().toLocaleString('pt-BR')}   |   Página ${i} de ${pageCount}`;
+            doc.text(footerText, pW - m, pH - 15, { align: 'right' });
         }
 
-        const mainSidebar = document.getElementById('sidebar');
-        const mainContentArea = document.getElementById('mainContent');
-        const mainToggleSidebarBtn = document.getElementById('toggleSidebar');
-        // const mainSidebarTitleDiv = document.getElementById('sidebar-title'); // Já definido globalmente
+        doc.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');
+        addRecentActivity(`Arquivo PDF Detalhado "${t}" exportado com sucesso.`);
+    }
 
-        if(mainToggleSidebarBtn && mainSidebar && mainContentArea && sidebarTitleDiv){ // sidebarTitleDiv é global
-            mainToggleSidebarBtn.addEventListener('click',()=>{
-                mainSidebar.classList.toggle('collapsed');
-                mainContentArea.classList.toggle('collapsed');
+    function downloadICS(osI){const os=ordensServico.find(o=>o.id===osI);if(!os){alert("OS não encontrada para gerar arquivo .ics.");return}const nF=new Date().toISOString().replace(/-/g,'').replace(/:/g,'').substring(0,15)+'Z';const d=`OS: ${os.numero}\\nCliente: ${os.cliente}\\nProduto: ${os.produto||'N/A'}\\nDescrição: ${os.descricao.replace(/\n/g,'\\n')}\\nResponsável: ${os.responsavel}\\nPrioridade: ${os.prioridade}\\nStatus: ${os.status}${os.marcadorAtrasoManual ? '\\nMARCADA: NÃO REALIZADA NO PRAZO' : ''}${os.logisticaOk ? '\\nLOGÍSTICA: OK' : ''}`;const iC=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//hacksw/handcal//NONSGML v1.0//EN","BEGIN:VEVENT",`UID:${os.id}@${window.location.hostname||'gestao-os.com'}`,`DTSTAMP:${nF}`,`DTSTART;VALUE=DATE:${os.dataAbertura.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${new Date(new Date(os.prazoFinal).getTime()+864e5).toISOString().split('T')[0].replace(/-/g,'')}`,`SUMMARY:Prazo OS ${os.numero} - ${os.cliente}`,`DESCRIPTION:${d}`,"LOCATION:Cliente "+os.cliente,"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Lembrete Prazo OS","TRIGGER:-PT1D","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");const b=new Blob([iC],{type:'text/calendar;charset=utf-8'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download=`OS_${os.numero}_${os.cliente.replace(/ /g,'_')}.ics`;document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`Arquivo .ics para OS ${os.numero} gerado.`)}
+
+    // ==========================================================================
+    // FUNÇÕES DE CONFIGURAÇÕES DA APLICAÇÃO
+    // ==========================================================================
+    function confirmClearAllData(){if(confirm("ATENÇÃO!\nTem certeza que deseja limpar TODOS os dados de Ordens de Serviço?\nEsta ação é IRREVERSÍVEL e todos os dados salvos localmente serão perdidos.")){if(confirm("CONFIRMAÇÃO FINAL:\nTodos os dados de OS serão permanentemente apagados. Deseja continuar?")){ordensServico=[];savedFilters={};localStorage.removeItem('ordensServicoData_v1_9_0');localStorage.removeItem('savedFilters_v1_9_0');addRecentActivity("Todos os dados de OS foram limpos do sistema.");currentPage=1;refreshAllViews();populateSavedFiltersSelect();alert("Todos os dados de Ordens de Serviço foram limpos com sucesso.")}else alert("Limpeza de dados cancelada pelo usuário.")}else alert("Limpeza de dados cancelada pelo usuário.")}
+    function applyItemsPerPageSetting(){const iPSI=document.getElementById('itemsPerPageSetting');if(!iPSI)return;const nIPP=parseInt(iPSI.value,10);if(nIPP>=5&&nIPP<=50){ITEMS_PER_PAGE=nIPP;currentPage=1;saveDataToLocalStorage();renderOSTable();addRecentActivity(`Número de itens por página alterado para ${ITEMS_PER_PAGE}.`)}else{alert("Por favor, insira um valor entre 5 e 50 para itens por página.");iPSI.value=ITEMS_PER_PAGE}}
+
+    // ==========================================================================
+    // INICIALIZAÇÃO DA APLICAÇÃO E EVENTOS GLOBAIS
+    // ==========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // Inicializa referências a elementos globais que dependem do DOM carregado
+        osModal = document.getElementById('osModal');
+        osForm = document.getElementById('osForm');
+        modalTitle = document.getElementById('modalTitle');
+        productDatalist = document.getElementById('productList');
+        filterProductSelect = document.getElementById('filterProduct');
+        reportProductSelect = document.getElementById('reportProduct');
+        // recentActivityList será inicializado em showView('homeView')
+        // Elementos de importação também são melhor inicializados em showView('osListView')
+
+        loadDataFromLocalStorage();
+
+        const homeSidebarItem=document.querySelector('.sidebar-item[onclick*="homeView"]');
+        showView('homeView',homeSidebarItem||null); // Chama showView que também popula filtros se necessário
+
+        const dataAberturaModalEl=document.getElementById('osDataAberturaModal');
+        if(dataAberturaModalEl&&!dataAberturaModalEl.value)dataAberturaModalEl.value=new Date().toISOString().split('T')[0];
+
+        const processExcelButton = document.getElementById('processExcelButton');
+        if (processExcelButton) {
+            processExcelButton.addEventListener('click', handleExcelImport);
+        }
+
+        if(mainToggleSidebarBtn && mainSidebar && mainContentArea && sidebarTitleDiv){
+             if(window.innerWidth<1024 && !mainSidebar.classList.contains('collapsed')){
+                mainSidebar.classList.add('collapsed');
+                mainContentArea.classList.add('collapsed');
                 const iC=mainSidebar.classList.contains('collapsed');
                 mainToggleSidebarBtn.innerHTML=iC?'<i class="fas fa-chevron-right text-lg"></i>':'<i class="fas fa-bars text-lg"></i>';
                 const tS=sidebarTitleDiv.querySelector('span');if(tS)tS.style.display=iC?'none':'inline';
                 const tI=sidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem';
-                if(!iC && document.getElementById('homeView') && !document.getElementById('homeView').classList.contains('hidden'))setTimeout(()=>{if(osStatusChartInstance)osStatusChartInstance.resize()},310);
-                if(!iC && document.getElementById('reportsView') && !document.getElementById('reportsView').classList.contains('hidden'))setTimeout(()=>{if(reportChartByProductInstance)reportChartByProductInstance.resize();if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.resize();if(reportChartByStatusInstance)reportChartByStatusInstance.resize()},310);
-            });
-        }
-        
-        // ==========================================================================
-        // LÓGICA DE FILTROS DA LISTA PRINCIPAL, HOME VIEW E ATUALIZAÇÃO GERAL
-        // ==========================================================================
-        function getFilteredOS() {
-            const fONV = document.getElementById('filterOsNumber')?.value.toLowerCase() || "";
-            const fCV = document.getElementById('filterClient')?.value.toLowerCase() || "";
-            const fSV = document.getElementById('filterStatus')?.value || "";
-            const fPV = document.getElementById('filterProduct')?.value || "";
-            const fDV = document.getElementById('filterDescription')?.value.toLowerCase() || "";
-            const fMAV = document.getElementById('filterMarcadorAtraso')?.value || "";
-            const fLOV = document.getElementById('filterLogisticaOk')?.value || ""; 
-
-            return ordensServico.filter(os => {
-                const matchNumero = (os.numero?.toLowerCase() || "").includes(fONV);
-                const matchCliente = (os.cliente?.toLowerCase() || "").includes(fCV);
-                const matchStatus = fSV ? os.status === fSV : true;
-                const matchProduto = fPV ? os.produto === fPV : true;
-                const matchDescricao = (os.descricao?.toLowerCase() || "").includes(fDV);
-                
-                let matchMarcadorAtraso = true;
-                if (fMAV === "marcada") matchMarcadorAtraso = os.marcadorAtrasoManual === true;
-                else if (fMAV === "nao_marcada") matchMarcadorAtraso = os.marcadorAtrasoManual === false;
-                
-                let matchLogisticaOk = true; 
-                if (fLOV === "sim") matchLogisticaOk = os.logisticaOk === true;
-                else if (fLOV === "nao") matchLogisticaOk = os.logisticaOk === false;
-
-                return matchNumero && matchCliente && matchStatus && matchProduto && matchDescricao && matchMarcadorAtraso && matchLogisticaOk;
-            });
-        }
-        function applyFiltersAndRender(){currentPage=1;renderOSTable()} 
-        function updateHomeCounts(){const oAE=document.getElementById('osAbertasCount');const oCME=document.getElementById('osCompletasMesCount');const oPE=document.getElementById('osPendentesCount');const oCaE=document.getElementById('osCanceladasCount');if(oAE)oAE.textContent=ordensServico.filter(os=>os.status==='Aberta').length;const h=new Date();const pDM=new Date(h.getFullYear(),h.getMonth(),1);const uDM=new Date(h.getFullYear(),h.getMonth()+1,0,23,59,59,999);if(oCME)oCME.textContent=ordensServico.filter(os=>{if(os.status!=='Completa')return false;const dC=os.dataFechamento?new Date(os.dataFechamento+'T00:00:00Z'):(os.prazoFinal?new Date(os.prazoFinal+'T00:00:00Z'):null);if(!dC)return false;return dC>=pDM&&dC<=uDM}).length;if(oPE)oPE.textContent=ordensServico.filter(os=>os.status==='Pendente Informação'||os.status==='Aguardando Aprovação').length;if(oCaE)oCaE.textContent=ordensServico.filter(os=>os.status==='Cancelada').length}
-        function renderOSStatusChart(){const cC=document.getElementById('osStatusChart');const oSCCC=document.getElementById('osStatusChartContainer');if(!cC||!oSCCC||oSCCC.offsetParent===null)return;const ctx=cC.getContext('2d');const iDM=document.documentElement.classList.contains('dark');const sC=ordensServico.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCo={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)', 'Incompleta':'rgba(201, 203, 207, 0.8)', 'Provisória': 'rgba(160, 160, 160, 0.8)'};const bC=Object.keys(sC).map(s=>sCo[s]||'rgba(201,203,207,0.8)');const d={labels:Object.keys(sC),datasets:[{label:'OS por Status',data:Object.values(sC),backgroundColor:bC,borderColor:iDM?getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim():'#fff',borderWidth:2,hoverOffset:8}]};if(osStatusChartInstance)osStatusChartInstance.destroy();osStatusChartInstance=new Chart(ctx,{type:'doughnut',data:d,options:{responsive:true,maintainAspectRatio:false,animation:{animateScale:true,animateRotate:true},plugins:{legend:{position:'bottom',labels:{padding:15,font:{size:11},color:iDM?getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim():'#1e293b'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.9)':'rgba(255,255,255,0.9)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,callbacks:{label:function(c){const p=((c.parsed/c.chart.getDatasetMeta(0).total)*100).toFixed(1);return`${c.label||''}: ${c.parsed||0} (${p}%)`}}}}}})}
-        function navigateToOsListWithFilter(sF,fCMP=false){const fSI=document.getElementById('filterStatus');const fONI=document.getElementById('filterOsNumber');const fCI=document.getElementById('filterClient');const fPI=document.getElementById('filterProduct');const fDI=document.getElementById('filterDescription'); const fMAI = document.getElementById('filterMarcadorAtraso'); const fLOKI = document.getElementById('filterLogisticaOk'); if(fONI)fONI.value="";if(fCI)fCI.value="";if(fPI)fPI.value="";if(fDI)fDI.value=""; if(fMAI) fMAI.value = ""; if(fLOKI) fLOKI.value=""; if(fSI){if(Array.isArray(sF)){fSI.value="";addRecentActivity("Visualizando OS. Refine os filtros para visualizar OS pendentes.")}else{fSI.value=sF}}showView('osListView',document.querySelector('.sidebar-item[onclick*="osListView"]'))}
-        function refreshAllViews(){renderOSTable();updateHomeCounts();if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))renderOSStatusChart();const rVE=document.getElementById('reportsView');if(rVE&&!rVE.classList.contains('hidden'))generateCustomReport()}
-
-
-        // ==========================================================================
-        // RELATÓRIOS PERSONALIZADOS
-        // ==========================================================================
-        function generateCustomReport() {
-            const rTB = document.getElementById('reportsTableBody');
-            const rDSI = document.getElementById('reportDateStartFilter');
-            const rDEI = document.getElementById('reportDateEndFilter');
-            const rSI = document.getElementById('reportStatusFilter');
-            const rPI = document.getElementById('reportProductFilter');
-            const rFMAI = document.getElementById('reportFilterMarcadorAtraso'); 
-            const rFLOKI = document.getElementById('reportFilterLogisticaOk');
-
-            if (!rTB || !rDSI || !rDEI || !rSI || !rPI || !rFMAI || !rFLOKI) return;
-            rTB.innerHTML = ''; 
-            if (reportChartByProductInstance) { reportChartByProductInstance.destroy(); reportChartByProductInstance = null; }
-            if (reportChartByUsuarioInstance) { reportChartByUsuarioInstance.destroy(); reportChartByUsuarioInstance = null; }
-            if (reportChartByStatusInstance) { reportChartByStatusInstance.destroy(); reportChartByStatusInstance = null; }
-            document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c => {
-                const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
-            });
-
-            const dSV = rDSI.value;
-            const dEV = rDEI.value;
-            const sV = rSI.value;
-            const pV = rPI.value;
-            const fMAVal = rFMAI.value; 
-            const fLOKVal = rFLOKI.value;
-
-            if (dSV && dEV && new Date(dEV) < new Date(dSV)) {
-                alert("A Data Final do relatório não pode ser anterior à Data Inicial.");
-                rTB.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-red-500">Erro: Data Final anterior à Data Inicial.</td></tr>';
-                return;
             }
+        }
+        const versionElement = document.querySelector('.sidebar-item span:last-of-type');
+        const versionMatch = versionElement ? versionElement.textContent.match(/(\d+\.\d+\.\d+)/) : null;
+        const version = versionMatch ? versionMatch[0] : '1.9.0';
+        addRecentActivity(`Sistema V${version} inicializado.`);
+        updateLoginUI();
 
-            const fRD = ordensServico.filter(os => {
-                let matchPrazo = true;
-                if (os.prazoFinal) { 
-                    const prazoFinalDate = new Date(os.prazoFinal + "T00:00:00Z"); 
-                    if (dSV && dEV) { 
-                        matchPrazo = prazoFinalDate >= new Date(dSV + "T00:00:00Z") && prazoFinalDate <= new Date(dEV + "T23:59:59Z");
-                    } else if (dSV) { 
-                        matchPrazo = prazoFinalDate >= new Date(dSV + "T00:00:00Z");
-                    } else if (dEV) { 
-                        matchPrazo = prazoFinalDate <= new Date(dEV + "T23:59:59Z");
+        // Adiciona listener ao formulário de OS
+        if (osForm) {
+            osForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                try {
+                    const id = document.getElementById('osId').value;
+                    const osD = { // osData
+                        numero: document.getElementById('osNumeroModal').value.trim(),
+                        cliente: document.getElementById('osClienteModal').value.trim(),
+                        produto: document.getElementById('osProdutoModal').value.trim(),
+                        solicitante: document.getElementById('osSolicitanteModal').value.trim(),
+                        descricao: document.getElementById('osDescricaoModal').value.trim(),
+                        dataAbertura: document.getElementById('osDataAberturaModal').value, // YYYY-MM-DD
+                        prazoFinal: document.getElementById('osPrazoFinalModal').value,   // YYYY-MM-DD
+                        responsavel: document.getElementById('osResponsavelModal').value.trim(),
+                        status: document.getElementById('osStatusModal').value,
+                        prioridade: document.getElementById('osPrioridadeModal').value,
+                        marcadorAtrasoManual: document.getElementById('osMarcadorAtrasoModal').checked,
+                        logisticaOk: document.getElementById('osLogisticaOkModal').checked
+                    };
+                    if (!osD.numero || !osD.cliente || !osD.produto || !osD.descricao || !osD.dataAbertura || !osD.prazoFinal || !osD.responsavel || !osD.status || !osD.prioridade) {
+                        alert("Por favor, preencha todos os campos obrigatórios (*).");
+                        return;
                     }
-                } else if (dSV || dEV) { 
-                    matchPrazo = false;
-                }
-
-                const matchStatus = sV ? os.status === sV : true; 
-                const matchProduct = pV ? os.produto === pV : true; 
-                
-                let matchMarcadorAtraso = true; 
-                if (fMAVal === "marcada") matchMarcadorAtraso = os.marcadorAtrasoManual === true;
-                else if (fMAVal === "nao_marcada") matchMarcadorAtraso = os.marcadorAtrasoManual === false;
-                
-                let matchLogistica = true;
-                if (fLOKVal === "sim") matchLogistica = os.logisticaOk === true;
-                else if (fLOKVal === "nao") matchLogistica = os.logisticaOk === false;
-
-                return matchPrazo && matchStatus && matchProduct && matchMarcadorAtraso && matchLogistica;
-            });
-
-            if (fRD.length === 0) {
-                rTB.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma Ordem de Serviço encontrada para os filtros selecionados.</td></tr>';
-                return;
-            }
-
-            fRD.sort((a, b) => new Date(a.dataAbertura) - new Date(b.dataAbertura)); 
-            fRD.forEach(os => {
-                const rw = rTB.insertRow();
-                rw.className = 'table-row hover:bg-slate-100 dark:hover:bg-slate-700';
-                
-                rw.innerHTML = `<td class="py-3 px-4 text-sm">${os.numero}</td>
-                                <td class="py-3 px-4 text-sm">${os.solicitante || 'N/A'}</td>
-                                <td class="py-3 px-4 text-sm">${os.cliente}</td>
-                                <td class="py-3 px-4 text-sm">${formatDateToBR(os.dataAbertura)}</td>
-                                <td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td>
-                                <td class="py-3 px-4 text-sm">${os.responsavel}</td>
-                                <td class="py-3 px-4 text-sm">${os.logisticaOk ? 'Sim' : 'Não'}</td>
-                                <td class="py-3 px-4 text-sm">${os.produto || 'N/A'}</td>`;
-            });
-            addRecentActivity("Relatório personalizado gerado com sucesso.");
-            renderReportCharts(fRD); 
-        }
-
-        function renderReportCharts(d){const iDM=document.documentElement.classList.contains('dark');const cCO=(tTJS=null)=>({responsive:true,maintainAspectRatio:false,animation:{duration:1e3,easing:'easeInOutQuart',animateScale:true,animateRotate:true},plugins:{legend:{display:true,position:'bottom',labels:{color:iDM?'#cbd5e1':'#1e293b',padding:15,boxWidth:12,font:{size:11}}},title:{display:!!tTJS,text:tTJS,color:iDM?'#cbd5e1':'#1e293b',font:{size:14,weight:'normal'}},tooltip:{backgroundColor:iDM?'rgba(30,41,59,0.95)':'rgba(255,255,255,0.95)',titleColor:iDM?'#f1f5f9':'#1e293b',bodyColor:iDM?'#cbd5e1':'#334155',borderColor:iDM?'#475569':'#e2e8f0',borderWidth:1,padding:10,callbacks:{label:function(c){const t=c.chart.getDatasetMeta(0).total;const p=t>0?((c.parsed/t)*100).toFixed(1)+'%':'0%';return`${c.label||''}: ${c.parsed||0} (${p})`}}}},scales:{y:{beginAtZero:true,ticks:{color:iDM?'#94a3b8':'#475569',stepSize:1,precision:0},grid:{color:iDM?'#334155':'#e2e8f0',drawBorder:false}},x:{ticks:{color:iDM?'#94a3b8':'#475569',autoSkip:true,maxRotation:45,minRotation:0},grid:{display:false}}}});const cCl=['rgba(54,162,235,0.8)','rgba(255,159,64,0.8)','rgba(75,192,192,0.8)','rgba(255,99,132,0.8)','rgba(153,102,255,0.8)','rgba(255,205,86,0.8)','rgba(123,239,178,0.8)','rgba(250,130,49,0.8)','rgba(179,57,57,0.8)','rgba(72,126,176,0.8)','rgba(246,229,141,0.8)','rgba(113,88,226,0.8)'];const cBC=iDM?'rgba(15,23,42,0.8)':'rgba(255,255,255,0.8)';const pC=d.reduce((acc,os)=>{acc[os.produto||'N/Esp.']=(acc[os.produto||'N/Esp.']||0)+1;return acc},{});if(document.getElementById('reportChartByProduct')){if(reportChartByProductInstance)reportChartByProductInstance.destroy();reportChartByProductInstance=new Chart(document.getElementById('reportChartByProduct').getContext('2d'),{type:'bar',data:{labels:Object.keys(pC),datasets:[{label:'OS',data:Object.values(pC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5}]},options:cCO()})}const uC=d.reduce((acc,os)=>{acc[os.responsavel||'N/Atrib.']=(acc[os.responsavel||'N/Atrib.']||0)+1;return acc},{});if(document.getElementById('reportChartByUsuario')){if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=new Chart(document.getElementById('reportChartByUsuario').getContext('2d'),{type:'pie',data:{labels:Object.keys(uC),datasets:[{label:'OS',data:Object.values(uC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}const sCR=d.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{});const sCM={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)', 'Incompleta':'rgba(201, 203, 207, 0.8)', 'Provisória': 'rgba(160, 160, 160, 0.8)'};if(document.getElementById('reportChartByStatus')){if(reportChartByStatusInstance)reportChartByStatusInstance.destroy();reportChartByStatusInstance=new Chart(document.getElementById('reportChartByStatus').getContext('2d'),{type:'doughnut',data:{labels:Object.keys(sCR),datasets:[{label:'OS',data:Object.values(sCR),backgroundColor:Object.keys(sCR).map((s,i)=>sCM[s]||cCl[i%cCl.length]),borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:cCO()})}}
-        const clearReportOnChange=()=>{if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="8" class="text-center py-10 text-slate-500 dark:text-slate-400">Os filtros foram alterados. Clique em "Gerar Relatório" para atualizar.</td></tr>';if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null}if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null}if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null}document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};
-
-
-        // ==========================================================================
-        // FUNÇÕES DE EXPORTAÇÃO (CSV, PDF)
-        // ==========================================================================
-        function exportTableToCSV(tId,fN){let c=[];const t=document.getElementById(tId);if(!t){console.error(`Tabela com ID '${tId}' não encontrada para exportação CSV.`);return}const rS=t.querySelectorAll("tr");for(const r of rS){const cS=r.querySelectorAll("td,th");const rD=[];for(const col of cS){let cT=col.innerText;if(col.querySelector('select'))cT=col.querySelector('select').value;else if(col.querySelector('span[class*="priority-"]'))cT=col.querySelector('span').innerText; if(col.querySelector('.fa-flag')) cT = "[M.Atraso] " + cT.replace(/\[M\.Atraso\]\s*/, '').trim(); if(col.querySelector('.fa-truck')) cT = (col.querySelector('.fa-truck.text-teal-500') ? "[L.OK]" : "[L.Pendente]") + cT.replace(/\[L\.(OK|Pendente)\]\s*/, '').trim(); rD.push('"'+cT.replace(/\s+/g,' ').trim().replace(/"/g,'""')+'"')}c.push(rD.join(","))}const cF=new Blob(["\uFEFF"+c.join("\n")],{type:"text/csv;charset=utf-8;"});const l=document.createElement("a");l.href=URL.createObjectURL(cF);l.download=fN;l.style.display="none";document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`Arquivo CSV "${fN}" exportado com sucesso.`)}
-        function exportTableToPDF(tId,t,tBId,iWR=false){const{jsPDF}=window.jspdf;const d=new jsPDF({orientation:iWR?'landscape':'portrait',unit:'pt',format:'a4'});const iDM=document.documentElement.classList.contains('dark');const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';let cY=40;d.setFontSize(18);d.setTextColor(tC);d.text(t,d.internal.pageSize.getWidth()/2,cY,{align:'center'});cY+=30;const tbl=document.getElementById(tId);if(tbl){const h=[];tbl.querySelectorAll('thead th').forEach(th=>{if(th.innerText.toLowerCase() !== 'ações' && !th.querySelector('input[type=checkbox]')) h.push(th.innerText)});const b=[];const tBd=document.getElementById(tBId);if(tBd)tBd.querySelectorAll('tr').forEach(tr=>{const rD=[];tr.querySelectorAll('td').forEach((td, index)=>{let ths = Array.from(tbl.querySelectorAll('thead th')); if(ths[index] && (ths[index].innerText.toLowerCase() === 'ações' || ths[index].querySelector('input[type=checkbox]'))) return; let cT=td.innerText;if(td.querySelector('select'))cT=td.querySelector('select').value;else if(td.querySelector('span[class*="priority-"]'))cT=td.querySelector('span').innerText; if(td.querySelector('.fa-flag')) cT = "[M.A] " + cT.replace(/\[M\.A\]\s*/, '').trim(); if(td.querySelector('.fa-truck')) cT = (td.querySelector('.fa-truck.text-teal-500') ? "Sim" : "Não"); rD.push(cT)});if(rD.length > 0)b.push(rD)});if(b.length>0&&!(b[0].length===1&&b[0][0].includes("Nenhuma OS encontrada"))){d.autoTable({startY:cY,head:[h],body:b,theme:'grid',headStyles:{fillColor:hC,textColor:hTC,fontStyle:'bold'},styles:{textColor:tC,cellPadding:5,fontSize:iWR?7:8,overflow:'linebreak'},alternateRowStyles:{fillColor:iDM?'#1e293b':'#f9f9f9'}})}else d.setFontSize(12).text("Nenhum dado na tabela para exportar.",40,cY)}else d.setFontSize(12).text("Tabela não encontrada para exportação.",40,cY);const gD=`Gerado em: ${new Date().toLocaleString('pt-BR')}`;d.setFontSize(8).text(gD,d.internal.pageSize.getWidth()-40,d.internal.pageSize.getHeight()-20,{align:'right'});d.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');addRecentActivity(`Arquivo PDF "${t}" exportado com sucesso.`)}
-        
-        async function exportReportToPDFWithCharts(tId,t,tBId,cCI=[]){
-            const{jsPDF}=window.jspdf;
-            const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
-            const iDM=document.documentElement.classList.contains('dark');
-            const tC=iDM?'#FFF':'#000';const hC=iDM?'#334155':'#F2F2F2';const hTC=iDM?'#FFF':'#333';
-            const pH=doc.internal.pageSize.getHeight();
-            const pW=doc.internal.pageSize.getWidth();
-            const m=40; 
-            let cY=m;
-
-            doc.setFontSize(16);
-            doc.setTextColor(tC);
-            doc.text(t, pW/2, cY, {align:'center'});
-            cY+=25;
-
-            const rDSV=document.getElementById('reportDateStartFilter')?.value;
-            const rDEV=document.getElementById('reportDateEndFilter')?.value;
-            const rSV=document.getElementById('reportStatusFilter')?.value;
-            const rPV=document.getElementById('reportProductFilter')?.value; 
-            const rFMAVal = document.getElementById('reportFilterMarcadorAtraso')?.value;
-            const rFLOKVal = document.getElementById('reportFilterLogisticaOk')?.value;
-
-            let fT="Filtros Aplicados: ";
-            let hF=false;
-            if(rDSV||rDEV){fT+=`Período: ${rDSV?formatDateToBR(rDSV):'*'} a ${rDEV?formatDateToBR(rDEV):'*'}. `;hF=true}
-            if(rSV){fT+=`Status: ${rSV}. `;hF=true}
-            if(rPV){fT+=`Produto: ${rPV}. `;hF=true} 
-            if(rFMAVal){fT+=`Atraso: ${rFMAVal === "marcada" ? "Marcadas" : (rFMAVal === "nao_marcada" ? "Não Marcadas" : "Todos")}. `; hF=true;}
-            if(rFLOKVal){fT+=`Logística: ${rFLOKVal === "sim" ? "Pronta" : (rFLOKVal === "nao" ? "Não Pronta" : "Todas")}. `; hF=true;}
-            if(!hF){fT="Filtros: Nenhum filtro específico aplicado."} 
-            
-            doc.setFontSize(9);
-            doc.setTextColor(iDM ? '#bdc3c7' : '#34495e');
-            let splitFilters = doc.splitTextToSize(fT, pW - (2*m));
-            doc.text(splitFilters, m, cY);
-            cY += (splitFilters.length * 10) + 10;
-
-
-            const tbl=document.getElementById(tId);
-            if(tbl){
-                const head = [['Cód. OS', 'Solicitante', 'Cliente', 'Início', 'Término', 'Responsável', 'Logística', 'Produto']];
-                const body = [];
-                const tBd=document.getElementById(tBId);
-                if(tBd) {
-                    tBd.querySelectorAll('tr').forEach(tr => {
-                        if (tr.querySelector('td[colspan="8"]')) return; 
-                        const rD=[];
-                        rD.push(tr.cells[0]?.innerText || ''); 
-                        rD.push(tr.cells[1]?.innerText || ''); 
-                        rD.push(tr.cells[2]?.innerText || ''); 
-                        rD.push(tr.cells[3]?.innerText || ''); 
-                        rD.push(tr.cells[4]?.innerText || ''); 
-                        rD.push(tr.cells[5]?.innerText || ''); 
-                        rD.push(tr.cells[6]?.innerText || ''); 
-                        rD.push(tr.cells[7]?.innerText || ''); 
-                        body.push(rD);
-                    });
-                }
-
-                if(body.length>0){
-                    doc.autoTable({
-                        startY:cY, head:head, body:body, theme:'striped', 
-                        headStyles:{fillColor: hC, textColor:hTC, fontStyle:'bold', halign: 'center', fontSize: 8},
-                        styles:{textColor:tC, cellPadding:4, fontSize:7, overflow:'linebreak', halign: 'left'},
-                        alternateRowStyles:{fillColor: iDM?'#2c3e50':'#ecf0f1'},
-                        columnStyles: { 
-                            0: { cellWidth: 60 }, 
-                            1: { cellWidth: 80 }, 
-                            2: { cellWidth: 100 }, 
-                            3: { cellWidth: 60 }, 
-                            4: { cellWidth: 60 }, 
-                            5: { cellWidth: 90 }, 
-                            6: { cellWidth: 60, halign: 'center' }, 
-                            7: { cellWidth: 'auto' }  
-                        },
-                        didDrawPage:(data)=>{cY = data.cursor.y + 20; if(cY > pH - m - 50) cY = m; } 
-                    });
-                    cY = doc.autoTable.previous.finalY + 30;
-                }else{doc.setFontSize(10);doc.text("Nenhum dado na tabela para os filtros atuais.",m,cY);cY+=20}
-            }else{doc.setFontSize(10);doc.text("Tabela de relatório não encontrada.",m,cY);cY+=20}
-            
-            const chartWidth = (pW - (3*m)) / 2; 
-            const chartHeight = chartWidth * 0.60;
-            let chartX = m;
-            let chartsOnCurrentPage = 0;
-
-            for(const chartId of cCI){
-                const canvas = document.getElementById(chartId);
-                if(canvas && canvas.offsetParent !== null && canvas.width > 0 && canvas.height > 0){
-                    if (cY + chartHeight + 20 > pH - m) { 
-                        doc.addPage();
-                        cY = m;
-                        chartX = m;
-                        chartsOnCurrentPage = 0;
-                    } else if (chartsOnCurrentPage >= 2) { 
-                        cY += chartHeight + 30; 
-                        chartX = m;
-                        chartsOnCurrentPage = 0;
-                         if (cY + chartHeight + 20 > pH - m) { 
-                            doc.addPage();
-                            cY = m;
-                        }
+                    if (new Date(osD.prazoFinal) < new Date(osD.dataAbertura)) {
+                        alert("A Data de Prazo Final não pode ser anterior à Data de Abertura.");
+                        return;
                     }
-                    
-                    try {
-                        const imgData = canvas.toDataURL('image/png', 1.0);
-                        const chartTitleElement = canvas.closest('.card')?.querySelector('h4');
-                        const chartTitle = chartTitleElement ? chartTitleElement.innerText : chartId.replace('reportChartBy','Gráfico ');
-                        
-                        doc.setFontSize(10);
-                        doc.setTextColor(tC);
-                        doc.text(chartTitle, chartX + chartWidth/2, cY - 8, {align:'center'});
-                        doc.addImage(imgData, 'PNG', chartX, cY, chartWidth, chartHeight);
-                        
-                        chartX += chartWidth + m;
-                        chartsOnCurrentPage++;
-
-                    } catch(e) {
-                        console.error("Erro ao adicionar gráfico ao PDF:", e, chartId);
-                        doc.setTextColor(255,0,0);
-                        doc.text(`Erro: ${chartId}`, chartX, cY);
-                        doc.setTextColor(tC);
-                        chartX += chartWidth + m; 
-                        chartsOnCurrentPage++;
-                    }
-                }
-            }
-
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setTextColor(iDM ? '#95a5a6' : '#7f8c8d');
-                const footerText = `Gerado em: ${new Date().toLocaleString('pt-BR')}   |   Página ${i} de ${pageCount}`;
-                doc.text(footerText, pW - m, pH - 15, { align: 'right' });
-            }
-
-            doc.save(t.replace(/[^a-z0-9_]+/gi,'_').toLowerCase()+'.pdf');
-            addRecentActivity(`Arquivo PDF Detalhado "${t}" exportado com sucesso.`);
-        }
-
-        function downloadICS(osI){const os=ordensServico.find(o=>o.id===osI);if(!os){alert("OS não encontrada para gerar arquivo .ics.");return}const nF=new Date().toISOString().replace(/-/g,'').replace(/:/g,'').substring(0,15)+'Z';const d=`OS: ${os.numero}\\nCliente: ${os.cliente}\\nProduto: ${os.produto||'N/A'}\\nDescrição: ${os.descricao.replace(/\n/g,'\\n')}\\nResponsável: ${os.responsavel}\\nPrioridade: ${os.prioridade}\\nStatus: ${os.status}${os.marcadorAtrasoManual ? '\\nMARCADA: NÃO REALIZADA NO PRAZO' : ''}${os.logisticaOk ? '\\nLOGÍSTICA: OK' : ''}`;const iC=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//hacksw/handcal//NONSGML v1.0//EN","BEGIN:VEVENT",`UID:${os.id}@${window.location.hostname||'gestao-os.com'}`,`DTSTAMP:${nF}`,`DTSTART;VALUE=DATE:${os.dataAbertura.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${new Date(new Date(os.prazoFinal).getTime()+864e5).toISOString().split('T')[0].replace(/-/g,'')}`,`SUMMARY:Prazo OS ${os.numero} - ${os.cliente}`,`DESCRIPTION:${d}`,"LOCATION:Cliente "+os.cliente,"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Lembrete Prazo OS","TRIGGER:-PT1D","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");const b=new Blob([iC],{type:'text/calendar;charset=utf-8'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download=`OS_${os.numero}_${os.cliente.replace(/ /g,'_')}.ics`;document.body.appendChild(l);l.click();document.body.removeChild(l);addRecentActivity(`Arquivo .ics para OS ${os.numero} gerado.`)}
-
-        // ==========================================================================
-        // FUNÇÕES DE CONFIGURAÇÕES DA APLICAÇÃO
-        // ==========================================================================
-        function confirmClearAllData(){if(confirm("ATENÇÃO!\nTem certeza que deseja limpar TODOS os dados de Ordens de Serviço?\nEsta ação é IRREVERSÍVEL e todos os dados salvos localmente serão perdidos.")){if(confirm("CONFIRMAÇÃO FINAL:\nTodos os dados de OS serão permanentemente apagados. Deseja continuar?")){ordensServico=[];savedFilters={};localStorage.removeItem('ordensServicoData_v1_9_0');localStorage.removeItem('savedFilters_v1_9_0');addRecentActivity("Todos os dados de OS foram limpos do sistema.");currentPage=1;refreshAllViews();populateSavedFiltersSelect();alert("Todos os dados de Ordens de Serviço foram limpos com sucesso.")}else alert("Limpeza de dados cancelada pelo usuário.")}else alert("Limpeza de dados cancelada pelo usuário.")}
-        function applyItemsPerPageSetting(){const iPSI=document.getElementById('itemsPerPageSetting');if(!iPSI)return;const nIPP=parseInt(iPSI.value,10);if(nIPP>=5&&nIPP<=50){ITEMS_PER_PAGE=nIPP;currentPage=1;saveDataToLocalStorage();renderOSTable();addRecentActivity(`Número de itens por página alterado para ${ITEMS_PER_PAGE}.`)}else{alert("Por favor, insira um valor entre 5 e 50 para itens por página.");iPSI.value=ITEMS_PER_PAGE}}
-
-        // ==========================================================================
-        // INICIALIZAÇÃO DA APLICAÇÃO E EVENTOS GLOBAIS
-        // ==========================================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inicializa referências a elementos globais que dependem do DOM carregado
-            osModal = document.getElementById('osModal');
-            osForm = document.getElementById('osForm');
-            modalTitle = document.getElementById('modalTitle');
-            productDatalist = document.getElementById('productList');
-            filterProductSelect = document.getElementById('filterProduct');
-            reportProductSelect = document.getElementById('reportProduct');
-            // recentActivityList será inicializado em showView('homeView')
-            // Elementos de importação também são melhor inicializados em showView('osListView') ou aqui se fixos
-
-            loadDataFromLocalStorage(); 
-            
-            const homeSidebarItem=document.querySelector('.sidebar-item[onclick*="homeView"]');
-            showView('homeView',homeSidebarItem||null); // Chama showView que também popula filtros se necessário
-            
-            const dataAberturaModalEl=document.getElementById('osDataAberturaModal');
-            if(dataAberturaModalEl&&!dataAberturaModalEl.value)dataAberturaModalEl.value=new Date().toISOString().split('T')[0];
-
-            const processExcelButton = document.getElementById('processExcelButton');
-            if (processExcelButton) {
-                processExcelButton.addEventListener('click', handleExcelImport);
-            }
-            
-            if(mainToggleSidebarBtn && mainSidebar && mainContentArea && sidebarTitleDiv){ // sidebarTitleDiv é global
-                 if(window.innerWidth<1024 && !mainSidebar.classList.contains('collapsed')){ 
-                    mainSidebar.classList.add('collapsed');
-                    mainContentArea.classList.add('collapsed');
-                    const iC=mainSidebar.classList.contains('collapsed');
-                    mainToggleSidebarBtn.innerHTML=iC?'<i class="fas fa-chevron-right text-lg"></i>':'<i class="fas fa-bars text-lg"></i>';
-                    const tS=sidebarTitleDiv.querySelector('span');if(tS)tS.style.display=iC?'none':'inline';
-                    const tI=sidebarTitleDiv.querySelector('i');if(tI)tI.style.marginRight=iC?'0':'0.5rem';
-                }
-            }
-            const versionElement = document.querySelector('.sidebar-item span:last-of-type'); // Assume que é o último span no último .sidebar-item
-            const versionMatch = versionElement ? versionElement.textContent.match(/(\d+\.\d+\.\d+)/) : null;
-            const version = versionMatch ? versionMatch[0] : '1.9.0'; 
-            addRecentActivity(`Sistema V${version} inicializado.`);
-            updateLoginUI(); 
-
-            // Adiciona listener ao formulário de OS
-            if (osForm) {
-                osForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    try {
-                        const id = document.getElementById('osId').value;
-                        const osD = {
-                            numero: document.getElementById('osNumeroModal').value.trim(),
-                            cliente: document.getElementById('osClienteModal').value.trim(),
-                            produto: document.getElementById('osProdutoModal').value.trim(),
-                            solicitante: document.getElementById('osSolicitanteModal').value.trim(),
-                            descricao: document.getElementById('osDescricaoModal').value.trim(),
-                            dataAbertura: document.getElementById('osDataAberturaModal').value,
-                            prazoFinal: document.getElementById('osPrazoFinalModal').value,
-                            responsavel: document.getElementById('osResponsavelModal').value.trim(),
-                            status: document.getElementById('osStatusModal').value,
-                            prioridade: document.getElementById('osPrioridadeModal').value,
-                            marcadorAtrasoManual: document.getElementById('osMarcadorAtrasoModal').checked,
-                            logisticaOk: document.getElementById('osLogisticaOkModal').checked 
-                        };
-                        if (!osD.numero || !osD.cliente || !osD.produto || !osD.descricao || !osD.dataAbertura || !osD.prazoFinal || !osD.responsavel || !osD.status || !osD.prioridade) {
-                            alert("Por favor, preencha todos os campos obrigatórios (*).");
-                            return;
-                        }
-                        if (new Date(osD.prazoFinal) < new Date(osD.dataAbertura)) {
-                            alert("A Data de Prazo Final não pode ser anterior à Data de Abertura.");
-                            return;
-                        }
-                        if (id) {
-                            const osIX = ordensServico.findIndex(o => o.id === id);
-                            if (osIX !== -1) {
-                                ordensServico[osIX] = { ...ordensServico[osIX], ...osD };
-                                addRecentActivity(`OS ${osD.numero} foi editada.`);
-                            } else {
-                                alert("Erro ao tentar editar a OS. OS não encontrada.");
-                                return;
-                            }
+                    if (id) { // Editando OS existente
+                        const osIX = ordensServico.findIndex(o => o.id === id);
+                        if (osIX !== -1) {
+                            ordensServico[osIX] = { ...ordensServico[osIX], ...osD }; // Mantém o ID e outras props não editadas
+                            addRecentActivity(`OS ${osD.numero} foi editada.`);
                         } else {
-                            osD.id = generateId();
-                            ordensServico.unshift(osD);
-                            addRecentActivity(`Nova OS ${osD.numero} foi adicionada.`);
+                            alert("Erro ao tentar editar a OS. OS não encontrada.");
+                            return;
                         }
-                        saveDataToLocalStorage();
-                        populateProductFilters(); // Garante que o datalist e selects sejam atualizados
-                        closeOSModal();
-                        currentPage = 1;
-                        refreshAllViews();
-                    } catch (er) {
-                        console.error("Erro ao salvar OS:", er);
-                        alert("Ocorreu um erro ao tentar salvar a Ordem de Serviço.");
+                    } else { // Adicionando nova OS
+                        osD.id = generateId(); // Gera novo ID
+                        ordensServico.unshift(osD); // Adiciona no início da lista
+                        addRecentActivity(`Nova OS ${osD.numero} foi adicionada.`);
                     }
-                });
-            }
+                    saveDataToLocalStorage();
+                    populateProductFilters(); // Atualiza datalist e selects de produto
+                    closeOSModal();
+                    currentPage = 1; // Volta para a primeira página da lista
+                    refreshAllViews(); // Atualiza todas as visualizações relevantes
+                } catch (er) {
+                    console.error("Erro ao salvar OS:", er);
+                    alert("Ocorreu um erro ao tentar salvar a Ordem de Serviço.");
+                }
+            });
+        }
 
-            // Event listeners para filtros da lista de OS
-            const filterOsNumEl = document.getElementById('filterOsNumber');if(filterOsNumEl)filterOsNumEl.addEventListener('input',applyFiltersAndRender);
-            const filterClientEl = document.getElementById('filterClient');if(filterClientEl)filterClientEl.addEventListener('input',applyFiltersAndRender);
-            const filterStatusEl = document.getElementById('filterStatus');if(filterStatusEl)filterStatusEl.addEventListener('change',applyFiltersAndRender);
-            const filterProductSelectGlobal = document.getElementById('filterProduct');if(filterProductSelectGlobal)filterProductSelectGlobal.addEventListener('change',applyFiltersAndRender);
-            const filterDescriptionInput = document.getElementById('filterDescription');if(filterDescriptionInput)filterDescriptionInput.addEventListener('input',applyFiltersAndRender);
-            const filterMarcadorAtrasoEl = document.getElementById('filterMarcadorAtraso'); if(filterMarcadorAtrasoEl) filterMarcadorAtrasoEl.addEventListener('change', applyFiltersAndRender);
-            const filterLogisticaOkEl = document.getElementById('filterLogisticaOk'); if(filterLogisticaOkEl) filterLogisticaOkEl.addEventListener('change', applyFiltersAndRender);
+        // Event listeners para filtros da lista de OS (aplicam ao digitar/mudar)
+        const filterOsNumEl = document.getElementById('filterOsNumber');if(filterOsNumEl)filterOsNumEl.addEventListener('input',applyFiltersAndRender);
+        const filterClientEl = document.getElementById('filterClient');if(filterClientEl)filterClientEl.addEventListener('input',applyFiltersAndRender);
+        const filterStatusEl = document.getElementById('filterStatus');if(filterStatusEl)filterStatusEl.addEventListener('change',applyFiltersAndRender);
+        const filterProductSelectGlobal = document.getElementById('filterProduct');if(filterProductSelectGlobal)filterProductSelectGlobal.addEventListener('change',applyFiltersAndRender);
+        const filterDescriptionInput = document.getElementById('filterDescription');if(filterDescriptionInput)filterDescriptionInput.addEventListener('input',applyFiltersAndRender);
+        const filterMarcadorAtrasoEl = document.getElementById('filterMarcadorAtraso'); if(filterMarcadorAtrasoEl) filterMarcadorAtrasoEl.addEventListener('change', applyFiltersAndRender);
+        const filterLogisticaOkEl = document.getElementById('filterLogisticaOk'); if(filterLogisticaOkEl) filterLogisticaOkEl.addEventListener('change', applyFiltersAndRender);
 
-            // Event listeners para filtros de Relatórios
-            const rDSL=document.getElementById('reportDateStartFilter');if(rDSL)rDSL.addEventListener('change',clearReportOnChange);
-            const rDEL=document.getElementById('reportDateEndFilter');if(rDEL)rDEL.addEventListener('change',clearReportOnChange);
-            const rSL=document.getElementById('reportStatusFilter');if(rSL&&!rSL.getAttribute('data-listener-set')){rSL.addEventListener('change',clearReportOnChange);rSL.setAttribute('data-listener-set','true')}
-            const rPL=document.getElementById('reportProductFilter');if(rPL&&!rPL.getAttribute('data-listener-set')){rPL.addEventListener('change',clearReportOnChange);rPL.setAttribute('data-listener-set','true')} 
-            const rFMAIL = document.getElementById('reportFilterMarcadorAtraso'); if(rFMAIL && !rFMAIL.getAttribute('data-listener-set-report')) {rFMAIL.addEventListener('change', clearReportOnChange);rFMAIL.setAttribute('data-listener-set-report','true')}
-            const rFLOK = document.getElementById('reportFilterLogisticaOk'); if(rFLOK && !rFLOK.getAttribute('data-listener-set-report')) {rFLOK.addEventListener('change', clearReportOnChange);rFLOK.setAttribute('data-listener-set-report','true')}
-        });
-        
-        window.onclick=function(e){
-            const currentOsModal = document.getElementById('osModal');
-            if(currentOsModal&&e.target==currentOsModal)closeOSModal();
-        };
-        
-        window.onkeydown=function(e){
-            const currentOsModal = document.getElementById('osModal');
-            if(currentOsModal&&!currentOsModal.classList.contains('hidden')&&e.key==="Escape")closeOSModal();
-        };
-    </script>
+        // Event listeners para filtros de Relatórios (limpam o relatório ao mudar, exigindo novo "Gerar")
+        const rDSL=document.getElementById('reportDateStartFilter');if(rDSL)rDSL.addEventListener('change',clearReportOnChange);
+        const rDEL=document.getElementById('reportDateEndFilter');if(rDEL)rDEL.addEventListener('change',clearReportOnChange);
+        const rSL=document.getElementById('reportStatusFilter');if(rSL&&!rSL.getAttribute('data-listener-set')){rSL.addEventListener('change',clearReportOnChange);rSL.setAttribute('data-listener-set','true')}
+        const rPL=document.getElementById('reportProductFilter');if(rPL&&!rPL.getAttribute('data-listener-set')){rPL.addEventListener('change',clearReportOnChange);rPL.setAttribute('data-listener-set','true')}
+        const rFMAIL = document.getElementById('reportFilterMarcadorAtraso'); if(rFMAIL && !rFMAIL.getAttribute('data-listener-set-report')) {rFMAIL.addEventListener('change', clearReportOnChange);rFMAIL.setAttribute('data-listener-set-report','true')}
+        const rFLOK = document.getElementById('reportFilterLogisticaOk'); if(rFLOK && !rFLOK.getAttribute('data-listener-set-report')) {rFLOK.addEventListener('change', clearReportOnChange);rFLOK.setAttribute('data-listener-set-report','true')}
+    });
+
+    window.onclick=function(e){
+        const currentOsModal = document.getElementById('osModal');
+        if(currentOsModal&&e.target==currentOsModal)closeOSModal(); // Fecha modal se clicar fora
+    };
+
+    window.onkeydown=function(e){
+        const currentOsModal = document.getElementById('osModal');
+        if(currentOsModal&&!currentOsModal.classList.contains('hidden')&&e.key==="Escape")closeOSModal(); // Fecha modal com ESC
+    };
+</script>
 </body>
 </html>
