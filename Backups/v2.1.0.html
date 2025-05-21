@@ -2,7 +2,7 @@
 <html lang="pt-BR" class="dark"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de OS - V1.9.9</title> <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
+    <title>Controle de OS - V2.1.0</title> <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -27,13 +27,14 @@
             --shadow-input-focus-light: rgba(14, 165, 233, 0.25); --bg-button-primary-light: #0ea5e9;
             --text-button-primary-light: #0f172a; --bg-button-primary-hover-light: #0284c7;
             --text-placeholder-light: #64748b; --text-link-light: #38bdf8;
+            --notification-unread-bg: #3b3f5c;
         }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-body-light); 
-            color: var(--text-primary-light); 
-            overflow-x: hidden; 
-            min-height: 100vh; 
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body-light);
+            color: var(--text-primary-light);
+            overflow-x: hidden;
+            min-height: 100vh;
         }
 
         .app-header { /* Formerly .sidebar */
@@ -44,29 +45,29 @@
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 50; 
+            z-index: 50;
             display: flex;
             align-items: center;
-            justify-content: space-between; 
+            justify-content: space-between;
             padding: 0 30px; /* Increased horizontal padding */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
-        .app-header .sidebar-header { 
-            padding: 0; 
-            display: flex; 
-            align-items: center; 
-            border-bottom: none; 
+        .app-header .sidebar-header {
+            padding: 0;
+            display: flex;
+            align-items: center;
+            border-bottom: none;
             margin-bottom: 0;
         }
-        
+
         .app-header #sidebar-title {
             display: flex;
             align-items: center;
         }
 
-        .app-header #sidebar-title i { 
-            margin-right: 12px; 
+        .app-header #sidebar-title i {
+            margin-right: 12px;
             min-width: 24px;
             text-align: center;
             font-size: 1.2em; /* Slightly larger icon */
@@ -74,54 +75,54 @@
 
         .app-header #sidebar-title span {
             font-size: 1.6em; /* Increased font size for title */
-            font-weight: 600; 
+            font-weight: 600;
             color: #e2e8f0;
         }
 
         .app-header #toggleSidebar {
-            display: none; 
+            display: none;
         }
-        
-        .app-header nav { 
+
+        .app-header nav {
             display: flex;
             align-items: center;
-            flex-grow: 1; 
-            justify-content: flex-start; 
+            flex-grow: 1;
+            justify-content: flex-start;
             margin-left: 40px; /* Increased space from title */
-            overflow-x: auto; 
+            overflow-x: auto;
         }
 
         .app-header nav ul {
             display: flex;
-            flex-direction: row; 
+            flex-direction: row;
             list-style: none;
             padding: 0;
             margin: 0;
             align-items: center;
         }
 
-        .app-header .sidebar-item { 
+        .app-header .sidebar-item {
             padding: 12px 18px; /* Slightly increased padding for nav items */
             cursor: pointer;
             display: flex;
             align-items: center;
             transition: background-color 0.2s ease, color 0.2s ease;
             border-radius: 6px;
-            margin: 0 6px; 
-            white-space: nowrap; 
+            margin: 0 6px;
+            white-space: nowrap;
         }
-        .app-header .sidebar-item:hover { 
-            background-color: #1e293b; 
-            color: #f8fafc; 
+        .app-header .sidebar-item:hover {
+            background-color: #1e293b;
+            color: #f8fafc;
         }
-        .app-header .sidebar-item.active { 
-            background-color: #0ea5e9; 
-            color: #ffffff; 
+        .app-header .sidebar-item.active {
+            background-color: #0ea5e9;
+            color: #ffffff;
         }
-        .app-header .sidebar-item i { 
-            margin-right: 10px; 
-            min-width: 20px; 
-            text-align: center; 
+        .app-header .sidebar-item i {
+            margin-right: 10px;
+            min-width: 20px;
+            text-align: center;
             font-size: 1.05em; /* Slightly larger nav icons */
         }
          .app-header .sidebar-item span {
@@ -130,38 +131,140 @@
         }
 
 
-        .app-header .header-right-items { 
+        .app-header .header-right-items {
             display: flex;
             align-items: center;
-            gap: 25px; /* Increased gap for better separation */
+            gap: 20px; /* Adjusted gap */
+        }
+        .app-header #notificationBellContainer {
+            position: relative;
+        }
+        .app-header #notificationBell {
+            color: var(--text-sidebar-light);
+            font-size: 1.3em; /* Slightly larger bell */
+            cursor: pointer;
+            position: relative;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .app-header #notificationBell:hover {
+            background-color: #1e293b;
+            color: #f8fafc;
+        }
+        .app-header #notificationCount { /* Renamed from .notification-count for clarity */
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 1px 4px; /* Adjusted padding for smaller look */
+            font-size: 0.6rem; /* Smaller font */
+            font-weight: bold;
+            display: none; /* Initially hidden */
+            line-height: 1;
+            min-width: 14px; /* Ensure circle shape for single digit */
+            text-align: center;
+        }
+        #notificationDropdown {
+            display: none;
+            position: absolute;
+            top: 100%; /* Position below the bell */
+            right: 0;
+            background-color: var(--bg-card-light);
+            border: 1px solid var(--border-card-light);
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            width: 350px; /* Wider dropdown */
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 10px; /* Space from bell */
+        }
+        #notificationDropdown .notification-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-card-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #notificationDropdown .notification-header h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary-light);
+        }
+        #notificationDropdown .notification-header button {
+            font-size: 0.75rem;
+            color: var(--text-link-light);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        #notificationDropdown .notification-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #notificationDropdown .notification-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-table-row-light); /* Lighter border */
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+         #notificationDropdown .notification-item:last-child {
+            border-bottom: none;
+        }
+        #notificationDropdown .notification-item:hover {
+            background-color: var(--bg-table-row-hover-light);
+        }
+        #notificationDropdown .notification-item.unread {
+            background-color: var(--notification-unread-bg); /* Darker for unread */
+        }
+        #notificationDropdown .notification-item p {
+            margin: 0 0 5px 0;
+            font-size: 0.875rem;
+            color: var(--text-primary-light);
+            line-height: 1.4;
+        }
+        #notificationDropdown .notification-item .timestamp {
+            font-size: 0.75rem;
+            color: var(--text-sidebar-light);
+        }
+        #notificationDropdown .no-notifications {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-placeholder-light);
+            font-size: 0.875rem;
         }
 
+
         .app-header #google-login-container {
-            margin-top: 0; 
-            padding: 0; 
+            margin-top: 0;
+            padding: 0;
             border-top: none;
         }
-        
-        .app-header .settings-version-block { 
-            margin-top: 0; 
+
+        .app-header .settings-version-block {
+            margin-top: 0;
             padding-bottom: 0;
             display: flex;
             align-items: center;
-            gap: 8px; 
+            gap: 8px;
         }
         .app-header .settings-version-block .sidebar-item {
-             padding: 10px 12px; 
+             padding: 10px 12px;
         }
 
 
-        .content { 
-            background-color: var(--bg-body-light); 
-            flex-grow: 1; 
+        .content {
+            background-color: var(--bg-body-light);
+            flex-grow: 1;
             padding: 30px; /* Increased padding */
             transition: background-color 0.3s;
             margin-top: 80px; /* MUST match .app-header height */
-            width: 100%; 
-            overflow-y: auto; 
+            width: 100%;
+            overflow-y: auto;
             overflow-x: hidden;
             min-height: calc(100vh - 80px); /* Full height minus new header height */
         }
@@ -191,14 +294,14 @@
         .close-button:hover, .close-button:focus { color: #e2e8f0; text-decoration: none; }
         #recentActivityList li { border-bottom-color: var(--border-table-row-light); } #recentActivityList .text-placeholder { color: var(--text-placeholder-light); }
         #paginationControls span { color: var(--text-primary-light); }
-        
-        #google-login-container #user-info { display: flex; align-items: center; gap: 10px; } 
+
+        #google-login-container #user-info { display: flex; align-items: center; gap: 10px; }
         #google-login-container #user-info img { border-radius: 50%; width: 36px; height: 36px; border: 2px solid var(--border-card-light);} /* Slightly larger pic */
         #google-login-container #user-info span { font-size: 0.9em; font-weight: 500; }
         #google-login-container .g_id_signin { transform: scale(0.95); transform-origin: center right; /* Adjusts scaling origin */ }
-        #google-login-container .g_id_signin div[role="button"] { 
+        #google-login-container .g_id_signin div[role="button"] {
             background-color: #273347 !important; /* Slightly lighter than card for visibility */
-            color: #e2e8f0 !important; 
+            color: #e2e8f0 !important;
             border: 1px solid #475569 !important;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
             transition: background-color 0.2s ease !important;
@@ -206,11 +309,12 @@
         #google-login-container .g_id_signin div[role="button"]:hover {
             background-color: #334155 !important;
         }
-        #google-login-container .g_id_signin svg { 
-            fill: #e2e8f0 !important; 
+        #google-login-container .g_id_signin svg {
+            fill: #e2e8f0 !important;
         }
 
         .checkbox-cell { width: 1%; white-space: nowrap; }
+        .compliance-cell { width: 1%; white-space: nowrap; text-align: center; }
         .priority-Alta { background-color: #fee2e2 !important; color: #b91c1c !important; } .priority-Urgente { background-color: #ffedd5 !important; color: #c2410c !important; animation: pulse 1.5s infinite; }
         .priority-Média { background-color: #fef3c7 !important; color: #a16207 !important; } .priority-Baixa { background-color: #dcfce7 !important; color: #15803d !important; }
         .status-cell span { display: flex; align-items: center; }
@@ -220,13 +324,14 @@
         .status-incompleta { background-color: #fee2e2; color: #991b1b; border-color: #fca5a5; }
         .status-provisoria { background-color: #ffedd5; color: #9a3412; border-color: #fdba74; }
         .status-conflitante { background-color: #fef3c7; color: #92400e; border-color: #fcd34d; }
+        .status-cancelada { background-color: #e5e7eb; color: #4b5563; border-color: #9ca3af; }
         .status-default { background-color: var(--bg-input-light); color: var(--text-input-light); border-color: var(--border-input-light); }
         .motivos-popover { display: none; position: absolute; background-color: var(--bg-card-light); border: 1px solid var(--border-card-light); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 110; padding: 15px; width: 280px; }
         .motivos-popover label { display: block; margin-bottom: 8px; font-size: 0.875rem; }
         .motivos-popover input[type="checkbox"] { margin-right: 8px; }
         .motivos-popover button { margin-top: 10px; width: 100%; }
         .selected-motivos-display { font-size: 0.75rem; color: var(--text-placeholder-light); max-width: 150px; white-space: normal; }
-        .logistica-select {min-width: 120px;} 
+        .logistica-select {min-width: 120px;}
 
         /* Estilos para Chosen.js */
         .chosen-container { font-size: 0.875rem !important; }
@@ -234,13 +339,13 @@
             background-color: var(--bg-input-light) !important;
             border: 1px solid var(--border-input-light) !important;
             border-radius: 6px !important;
-            padding: 5px !important; 
-            min-height: 40px !important; 
+            padding: 5px !important;
+            min-height: 40px !important;
             box-shadow: none !important;
         }
         .chosen-container-multi .chosen-choices li.search-field input[type="text"] {
             color: var(--text-input-light) !important;
-            height: 28px !important; 
+            height: 28px !important;
             line-height: 28px !important;
         }
         .chosen-container-multi .chosen-choices li.search-choice {
@@ -252,19 +357,19 @@
         }
         .chosen-container-multi .chosen-choices li.search-choice .search-choice-close {
             background: none !important;
-            top: 6px !important; 
+            top: 6px !important;
             right: 5px !important;
             display: block;
             width: 12px;
             height: 12px;
-            font-size: 1px; 
+            font-size: 1px;
         }
         .chosen-container-multi .chosen-choices li.search-choice .search-choice-close::before {
-            content: '×'; 
+            content: '×';
             font-size: 14px;
             color: var(--text-button-primary-light);
             position: absolute;
-            top: -2px; 
+            top: -2px;
             left: 0;
         }
 
@@ -301,26 +406,62 @@
             border: 1px solid var(--border-input-light) !important;
             color: var(--text-input-light) !important;
             border-radius: 6px !important;
-            padding: 8px 10px !important; 
-            height: 40px !important; 
+            padding: 8px 10px !important;
+            height: 40px !important;
             box-shadow: none !important;
         }
         .chosen-container-single .chosen-single div b {
-            background: url('https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen-sprite.png') no-repeat 0px 7px !important; 
+            background: url('https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen-sprite.png') no-repeat 0px 7px !important;
         }
         .chosen-container-active.chosen-with-drop .chosen-single div b {
-            background-position: -18px 7px !important; 
+            background-position: -18px 7px !important;
         }
+        .settings-item-list { max-height: 150px; overflow-y: auto; border: 1px solid var(--border-input-light); border-radius: 6px; padding: 10px; background-color: var(--bg-input-light); }
+        .settings-item-list li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-card-light); }
+        .settings-item-list li:last-child { border-bottom: none; }
+
+        .confirm-dialog {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000; /* Above other modals */
+        }
+        .confirm-dialog-content {
+            background-color: var(--bg-card-light);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+        }
+        .confirm-dialog-content h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary-light);
+            margin-bottom: 15px;
+        }
+        .confirm-dialog-content p {
+            font-size: 0.9rem;
+            color: var(--text-card-light);
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .confirm-dialog-buttons {
+            display: flex;
+            justify-content: center; /* Center buttons if fewer than 3 */
+            gap: 15px;
+        }
+
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } } @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} } @keyframes slideIn { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
         ::-webkit-scrollbar { width: 8px; height: 8px;} ::-webkit-scrollbar-track { background: #1e293b; } ::-webkit-scrollbar-thumb { background: #475569; } ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        /* .g_id_signin div[role="button"] { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #475569 !important;} */ /* Original Google Sign-in, new style above */
-        /* .g_id_signin svg { fill: #e2e8f0 !important; } */ /* Original Google Sign-in */
         .home-card-link { cursor: pointer; transition: transform 0.2s ease-in-out; } .home-card-link:hover { transform: translateY(-3px); }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="dark"> 
+<body class="dark">
     <header id="appHeader" class="app-header">
         <div class="sidebar-header">
             <div id="sidebar-title" class="flex items-center">
@@ -336,19 +477,35 @@
             <ul>
                 <li class="sidebar-item active" onclick="showView('homeView', this)"> <i class="fas fa-home"></i> <span>Home</span> </li>
                 <li class="sidebar-item" onclick="showView('osListView', this)"> <i class="fas fa-list-alt"></i> <span>Ordens de Serviço</span> </li>
+                <li class="sidebar-item" onclick="showView('canceledOsView', this)"> <i class="fas fa-times-circle"></i> <span>OS's Canceladas</span> </li>
                 <li class="sidebar-item" onclick="showView('reportsView', this)"> <i class="fas fa-chart-pie"></i> <span>Relatórios</span> </li>
                 <li class="sidebar-item" onclick="openAddOSModal()"> <i class="fas fa-plus-circle text-green-500"></i> <span class="text-green-500">Nova OS</span> </li>
             </ul>
         </nav>
 
         <div class="header-right-items">
+             <div id="notificationBellContainer">
+                <div id="notificationBell" title="Notificações" onclick="toggleNotificationDropdown()">
+                    <i class="fas fa-bell"></i>
+                    <span id="notificationCount">0</span>
+                </div>
+                <div id="notificationDropdown">
+                    <div class="notification-header">
+                        <h4>Notificações</h4>
+                        <button onclick="clearAllNotifications()">Limpar Tudo</button>
+                    </div>
+                    <ul id="notificationList" class="notification-list">
+                        <li class="no-notifications">Nenhuma notificação nova.</li>
+                    </ul>
+                </div>
+            </div>
             <div id="google-login-container">
                 <div id="g_id_onload" data-client_id="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
                 <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
-                <div id="user-info" class="mt-2 hidden"> 
-                    <img id="user-pic" src="" alt="User Pic"> 
-                    <span id="user-name" class="text-sm font-medium"></span> 
-                    <button onclick="handleSignOut()" class="btn btn-xs btn-danger !p-1.5 !text-xs ml-auto"><i class="fas fa-sign-out-alt"></i></button> 
+                <div id="user-info" class="mt-2 hidden">
+                    <img id="user-pic" src="" alt="User Pic">
+                    <span id="user-name" class="text-sm font-medium"></span>
+                    <button onclick="handleSignOut()" class="btn btn-xs btn-danger !p-1.5 !text-xs ml-auto"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
             <div class="settings-version-block">
@@ -365,9 +522,12 @@
                 <h3 class="text-xl font-semibold mt-6 mb-2">📊 Visão Geral das Funcionalidades</h3>
                 <ul class="list-disc list-inside text-sm text-slate-300 mt-2 space-y-1 pl-4">
                     <li><strong>Home:</strong> Visão geral dos indicadores chave (OS Completas, Incompletas, Provisórias) e acesso rápido às funcionalidades.</li>
-                    <li><strong>Ordens de Serviço:</strong> Liste, filtre (incluindo por marcadores manuais de "Não Realizada no Prazo" e status de "Logística"), edite, gerencie e importe OS em lote. Logística com status detalhados (ex: Pronta, Pendente) importada via Excel e ajustável por dropdown.</li>
-                    <li><strong>Relatórios:</strong> Gere relatórios personalizados com gráficos para análises detalhadas. Exporte em CSV, PDF ou imagem. Coluna "Logística" com status detalhados.</li>
-                    <li><strong>Nova OS:</strong> Crie novas Ordens de Serviço com seleção de status para Logística.</li>
+                    <li><strong>Ordens de Serviço:</strong> Liste, filtre (incluindo por marcadores manuais de "Não Realizada no Prazo", status de "Logística" e "OS em Conformidade"), edite, gerencie, cancele e importe OS em lote (com tratamento de duplicatas). Logística com status detalhados.</li>
+                    <li><strong>OS's Canceladas:</strong> Visualize OS que foram canceladas, com detalhes do cancelamento.</li>
+                    <li><strong>Relatórios:</strong> Gere relatórios personalizados com gráficos para análises detalhadas. Exporte em CSV, PDF ou imagem. Coluna "Logística" com status detalhados e motivos de inconformidade. (Configuração de gráficos em desenvolvimento).</li>
+                    <li><strong>Nova OS:</strong> Crie novas Ordens de Serviço com seleção de status para Logística e marcador de conformidade (com tratamento de duplicatas).</li>
+                    <li><strong>Configurações:</strong> Gerencie limpeza de dados, itens por página, motivos de inconformidade e motivos de cancelamento.</li>
+                     <li><strong>Notificações:</strong> Receba alertas e lembretes importantes (funcionalidade em expansão).</li>
                 </ul>
                 <p class="text-sm text-slate-300 leading-relaxed mt-3"> Utilize os cards abaixo para uma navegação ágil pelas principais métricas e seções do sistema. </p>
             </div>
@@ -406,7 +566,7 @@
                 <div class="flex gap-2 flex-wrap items-center">
                     <div id="bulkActionsContainer" class="hidden flex gap-2 items-center mr-4"> <span id="selectedOsCount" class="text-sm">0 selecionadas</span>
                         <select id="bulkActionStatus" class="select-field p-2 rounded-md text-sm">
-                            <option value="">Alterar Status para...</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option> <option value="Provisória">Provisória</option> <option value="Conflitante">Conflitante</option> <option value="Cancelada">Cancelada</option>
+                            <option value="">Alterar Status para...</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option> <option value="Provisória">Provisória</option> <option value="Conflitante">Conflitante</option>
                         </select>
                         <button class="btn btn-sm btn-primary" onclick="applyBulkAction()"><i class="fas fa-check"></i> Aplicar</button> <button class="btn btn-sm btn-danger" onclick="bulkDeleteSelectedOS()"><i class="fas fa-trash"></i> Excluir</button>
                     </div>
@@ -419,30 +579,66 @@
             <div id="importOsLoteContainer" class="card hidden mb-6 bg-slate-800 border border-slate-700">
                 <div class="flex justify-between items-center mb-3"> <h3 class="text-xl font-semibold text-slate-100"> <i class="fas fa-file-excel mr-2 text-green-500"></i>Importar OS em Lote </h3> <button onclick="toggleImportSection()" class="text-slate-400 hover:text-slate-200 text-xl">&times;</button> </div>
                 <p class="text-xs text-slate-400 mb-3"> Selecione (.xlsx, .xls, .csv). Colunas primárias: Código, Status, Cliente, Início, Término, Técnico, Solicitante. <strong>Opcional: "Logística ok" (ex: Sim, Não, Pendente, N/A).</strong> </p>
+                <p class="text-xs text-slate-400 mb-3">OS com "Código" já existente serão importadas com a observação "(DUPLICADA)" na descrição.</p>
                 <div class="flex flex-col sm:flex-row gap-3 items-start"> <input type="file" id="excelFileInput" class="input-field p-2 rounded-md border-slate-600 text-sm w-full sm:w-auto file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-700 file:text-sky-200 hover:file:bg-sky-600 cursor-pointer flex-grow" accept=".xlsx, .xls, .csv"> <button id="processExcelButton" class="btn btn-sm btn-success whitespace-nowrap w-full sm:w-auto mt-2 sm:mt-0"> <i class="fas fa-upload"></i> Processar Arquivo </button> </div>
                 <div id="importStatusMessage" class="mt-3 text-xs"> </div> <div id="importSummary" class="mt-2 text-xs hidden"> <p class="font-semibold mb-1"><strong>Resumo da Importação:</strong></p> <ul id="importSummaryList" class="list-disc list-inside pl-3 space-y-0.5 max-h-32 overflow-y-auto"></ul> </div>
             </div>
             <div class="w-full md:flex-grow">
                 <div class="mb-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
                         <input type="text" id="filterOsNumber" placeholder="Nº OS" class="input-field p-2 rounded-md">
                         <input type="text" id="filterClient" placeholder="Cliente" class="input-field p-2 rounded-md">
                         <input type="text" id="filterDescription" placeholder="Buscar na Descrição..." class="input-field p-2 rounded-md">
                         <select id="filterProduct" class="select-field p-2 rounded-md"> <option value="">Todos os Produtos</option> </select>
-                        <select id="filterStatus" class="select-field p-2 rounded-md"> <option value="">Todos os Status</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option> <option value="Provisória">Provisória</option> <option value="Conflitante">Conflitante</option> <option value="Cancelada">Cancelada</option></select>
+                        <select id="filterStatus" class="select-field p-2 rounded-md"> <option value="">Todos os Status</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option> <option value="Provisória">Provisória</option> <option value="Conflitante">Conflitante</option> </select>
                         <div> <label for="filterDateStart" class="block text-xs font-medium mb-0.5">Data Abert. Início:</label> <input type="date" id="filterDateStart" class="input-field p-2 rounded-md w-full text-sm"> </div>
                         <div> <label for="filterDateEnd" class="block text-xs font-medium mb-0.5">Data Abert. Fim:</label> <input type="date" id="filterDateEnd" class="input-field p-2 rounded-md w-full text-sm"> </div>
                         <div> <label for="filterMarcadorAtraso" class="block text-xs font-medium mb-0.5">Atraso (Manual):</label> <select id="filterMarcadorAtraso" class="select-field p-2 rounded-md w-full text-sm"> <option value="">Todos</option> <option value="marcada">Marcada</option> <option value="nao_marcada">Não Marcada</option> </select> </div>
+                        <div> <label for="filterConformidade" class="block text-xs font-medium mb-0.5">Conformidade:</label> <select id="filterConformidade" class="select-field p-2 rounded-md w-full text-sm"> <option value="">Todas</option> <option value="conforme">Conforme</option> <option value="nao_conforme">Não Conforme</option> </select> </div>
                         <div class="lg:col-span-2 xl:col-span-1"> <label for="filterLogisticaStatus" class="block text-xs font-medium mb-0.5">Status Logística:</label> <select id="filterLogisticaStatus" multiple class="select-field p-2 rounded-md w-full text-sm chosen-select" data-placeholder="Todos Status Log."> </select> </div>
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2 items-center"> <label for="savedFilters" class="text-sm font-medium">Filtros Salvos:</label> <select id="savedFilters" class="select-field p-2 rounded-md text-sm"> <option value="">Carregar filtro...</option> </select> <button class="btn btn-sm btn-secondary" onclick="loadSelectedFilter()"><i class="fas fa-download"></i> Carregar</button> <input type="text" id="newFilterName" placeholder="Nome do novo filtro" class="input-field p-2 rounded-md text-sm"> <button class="btn btn-sm btn-primary" onclick="saveCurrentFilters()"><i class="fas fa-save"></i> Salvar Filtro</button> <button class="btn btn-sm btn-danger" onclick="deleteSavedFilter()" title="Excluir filtro"><i class="fas fa-trash-alt"></i></button> </div>
                 </div>
                 <div class="overflow-x-auto shadow-md rounded-lg">
                     <table id="osTable" class="min-w-full">
-                       <thead class="table-header"> <tr> <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4"></th><th class="py-3 px-4 text-left">Nº OS</th> <th class="py-3 px-4 text-left">Cliente</th> <th class="py-3 px-4 text-left">Produto</th> <th class="py-3 px-4 text-left">Descrição</th> <th class="py-3 px-4 text-left">Data Abertura</th> <th class="py-3 px-4 text-left">Prazo Final</th> <th class="py-3 px-4 text-left">Responsável</th> <th class="py-3 px-4 text-left">Solicitante</th> <th class="py-3 px-4 text-left">Status OS</th><th class="py-3 px-4 text-left">Logística</th> <th class="py-3 px-4 text-left">Prioridade</th> <th class="py-3 px-4 text-left">Ações</th> </tr> </thead> <tbody id="osTableBody" class="divide-y divide-slate-700"></tbody> </table>
+                       <thead class="table-header"> <tr> <th class="py-3 px-2 text-center checkbox-cell"><input type="checkbox" id="selectAllOsCheckbox" onchange="toggleSelectAllOS(this)" class="form-checkbox h-4 w-4"></th><th class="py-3 px-4 text-left">Nº OS</th> <th class="py-3 px-4 text-left">Cliente</th> <th class="py-3 px-4 text-left">Produto</th> <th class="py-3 px-4 text-left">Descrição</th> <th class="py-3 px-4 text-left">Data Abertura</th> <th class="py-3 px-4 text-left">Prazo Final</th> <th class="py-3 px-4 text-left">Responsável</th> <th class="py-3 px-4 text-left">Solicitante</th> <th class="py-3 px-4 text-left">Status OS</th><th class="py-3 px-4 text-left">Logística</th> <th class="py-3 px-4 text-left">Prioridade</th> <th class="py-3 px-2 text-center compliance-cell">Conforme</th> <th class="py-3 px-4 text-left">Ações</th> </tr> </thead> <tbody id="osTableBody" class="divide-y divide-slate-700"></tbody> </table>
                 </div> <div id="paginationControls" class="mt-6 flex justify-end items-center gap-2"></div>
             </div>
         </div>
+
+        <div id="canceledOsView" class="view-section card hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-3xl font-bold">Ordens de Serviço Canceladas</h2>
+                <div class="flex gap-2 flex-wrap items-center">
+                    <button class="btn btn-success !py-1.5 !px-3 !text-xs" onclick="exportTableToCSV('canceledOsTable', 'lista_os_canceladas.csv')"><i class="fas fa-file-csv mr-1"></i> CSV</button>
+                    <button class="btn btn-danger !py-1.5 !px-3 !text-xs" onclick="exportTableToPDF('canceledOsTable', 'Lista de OS Canceladas', 'canceledOsTableBody')"><i class="fas fa-file-pdf mr-1"></i> PDF</button>
+                </div>
+            </div>
+            <div class="mb-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    <input type="text" id="filterCanceledOsNumber" placeholder="Nº OS" class="input-field p-2 rounded-md">
+                    <input type="text" id="filterCanceledClient" placeholder="Cliente" class="input-field p-2 rounded-md">
+                    <select id="filterCanceledReason" class="select-field p-2 rounded-md"> <option value="">Todos Motivos</option> </select>
+                    <div> <label for="filterCanceledDateStart" class="block text-xs font-medium mb-0.5">Data Canc. Início:</label> <input type="date" id="filterCanceledDateStart" class="input-field p-2 rounded-md w-full text-sm"> </div>
+                    <div> <label for="filterCanceledDateEnd" class="block text-xs font-medium mb-0.5">Data Canc. Fim:</label> <input type="date" id="filterCanceledDateEnd" class="input-field p-2 rounded-md w-full text-sm"> </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto shadow-md rounded-lg">
+                <table id="canceledOsTable" class="min-w-full">
+                   <thead class="table-header">
+                       <tr>
+                           <th class="py-3 px-4 text-left">Nº OS</th> <th class="py-3 px-4 text-left">Cliente</th> <th class="py-3 px-4 text-left">Produto</th>
+                           <th class="py-3 px-4 text-left">Data Abertura</th> <th class="py-3 px-4 text-left">Prazo Final</th>
+                           <th class="py-3 px-4 text-left">Data Cancelamento</th> <th class="py-3 px-4 text-left">Motivo Cancelamento</th>
+                           <th class="py-3 px-4 text-left">Obs. Cancelamento</th> <th class="py-3 px-4 text-left">Responsável</th>
+                       </tr>
+                   </thead>
+                   <tbody id="canceledOsTableBody" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+            <div id="canceledPaginationControls" class="mt-6 flex justify-end items-center gap-2"></div>
+        </div>
+
 
         <div id="reportsView" class="view-section card hidden">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -460,14 +656,21 @@
                     <div> <label for="reportDateStartFilter" class="block text-sm font-medium mb-1">Data Inicial (Prazo):</label> <input type="date" id="reportDateStartFilter" name="reportDateStartFilter" class="input-field w-full p-2 rounded-md"> </div>
                     <div> <label for="reportDateEndFilter" class="block text-sm font-medium mb-1">Data Final (Prazo):</label> <input type="date" id="reportDateEndFilter" name="reportDateEndFilter" class="input-field w-full p-2 rounded-md"> </div>
                     <div> <label for="reportStatusFilter" class="block text-sm font-medium mb-1">Status OS:</label>
-                        <select id="reportStatusFilter" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option> <option value="Provisória">Provisória</option> <option value="Conflitante">Conflitante</option> <option value="Cancelada">Cancelada</option></select>
+                        <select id="reportStatusFilter" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option> <option value="Provisória">Provisória</option> <option value="Conflitante">Conflitante</option> </select>
                     </div>
                     <div> <label for="reportFilterMarcadorAtraso" class="block text-sm font-medium mb-1">Atraso (Manual):</label> <select id="reportFilterMarcadorAtraso" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option> <option value="marcada">Marcada</option> <option value="nao_marcada">Não Marcada</option> </select> </div>
-                    <div class="md:col-span-2"> <label for="reportProductFilter" class="block text-sm font-medium mb-1">Produto:</label> <select id="reportProductFilter" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option></select> </div>
+                    <div class="md:col-span-1"> <label for="reportFilterConformidade" class="block text-sm font-medium mb-1">Conformidade:</label> <select id="reportFilterConformidade" class="select-field w-full p-2 rounded-md"> <option value="">Todas</option> <option value="conforme">Conforme</option> <option value="nao_conforme">Não Conforme</option> </select> </div>
+                    <div class="md:col-span-1"> <label for="reportProductFilter" class="block text-sm font-medium mb-1">Produto:</label> <select id="reportProductFilter" class="select-field w-full p-2 rounded-md"> <option value="">Todos</option></select> </div>
                     <div class="md:col-span-2"> <label for="reportFilterLogisticaStatus" class="block text-sm font-medium mb-1">Status Logística:</label> <select id="reportFilterLogisticaStatus" class="select-field w-full p-2 rounded-md chosen-select-reports" multiple data-placeholder="Todos Status Log."> </select> </div>
                 </div>
                 <div class="mt-4"> <button class="btn btn-primary" onclick="generateCustomReport()"><i class="fas fa-filter"></i> Gerar Relatório</button> </div>
             </div>
+
+            <div id="chartConfigurationSection" class="mt-8 mb-6 p-4 bg-slate-800 rounded-lg border border-slate-700 hidden">
+                <h3 class="text-xl font-semibold text-slate-100 mb-3"><i class="fas fa-tools mr-2"></i>Configuração de Gráficos (Em Desenvolvimento)</h3>
+                <p class="text-sm text-slate-400">Esta seção permitirá personalizar os tipos de gráficos e os dados exibidos.</p>
+                </div>
+
             <div id="customReportChartsContainer" class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="card !shadow-lg flex flex-col p-4 min-h-[380px]">  <h4 class="text-lg font-semibold mb-3 text-center text-slate-200">OS por Produto</h4>  <div class="flex-grow relative w-full h-full min-h-[280px]"> <canvas id="reportChartByProduct"></canvas> </div>  </div>
                 <div class="card !shadow-lg flex flex-col p-4 min-h-[380px]">  <h4 class="text-lg font-semibold mb-3 text-center text-slate-200">OS por Solicitante</h4>  <div class="flex-grow relative w-full h-full min-h-[280px]"> <canvas id="reportChartByUsuario"></canvas> </div>  </div>
@@ -479,11 +682,11 @@
                         <tr>
                             <th class="py-3 px-4 text-left">Código OS</th> <th class="py-3 px-4 text-left">Solicitante</th> <th class="py-3 px-4 text-left">Cliente</th>
                             <th class="py-3 px-4 text-left">Início</th> <th class="py-3 px-4 text-left">Término</th> <th class="py-3 px-4 text-left">Responsável</th>
-                            <th class="py-3 px-4 text-left">Logística</th> <th class="py-3 px-4 text-left">Produto</th> <th class="py-3 px-4 text-center">Status OS</th>
+                            <th class="py-3 px-4 text-left">Logística</th> <th class="py-3 px-4 text-left">Produto</th> <th class="py-3 px-4 text-center">Status OS</th> <th class="py-3 px-4 text-center">Conforme</th>
                             <th class="py-3 px-4 text-left">Motivo Inconf.</th>
                         </tr>
                     </thead>
-                    <tbody id="reportsTableBody" class="divide-y divide-slate-700"> <tr class="table-row"><td colspan="10" class="text-center py-10 text-slate-400">Selecione filtros e clique "Gerar Relatório".</td></tr>
+                    <tbody id="reportsTableBody" class="divide-y divide-slate-700"> <tr class="table-row"><td colspan="11" class="text-center py-10 text-slate-400">Selecione filtros e clique "Gerar Relatório".</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -491,8 +694,33 @@
         <div id="settingsView" class="view-section card hidden">
             <h2 class="text-3xl font-bold mb-6">Configurações</h2>
             <div class="space-y-8">
-                <div> <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-700">Gestão da Página</h3> <div class="space-y-4"> <div> <button class="btn btn-danger" onclick="confirmClearAllData()"><i class="fas fa-trash-alt"></i> Limpar Todos os Dados das OS</button> <p class="text-xs text-slate-400 mt-1">Atenção: Irreversível, apaga todas as OS salvas localmente.</p> </div> </div> </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-700">Gestão de Motivos de Inconformidade</h3>
+                    <div class="space-y-2">
+                        <div class="flex gap-2 items-center">
+                            <input type="text" id="newInconformityReason" placeholder="Novo motivo de inconformidade" class="input-field p-2 rounded-md flex-grow">
+                            <button class="btn btn-sm btn-primary" onclick="addInconformityReason()">Adicionar</button>
+                        </div>
+                        <ul id="inconformityReasonList" class="settings-item-list">
+                            </ul>
+                         <p class="text-xs text-slate-400 mt-1">Estes motivos aparecerão na seleção da aba "Relatórios".</p>
+                    </div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-700">Gestão de Motivos de Cancelamento de OS</h3>
+                    <div class="space-y-2">
+                        <div class="flex gap-2 items-center">
+                            <input type="text" id="newCancellationReason" placeholder="Novo motivo de cancelamento" class="input-field p-2 rounded-md flex-grow">
+                            <button class="btn btn-sm btn-primary" onclick="addCancellationReason()">Adicionar</button>
+                        </div>
+                        <ul id="cancellationReasonList" class="settings-item-list">
+                            </ul>
+                        <p class="text-xs text-slate-400 mt-1">Estes motivos aparecerão ao cancelar uma OS.</p>
+                    </div>
+                </div>
+
                 <div> <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-700">Visualização</h3> <div class="space-y-4"> <div> <label for="itemsPerPageSetting" class="block text-sm font-medium mb-1">Itens por Página na Lista de OS:</label> <input type="number" id="itemsPerPageSetting" value="10" min="5" max="50" step="5" class="input-field p-2 rounded-md w-full md:w-1/4"> <button class="btn btn-sm btn-primary ml-2" onclick="applyItemsPerPageSetting()">Aplicar</button> </div> </div> </div>
+                 <div> <h3 class="text-xl font-semibold mb-3 border-b pb-2 border-slate-700">Gestão da Página</h3> <div class="space-y-4"> <div> <button class="btn btn-danger" onclick="confirmClearAllData()"><i class="fas fa-trash-alt"></i> Limpar Todos os Dados da Aplicação</button> <p class="text-xs text-slate-400 mt-1">Atenção: Irreversível, apaga todas as OS, OS Canceladas, Filtros, Motivos Personalizados, Notificações e Configs Locais.</p> </div> </div> </div>
             </div>
         </div>
     </main>
@@ -509,7 +737,7 @@
             <div> <label for="osPrazoFinalModal" class="block text-sm font-medium mb-1">Prazo Final <span class="text-red-500">*</span></label> <input type="date" id="osPrazoFinalModal" name="osPrazoFinalModal" class="input-field w-full p-2 rounded-md" required> </div>
             <div> <label for="osResponsavelModal" class="block text-sm font-medium mb-1">Responsável (Colaborador) <span class="text-red-500">*</span></label> <input type="text" id="osResponsavelModal" name="osResponsavelModal" class="input-field w-full p-2 rounded-md" required> </div>
             <div> <label for="osStatusModal" class="block text-sm font-medium mb-1">Status OS <span class="text-red-500">*</span></label>
-                <select id="osStatusModal" name="osStatusModal" class="select-field w-full p-2 rounded-md" required> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option><option value="Provisória">Provisória</option> <option value="Conflitante">Conflitante</option> <option value="Cancelada">Cancelada</option></select>
+                <select id="osStatusModal" name="osStatusModal" class="select-field w-full p-2 rounded-md" required> <option value="Aberta">Aberta</option> <option value="Em Andamento">Em Andamento</option> <option value="Pendente Informação">Pendente Informação</option> <option value="Aguardando Aprovação">Aguardando Aprovação</option> <option value="Completa">Completa</option> <option value="Incompleta">Incompleta</option><option value="Provisória">Provisória</option> <option value="Conflitante">Conflitante</option> </select>
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mb-6 items-start">
@@ -517,38 +745,92 @@
             <div class="flex items-center pt-5 md:pt-7"> <input type="checkbox" id="osMarcadorAtrasoModal" name="osMarcadorAtrasoModal" class="form-checkbox h-4 w-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500 mr-2"> <label for="osMarcadorAtrasoModal" class="text-sm font-medium">Marcar "Não Realizada no Prazo"</label> </div>
             <div> <label for="osLogisticaStatusModal" class="block text-sm font-medium mb-1">Logística <span class="text-red-500">*</span></label> <select id="osLogisticaStatusModal" name="osLogisticaStatusModal" class="select-field w-full p-2 rounded-md" required> </select> </div>
         </div>
+         <div class="mb-6">
+            <div class="flex items-center">
+                <input type="checkbox" id="osIsInComplianceModal" name="osIsInComplianceModal" class="form-checkbox h-4 w-4 text-sky-500 border-slate-300 rounded focus:ring-sky-400 mr-2">
+                <label for="osIsInComplianceModal" class="text-sm font-medium">OS em Conformidade (todas as informações preenchidas corretamente)</label>
+            </div>
+        </div>
         <div class="flex justify-end gap-3"> <button type="button" class="btn btn-secondary" onclick="closeOSModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Salvar OS</button> </div> </form>
     </div> </div>
 
+    <div id="cancelOsModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeCancelOSModal()">&times;</span>
+            <h3 id="cancelOsModalTitle" class="text-2xl font-semibold mb-6">Cancelar Ordem de Serviço</h3>
+            <form id="cancelOsForm">
+                <input type="hidden" id="cancelOsId">
+                <p class="mb-2 text-sm">OS Nº: <strong id="cancelOsNumeroDisplay"></strong></p>
+                <p class="mb-4 text-sm">Cliente: <strong id="cancelOsClienteDisplay"></strong></p>
+                <div class="mb-4">
+                    <label for="cancelOsReasonModal" class="block text-sm font-medium mb-1">Motivo do Cancelamento <span class="text-red-500">*</span></label>
+                    <select id="cancelOsReasonModal" name="cancelOsReasonModal" class="select-field w-full p-2 rounded-md" required>
+                        </select>
+                </div>
+                <div class="mb-4">
+                    <label for="cancelOsDateModal" class="block text-sm font-medium mb-1">Data do Cancelamento <span class="text-red-500">*</span></label>
+                    <input type="date" id="cancelOsDateModal" name="cancelOsDateModal" class="input-field w-full p-2 rounded-md" required>
+                </div>
+                <div class="mb-6">
+                    <label for="cancelOsObservationsModal" class="block text-sm font-medium mb-1">Observações</label>
+                    <textarea id="cancelOsObservationsModal" name="cancelOsObservationsModal" rows="3" class="input-field w-full p-2 rounded-md"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="btn btn-secondary" onclick="closeCancelOSModal()">Voltar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Cancelamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="motivosPopover" class="motivos-popover">
-        <h4 class="text-md font-semibold mb-3 text-slate-200">Selecionar Motivos</h4>
-        <div id="motivosCheckboxContainer" class="space-y-2">
+        <h4 class="text-md font-semibold mb-3 text-slate-200">Selecionar Motivos de Inconformidade</h4>
+        <div id="motivosCheckboxContainer" class="space-y-2 max-h-48 overflow-y-auto">
         </div>
         <div class="mt-4 flex gap-2">
             <button class="btn btn-sm btn-primary flex-1" onclick="closeMotivosPopover(true)">Confirmar</button>
             <button class="btn btn-sm btn-secondary flex-1" onclick="closeMotivosPopover(false)">Cancelar</button>
         </div>
     </div>
+
+    <div id="confirmDuplicateDialog" class="confirm-dialog hidden">
+        <div class="confirm-dialog-content">
+            <h4 id="confirmDuplicateTitle">OS Duplicada Encontrada</h4>
+            <p id="confirmDuplicateMessage">Uma OS com este número já existe. Deseja substituí-la ou adicionar esta como uma nova OS marcada como duplicada?</p>
+            <div class="confirm-dialog-buttons">
+                <button id="confirmDuplicateReplace" class="btn btn-warning">Substituir Existente</button>
+                <button id="confirmDuplicateAddAsNew" class="btn btn-primary">Adicionar como Nova (Duplicada)</button>
+                <button id="confirmDuplicateCancel" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
 <script>
     // ==========================================================================
     // VARIÁVEIS GLOBAIS E CONFIGURAÇÕES INICIAIS
     // ==========================================================================
-    const APP_VERSION = "1.9.9"; // Versão atualizada
+    const APP_VERSION = "2.1.0"; // Versão atualizada
     const ITEMS_PER_PAGE_DEFAULT = 10;
     let ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
     let currentPage = 1;
+    let currentCanceledOsPage = 1;
     let ordensServico = [];
+    let canceledOS = [];
+    let notifications = []; // Nova lista para notificações
     let reportOsMotivos = {};
     let currentEditingOsIdForMotivos = null;
 
     const defaultProducts = ["WORKNC", "EDGECAM", "ESPRIT", "ALPHACAM", "LANTEK", "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner", "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"];
-    const motivoOptions = [
+    let motivoOptions = [
         "Sem Pré-OS", "Sem Anexos", "Sem informações",
         "Sem Atividades", "Sem Participantes", "Informações incompletas"
     ];
-    const validStatusesGlobal = ["Aberta", "Em Andamento", "Pendente Informação", "Aguardando Aprovação", "Completa", "Incompleta", "Provisória", "Conflitante", "Cancelada"];
+    let cancellationReasonOptions = [
+        "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro"
+    ];
+
+    const validStatusesGlobal = ["Aberta", "Em Andamento", "Pendente Informação", "Aguardando Aprovação", "Completa", "Incompleta", "Provisória", "Conflitante"];
     const logisticaStatusOptions = ["Pronta", "Pendente", "Não Iniciada", "Em Cotação", "Não Aplicável"];
-    const defaultLogisticaStatus = logisticaStatusOptions[2]; // "Não Iniciada"
+    const defaultLogisticaStatus = logisticaStatusOptions[2];
 
     let googleUser = null;
     let savedFilters = {};
@@ -560,9 +842,13 @@
 
     // Elementos DOM
     let osModal, osForm, modalTitle, productDatalist, filterProductSelect, reportProductSelect, filterLogisticaStatusSelect, reportFilterLogisticaStatusSelect, osLogisticaStatusModalSelect;
+    let cancelOsModal, cancelOsForm, cancelOsModalTitle, cancelOsReasonModalSelect;
     let recentActivityList, importStatusMessage, importSummaryDiv, importSummaryList;
     let mainContent;
-    let filterDateStartInput, filterDateEndInput;
+    let filterDateStartInput, filterDateEndInput, filterConformidadeSelect, reportFilterConformidadeSelect;
+    let notificationBell, notificationCountSpan, notificationDropdown, notificationListUl;
+    let confirmDuplicateDialog, confirmDuplicateTitle, confirmDuplicateMessage, confirmDuplicateReplaceBtn, confirmDuplicateAddAsNewBtn, confirmDuplicateCancelBtn;
+    let osDataForDuplicateCheck = null;
 
 
     // ==========================================================================
@@ -573,13 +859,34 @@
     function parseAndValidateDate(dateValue, fieldNameForLog = "Data") { if (dateValue === null || String(dateValue || '').trim() === '') return { date: null, error: `${fieldNameForLog} ausente.` }; let parsedDateObj = null; if (dateValue instanceof Date) { if (!isNaN(dateValue.getTime())) parsedDateObj = dateValue; } else if (typeof dateValue === 'number' && dateValue > 0 && dateValue < 200000) { const ymd = excelSerialDateToYYYYMMDD(dateValue); if (ymd) { const [year, month, day] = ymd.split('-').map(Number); parsedDateObj = new Date(Date.UTC(year, month - 1, day));}} else if (typeof dateValue === 'string') { let tempDateStr = String(dateValue).trim(), parts; const dateTimeRegex = /^(\d{1,2})[\\/\.-](\d{1,2})[\\/\.-](\d{2}|\d{4})(?:[ T_](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/; if ((parts = tempDateStr.match(dateTimeRegex))) { const day = parseInt(parts[1],10), month = parseInt(parts[2],10)-1; let year = parseInt(parts[3],10); if(year<100) year+=2000; const hour = parts[4]?parseInt(parts[4],10):0, minute = parts[5]?parseInt(parts[5],10):0, second = parts[6]?parseInt(parts[6],10):0; if (month>=0&&month<=11&&day>=1&&day<=31) { parsedDateObj=new Date(Date.UTC(year,month,day,hour,minute,second)); if(parsedDateObj.getUTCFullYear()!==year||parsedDateObj.getUTCMonth()!==month||parsedDateObj.getUTCDate()!==day) parsedDateObj=null; }} else { const isoDateRegex = /^(\d{4})[\\/\.-](\d{1,2})[\\/\.-](\d{1,2})(?:[ T_](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/; if ((parts = tempDateStr.match(isoDateRegex))) { const year = parseInt(parts[1],10), month = parseInt(parts[2],10)-1, day = parseInt(parts[3],10); const hour = parts[4]?parseInt(parts[4],10):0, minute = parts[5]?parseInt(parts[5],10):0, second = parts[6]?parseInt(parts[6],10):0; if (month>=0&&month<=11&&day>=1&&day<=31) { parsedDateObj=new Date(Date.UTC(year,month,day,hour,minute,second)); if(parsedDateObj.getUTCFullYear()!==year||parsedDateObj.getUTCMonth()!==month||parsedDateObj.getUTCDate()!==day) parsedDateObj=null; }}}} if (parsedDateObj && !isNaN(parsedDateObj.getTime())) { const year = parsedDateObj.getUTCFullYear(), monthStr = String(parsedDateObj.getUTCMonth()+1).padStart(2,'0'), dayStr = String(parsedDateObj.getUTCDate()).padStart(2,'0'); if (year < 1890 || year > 2300) return { date: null, error: `${fieldNameForLog} ("${String(dateValue).substring(0,20)}") ano inválido (${year}).` }; return { date: `${year}-${monthStr}-${dayStr}`, error: null }; } return { date: null, error: `${fieldNameForLog} ("${String(dateValue).substring(0,30)}") formato inválido/não reconhecido.` }; }
     function getPriorityClass(priority) { switch (priority) { case 'Alta': return 'priority-Alta'; case 'Urgente': return 'priority-Urgente'; case 'Média': return 'priority-Média'; case 'Baixa': return 'priority-Baixa'; default: return 'bg-slate-700 text-slate-300'; } }
     function generateId() { return 'OS' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5).toUpperCase(); }
-    function getStatusClass(status) { switch (status) { case 'Completa': return 'status-completa'; case 'Incompleta': return 'status-incompleta'; case 'Provisória': return 'status-provisoria'; case 'Conflitante': return 'status-conflitante'; default: return 'status-default text-xs'; } }
+    function getStatusClass(status) { switch (status) { case 'Completa': return 'status-completa'; case 'Incompleta': return 'status-incompleta'; case 'Provisória': return 'status-provisoria'; case 'Conflitante': return 'status-conflitante'; case 'Cancelada': return 'status-cancelada'; default: return 'status-default text-xs'; } }
 
     // ==========================================================================
-    // LOCALSTORAGE, PRODUTOS, LOGÍSTICA STATUS, ATIVIDADE RECENTE
+    // LOCALSTORAGE, PRODUTOS, LOGÍSTICA STATUS, ATIVIDADE RECENTE, MOTIVOS, NOTIFICAÇÕES
     // ==========================================================================
     const LOCAL_STORAGE_KEY = `gestaoOsAppData_v${APP_VERSION.replace(/\./g, '_')}`;
-    function saveDataToLocalStorage() { console.log(`Tentando salvar dados no localStorage (chave: ${LOCAL_STORAGE_KEY})...`); try { const dataToSave = { version: APP_VERSION, ordensServico: ordensServico, googleUser: googleUser, savedFilters: savedFilters, itemsPerPage: ITEMS_PER_PAGE }; localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave)); console.log(`Dados salvos com sucesso no localStorage (chave: ${LOCAL_STORAGE_KEY}).`); } catch (e) { console.error("Erro CRÍTICO ao salvar dados no localStorage:", e); alert("ATENÇÃO: Erro ao salvar os dados. Verifique o console para detalhes e se o localStorage não está cheio."); } }
+    function saveDataToLocalStorage() {
+        console.log(`Tentando salvar dados no localStorage (chave: ${LOCAL_STORAGE_KEY})...`);
+        try {
+            const dataToSave = {
+                version: APP_VERSION,
+                ordensServico: ordensServico,
+                canceledOS: canceledOS,
+                notifications: notifications, // Salvar notificações
+                googleUser: googleUser,
+                savedFilters: savedFilters,
+                itemsPerPage: ITEMS_PER_PAGE,
+                motivoOptions: motivoOptions,
+                cancellationReasonOptions: cancellationReasonOptions
+            };
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+            console.log(`Dados salvos com sucesso no localStorage (chave: ${LOCAL_STORAGE_KEY}).`);
+        } catch (e) {
+            console.error("Erro CRÍTICO ao salvar dados no localStorage:", e);
+            alert("ATENÇÃO: Erro ao salvar os dados. Verifique o console para detalhes e se o localStorage não está cheio.");
+        }
+    }
+
     function loadDataFromLocalStorage() {
         console.log(`Tentando carregar dados do localStorage (chave: ${LOCAL_STORAGE_KEY})...`);
         const storedDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -587,15 +894,24 @@
             try {
                 const storedData = JSON.parse(storedDataString);
                 console.log(`Dados crus do localStorage (chave: ${LOCAL_STORAGE_KEY}):`, storedData);
-                if (storedData.version === APP_VERSION || storedData.version === "1.9.8" || storedData.version === "1.9.7" || storedData.version === "1.9.6" || storedData.version === "1.9.5") {
+
+                const compatibleVersions = ["2.1.0", "2.0.0", "1.9.9", "1.9.8", "1.9.7", "1.9.6", "1.9.5"];
+
+                if (compatibleVersions.includes(storedData.version)) {
                     ordensServico = storedData.ordensServico || [];
+                    canceledOS = storedData.canceledOS || [];
+                    notifications = storedData.notifications || []; // Carregar notificações
                     googleUser = storedData.googleUser || null;
                     savedFilters = storedData.savedFilters || {};
                     ITEMS_PER_PAGE = parseInt(storedData.itemsPerPage, 10) || ITEMS_PER_PAGE_DEFAULT;
+                    motivoOptions = storedData.motivoOptions || [ "Sem Pré-OS", "Sem Anexos", "Sem informações", "Sem Atividades", "Sem Participantes", "Informações incompletas" ];
+                    cancellationReasonOptions = storedData.cancellationReasonOptions || [ "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro" ];
 
                     ordensServico.forEach(os => {
                         if (os.marcadorAtrasoManual === undefined) os.marcadorAtrasoManual = false;
                         if (os.produto === undefined) os.produto = '';
+                        if (os.isInCompliance === undefined) os.isInCompliance = false;
+                        if (os.isDuplicate === undefined) os.isDuplicate = false; // Novo campo
 
                         if (typeof os.logisticaOk === 'boolean' && typeof os.logisticaStatus === 'undefined') {
                             os.logisticaStatus = os.logisticaOk ? logisticaStatusOptions[0] : defaultLogisticaStatus;
@@ -610,31 +926,44 @@
                         if (os.dataAbertura) { const parsedOpen = parseAndValidateDate(os.dataAbertura, `OS ${os.numero} Data Abertura`); if(parsedOpen.error) console.warn(`Erro ao parsear dataAbertura '${os.dataAbertura}' da OS ${os.numero} ao carregar: ${parsedOpen.error}.`); os.dataAbertura = parsedOpen.date || new Date().toISOString().split('T')[0];} else { os.dataAbertura = new Date().toISOString().split('T')[0]; console.warn(`OS ${os.numero} sem dataAbertura ao carregar, definindo para hoje.`); }
                         if (os.prazoFinal) { const parsedDue = parseAndValidateDate(os.prazoFinal, `OS ${os.numero} Prazo Final`); if(parsedDue.error) console.warn(`Erro ao parsear prazoFinal '${os.prazoFinal}' da OS ${os.numero} ao carregar: ${parsedDue.error}.`); os.prazoFinal = parsedDue.date || new Date().toISOString().split('T')[0];} else { os.prazoFinal = new Date().toISOString().split('T')[0]; console.warn(`OS ${os.numero} sem prazoFinal ao carregar, definindo para hoje.`);}
                     });
+
+                    canceledOS.forEach(os => {
+                         if (os.isInCompliance === undefined) os.isInCompliance = false;
+                    });
+
                      if (storedData.version !== APP_VERSION) {
                         saveDataToLocalStorage();
                     }
                 } else {
                     console.warn(`Versão dos dados (${storedData.version}) incompatível com aplicação (${APP_VERSION}). Carregando padrões.`);
-                    ordensServico = []; googleUser = null; savedFilters = {}; ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
+                    ordensServico = []; canceledOS = []; notifications = []; googleUser = null; savedFilters = {}; ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
+                    motivoOptions = [ "Sem Pré-OS", "Sem Anexos", "Sem informações", "Sem Atividades", "Sem Participantes", "Informações incompletas" ];
+                    cancellationReasonOptions = [ "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro" ];
                 }
             } catch (e) {
                 console.error("Erro CRÍTICO ao carregar/migrar dados do localStorage:", e);
-                ordensServico = []; googleUser = null; savedFilters = {}; ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
+                ordensServico = []; canceledOS = []; notifications = []; googleUser = null; savedFilters = {}; ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
+                motivoOptions = [ "Sem Pré-OS", "Sem Anexos", "Sem informações", "Sem Atividades", "Sem Participantes", "Informações incompletas" ];
+                cancellationReasonOptions = [ "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro" ];
                 alert("Erro ao carregar dados salvos. Iniciando com dados limpos. Verifique o console.");
             }
         } else {
             console.log(`Nenhum dado encontrado no localStorage para '${LOCAL_STORAGE_KEY}'. Iniciando com valores padrão.`);
+             motivoOptions = [ "Sem Pré-OS", "Sem Anexos", "Sem informações", "Sem Atividades", "Sem Participantes", "Informações incompletas" ];
+             cancellationReasonOptions = [ "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro" ];
+             notifications = [];
         }
         const itemsPerPageSettingElement = document.getElementById('itemsPerPageSetting');
         if (itemsPerPageSettingElement) itemsPerPageSettingElement.value = ITEMS_PER_PAGE;
+        updateNotificationBell(); // Atualiza o sino ao carregar
     }
 
-    function populateSelectWithOptions(selectElement, optionsArray, isMultiple = false, defaultText = "Todos") {
+    function populateSelectWithOptions(selectElement, optionsArray, isMultiple = false, defaultText = "Todos", addEmptyOptionFirst = true) {
         if (!selectElement) return;
         const currentValue = $(selectElement).val();
         selectElement.innerHTML = '';
 
-        if (!isMultiple) {
+        if (!isMultiple && addEmptyOptionFirst) {
             const allOption = document.createElement('option');
             allOption.value = "";
             allOption.textContent = defaultText;
@@ -648,37 +977,48 @@
             selectElement.appendChild(option);
         });
 
-        if (isMultiple) {
+        if (isMultiple && $(selectElement).hasClass('chosen-select')) {
             if (currentValue && Array.isArray(currentValue)) {
                 $(selectElement).val(currentValue.filter(val => optionsArray.includes(val)));
             }
-        } else {
+            $(selectElement).trigger("chosen:updated");
+        } else if (!isMultiple && $(selectElement).hasClass('chosen-select')) {
+            if (currentValue && optionsArray.includes(currentValue)) {
+                $(selectElement).val(currentValue);
+            }
+            $(selectElement).trigger("chosen:updated");
+        } else if (isMultiple) {
+             if (currentValue && Array.isArray(currentValue)) {
+                $(selectElement).val(currentValue.filter(val => optionsArray.includes(val)));
+            }
+        }
+        else {
             if (currentValue && optionsArray.includes(currentValue)) {
                 selectElement.value = currentValue;
-            } else if (optionsArray.length > 0 && !isMultiple && selectElement.querySelector('option[value=""]')) {
-                 // Mantém o padrão "Todos"
-            } else if (optionsArray.length > 0 && !isMultiple) {
+            } else if (addEmptyOptionFirst && selectElement.querySelector('option[value=""]')) {
+                 // Default
+            } else if (optionsArray.length > 0 && !addEmptyOptionFirst) {
                  selectElement.value = optionsArray[0];
             }
         }
     }
 
-    function populateProductFilters() { if (!productDatalist || !filterProductSelect || !reportProductSelect) { console.warn("Elementos de filtro de produto não encontrados no DOM para popular."); return; } const products = [...new Set(ordensServico.map(os => os.produto).concat(defaultProducts).filter(pr => pr && pr.trim() !== ""))].sort((a, b) => a.localeCompare(b)); productDatalist.innerHTML = ''; populateSelectWithOptions(filterProductSelect, products, false, "Todos Produtos"); populateSelectWithOptions(reportProductSelect, products, false, "Todos Produtos"); products.forEach(product => { const option = document.createElement('option'); option.value = product; productDatalist.appendChild(option); });}
 
+    function populateProductFilters() { if (!productDatalist || !filterProductSelect || !reportProductSelect) { console.warn("Elementos de filtro de produto não encontrados no DOM para popular."); return; } const products = [...new Set(ordensServico.map(os => os.produto).concat(defaultProducts).filter(pr => pr && pr.trim() !== ""))].sort((a, b) => a.localeCompare(b)); productDatalist.innerHTML = ''; populateSelectWithOptions(filterProductSelect, products, false, "Todos Produtos"); populateSelectWithOptions(reportProductSelect, products, false, "Todos Produtos"); products.forEach(product => { const option = document.createElement('option'); option.value = product; productDatalist.appendChild(option); });}
     function populateLogisticaStatusFilters() {
         if (filterLogisticaStatusSelect) {
             populateSelectWithOptions(filterLogisticaStatusSelect, logisticaStatusOptions, true);
-            $(filterLogisticaStatusSelect).trigger("chosen:updated");
         }
         if (reportFilterLogisticaStatusSelect) {
              populateSelectWithOptions(reportFilterLogisticaStatusSelect, logisticaStatusOptions, true);
-            $(reportFilterLogisticaStatusSelect).trigger("chosen:updated");
         }
         if (osLogisticaStatusModalSelect) {
-            populateSelectWithOptions(osLogisticaStatusModalSelect, logisticaStatusOptions, false);
+            populateSelectWithOptions(osLogisticaStatusModalSelect, logisticaStatusOptions, false, "", false);
+             if (!osLogisticaStatusModalSelect.value && logisticaStatusOptions.length > 0) {
+                osLogisticaStatusModalSelect.value = defaultLogisticaStatus;
+            }
         }
     }
-
     function addRecentActivity(action, userName = null) { if (!recentActivityList) { console.warn("Elemento recentActivityList não encontrado para adicionar atividade."); return; } const listItem = document.createElement('li'); const now = new Date(); let userDisplay = userName ? ` <span class="font-medium text-sky-400">(${userName})</span>` : (googleUser ? ` <span class="font-medium text-slate-400">(${googleUser.given_name || googleUser.name})</span>` : ''); listItem.className = 'flex justify-between items-center text-sm pb-2 border-b border-slate-700'; listItem.innerHTML = `<span>${action}${userDisplay}</span><span class="text-slate-500 text-xs">${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>`; const placeholder = recentActivityList.querySelector('.text-placeholder'); if (placeholder) recentActivityList.innerHTML = ''; recentActivityList.insertBefore(listItem, recentActivityList.firstChild); if (recentActivityList.children.length > 7) recentActivityList.removeChild(recentActivityList.lastChild); }
 
     // GOOGLE SIGN-IN
@@ -689,8 +1029,8 @@
 
     // FILTROS SALVOS
     function populateSavedFiltersSelect() { const select = document.getElementById('savedFilters'); if (!select) return; const currentValue = select.value; select.innerHTML = '<option value="">Carregar filtro...</option>'; for (const name in savedFilters) { const option = document.createElement('option'); option.value = name; option.textContent = name; select.appendChild(option); } if (currentValue && savedFilters[currentValue]) select.value = currentValue; }
-    function saveCurrentFilters() { const nameInput = document.getElementById('newFilterName'); if (!nameInput) return; const name = nameInput.value.trim(); if (!name) { alert("Especifique um nome para o filtro salvo."); return; } if (savedFilters[name] && !confirm(`O filtro salvo "${name}" já existe. Deseja sobrescrevê-lo?`)) return; const descInput = document.getElementById('filterDescription'); savedFilters[name] = { numero: document.getElementById('filterOsNumber').value, cliente: document.getElementById('filterClient').value, descricao: descInput ? descInput.value : "", produto: document.getElementById('filterProduct').value, status: document.getElementById('filterStatus').value, marcadorAtraso: document.getElementById('filterMarcadorAtraso').value, logisticaStatus: $(document.getElementById('filterLogisticaStatus')).val(), dataInicio: document.getElementById('filterDateStart').value, dataFim: document.getElementById('filterDateEnd').value }; nameInput.value = ''; populateSavedFiltersSelect(); saveDataToLocalStorage(); addRecentActivity(`Filtro "${name}" salvo.`); }
-    function loadSelectedFilter() { const select = document.getElementById('savedFilters'); if (!select) return; const name = select.value; if (name && savedFilters[name]) { document.getElementById('filterOsNumber').value = savedFilters[name].numero || ""; document.getElementById('filterClient').value = savedFilters[name].cliente || ""; const descInput = document.getElementById('filterDescription'); if (descInput) descInput.value = savedFilters[name].descricao || ""; document.getElementById('filterProduct').value = savedFilters[name].produto || ""; document.getElementById('filterStatus').value = savedFilters[name].status || ""; document.getElementById('filterMarcadorAtraso').value = savedFilters[name].marcadorAtraso || ""; $('#filterLogisticaStatus').val(savedFilters[name].logisticaStatus || []).trigger('chosen:updated'); document.getElementById('filterDateStart').value = savedFilters[name].dataInicio || ""; document.getElementById('filterDateEnd').value = savedFilters[name].dataFim || ""; applyFiltersAndRender(); addRecentActivity(`Filtro "${name}" carregado.`); } else if (name) alert("Filtro salvo não encontrado."); }
+    function saveCurrentFilters() { const nameInput = document.getElementById('newFilterName'); if (!nameInput) return; const name = nameInput.value.trim(); if (!name) { alert("Especifique um nome para o filtro salvo."); return; } if (savedFilters[name] && !confirm(`O filtro salvo "${name}" já existe. Deseja sobrescrevê-lo?`)) return; const descInput = document.getElementById('filterDescription'); savedFilters[name] = { numero: document.getElementById('filterOsNumber').value, cliente: document.getElementById('filterClient').value, descricao: descInput ? descInput.value : "", produto: document.getElementById('filterProduct').value, status: document.getElementById('filterStatus').value, marcadorAtraso: document.getElementById('filterMarcadorAtraso').value, conformidade: filterConformidadeSelect.value, logisticaStatus: $(document.getElementById('filterLogisticaStatus')).val(), dataInicio: document.getElementById('filterDateStart').value, dataFim: document.getElementById('filterDateEnd').value }; nameInput.value = ''; populateSavedFiltersSelect(); saveDataToLocalStorage(); addRecentActivity(`Filtro "${name}" salvo.`); }
+    function loadSelectedFilter() { const select = document.getElementById('savedFilters'); if (!select) return; const name = select.value; if (name && savedFilters[name]) { document.getElementById('filterOsNumber').value = savedFilters[name].numero || ""; document.getElementById('filterClient').value = savedFilters[name].cliente || ""; const descInput = document.getElementById('filterDescription'); if (descInput) descInput.value = savedFilters[name].descricao || ""; document.getElementById('filterProduct').value = savedFilters[name].produto || ""; document.getElementById('filterStatus').value = savedFilters[name].status || ""; document.getElementById('filterMarcadorAtraso').value = savedFilters[name].marcadorAtraso || ""; filterConformidadeSelect.value = savedFilters[name].conformidade || ""; $('#filterLogisticaStatus').val(savedFilters[name].logisticaStatus || []).trigger('chosen:updated'); document.getElementById('filterDateStart').value = savedFilters[name].dataInicio || ""; document.getElementById('filterDateEnd').value = savedFilters[name].dataFim || ""; applyFiltersAndRender(); addRecentActivity(`Filtro "${name}" carregado.`); } else if (name) alert("Filtro salvo não encontrado."); }
     function deleteSavedFilter() { const select = document.getElementById('savedFilters'); if (!select) return; const name = select.value; if (name && savedFilters[name]) { if (confirm(`Tem certeza que deseja excluir o filtro salvo "${name}"?`)) { delete savedFilters[name]; populateSavedFiltersSelect(); saveDataToLocalStorage(); addRecentActivity(`Filtro "${name}" excluído.`); } } else if (name) alert("O filtro salvo não existe."); else alert("Por favor, selecione um filtro salvo para excluir."); }
 
     // AÇÕES EM MASSA
@@ -699,8 +1039,16 @@
     function applyBulkAction() { const statusSelect = document.getElementById('bulkActionStatus'), tableBody = document.getElementById('osTableBody'), selectAllCheckbox = document.getElementById('selectAllOsCheckbox'); if (!statusSelect || !tableBody || !selectAllCheckbox) return; const newStatus = statusSelect.value; if (!newStatus) { alert("Por favor, selecione um status para aplicar."); return; } const selectedCheckboxes = Array.from(tableBody.querySelectorAll('input[type="checkbox"][data-id]:checked')); if (selectedCheckboxes.length === 0) { alert("Nenhuma OS selecionada para a ação em massa."); return; } selectedCheckboxes.forEach(cb => { const osId = cb.dataset.id; const osIndex = ordensServico.findIndex(os => os.id === osId); if (osIndex !== -1) ordensServico[osIndex].status = newStatus; }); addRecentActivity(`${selectedCheckboxes.length} OS(s) tiveram o status OS alterado para ${newStatus}.`); saveDataToLocalStorage(); refreshAllViews(); selectAllCheckbox.checked = false; updateSelectedCount(); }
     function bulkDeleteSelectedOS() { const tableBody = document.getElementById('osTableBody'), selectAllCheckbox = document.getElementById('selectAllOsCheckbox'); if (!tableBody || !selectAllCheckbox) return; const selectedCheckboxes = Array.from(tableBody.querySelectorAll('input[type="checkbox"][data-id]:checked')); if (selectedCheckboxes.length === 0) { alert("Nenhuma OS selecionada para exclusão."); return; } if (confirm(`Tem certeza que deseja excluir ${selectedCheckboxes.length} OS(s) selecionada(s)? Esta ação é irreversível.`)) { const idsToDelete = selectedCheckboxes.map(cb => cb.dataset.id); ordensServico = ordensServico.filter(os => !idsToDelete.includes(os.id)); addRecentActivity(`${idsToDelete.length} OS(s) foram excluídas.`); saveDataToLocalStorage(); if (currentPage > 1 && paginateData(getFilteredOS(), currentPage, ITEMS_PER_PAGE).length === 0) currentPage--; refreshAllViews(); selectAllCheckbox.checked = false; updateSelectedCount(); } }
 
-    // RENDERIZAÇÃO DA TABELA DE OS (OS List View) e Atualização de Status de Logística
+    // RENDERIZAÇÃO DA TABELA DE OS (OS List View) e Atualização de Status de Logística e Conformidade
     function toggleMarcadorAtrasoManual(osId, event) { event.stopPropagation(); const osIndex = ordensServico.findIndex(os => os.id === osId); if (osIndex !== -1) { ordensServico[osIndex].marcadorAtrasoManual = !ordensServico[osIndex].marcadorAtrasoManual; addRecentActivity(`Marcador "Não Realizada no Prazo" ${ordensServico[osIndex].marcadorAtrasoManual ? 'aplicado' : 'removido'} para OS ${ordensServico[osIndex].numero}.`); saveDataToLocalStorage(); applyFiltersAndRender(); } }
+    function toggleIsInCompliance(osId, checkboxElement) {
+        const osIndex = ordensServico.findIndex(os => os.id === osId);
+        if (osIndex !== -1) {
+            ordensServico[osIndex].isInCompliance = checkboxElement.checked;
+            addRecentActivity(`Status de conformidade da OS ${ordensServico[osIndex].numero} alterado para ${checkboxElement.checked ? 'Conforme' : 'Não Conforme'}.`);
+            saveDataToLocalStorage();
+        }
+    }
 
     function updateLogisticaStatus(osId, newLogisticaStatus, fromTable = false) {
         const osIndex = ordensServico.findIndex(os => os.id === osId);
@@ -718,21 +1066,21 @@
 
     function applyFiltersAndRender() { currentPage = 1; renderOSTable(); }
 
-    // CRUD DE OS E MODAL
+    // CRUD DE OS E MODAL (COM TRATAMENTO DE DUPLICADAS)
     function updateStatus(selectElement) { const osId = selectElement.dataset.id, newStatus = selectElement.value, osIndex = ordensServico.findIndex(os => os.id === osId); if (osIndex !== -1) { ordensServico[osIndex].status = newStatus; addRecentActivity(`Status da OS ${ordensServico[osIndex].numero} alterado para ${newStatus}.`); saveDataToLocalStorage(); refreshAllViews(); } }
 
     function openAddOSModal() {
         if (!osModal || !osForm || !modalTitle || !osLogisticaStatusModalSelect) {return;}
         osForm.reset();
-        document.getElementById('osId').value = '';
+        document.getElementById('osId').value = ''; // Limpa ID para garantir que é uma nova OS
         modalTitle.textContent = 'Adicionar Nova Ordem de Serviço';
         const dataAberturaEl = document.getElementById('osDataAberturaModal');
         if (dataAberturaEl) dataAberturaEl.value = new Date().toISOString().split('T')[0];
         document.getElementById('osMarcadorAtrasoModal').checked = false;
+        document.getElementById('osIsInComplianceModal').checked = false;
 
-        populateSelectWithOptions(osLogisticaStatusModalSelect, logisticaStatusOptions, false);
+        populateSelectWithOptions(osLogisticaStatusModalSelect, logisticaStatusOptions, false, "", false);
         osLogisticaStatusModalSelect.value = defaultLogisticaStatus;
-
         osModal.classList.remove('hidden');
     }
 
@@ -755,10 +1103,10 @@
             document.getElementById('osStatusModal').value = os.status;
             document.getElementById('osPrioridadeModal').value = os.prioridade;
             document.getElementById('osMarcadorAtrasoModal').checked = os.marcadorAtrasoManual || false;
+            document.getElementById('osIsInComplianceModal').checked = os.isInCompliance || false;
 
-            populateSelectWithOptions(osLogisticaStatusModalSelect, logisticaStatusOptions, false);
+            populateSelectWithOptions(osLogisticaStatusModalSelect, logisticaStatusOptions, false, "", false);
             osLogisticaStatusModalSelect.value = os.logisticaStatus || defaultLogisticaStatus;
-
             osModal.classList.remove('hidden');
         } else {
             alert("OS não encontrada para edição.");
@@ -766,7 +1114,30 @@
     }
     function deleteOS(id) { const osToDelete = ordensServico.find(os => os.id === id); if (confirm(`Tem certeza que deseja excluir a OS ${osToDelete?.numero || id}? Esta ação é irreversível.`)) { ordensServico = ordensServico.filter(os => os.id !== id); addRecentActivity(`OS ${osToDelete?.numero || 'ID ' + id} foi excluída.`); saveDataToLocalStorage(); if (currentPage > 1 && paginateData(getFilteredOS(), currentPage, ITEMS_PER_PAGE).length === 0) currentPage--; refreshAllViews(); } }
 
-    // LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV
+    function handleSaveOS(osData, existingOsToReplace = null) {
+        if (existingOsToReplace) { // Substituir OS existente
+            const osIndex = ordensServico.findIndex(o => o.id === existingOsToReplace.id);
+            if (osIndex !== -1) {
+                ordensServico[osIndex] = { ...existingOsToReplace, ...osData, numero: osData.numero }; // Mantém o ID original, atualiza dados
+                addRecentActivity(`OS ${osData.numero} substituída.`);
+            } else {
+                alert("Erro ao substituir OS: OS original não encontrada."); return;
+            }
+        } else { // Adicionar como nova (pode ser marcada como duplicada se essa lógica for ativada)
+            osData.id = generateId();
+            ordensServico.unshift(osData);
+            addRecentActivity(`Nova OS ${osData.numero} ${osData.isDuplicate ? '(Duplicada) ' : ''}adicionada.`);
+        }
+        saveDataToLocalStorage();
+        populateProductFilters();
+        populateLogisticaStatusFilters();
+        closeOSModal();
+        currentPage = 1;
+        refreshAllViews();
+    }
+
+
+    // LÓGICA DE IMPORTAÇÃO DE EXCEL/CSV (COM TRATAMENTO DE DUPLICADAS)
     function processAndValidateOSData(jsonData) {
         const headersFromFile = jsonData[0].map(header => String(header || '').trim().toLowerCase());
         const dataRows = jsonData.slice(1);
@@ -797,12 +1168,14 @@
         dataRows.forEach((row, rowIndex) => {
             if (row.every(cell => cell === null || String(cell || '').trim() === '')) return;
 
-            const newOS = {
+            let newOS = { // Use let for newOS to allow modification
                 id: generateId(),
                 produto: colIndices.produto_import !== -1 && String(row[colIndices.produto_import] || '').trim() !== '' ? String(row[colIndices.produto_import]).trim() : "N/A (Importado)",
                 prioridade: "Média",
                 marcadorAtrasoManual: false,
-                logisticaStatus: defaultLogisticaStatus
+                logisticaStatus: defaultLogisticaStatus,
+                isInCompliance: false,
+                isDuplicate: false // Flag para duplicata
             };
             let rowIsValid = true, currentLogMessages = [];
 
@@ -857,6 +1230,15 @@
             const duracaoVal = colIndices.duracao_h !== -1 && row[colIndices.duracao_h] ? String(row[colIndices.duracao_h]).trim() : '';
             if (duracaoVal) descParts.push(`Duração: ${duracaoVal}h`);
             newOS.descricao = descParts.length > 0 ? descParts.join(', ') + ". (OS Importada)" : "(OS Importada)";
+
+            // Tratamento de Duplicata na Importação
+            const existingOSByNumber = ordensServico.find(os => os.numero === newOS.numero);
+            if (existingOSByNumber) {
+                newOS.isDuplicate = true;
+                newOS.descricao += " (DUPLICADA)";
+                currentLogMessages.push(`OS Nº ${newOS.numero} já existe, importada como duplicada.`);
+            }
+
 
             if (rowIsValid) {
                 validOSs.push(newOS);
@@ -928,7 +1310,7 @@
                     cISM.className = `mt-4 text-sm ${validOSs.length > 0 ? 'text-amber-400' : 'text-red-400'}`;
                 }
                 if (warningsCount > 0) {
-                     finalMessage += `${warningsCount} linha(s) com avisos. `;
+                     finalMessage += `${warningsCount} linha(s) com avisos (incluindo duplicatas). `;
                      if (cISM.className.includes('text-green-400')) {
                         cISM.className = 'mt-4 text-sm text-amber-400';
                      }
@@ -1000,8 +1382,8 @@
         updateSelectedCount();
 
         if (!filteredData || filteredData.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="13" class="text-center py-10 text-slate-400">Nenhuma Ordem de Serviço encontrada.</td></tr>`;
-            renderPagination(0, 0);
+            tableBody.innerHTML = `<tr><td colspan="14" class="text-center py-10 text-slate-400">Nenhuma Ordem de Serviço encontrada.</td></tr>`;
+            renderPagination(0, 0, 'paginationControls', currentPage, changePage);
             return;
         }
 
@@ -1028,29 +1410,120 @@
                 <td class="py-3 px-4 text-sm"><select class="select-field status-select p-1 text-xs" data-id="${os.id}" onchange="updateStatus(this)"> ${validStatusesGlobal.map(s => `<option value="${s}" ${os.status === s ? 'selected' : ''}>${s === 'Pendente Informação' ? 'Pendente Info' : (s === 'Aguardando Aprovação' ? 'Aguard. Aprov.' : s)}</option>`).join('')} </select></td>
                 <td class="py-3 px-4 text-sm">${logisticaSelectHTML}</td>
                 <td class="py-3 px-4 text-sm"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClass(os.prioridade)}">${os.prioridade}</span></td>
+                <td class="py-3 px-2 text-center compliance-cell"><input type="checkbox" data-id="${os.id}" onchange="toggleIsInCompliance('${os.id}', this)" class="form-checkbox h-4 w-4" ${os.isInCompliance ? 'checked' : ''} title="${os.isInCompliance ? 'OS em conformidade' : 'OS não conforme'}"></td>
                 <td class="py-3 px-4 text-sm">
-                    <button class="text-sky-500 hover:text-sky-400 p-1 mr-2" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="text-red-500 hover:text-red-400 p-1 mr-2" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button>
+                    <button class="text-sky-500 hover:text-sky-400 p-1 mr-1" title="Editar" onclick="editOS('${os.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="text-red-500 hover:text-red-400 p-1 mr-1" title="Excluir" onclick="deleteOS('${os.id}')"><i class="fas fa-trash"></i></button>
+                    <button class="text-orange-500 hover:text-orange-400 p-1 mr-1" title="Cancelar OS" onclick="openCancelOSModal('${os.id}')"><i class="fas fa-ban"></i></button>
                     <button class="text-green-500 hover:text-green-400 p-1" title="Baixar .ics" onclick="downloadICS('${os.id}')"><i class="fas fa-calendar-plus"></i></button>
                 </td>`;
         });
-        renderPagination(filteredData.length, currentPage);
+        renderPagination(filteredData.length, currentPage, 'paginationControls', currentPage, changePage);
     }
 
     function paginateData(data, page, itemsPerPage) { const start = (page - 1) * itemsPerPage, end = start + itemsPerPage; return data.slice(start, end); }
-    function renderPagination(totalItems, page) { const paginationControls = document.getElementById('paginationControls'); if (!paginationControls) return; paginationControls.innerHTML = ''; const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE); if (totalPages <= 1) return; const prevButton = document.createElement('button'); prevButton.innerHTML = '<i class="fas fa-chevron-left"></i> Anterior'; prevButton.className = 'btn btn-sm btn-secondary disabled:opacity-50'; prevButton.disabled = page === 1; prevButton.onclick = () => { if (page > 1) changePage(page - 1); }; paginationControls.appendChild(prevButton); const pageInfo = document.createElement('span'); pageInfo.className = 'text-sm px-3'; pageInfo.textContent = `Página ${page} de ${totalPages}`; paginationControls.appendChild(pageInfo); const nextButton = document.createElement('button'); nextButton.innerHTML = 'Próximo <i class="fas fa-chevron-right"></i>'; nextButton.className = 'btn btn-sm btn-secondary disabled:opacity-50'; nextButton.disabled = page === totalPages; nextButton.onclick = () => { if (page < totalPages) changePage(page + 1); }; paginationControls.appendChild(nextButton); }
+    function renderPagination(totalItems, page, controlsId, currentPageVar, changePageFn) {
+        const paginationControls = document.getElementById(controlsId);
+        if (!paginationControls) return;
+        paginationControls.innerHTML = '';
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        if (totalPages <= 1) return;
+
+        const prevButton = document.createElement('button');
+        prevButton.innerHTML = '<i class="fas fa-chevron-left"></i> Anterior';
+        prevButton.className = 'btn btn-sm btn-secondary disabled:opacity-50';
+        prevButton.disabled = page === 1;
+        prevButton.onclick = () => { if (page > 1) changePageFn(page - 1); };
+        paginationControls.appendChild(prevButton);
+
+        const pageInfo = document.createElement('span');
+        pageInfo.className = 'text-sm px-3';
+        pageInfo.textContent = `Página ${page} de ${totalPages}`;
+        paginationControls.appendChild(pageInfo);
+
+        const nextButton = document.createElement('button');
+        nextButton.innerHTML = 'Próximo <i class="fas fa-chevron-right"></i>';
+        nextButton.className = 'btn btn-sm btn-secondary disabled:opacity-50';
+        nextButton.disabled = page === totalPages;
+        nextButton.onclick = () => { if (page < totalPages) changePageFn(page + 1); };
+        paginationControls.appendChild(nextButton);
+    }
     function changePage(newPage) { currentPage = newPage; renderOSTable(); }
+    function changeCanceledOsPage(newPage) { currentCanceledOsPage = newPage; renderCanceledOSTable(); }
+
 
     // FUNÇÕES DE EXPORTAÇÃO
-    function exportTableToCSV(tableId, fileName) { let csv = []; const table = document.getElementById(tableId); if (!table) { console.error(`Tabela ${tableId} não encontrada.`); return; } const rows = table.querySelectorAll("tr"); for (const row of rows) { const cols = row.querySelectorAll("td,th"); const rowData = []; let skipRow = false; if (tableId === 'reportsTable' && cols.length === 1 && cols[0].getAttribute('colspan') === "10" && cols[0].innerText.includes("Selecione filtros")) { skipRow = true; } if (skipRow) continue; for (const col of cols) { let cellText = col.innerText; if (col.querySelector('select.status-select')) cellText = col.querySelector('select.status-select').value; else if (col.querySelector('select.logistica-select')) cellText = col.querySelector('select.logistica-select').value; else if (col.querySelector('.status-tag')) cellText = col.querySelector('.status-tag').innerText;  else if (col.querySelector('.selected-motivos-display')) { const osIdForRow = row.dataset.osIdForMotivos; const motivos = osIdForRow ? (reportOsMotivos[osIdForRow] || []) : []; cellText = motivos.join('; '); } else if (col.querySelector('span[class*="priority-"]')) cellText = col.querySelector('span').innerText; if (tableId === 'osTable') { const isCheckboxColumn = col.querySelector('input[type="checkbox"]'); const isActionsColumn = Array.from(col.querySelectorAll('button[title]')).some(btn => ['Editar', 'Excluir', 'Baixar .ics'].includes(btn.title)); if (isCheckboxColumn || isActionsColumn) continue; if (col.querySelector('.fa-flag.text-purple-500')) cellText = "Atraso: Sim"; else if (col.querySelector('.far.fa-flag')) cellText = "Atraso: Não"; if (col.cellIndex === 1 && !cellText.includes("Atraso:")) { const osNumeroMatch = col.innerText.match(/(\S+)$/); if (osNumeroMatch) cellText = osNumeroMatch[0]; } } rowData.push('"' + cellText.replace(/\s+/g, ' ').trim().replace(/"/g, '""') + '"'); } if (rowData.length > 0) csv.push(rowData.join(",")); } const csvFile = new Blob(["\uFEFF" + csv.join("\n")], { type: "text/csv;charset=utf-8;" }); const link = document.createElement("a"); link.href = URL.createObjectURL(csvFile); link.download = fileName; link.style.display = "none"; document.body.appendChild(link); link.click(); document.body.removeChild(link); addRecentActivity(`Arquivo CSV "${fileName}" exportado.`);}
-    function exportTableToPDF(tableId, title, tableBodyId) { const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' }); const textColor = '#cbd5e1', headerColor = '#334155', headerTextColor = '#f8fafc', rowColor = '#1e293b', alternateRowColor = '#283447'; let currentY = 40; doc.setFontSize(18); doc.setTextColor(textColor); doc.text(title, doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' }); currentY += 30; const tableElement = document.getElementById(tableId); if (tableElement) { const head = []; const headersToExclude = ['ações']; const checkboxHeaderPresent = tableElement.querySelector('thead th input[type=checkbox]'); tableElement.querySelectorAll('thead th').forEach((th, index) => { if (checkboxHeaderPresent && index === 0) return; if (!headersToExclude.includes(th.innerText.toLowerCase().trim())) head.push(th.innerText.trim()); }); const body = []; const tableBodyElement = document.getElementById(tableBodyId); if (tableBodyElement) { tableBodyElement.querySelectorAll('tr').forEach(tr => { const rowData = []; tr.querySelectorAll('td').forEach((td, index) => { if (checkboxHeaderPresent && index === 0) return; let headerIndex = checkboxHeaderPresent ? index + 1 : index; let thElements = Array.from(tableElement.querySelectorAll('thead th')); if(thElements[headerIndex] && headersToExclude.includes(thElements[headerIndex].innerText.toLowerCase().trim())) return; let cellText = td.innerText.trim(); if (td.querySelector('select.status-select')) cellText = td.querySelector('select.status-select').value; else if (td.querySelector('select.logistica-select')) cellText = td.querySelector('select.logistica-select').value; else if (td.querySelector('span[class*="priority-"]')) cellText = td.querySelector('span').innerText.trim(); else if (thElements[headerIndex] && thElements[headerIndex].innerText.trim().toLowerCase() === 'nº os') { const osNumeroMatch = cellText.match(/(\S+)$/); cellText = osNumeroMatch ? osNumeroMatch[0] : cellText; } rowData.push(cellText); }); if (rowData.length > 0) body.push(rowData); }); } if (body.length > 0 && !(body[0].length === 1 && body[0][0].includes("Nenhuma Ordem de Serviço encontrada"))) { doc.autoTable({ startY: currentY, head: [head], body: body, theme: 'grid', headStyles: { fillColor: headerColor, textColor: headerTextColor, fontStyle: 'bold', fontSize: 8 }, styles: { textColor: textColor, cellPadding: 4, fontSize: 7, overflow: 'linebreak' }, alternateRowStyles: { fillColor: alternateRowColor }, didParseCell: function (data) { data.cell.styles.fillColor = data.row.index % 2 === 0 ? rowColor : alternateRowColor; data.cell.styles.textColor = textColor; if (data.section === 'head') { data.cell.styles.fillColor = headerColor; data.cell.styles.textColor = headerTextColor; } } }); } else doc.setFontSize(12).text("Nenhum dado na tabela.", 40, currentY); } else doc.setFontSize(12).text("Tabela não encontrada.", 40, currentY); const generatedDate = `Gerado em: ${new Date().toLocaleString('pt-BR')}`; doc.setFontSize(8).text(generatedDate, doc.internal.pageSize.getWidth() - 40, doc.internal.pageSize.getHeight() - 20, { align: 'right' }); doc.save(title.replace(/[^a-z0-9_]+/gi, '_').toLowerCase() + '.pdf'); addRecentActivity(`PDF "${title}" exportado.`); }
-    async function exportReportToPDFWithCharts(tableId, title, tableBodyId, chartCanvasIds = [], includeCharts = true) { const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' }); const pTextColor = '#e2e8f0', sTextColor = '#94a3b8', hBgColor = '#334155', hTextColor = '#f8fafc', rBgColor = '#1e293b', aRBgColor = '#283447', bColor = '#475569'; const pW = doc.internal.pageSize.getWidth(), pH = doc.internal.pageSize.getHeight(), margin = 30; let cY = margin; doc.setFontSize(18); doc.setTextColor(pTextColor); doc.text(title, pW / 2, cY, { align: 'center' }); cY += 25; doc.setFontSize(9); doc.setTextColor(sTextColor); doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pW / 2, cY, { align: 'center' }); cY += 20; const rDSV=document.getElementById('reportDateStartFilter')?.value, rDEV=document.getElementById('reportDateEndFilter')?.value, rSV=document.getElementById('reportStatusFilter')?.value, rPV=document.getElementById('reportProductFilter')?.value, rFMAVal=document.getElementById('reportFilterMarcadorAtraso')?.value; const rFLSVal = $('#reportFilterLogisticaStatus').val(); let fT="Filtros Aplicados: ", hF=false; if(rDSV||rDEV){fT+=`Período: ${rDSV?formatDateToBR(rDSV):'*'} a ${rDEV?formatDateToBR(rDEV):'*'}. `;hF=true} if(rSV){fT+=`Status OS: ${rSV}. `;hF=true} if(rPV){fT+=`Produto: ${rPV}. `;hF=true} if(rFMAVal){fT+=`Atraso: ${rFMAVal==="marcada"?"Marc.":"N/Marc."}. `;hF=true} if(rFLSVal && rFLSVal.length > 0){fT+=`Logística: ${rFLSVal.join(', ')}. `;hF=true} if(!hF) fT="Filtros: Nenhum filtro específico aplicado."; doc.setFontSize(8); doc.setTextColor(sTextColor); let splitF = doc.splitTextToSize(fT, pW-(2*margin)); doc.text(splitF, margin, cY); cY+=(splitF.length*10)+15; const tblEl = document.getElementById(tableId); if (tblEl) { const head = [['Cód. OS', 'Solicitante', 'Cliente', 'Início', 'Término', 'Responsável', 'Logística', 'Produto', 'Status OS', 'Motivo Inconf.']]; const body = []; const tblBodyEl = document.getElementById(tableBodyId); if (tblBodyEl) { tblBodyEl.querySelectorAll('tr').forEach(tr => { if (tr.querySelector('td[colspan="10"]')) return; const rD = []; const osIdForRow = tr.dataset.osIdForMotivos; rD.push(tr.cells[0]?.innerText || ''); rD.push(tr.cells[1]?.innerText || ''); rD.push(tr.cells[2]?.innerText || ''); rD.push(tr.cells[3]?.innerText || ''); rD.push(tr.cells[4]?.innerText || ''); rD.push(tr.cells[5]?.innerText || ''); rD.push(tr.cells[6]?.innerText || ''); rD.push(tr.cells[7]?.innerText || ''); rD.push(tr.cells[8]?.querySelector('.status-tag')?.innerText || tr.cells[8]?.innerText || ''); const motivosText = osIdForRow ? (reportOsMotivos[osIdForRow] || []).join('; ') : ''; rD.push(motivosText); body.push(rD); }); } if (body.length > 0) { doc.autoTable({ startY: cY, head: head, body: body, theme: 'grid', headStyles: { fillColor: hBgColor, textColor: hTextColor, fontStyle: 'bold', halign: 'center', fontSize: 7, lineWidth: 0.5, lineColor: bColor }, styles: { textColor: pTextColor, cellPadding: 3, fontSize: 6, overflow: 'linebreak', halign: 'left', lineWidth: 0.5, lineColor: bColor }, alternateRowStyles: { fillColor: aRBgColor }, columnStyles: { 0: { cellWidth: 45, halign: 'center' }, 1: { cellWidth: 60 }, 2: { cellWidth: 70 }, 3: { cellWidth: 45, halign: 'center' }, 4: { cellWidth: 45, halign: 'center' }, 5: { cellWidth: 60 }, 6: { cellWidth: 50, halign: 'left' }, 7: { cellWidth: 65 }, 8: { cellWidth: 55, halign: 'center' }, 9: { cellWidth: 'auto' } }, didDrawPage: (data) => { cY = data.cursor.y + 20; if (cY > pH - margin - 50) cY = margin; }, didParseCell: function (data) { data.cell.styles.fillColor = data.row.index % 2 === 0 ? rBgColor : aRBgColor; data.cell.styles.textColor = pTextColor; if (data.section === 'head') { data.cell.styles.fillColor = hBgColor; data.cell.styles.textColor = hTextColor; } } }); cY = doc.autoTable.previous.finalY + 25; } else { doc.setFontSize(10); doc.text("Nenhum dado na tabela para os filtros.", margin, cY); cY += 20; } } else { doc.setFontSize(10); doc.text("Tabela de relatório não encontrada.", margin, cY); cY += 20; } if (includeCharts && chartCanvasIds && chartCanvasIds.length > 0) { const chartW = (pW - (Math.min(chartCanvasIds.length, 3) + 1) * margin) / Math.min(chartCanvasIds.length, 3); const chartH = chartW * 0.60; let chartX = margin; let chartsOnPage = 0; if (cY + chartH + 40 > pH - margin ) { doc.addPage(); cY = margin; } doc.setFontSize(12); doc.setTextColor(pTextColor); doc.text("Visualização Gráfica", pW / 2, cY, { align: 'center' }); cY += 25; for (const chartId of chartCanvasIds) { const canvas = document.getElementById(chartId); if (canvas && canvas.offsetParent !== null && canvas.width > 0 && canvas.height > 0) { if (chartX + chartW > pW - margin && chartsOnPage > 0 && chartsOnPage < 3) { doc.addPage(); cY = margin + 25; chartX = margin; chartsOnPage = 0; doc.setFontSize(12).setTextColor(pTextColor).text("Visualização Gráfica (cont.)", pW/2, cY-15, {align:'center'}); } try { const imgData = canvas.toDataURL('image/png', 1.0); const cTitleEl = canvas.closest('.card')?.querySelector('h4'); let cTitleTxt = cTitleEl ? cTitleEl.innerText : (chartId === 'reportChartByUsuario' ? 'OS por Solicitante' : chartId.replace('reportChartBy','Gráfico ')); doc.setFontSize(9); doc.setTextColor(pTextColor); doc.text(cTitleTxt, chartX + chartW / 2, cY - 7, { align: 'center' }); doc.addImage(imgData, 'PNG', chartX, cY, chartW, chartH); chartX += chartW + margin; chartsOnPage++; if(chartsOnPage >= 3 && chartCanvasIds.indexOf(chartId) < chartCanvasIds.length -1){ doc.addPage(); cY = margin + 25; chartX = margin; chartsOnPage = 0; doc.setFontSize(12).setTextColor(pTextColor).text("Visualização Gráfica (cont.)", pW/2, cY-15, {align:'center'});} } catch (e) { console.error("Erro ao adicionar gráfico:", e, chartId); doc.setTextColor(255,0,0).text(`Erro ${chartId}`, chartX, cY); doc.setTextColor(pTextColor); chartX += chartW + margin; chartsOnPage++; if(chartsOnPage >= 3 && chartCanvasIds.indexOf(chartId) < chartCanvasIds.length -1){ doc.addPage(); cY = margin + 25; chartX = margin; chartsOnPage = 0; doc.setFontSize(12).setTextColor(pTextColor).text("Visualização Gráfica (cont.)", pW/2, cY-15, {align:'center'});} } } } } const pageCount = doc.internal.getNumberOfPages(); for (let i = 1; i <= pageCount; i++) { doc.setPage(i); doc.setFontSize(7); doc.setTextColor(sTextColor); const footerText = `Página ${i} de ${pageCount} | Controle de OS - ${APP_VERSION}`; doc.text(footerText, pW - margin, pH - 15, { align: 'right' }); } doc.save(title.replace(/[^a-z0-9_]+/gi, '_').toLowerCase() + (includeCharts ? '_completo' : '_dados') + '.pdf'); addRecentActivity(`PDF "${title}" ${includeCharts?'completo':'só dados'} exportado.`);}
+    function exportTableToCSV(tableId, fileName) { let csv = []; const table = document.getElementById(tableId); if (!table) { console.error(`Tabela ${tableId} não encontrada.`); return; } const rows = table.querySelectorAll("tr"); for (const row of rows) { const cols = row.querySelectorAll("td,th"); const rowData = []; let skipRow = false; if ((tableId === 'reportsTable' || tableId === 'canceledOsTable') && cols.length === 1 && cols[0].getAttribute('colspan') && cols[0].innerText.includes("Selecione filtros") || cols[0].innerText.includes("Nenhuma OS")) { skipRow = true; } if (skipRow) continue; for (const col of cols) { let cellText = col.innerText; if (col.querySelector('select.status-select')) cellText = col.querySelector('select.status-select').value; else if (col.querySelector('select.logistica-select')) cellText = col.querySelector('select.logistica-select').value; else if (col.querySelector('.status-tag')) cellText = col.querySelector('.status-tag').innerText;  else if (col.querySelector('.selected-motivos-display')) { const osIdForRow = row.dataset.osIdForMotivos; const motivos = osIdForRow ? (reportOsMotivos[osIdForRow] || []) : []; cellText = motivos.join('; '); } else if (col.querySelector('span[class*="priority-"]')) cellText = col.querySelector('span').innerText; else if (col.querySelector('input[type="checkbox"].form-checkbox')) {
+            if (tableId === 'osTable' && col.classList.contains('compliance-cell')) {
+                 cellText = col.querySelector('input[type="checkbox"]').checked ? "Conforme" : "Não Conforme";
+            } else if (tableId === 'reportsTable' && col.classList.contains('compliance-cell-report')) {
+                 cellText = col.querySelector('input[type="checkbox"]').checked ? "Conforme" : "Não Conforme";
+            }
+        } if (tableId === 'osTable') { const isCheckboxColumn = col.querySelector('input[type="checkbox"][id^="selectAllOsCheckbox"]') || (col.classList.contains('checkbox-cell') && col.querySelector('input[type="checkbox"][data-id]')); const isActionsColumn = Array.from(col.querySelectorAll('button[title]')).some(btn => ['Editar', 'Excluir', 'Baixar .ics', 'Cancelar OS'].includes(btn.title)); if (isCheckboxColumn || isActionsColumn) continue; if (col.querySelector('.fa-flag.text-purple-500')) cellText = "Atraso: Sim"; else if (col.querySelector('.far.fa-flag')) cellText = "Atraso: Não"; if (col.cellIndex === 1 && !cellText.includes("Atraso:")) { const osNumeroMatch = col.innerText.match(/(\S+)$/); if (osNumeroMatch) cellText = osNumeroMatch[0]; } } rowData.push('"' + cellText.replace(/\s+/g, ' ').trim().replace(/"/g, '""') + '"'); } if (rowData.length > 0) csv.push(rowData.join(",")); } const csvFile = new Blob(["\uFEFF" + csv.join("\n")], { type: "text/csv;charset=utf-8;" }); const link = document.createElement("a"); link.href = URL.createObjectURL(csvFile); link.download = fileName; link.style.display = "none"; document.body.appendChild(link); link.click(); document.body.removeChild(link); addRecentActivity(`Arquivo CSV "${fileName}" exportado.`);}
+    function exportTableToPDF(tableId, title, tableBodyId) { const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' }); const textColor = '#cbd5e1', headerColor = '#334155', headerTextColor = '#f8fafc', rowColor = '#1e293b', alternateRowColor = '#283447'; let currentY = 40; doc.setFontSize(18); doc.setTextColor(textColor); doc.text(title, doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' }); currentY += 30; const tableElement = document.getElementById(tableId); if (tableElement) { const head = []; const headersToExclude = ['ações']; const checkboxHeaderPresent = tableElement.querySelector('thead th input[type=checkbox]'); tableElement.querySelectorAll('thead th').forEach((th, index) => { let thText = th.innerText.toLowerCase().trim(); if (tableId === 'osTable') { if (checkboxHeaderPresent && index === 0) return; if (headersToExclude.includes(thText)) return; } head.push(th.innerText.trim()); }); const body = []; const tableBodyElement = document.getElementById(tableBodyId); if (tableBodyElement) { tableBodyElement.querySelectorAll('tr').forEach(tr => { const rowData = []; tr.querySelectorAll('td').forEach((td, index) => { if (tableId === 'osTable') { if (checkboxHeaderPresent && index === 0) return; let headerIndex = checkboxHeaderPresent ? index : index -1;
+               if (checkboxHeaderPresent) headerIndex = index; else headerIndex = index -1;
+               if (headerIndex < 0) headerIndex = 0;
+               let thElements = Array.from(tableElement.querySelectorAll('thead th'));
+               let originalHeaderIndex = checkboxHeaderPresent ? index : index;
+               if(thElements[originalHeaderIndex] && headersToExclude.includes(thElements[originalHeaderIndex].innerText.toLowerCase().trim())) return;
+            } let cellText = td.innerText.trim(); if (td.querySelector('select.status-select')) cellText = td.querySelector('select.status-select').value; else if (td.querySelector('select.logistica-select')) cellText = td.querySelector('select.logistica-select').value; else if (td.querySelector('span[class*="priority-"]')) cellText = td.querySelector('span').innerText.trim(); else if (td.querySelector('input[type="checkbox"].form-checkbox') && (td.classList.contains('compliance-cell') || td.classList.contains('compliance-cell-report'))) { cellText = td.querySelector('input[type="checkbox"]').checked ? "Sim" : "Não"; } else if (tableId === 'osTable' && td.cellIndex === 1 && !cellText.includes('Atraso:')) {
+                const osNumeroMatch = cellText.match(/(\S+)$/); cellText = osNumeroMatch ? osNumeroMatch[0] : cellText;
+            } rowData.push(cellText); }); if (rowData.length > 0) body.push(rowData); }); } if (body.length > 0 && !(body[0].length === 1 && (body[0][0].includes("Nenhuma Ordem de Serviço encontrada") || body[0][0].includes("Nenhuma OS encontrada") ) )) { doc.autoTable({ startY: currentY, head: [head], body: body, theme: 'grid', headStyles: { fillColor: headerColor, textColor: headerTextColor, fontStyle: 'bold', fontSize: (tableId === 'canceledOsTable' ? 7 : 8) }, styles: { textColor: textColor, cellPadding: 4, fontSize: (tableId === 'canceledOsTable' ? 6 : 7), overflow: 'linebreak' }, alternateRowStyles: { fillColor: alternateRowColor }, didParseCell: function (data) { data.cell.styles.fillColor = data.row.index % 2 === 0 ? rowColor : alternateRowColor; data.cell.styles.textColor = textColor; if (data.section === 'head') { data.cell.styles.fillColor = headerColor; data.cell.styles.textColor = headerTextColor; } } }); } else doc.setFontSize(12).text("Nenhum dado na tabela.", 40, currentY); } else doc.setFontSize(12).text("Tabela não encontrada.", 40, currentY); const generatedDate = `Gerado em: ${new Date().toLocaleString('pt-BR')}`; doc.setFontSize(8).text(generatedDate, doc.internal.pageSize.getWidth() - 40, doc.internal.pageSize.getHeight() - 20, { align: 'right' }); doc.save(title.replace(/[^a-z0-9_]+/gi, '_').toLowerCase() + '.pdf'); addRecentActivity(`PDF "${title}" exportado.`); }
+    async function exportReportToPDFWithCharts(tableId, title, tableBodyId, chartCanvasIds = [], includeCharts = true) { const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' }); const pTextColor = '#e2e8f0', sTextColor = '#94a3b8', hBgColor = '#334155', hTextColor = '#f8fafc', rBgColor = '#1e293b', aRBgColor = '#283447', bColor = '#475569'; const pW = doc.internal.pageSize.getWidth(), pH = doc.internal.pageSize.getHeight(), margin = 30; let cY = margin; doc.setFontSize(18); doc.setTextColor(pTextColor); doc.text(title, pW / 2, cY, { align: 'center' }); cY += 25; doc.setFontSize(9); doc.setTextColor(sTextColor); doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pW / 2, cY, { align: 'center' }); cY += 20; const rDSV=document.getElementById('reportDateStartFilter')?.value, rDEV=document.getElementById('reportDateEndFilter')?.value, rSV=document.getElementById('reportStatusFilter')?.value, rPV=document.getElementById('reportProductFilter')?.value, rFMAVal=document.getElementById('reportFilterMarcadorAtraso')?.value, rFCVal = reportFilterConformidadeSelect?.value; const rFLSVal = $('#reportFilterLogisticaStatus').val(); let fT="Filtros Aplicados: ", hF=false; if(rDSV||rDEV){fT+=`Período: ${rDSV?formatDateToBR(rDSV):'*'} a ${rDEV?formatDateToBR(rDEV):'*'}. `;hF=true} if(rSV){fT+=`Status OS: ${rSV}. `;hF=true} if(rPV){fT+=`Produto: ${rPV}. `;hF=true} if(rFMAVal){fT+=`Atraso: ${rFMAVal==="marcada"?"Marc.":"N/Marc."}. `;hF=true} if(rFCVal){fT+=`Conformidade: ${rFCVal==="conforme"?"Conforme":"N/Conforme"}. `;hF=true;} if(rFLSVal && rFLSVal.length > 0){fT+=`Logística: ${rFLSVal.join(', ')}. `;hF=true} if(!hF) fT="Filtros: Nenhum filtro específico aplicado."; doc.setFontSize(8); doc.setTextColor(sTextColor); let splitF = doc.splitTextToSize(fT, pW-(2*margin)); doc.text(splitF, margin, cY); cY+=(splitF.length*10)+15; const tblEl = document.getElementById(tableId); if (tblEl) { const head = [['Cód. OS', 'Solicitante', 'Cliente', 'Início', 'Término', 'Responsável', 'Logística', 'Produto', 'Status OS', 'Conforme', 'Motivo Inconf.']]; const body = []; const tblBodyEl = document.getElementById(tableBodyId); if (tblBodyEl) { tblBodyEl.querySelectorAll('tr').forEach(tr => { if (tr.querySelector('td[colspan="11"]')) return;
+                const rD = [];
+                const osIdForRow = tr.dataset.osIdForMotivos;
+                rD.push(tr.cells[0]?.innerText || '');
+                rD.push(tr.cells[1]?.innerText || '');
+                rD.push(tr.cells[2]?.innerText || '');
+                rD.push(tr.cells[3]?.innerText || '');
+                rD.push(tr.cells[4]?.innerText || '');
+                rD.push(tr.cells[5]?.innerText || '');
+                rD.push(tr.cells[6]?.innerText || '');
+                rD.push(tr.cells[7]?.innerText || '');
+                rD.push(tr.cells[8]?.querySelector('.status-tag')?.innerText || tr.cells[8]?.innerText || '');
+                rD.push(tr.cells[9]?.querySelector('input[type="checkbox"]')?.checked ? "Sim" : "Não" || '');
+                const motivosText = osIdForRow ? (reportOsMotivos[osIdForRow] || []).join('; ') : '';
+                rD.push(motivosText);
+                body.push(rD);
+            }); } if (body.length > 0) { doc.autoTable({ startY: cY, head: head, body: body, theme: 'grid', headStyles: { fillColor: hBgColor, textColor: hTextColor, fontStyle: 'bold', halign: 'center', fontSize: 6, lineWidth: 0.5, lineColor: bColor }, styles: { textColor: pTextColor, cellPadding: 2.5, fontSize: 5.5, overflow: 'linebreak', halign: 'left', lineWidth: 0.5, lineColor: bColor }, alternateRowStyles: { fillColor: aRBgColor }, columnStyles: { 0: { cellWidth: 40, halign: 'center' }, 1: { cellWidth: 50 }, 2: { cellWidth: 60 }, 3: { cellWidth: 40, halign: 'center' }, 4: { cellWidth: 40, halign: 'center' }, 5: { cellWidth: 50 }, 6: { cellWidth: 45, halign: 'left' }, 7: { cellWidth: 55 }, 8: { cellWidth: 50, halign: 'center' }, 9: { cellWidth: 35, halign: 'center'}, 10: { cellWidth: 'auto' } }, didDrawPage: (data) => { cY = data.cursor.y + 20; if (cY > pH - margin - 50) cY = margin; }, didParseCell: function (data) { data.cell.styles.fillColor = data.row.index % 2 === 0 ? rBgColor : aRBgColor; data.cell.styles.textColor = pTextColor; if (data.section === 'head') { data.cell.styles.fillColor = hBgColor; data.cell.styles.textColor = hTextColor; } } }); cY = doc.autoTable.previous.finalY + 25; } else { doc.setFontSize(10); doc.text("Nenhum dado na tabela para os filtros.", margin, cY); cY += 20; } } else { doc.setFontSize(10); doc.text("Tabela de relatório não encontrada.", margin, cY); cY += 20; } if (includeCharts && chartCanvasIds && chartCanvasIds.length > 0) { const chartW = (pW - (Math.min(chartCanvasIds.length, 3) + 1) * margin) / Math.min(chartCanvasIds.length, 3); const chartH = chartW * 0.60; let chartX = margin; let chartsOnPage = 0; if (cY + chartH + 40 > pH - margin ) { doc.addPage(); cY = margin; } doc.setFontSize(12); doc.setTextColor(pTextColor); doc.text("Visualização Gráfica", pW / 2, cY, { align: 'center' }); cY += 25; for (const chartId of chartCanvasIds) { const canvas = document.getElementById(chartId); if (canvas && canvas.offsetParent !== null && canvas.width > 0 && canvas.height > 0) { if (chartX + chartW > pW - margin && chartsOnPage > 0 && chartsOnPage < 3) { doc.addPage(); cY = margin + 25; chartX = margin; chartsOnPage = 0; doc.setFontSize(12).setTextColor(pTextColor).text("Visualização Gráfica (cont.)", pW/2, cY-15, {align:'center'}); } try { const imgData = canvas.toDataURL('image/png', 1.0); const cTitleEl = canvas.closest('.card')?.querySelector('h4'); let cTitleTxt = cTitleEl ? cTitleEl.innerText : (chartId === 'reportChartByUsuario' ? 'OS por Solicitante' : chartId.replace('reportChartBy','Gráfico ')); doc.setFontSize(9); doc.setTextColor(pTextColor); doc.text(cTitleTxt, chartX + chartW / 2, cY - 7, { align: 'center' }); doc.addImage(imgData, 'PNG', chartX, cY, chartW, chartH); chartX += chartW + margin; chartsOnPage++; if(chartsOnPage >= 3 && chartCanvasIds.indexOf(chartId) < chartCanvasIds.length -1){ doc.addPage(); cY = margin + 25; chartX = margin; chartsOnPage = 0; doc.setFontSize(12).setTextColor(pTextColor).text("Visualização Gráfica (cont.)", pW/2, cY-15, {align:'center'});} } catch (e) { console.error("Erro ao adicionar gráfico:", e, chartId); doc.setTextColor(255,0,0).text(`Erro ${chartId}`, chartX, cY); doc.setTextColor(pTextColor); chartX += chartW + margin; chartsOnPage++; if(chartsOnPage >= 3 && chartCanvasIds.indexOf(chartId) < chartCanvasIds.length -1){ doc.addPage(); cY = margin + 25; chartX = margin; chartsOnPage = 0; doc.setFontSize(12).setTextColor(pTextColor).text("Visualização Gráfica (cont.)", pW/2, cY-15, {align:'center'});} } } } } const pageCount = doc.internal.getNumberOfPages(); for (let i = 1; i <= pageCount; i++) { doc.setPage(i); doc.setFontSize(7); doc.setTextColor(sTextColor); const footerText = `Página ${i} de ${pageCount} | Controle de OS - ${APP_VERSION}`; doc.text(footerText, pW - margin, pH - 15, { align: 'right' }); } doc.save(title.replace(/[^a-z0-9_]+/gi, '_').toLowerCase() + (includeCharts ? '_completo' : '_dados') + '.pdf'); addRecentActivity(`PDF "${title}" ${includeCharts?'completo':'só dados'} exportado.`);}
     async function exportVisibleListToImage(elementIdOrFullView, fileName = 'relatorio.png', captureFullView = false) { console.log(`Chamando exportVisibleListToImage: elementIdOrFullView='${elementIdOrFullView}', fileName='${fileName}', captureFullView=${captureFullView}`); let targetElement; let tempFileName = fileName; if (captureFullView) { targetElement = document.getElementById(elementIdOrFullView) || document.getElementById('reportsView'); tempFileName = fileName.replace('.png', '_visao_completa.png'); } else { targetElement = document.getElementById('reportTableContainer'); tempFileName = fileName.replace('.png', '_apenas_lista.png'); } if (!targetElement) { alert('Elemento não encontrado para gerar imagem.'); return; } let btnSelectorBase = ''; if (elementIdOrFullView === 'reportsView' && captureFullView) { btnSelectorBase = `button[onclick*="exportVisibleListToImage('reportsView'"][onclick*="true"]`; } else if (elementIdOrFullView === 'reportTableContainer' && !captureFullView) { btnSelectorBase = `button[onclick*="exportVisibleListToImage('reportTableContainer'"][onclick*="false"]`; } const clickedButton = btnSelectorBase ? document.querySelector(btnSelectorBase) : null; const originalButtonHTML = clickedButton ? clickedButton.innerHTML : null; if(clickedButton) { clickedButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...'; clickedButton.disabled = true; } try { const canvas = await html2canvas(targetElement, { scale: 1.5, useCORS: true, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim(), onclone: (clonedDoc) => { const el = clonedDoc.getElementById(targetElement.id); if(el) { el.style.overflow = 'visible'; el.style.maxHeight = 'none'; clonedDoc.querySelectorAll('.motivos-popover').forEach(pop => pop.style.display = 'none'); } } }); const image = canvas.toDataURL('image/png'); const link = document.createElement('a'); link.href = image; link.download = tempFileName; document.body.appendChild(link); link.click(); document.body.removeChild(link); addRecentActivity(`Imagem "${tempFileName}" exportada.`); } catch(err) { console.error('Erro ao gerar imagem:', err); alert('Erro ao gerar imagem.'); } finally { if(clickedButton && originalButtonHTML) { clickedButton.innerHTML = originalButtonHTML; clickedButton.disabled = false; } } }
-    function downloadICS(osId) { const os = ordensServico.find(o => o.id === osId); if (!os) { alert("OS não encontrada para .ics."); return; } const nowF = new Date().toISOString().replace(/-/g,'').replace(/:/g,'').substring(0,15)+'Z'; const desc = `OS: ${os.numero}\\nCliente: ${os.cliente}\\nProduto: ${os.produto||'N/A'}\\nDescrição: ${os.descricao.replace(/\n/g,'\\n')}\\nResp: ${os.responsavel}\\nPrio: ${os.prioridade}\\nStatus OS: ${os.status}${os.logisticaStatus ? ('\\nLogística: ' + os.logisticaStatus) : ''}${os.marcadorAtrasoManual?'\\nATR: SIM':''}`; const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//SKA//ControleOS//PT","BEGIN:VEVENT",`UID:${os.id}@gestaoska.com`,`DTSTAMP:${nowF}`,`DTSTART;VALUE=DATE:${os.dataAbertura.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${new Date(new Date(os.prazoFinal).getTime()+864e5).toISOString().split('T')[0].replace(/-/g,'')}`,`SUMMARY:Prazo OS ${os.numero} - ${os.cliente}`,`DESCRIPTION:${desc}`,"LOCATION:Cliente "+os.cliente,"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Lembrete Prazo OS","TRIGGER:-PT1D","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n"); const blob = new Blob([ics],{type:'text/calendar;charset=utf-8'}); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `OS_${os.numero}_${os.cliente.replace(/[^a-z0-9]/gi,'_')}.ics`; document.body.appendChild(link); link.click(); document.body.removeChild(link); addRecentActivity(`.ics para OS ${os.numero} gerado.`); }
+    function downloadICS(osId) { const os = ordensServico.find(o => o.id === osId); if (!os) { alert("OS não encontrada para .ics."); return; } const nowF = new Date().toISOString().replace(/-/g,'').replace(/:/g,'').substring(0,15)+'Z'; const desc = `OS: ${os.numero}\\nCliente: ${os.cliente}\\nProduto: ${os.produto||'N/A'}\\nDescrição: ${os.descricao.replace(/\n/g,'\\n')}\\nResp: ${os.responsavel}\\nPrio: ${os.prioridade}\\nStatus OS: ${os.status}${os.logisticaStatus ? ('\\nLogística: ' + os.logisticaStatus) : ''}${os.marcadorAtrasoManual?'\\nATR: SIM':''}${os.isInCompliance?'\\nCONF: SIM':''}`; const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//SKA//ControleOS//PT","BEGIN:VEVENT",`UID:${os.id}@gestaoska.com`,`DTSTAMP:${nowF}`,`DTSTART;VALUE=DATE:${os.dataAbertura.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${new Date(new Date(os.prazoFinal).getTime()+864e5).toISOString().split('T')[0].replace(/-/g,'')}`,`SUMMARY:Prazo OS ${os.numero} - ${os.cliente}`,`DESCRIPTION:${desc}`,"LOCATION:Cliente "+os.cliente,"BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Lembrete Prazo OS","TRIGGER:-PT1D","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n"); const blob = new Blob([ics],{type:'text/calendar;charset=utf-8'}); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `OS_${os.numero}_${os.cliente.replace(/[^a-z0-9]/gi,'_')}.ics`; document.body.appendChild(link); link.click(); document.body.removeChild(link); addRecentActivity(`.ics para OS ${os.numero} gerado.`); }
 
-    // FUNÇÕES PARA GERENCIAR POPOVER DE MOTIVOS
-    function openMotivosPopover(osId, targetButton) { currentEditingOsIdForMotivos = osId; const popover = document.getElementById('motivosPopover'); const checkboxContainer = document.getElementById('motivosCheckboxContainer'); if (!popover || !checkboxContainer) return; checkboxContainer.innerHTML = ''; const currentMotivos = reportOsMotivos[osId] || []; motivoOptions.forEach(motivo => { const checkboxId = `motivo-${osId}-${motivo.replace(/\s+/g, '-')}`; const label = document.createElement('label'); label.htmlFor = checkboxId; label.className = 'flex items-center text-sm text-slate-300 cursor-pointer hover:text-sky-400 transition-colors'; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = checkboxId; checkbox.value = motivo; checkbox.checked = currentMotivos.includes(motivo); checkbox.className = 'form-checkbox h-4 w-4 text-sky-500 border-slate-600 rounded focus:ring-sky-400 mr-2 bg-slate-700 checked:bg-sky-500'; label.appendChild(checkbox); label.appendChild(document.createTextNode(motivo)); checkboxContainer.appendChild(label); }); const rect = targetButton.getBoundingClientRect(); popover.style.top = `${window.scrollY + rect.bottom + 5}px`; let leftPosition = window.scrollX + rect.left; if (leftPosition + popover.offsetWidth > window.innerWidth - 20) { leftPosition = window.innerWidth - popover.offsetWidth - 20; } popover.style.left = `${leftPosition}px`; popover.style.display = 'block'; }
-    function closeMotivosPopover(saveChanges) { const popover = document.getElementById('motivosPopover'); if (!popover) return; if (saveChanges && currentEditingOsIdForMotivos) { const checkboxContainer = document.getElementById('motivosCheckboxContainer'); const selectedMotivos = []; checkboxContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => { selectedMotivos.push(cb.value); }); reportOsMotivos[currentEditingOsIdForMotivos] = selectedMotivos; updateMotivosDisplay(currentEditingOsIdForMotivos); addRecentActivity(`Motivos de inconformidade atualizados.`); } popover.style.display = 'none'; currentEditingOsIdForMotivos = null; }
+    // FUNÇÕES PARA GERENCIAR POPOVER DE MOTIVOS (INCONFORMIDADE)
+    function openMotivosPopover(osId, targetButton) {
+        currentEditingOsIdForMotivos = osId;
+        const popover = document.getElementById('motivosPopover');
+        const checkboxContainer = document.getElementById('motivosCheckboxContainer');
+        if (!popover || !checkboxContainer) return;
+        checkboxContainer.innerHTML = '';
+
+        const currentMotivos = reportOsMotivos[osId] || [];
+        motivoOptions.forEach(motivo => {
+            const checkboxId = `motivo-${osId}-${motivo.replace(/\s+/g, '-')}`;
+            const label = document.createElement('label');
+            label.htmlFor = checkboxId;
+            label.className = 'flex items-center text-sm text-slate-300 cursor-pointer hover:text-sky-400 transition-colors';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = checkboxId;
+            checkbox.value = motivo;
+            checkbox.checked = currentMotivos.includes(motivo);
+            checkbox.className = 'form-checkbox h-4 w-4 text-sky-500 border-slate-600 rounded focus:ring-sky-400 mr-2 bg-slate-700 checked:bg-sky-500';
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(motivo));
+            checkboxContainer.appendChild(label);
+        });
+
+        const rect = targetButton.getBoundingClientRect();
+        popover.style.top = `${window.scrollY + rect.bottom + 5}px`;
+        let leftPosition = window.scrollX + rect.left;
+        if (leftPosition + popover.offsetWidth > window.innerWidth - 20) {
+            leftPosition = window.innerWidth - popover.offsetWidth - 20;
+        }
+        popover.style.left = `${leftPosition}px`;
+        popover.style.display = 'block';
+    }
+    function closeMotivosPopover(saveChanges) { const popover = document.getElementById('motivosPopover'); if (!popover) return; if (saveChanges && currentEditingOsIdForMotivos) { const checkboxContainer = document.getElementById('motivosCheckboxContainer'); const selectedMotivos = []; checkboxContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => { selectedMotivos.push(cb.value); }); reportOsMotivos[currentEditingOsIdForMotivos] = selectedMotivos; updateMotivosDisplay(currentEditingOsIdForMotivos); addRecentActivity(`Motivos de inconformidade atualizados para OS.`); } popover.style.display = 'none'; currentEditingOsIdForMotivos = null; }
     function updateMotivosDisplay(osId) { const displayElement = document.getElementById(`motivos-display-${osId}`); if (displayElement) { const motivos = reportOsMotivos[osId] || []; if (motivos.length > 0) { displayElement.innerHTML = `<span class="text-xs text-sky-400">${motivos.join(', ')}</span>`; displayElement.title = motivos.join('\n'); } else { displayElement.textContent = ''; displayElement.title = ''; } } }
 
     // FUNÇÕES DE NAVEGAÇÃO E EXIBIÇÃO DE VIEWS
@@ -1084,16 +1557,31 @@
             populateProductFilters();
             populateLogisticaStatusFilters();
             applyFiltersAndRender();
+        } else if (viewId === 'canceledOsView') {
+            populateCancellationReasonFilter();
+            renderCanceledOSTable();
         } else if (viewId === 'reportsView') {
             populateProductFilters();
             populateLogisticaStatusFilters();
             $('.chosen-select-reports').chosen({ width: '100%', no_results_text: 'Oops, nada encontrado!', allow_single_deselect: true });
             reportOsMotivos = {};
             generateCustomReport();
+            // Mostrar/ocultar seção de configuração de gráficos (placeholder)
+            const chartConfigSection = document.getElementById('chartConfigurationSection');
+            if(chartConfigSection) chartConfigSection.classList.remove('hidden'); // Ou toggle conforme necessário
         } else if (viewId === 'settingsView') {
             const itemsInput = document.getElementById('itemsPerPageSetting');
             if (itemsInput) itemsInput.value = ITEMS_PER_PAGE;
+            renderInconformityReasonList();
+            renderCancellationReasonList();
         }
+
+        // Esconder seção de config de gráficos se não estiver em relatórios
+        if (viewId !== 'reportsView') {
+             const chartConfigSection = document.getElementById('chartConfigurationSection');
+            if(chartConfigSection) chartConfigSection.classList.add('hidden');
+        }
+
 
         const importContainer = document.getElementById('importOsLoteContainer');
         if (viewId !== 'osListView' && importContainer && !importContainer.classList.contains('hidden')) {
@@ -1108,7 +1596,12 @@
             if (reportChartByUsuarioInstance) { reportChartByUsuarioInstance.destroy(); reportChartByUsuarioInstance = null; }
             if (reportChartByStatusInstance) { reportChartByStatusInstance.destroy(); reportChartByStatusInstance = null; }
         }
+        // Fechar dropdown de notificações ao mudar de view
+        if (notificationDropdown && !notificationDropdown.classList.contains('hidden')) {
+            notificationDropdown.style.display = 'none';
+        }
     }
+
 
     // LÓGICA DE FILTROS DA LISTA PRINCIPAL, HOME VIEW E ATUALIZAÇÃO GERAL
     function getFilteredOS() {
@@ -1118,6 +1611,7 @@
         const fPV = document.getElementById('filterProduct')?.value || "";
         const fDV = document.getElementById('filterDescription')?.value.toLowerCase() || "";
         const fMAV = document.getElementById('filterMarcadorAtraso')?.value || "";
+        const fConfV = filterConformidadeSelect?.value || "";
         const fLSV_array = $(document.getElementById('filterLogisticaStatus')).val() || [];
         const fDSIV = filterDateStartInput?.value || "";
         const fDFIV = filterDateEndInput?.value || "";
@@ -1132,6 +1626,10 @@
             let mMA = true;
             if (fMAV === "marcada") mMA = os.marcadorAtrasoManual === true;
             else if (fMAV === "nao_marcada") mMA = os.marcadorAtrasoManual === false || os.marcadorAtrasoManual === undefined;
+
+            let mConf = true;
+            if (fConfV === "conforme") mConf = os.isInCompliance === true;
+            else if (fConfV === "nao_conforme") mConf = os.isInCompliance === false || os.isInCompliance === undefined;
 
             let mLS = true;
             if (fLSV_array.length > 0) {
@@ -1154,7 +1652,7 @@
                  mDF = false;
             }
 
-            return mN && mC && mS && mP && mD && mMA && mLS && mDI && mDF;
+            return mN && mC && mS && mP && mD && mMA && mLS && mDI && mDF && mConf;
         });
     }
 
@@ -1168,17 +1666,340 @@
         if(osProvisoriasEl) osProvisoriasEl.textContent = ordensServico.filter(os => os.status === 'Provisória').length;
     }
     function renderOSStatusChart() { const cC=document.getElementById('osStatusChart'), cCo=document.getElementById('osStatusChartContainer'); if(!cC||!cCo||cCo.offsetParent===null)return; const ctx=cC.getContext('2d'); const sCounts=ordensServico.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{}); const sColors={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)','Incompleta':'rgba(201,203,207,0.8)','Provisória':'rgba(160,160,160,0.8)','Conflitante':'rgba(245,158,11,0.8)'}; const bgColors=Object.keys(sCounts).map(s=>sColors[s]||'rgba(201,203,207,0.8)'); const data={labels:Object.keys(sCounts),datasets:[{label:'OS por Status',data:Object.values(sCounts),backgroundColor:bgColors,borderColor:getComputedStyle(document.documentElement).getPropertyValue('--bg-card-light').trim(),borderWidth:2,hoverOffset:8}]}; if(osStatusChartInstance)osStatusChartInstance.destroy(); osStatusChartInstance=new Chart(ctx,{type:'doughnut',data:data,options:{responsive:true,maintainAspectRatio:false,animation:{animateScale:true,animateRotate:true},plugins:{legend:{position:'bottom',labels:{padding:15,font:{size:11},color:getComputedStyle(document.documentElement).getPropertyValue('--text-primary-light').trim()}},tooltip:{backgroundColor:'rgba(30,41,59,0.9)',titleColor:'#f1f5f9',bodyColor:'#cbd5e1',borderColor:'#475569',borderWidth:1,callbacks:{label:function(ctxL){const p=((ctxL.parsed/ctxL.chart.getDatasetMeta(0).total)*100).toFixed(1);return`${ctxL.label||''}: ${ctxL.parsed||0} (${p}%)`}}}}}}); }
-    function navigateToOsListWithFilter(sF) { const fSI=document.getElementById('filterStatus'),fONI=document.getElementById('filterOsNumber'),fCI=document.getElementById('filterClient'),fPI=document.getElementById('filterProduct'),fDI=document.getElementById('filterDescription'),fMAI=document.getElementById('filterMarcadorAtraso'),fLSI=document.getElementById('filterLogisticaStatus'), fDS=document.getElementById('filterDateStart'), fDE=document.getElementById('filterDateEnd'); if(fONI)fONI.value="";if(fCI)fCI.value="";if(fPI)fPI.value="";if(fDI)fDI.value="";if(fMAI)fMAI.value="";if(fDS)fDS.value="";if(fDE)fDE.value=""; if(fLSI) $(fLSI).val([]).trigger('chosen:updated'); if(fSI){if(Array.isArray(sF)){fSI.value="";addRecentActivity("Visualizando OS. Refine filtros para pendentes.");}else{fSI.value=sF;}} showView('osListView',document.querySelector('.app-header .sidebar-item[onclick*="osListView"]'));}
-    function refreshAllViews() { console.log("Atualizando todas as visualizações..."); renderOSTable(); updateHomeCounts(); if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))renderOSStatusChart(); const rVE=document.getElementById('reportsView'); if(rVE&&!rVE.classList.contains('hidden'))generateCustomReport(); console.log("Visualizações atualizadas."); }
+    function navigateToOsListWithFilter(sF) { const fSI=document.getElementById('filterStatus'),fONI=document.getElementById('filterOsNumber'),fCI=document.getElementById('filterClient'),fPI=document.getElementById('filterProduct'),fDI=document.getElementById('filterDescription'),fMAI=document.getElementById('filterMarcadorAtraso'),fLSI=document.getElementById('filterLogisticaStatus'), fDS=document.getElementById('filterDateStart'), fDE=document.getElementById('filterDateEnd'), fConf=document.getElementById('filterConformidade'); if(fONI)fONI.value="";if(fCI)fCI.value="";if(fPI)fPI.value="";if(fDI)fDI.value="";if(fMAI)fMAI.value="";if(fDS)fDS.value="";if(fDE)fDE.value="";if(fConf)fConf.value=""; if(fLSI) $(fLSI).val([]).trigger('chosen:updated'); if(fSI){if(Array.isArray(sF)){fSI.value="";addRecentActivity("Visualizando OS. Refine filtros para pendentes.");}else{fSI.value=sF;}} showView('osListView',document.querySelector('.app-header .sidebar-item[onclick*="osListView"]'));}
+    function refreshAllViews() { console.log("Atualizando todas as visualizações..."); renderOSTable(); updateHomeCounts(); renderCanceledOSTable(); updateNotificationBell(); if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))renderOSStatusChart(); const rVE=document.getElementById('reportsView'); if(rVE&&!rVE.classList.contains('hidden'))generateCustomReport(); console.log("Visualizações atualizadas."); }
 
     // RELATÓRIOS PERSONALIZADOS
-    function generateCustomReport() { console.log("Gerando relatório personalizado..."); const rTB = document.getElementById('reportsTableBody'), rDSI = document.getElementById('reportDateStartFilter'), rDEI = document.getElementById('reportDateEndFilter'), rSI = document.getElementById('reportStatusFilter'), rPI = document.getElementById('reportProductFilter'), rFMAI = document.getElementById('reportFilterMarcadorAtraso'); const rFLSI = document.getElementById('reportFilterLogisticaStatus'); if (!rTB || !rDSI || !rDEI || !rSI || !rPI || !rFMAI || !rFLSI) { console.error("Elementos do filtro de relatório não encontrados."); return; } rTB.innerHTML = ''; reportOsMotivos = {}; if (reportChartByProductInstance) { reportChartByProductInstance.destroy(); reportChartByProductInstance = null; } if (reportChartByUsuarioInstance) { reportChartByUsuarioInstance.destroy(); reportChartByUsuarioInstance = null; } if (reportChartByStatusInstance) { reportChartByStatusInstance.destroy(); reportChartByStatusInstance = null; } document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c => { const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); }); const dSV=rDSI.value, dEV=rDEI.value, sV=rSI.value, pV=rPI.value, fMAVal=rFMAI.value; const fLSVal_array = $(rFLSI).val() || []; if (dSV&&dEV&&new Date(dEV)<new Date(dSV)) { alert("Data Final anterior à Data Inicial."); rTB.innerHTML='<tr><td colspan="10" class="text-center py-10 text-red-500">Erro: Data Final anterior à Data Inicial.</td></tr>'; return; } const fRD = ordensServico.filter(os => { let matchPrazo=true; if(os.prazoFinal){const pFD=new Date(os.prazoFinal+"T00:00:00Z"); if(dSV&&dEV)matchPrazo=pFD>=new Date(dSV+"T00:00:00Z")&&pFD<=new Date(dEV+"T23:59:59Z"); else if(dSV)matchPrazo=pFD>=new Date(dSV+"T00:00:00Z"); else if(dEV)matchPrazo=pFD<=new Date(dEV+"T23:59:59Z");}else if(dSV||dEV)matchPrazo=false; const mS=sV?os.status===sV:true, mP=pV?os.produto===pV:true; let mMA=true; if(fMAVal==="marcada")mMA=os.marcadorAtrasoManual===true; else if(fMAVal==="nao_marcada")mMA=os.marcadorAtrasoManual===false||os.marcadorAtrasoManual===undefined; let mLS = fLSVal_array.length > 0 ? fLSVal_array.includes(os.logisticaStatus) : true; return matchPrazo && mS && mP && mMA && mLS; }); if (fRD.length === 0) { rTB.innerHTML = '<tr><td colspan="10" class="text-center py-10 text-slate-400">Nenhuma OS encontrada para os filtros.</td></tr>'; return; } fRD.sort((a,b)=>new Date(a.dataAbertura)-new Date(b.dataAbertura)); fRD.forEach(os => { const rw = rTB.insertRow(); rw.className = 'table-row hover:bg-slate-700'; rw.dataset.osIdForMotivos = os.id; const osStatusClass = getStatusClass(os.status); const motivosButtonId = `motivo-btn-${os.id}`; const motivosDisplayId = `motivos-display-${os.id}`; rw.innerHTML = `<td class="py-2 px-3 text-sm">${os.numero}</td> <td class="py-2 px-3 text-sm">${os.solicitante||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.cliente}</td> <td class="py-2 px-3 text-sm">${formatDateToBR(os.dataAbertura)}</td> <td class="py-2 px-3 text-sm">${formatDateToBR(os.prazoFinal)}</td> <td class="py-2 px-3 text-sm">${os.responsavel||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.logisticaStatus||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.produto||'N/A'}</td> <td class="py-2 px-3 text-sm text-center"><span class="status-tag ${osStatusClass}">${os.status}</span></td> <td class="py-2 px-3 text-sm"> <button id="${motivosButtonId}" class="btn btn-xs btn-info !py-1 !px-2 !text-xs" onclick="openMotivosPopover('${os.id}', this)">Gerenciar Motivos</button> <div id="${motivosDisplayId}" class="selected-motivos-display mt-1 text-xs"></div> </td>`; updateMotivosDisplay(os.id); }); addRecentActivity("Relatório personalizado gerado."); renderReportCharts(fRD); }
+    function generateCustomReport() { console.log("Gerando relatório personalizado..."); const rTB = document.getElementById('reportsTableBody'), rDSI = document.getElementById('reportDateStartFilter'), rDEI = document.getElementById('reportDateEndFilter'), rSI = document.getElementById('reportStatusFilter'), rPI = document.getElementById('reportProductFilter'), rFMAI = document.getElementById('reportFilterMarcadorAtraso'), rFCI = reportFilterConformidadeSelect; const rFLSI = document.getElementById('reportFilterLogisticaStatus'); if (!rTB || !rDSI || !rDEI || !rSI || !rPI || !rFMAI || !rFLSI || !rFCI) { console.error("Elementos do filtro de relatório não encontrados."); return; } rTB.innerHTML = ''; reportOsMotivos = {}; if (reportChartByProductInstance) { reportChartByProductInstance.destroy(); reportChartByProductInstance = null; } if (reportChartByUsuarioInstance) { reportChartByUsuarioInstance.destroy(); reportChartByUsuarioInstance = null; } if (reportChartByStatusInstance) { reportChartByStatusInstance.destroy(); reportChartByStatusInstance = null; } document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c => { const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); }); const dSV=rDSI.value, dEV=rDEI.value, sV=rSI.value, pV=rPI.value, fMAVal=rFMAI.value, fCVal = rFCI.value; const fLSVal_array = $(rFLSI).val() || []; if (dSV&&dEV&&new Date(dEV)<new Date(dSV)) { alert("Data Final anterior à Data Inicial."); rTB.innerHTML='<tr><td colspan="11" class="text-center py-10 text-red-500">Erro: Data Final anterior à Data Inicial.</td></tr>'; return; } const fRD = ordensServico.filter(os => { let matchPrazo=true; if(os.prazoFinal){const pFD=new Date(os.prazoFinal+"T00:00:00Z"); if(dSV&&dEV)matchPrazo=pFD>=new Date(dSV+"T00:00:00Z")&&pFD<=new Date(dEV+"T23:59:59Z"); else if(dSV)matchPrazo=pFD>=new Date(dSV+"T00:00:00Z"); else if(dEV)matchPrazo=pFD<=new Date(dEV+"T23:59:59Z");}else if(dSV||dEV)matchPrazo=false; const mS=sV?os.status===sV:true, mP=pV?os.produto===pV:true; let mMA=true; if(fMAVal==="marcada")mMA=os.marcadorAtrasoManual===true; else if(fMAVal==="nao_marcada")mMA=os.marcadorAtrasoManual===false||os.marcadorAtrasoManual===undefined; let mLS = fLSVal_array.length > 0 ? fLSVal_array.includes(os.logisticaStatus) : true; let mConf = true; if (fCVal === "conforme") mConf = os.isInCompliance === true; else if (fCVal === "nao_conforme") mConf = os.isInCompliance === false || os.isInCompliance === undefined; return matchPrazo && mS && mP && mMA && mLS && mConf; }); if (fRD.length === 0) { rTB.innerHTML = '<tr><td colspan="11" class="text-center py-10 text-slate-400">Nenhuma OS encontrada para os filtros.</td></tr>'; return; } fRD.sort((a,b)=>new Date(a.dataAbertura)-new Date(b.dataAbertura)); fRD.forEach(os => { const rw = rTB.insertRow(); rw.className = 'table-row hover:bg-slate-700'; rw.dataset.osIdForMotivos = os.id; const osStatusClass = getStatusClass(os.status); const motivosButtonId = `motivo-btn-${os.id}`; const motivosDisplayId = `motivos-display-${os.id}`; rw.innerHTML = `<td class="py-2 px-3 text-sm">${os.numero}</td> <td class="py-2 px-3 text-sm">${os.solicitante||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.cliente}</td> <td class="py-2 px-3 text-sm">${formatDateToBR(os.dataAbertura)}</td> <td class="py-2 px-3 text-sm">${formatDateToBR(os.prazoFinal)}</td> <td class="py-2 px-3 text-sm">${os.responsavel||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.logisticaStatus||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.produto||'N/A'}</td> <td class="py-2 px-3 text-sm text-center"><span class="status-tag ${osStatusClass}">${os.status}</span></td> <td class="py-2 px-3 text-sm text-center compliance-cell-report"><input type="checkbox" class="form-checkbox h-4 w-4" ${os.isInCompliance ? 'checked' : ''} disabled></td> <td class="py-2 px-3 text-sm"> <button id="${motivosButtonId}" class="btn btn-xs btn-info !py-1 !px-2 !text-xs" onclick="openMotivosPopover('${os.id}', this)">Gerenciar Motivos</button> <div id="${motivosDisplayId}" class="selected-motivos-display mt-1 text-xs"></div> </td>`; updateMotivosDisplay(os.id); }); addRecentActivity("Relatório personalizado gerado."); renderReportCharts(fRD); }
     function renderReportCharts(d) { const cCO=(tTJS=null)=>({responsive:true,maintainAspectRatio:false,animation:{duration:1e3,easing:'easeInOutQuart',animateScale:true,animateRotate:true},plugins:{legend:{display:true,position:'bottom',labels:{color:'#cbd5e1',padding:15,boxWidth:12,font:{size:11}}},title:{display:!!tTJS,text:tTJS,color:'#cbd5e1',font:{size:14,weight:'normal'}},tooltip:{backgroundColor:'rgba(30,41,59,0.95)',titleColor:'#f1f5f9',bodyColor:'#cbd5e1',borderColor:'#475569',borderWidth:1,padding:10,callbacks:{label:function(c){const t=c.chart.getDatasetMeta(0).total;const p=t>0?((c.parsed/t)*100).toFixed(1)+'%':'0%';return`${c.label||''}: ${c.parsed||0} (${p})`}}}},scales:{y:{beginAtZero:true,ticks:{color:'#94a3b8',stepSize:1,precision:0},grid:{color:'#334155',drawBorder:false}},x:{ticks:{color:'#94a3b8',autoSkip:true,maxRotation:45,minRotation:0},grid:{display:false}}}}); const cCl=['rgba(54,162,235,0.8)','rgba(255,159,64,0.8)','rgba(75,192,192,0.8)','rgba(255,99,132,0.8)','rgba(153,102,255,0.8)','rgba(255,205,86,0.8)','rgba(245,158,11,0.8)','rgba(123,239,178,0.8)','rgba(250,130,49,0.8)','rgba(179,57,57,0.8)','rgba(72,126,176,0.8)','rgba(246,229,141,0.8)','rgba(113,88,226,0.8)']; const cBC='rgba(15,23,42,0.8)'; const pC=d.reduce((acc,os)=>{acc[os.produto||'N/Esp.']=(acc[os.produto||'N/Esp.']||0)+1;return acc},{}); if(document.getElementById('reportChartByProduct')){if(reportChartByProductInstance)reportChartByProductInstance.destroy();reportChartByProductInstance=new Chart(document.getElementById('reportChartByProduct').getContext('2d'),{type:'bar',data:{labels:Object.keys(pC),datasets:[{label:'OS',data:Object.values(pC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5}]},options:cCO()})} const solC=d.reduce((acc,os)=>{const sol=os.solicitante||'N/Atrib.';acc[sol]=(acc[sol]||0)+1;return acc},{}); if(document.getElementById('reportChartByUsuario')){if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=new Chart(document.getElementById('reportChartByUsuario').getContext('2d'),{type:'pie',data:{labels:Object.keys(solC),datasets:[{label:'OS',data:Object.values(solC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:{...cCO(),scales:{}}});} const sCR=d.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{}); const sCM={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)','Incompleta':'rgba(201,203,207,0.8)','Provisória':'rgba(160,160,160,0.8)','Conflitante':'rgba(245,158,11,0.8)'}; if(document.getElementById('reportChartByStatus')){if(reportChartByStatusInstance)reportChartByStatusInstance.destroy();reportChartByStatusInstance=new Chart(document.getElementById('reportChartByStatus').getContext('2d'),{type:'doughnut',data:{labels:Object.keys(sCR),datasets:[{label:'OS',data:Object.values(sCR),backgroundColor:Object.keys(sCR).map((s,i)=>sCM[s]||cCl[i%cCl.length]),borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:{...cCO(),scales:{}}});}}
-    const clearReportOnChange = () => { if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="10" class="text-center py-10 text-slate-400">Filtros alterados. Clique "Gerar Relatório".</td></tr>'; reportOsMotivos = {}; if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null} if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null} if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null} document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};
+    const clearReportOnChange = () => { if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="11" class="text-center py-10 text-slate-400">Filtros alterados. Clique "Gerar Relatório".</td></tr>'; reportOsMotivos = {}; if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null} if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null} if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null} document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};
 
-    // FUNÇÕES DE CONFIGURAÇÕES DA APLICAÇÃO
-    function confirmClearAllData() { if (confirm("ATENÇÃO!\nLimpar TODOS os dados de OS, Filtros e Configs Locais?\nIRREVERSÍVEL!")) { if (confirm("CONFIRMAÇÃO FINAL:\nTodos os dados locais serão permanentemente apagados. Continuar?")) { ordensServico=[];savedFilters={};ITEMS_PER_PAGE=ITEMS_PER_PAGE_DEFAULT;localStorage.removeItem(LOCAL_STORAGE_KEY);addRecentActivity("Todos dados locais limpos.");currentPage=1;refreshAllViews();populateSavedFiltersSelect();const iPSI=document.getElementById('itemsPerPageSetting');if(iPSI)iPSI.value=ITEMS_PER_PAGE;alert("Dados locais limpos."); } else alert("Limpeza cancelada."); } else alert("Limpeza cancelada."); }
-    function applyItemsPerPageSetting() { const iPSI=document.getElementById('itemsPerPageSetting'); if(!iPSI)return; const nIPP=parseInt(iPSI.value,10); if(nIPP>=5&&nIPP<=50){ITEMS_PER_PAGE=nIPP;currentPage=1;saveDataToLocalStorage();renderOSTable();addRecentActivity(`Itens por página: ${ITEMS_PER_PAGE}.`);}else{alert("Insira valor entre 5 e 50.");iPSI.value=ITEMS_PER_PAGE;}}
+    // FUNÇÕES DE CONFIGURAÇÕES DA APLICAÇÃO (INCLUINDO MOTIVOS)
+    function confirmClearAllData() { if (confirm("ATENÇÃO!\nLimpar TODOS os dados de OS, OS Canceladas, Filtros Salvos, Motivos Personalizados, Notificações e Configurações Locais?\nEsta ação é IRREVERSÍVEL!")) { if (confirm("CONFIRMAÇÃO FINAL:\nTodos os dados locais serão permanentemente apagados. Tem certeza que deseja continuar?")) { ordensServico=[]; canceledOS=[]; notifications=[]; savedFilters={}; motivoOptions = [ "Sem Pré-OS", "Sem Anexos", "Sem informações", "Sem Atividades", "Sem Participantes", "Informações incompletas" ]; cancellationReasonOptions = [ "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro" ]; ITEMS_PER_PAGE=ITEMS_PER_PAGE_DEFAULT; localStorage.removeItem(LOCAL_STORAGE_KEY); addRecentActivity("Todos dados locais limpos."); currentPage=1; currentCanceledOsPage = 1; refreshAllViews(); populateSavedFiltersSelect(); renderInconformityReasonList(); renderCancellationReasonList(); updateNotificationBell(); const iPSI=document.getElementById('itemsPerPageSetting');if(iPSI)iPSI.value=ITEMS_PER_PAGE; alert("Todos os dados locais foram limpos com sucesso."); } else alert("Limpeza de dados cancelada."); } else alert("Limpeza de dados cancelada."); }
+    function applyItemsPerPageSetting() { const iPSI=document.getElementById('itemsPerPageSetting'); if(!iPSI)return; const nIPP=parseInt(iPSI.value,10); if(nIPP>=5&&nIPP<=50){ITEMS_PER_PAGE=nIPP;currentPage=1;currentCanceledOsPage=1;saveDataToLocalStorage();renderOSTable();renderCanceledOSTable();addRecentActivity(`Itens por página: ${ITEMS_PER_PAGE}.`);}else{alert("Insira valor entre 5 e 50.");iPSI.value=ITEMS_PER_PAGE;}}
+
+    function renderInconformityReasonList() {
+        const listElement = document.getElementById('inconformityReasonList');
+        if (!listElement) return;
+        listElement.innerHTML = '';
+        if (motivoOptions.length === 0) {
+            listElement.innerHTML = '<li class="text-sm text-slate-400">Nenhum motivo cadastrado.</li>';
+            return;
+        }
+        motivoOptions.forEach(reason => {
+            const li = document.createElement('li');
+            li.className = 'text-sm flex justify-between items-center';
+            li.textContent = reason;
+            const removeButton = document.createElement('button');
+            removeButton.innerHTML = '<i class="fas fa-times text-red-500 hover:text-red-400"></i>';
+            removeButton.className = 'p-1';
+            removeButton.title = "Remover Motivo";
+            removeButton.onclick = () => removeInconformityReason(reason);
+            li.appendChild(removeButton);
+            listElement.appendChild(li);
+        });
+    }
+    function addInconformityReason() {
+        const inputElement = document.getElementById('newInconformityReason');
+        if (!inputElement) return;
+        const newReason = inputElement.value.trim();
+        if (newReason && !motivoOptions.includes(newReason)) {
+            motivoOptions.push(newReason);
+            motivoOptions.sort((a,b) => a.localeCompare(b));
+            saveDataToLocalStorage();
+            renderInconformityReasonList();
+            inputElement.value = '';
+            addRecentActivity(`Motivo de inconformidade "${newReason}" adicionado.`);
+        } else if (!newReason) {
+            alert("O nome do motivo não pode estar vazio.");
+        } else {
+            alert("Este motivo já existe.");
+        }
+    }
+    function removeInconformityReason(reasonToRemove) {
+        if (confirm(`Tem certeza que deseja remover o motivo de inconformidade "${reasonToRemove}"?`)) {
+            motivoOptions = motivoOptions.filter(reason => reason !== reasonToRemove);
+            saveDataToLocalStorage();
+            renderInconformityReasonList();
+            addRecentActivity(`Motivo de inconformidade "${reasonToRemove}" removido.`);
+        }
+    }
+
+    function renderCancellationReasonList() {
+        const listElement = document.getElementById('cancellationReasonList');
+        if (!listElement) return;
+        listElement.innerHTML = '';
+         if (cancellationReasonOptions.length === 0) {
+            listElement.innerHTML = '<li class="text-sm text-slate-400">Nenhum motivo cadastrado.</li>';
+            return;
+        }
+        cancellationReasonOptions.forEach(reason => {
+            const li = document.createElement('li');
+            li.className = 'text-sm flex justify-between items-center';
+            li.textContent = reason;
+            const removeButton = document.createElement('button');
+            removeButton.innerHTML = '<i class="fas fa-times text-red-500 hover:text-red-400"></i>';
+            removeButton.className = 'p-1';
+            removeButton.title = "Remover Motivo";
+            removeButton.onclick = () => removeCancellationReason(reason);
+            li.appendChild(removeButton);
+            listElement.appendChild(li);
+        });
+    }
+    function addCancellationReason() {
+        const inputElement = document.getElementById('newCancellationReason');
+        if(!inputElement) return;
+        const newReason = inputElement.value.trim();
+        if (newReason && !cancellationReasonOptions.includes(newReason)) {
+            cancellationReasonOptions.push(newReason);
+            cancellationReasonOptions.sort((a,b) => a.localeCompare(b));
+            saveDataToLocalStorage();
+            renderCancellationReasonList();
+            populateCancellationReasonFilter();
+            inputElement.value = '';
+            addRecentActivity(`Motivo de cancelamento "${newReason}" adicionado.`);
+        } else if (!newReason) {
+            alert("O nome do motivo não pode estar vazio.");
+        } else {
+            alert("Este motivo de cancelamento já existe.");
+        }
+    }
+    function removeCancellationReason(reasonToRemove) {
+         if (confirm(`Tem certeza que deseja remover o motivo de cancelamento "${reasonToRemove}"?`)) {
+            cancellationReasonOptions = cancellationReasonOptions.filter(reason => reason !== reasonToRemove);
+            saveDataToLocalStorage();
+            renderCancellationReasonList();
+            populateCancellationReasonFilter();
+            addRecentActivity(`Motivo de cancelamento "${reasonToRemove}" removido.`);
+        }
+    }
+
+    // FUNCIONALIDADE DE CANCELAR OS
+    function openCancelOSModal(osId) {
+        const os = ordensServico.find(o => o.id === osId);
+        if (!os) {
+            alert("OS não encontrada para cancelamento.");
+            return;
+        }
+        if (!cancelOsModal || !cancelOsForm || !cancelOsModalTitle || !cancelOsReasonModalSelect) return;
+
+        cancelOsForm.reset();
+        document.getElementById('cancelOsId').value = os.id;
+        document.getElementById('cancelOsNumeroDisplay').textContent = os.numero;
+        document.getElementById('cancelOsClienteDisplay').textContent = os.cliente;
+        cancelOsModalTitle.textContent = `Cancelar OS - ${os.numero}`;
+
+        populateSelectWithOptions(cancelOsReasonModalSelect, cancellationReasonOptions, false, "Selecione um motivo...", false);
+        if (cancellationReasonOptions.length > 0 && !cancelOsReasonModalSelect.value) {
+            cancelOsReasonModalSelect.value = cancellationReasonOptions[0];
+        }
+
+        const cancelDateEl = document.getElementById('cancelOsDateModal');
+        if (cancelDateEl) cancelDateEl.value = new Date().toISOString().split('T')[0];
+
+        cancelOsModal.classList.remove('hidden');
+    }
+
+    function closeCancelOSModal() {
+        if (!cancelOsModal) return;
+        cancelOsModal.classList.add('hidden');
+    }
+
+    // TABELA DE OS CANCELADAS
+    function getFilteredCanceledOS() {
+        const filterNum = document.getElementById('filterCanceledOsNumber')?.value.toLowerCase() || "";
+        const filterCli = document.getElementById('filterCanceledClient')?.value.toLowerCase() || "";
+        const filterRea = document.getElementById('filterCanceledReason')?.value || "";
+        const filterDateStart = document.getElementById('filterCanceledDateStart')?.value || "";
+        const filterDateEnd = document.getElementById('filterCanceledDateEnd')?.value || "";
+
+        return canceledOS.filter(os => {
+            const matchesNumber = (os.numero?.toLowerCase() || "").includes(filterNum);
+            const matchesClient = (os.cliente?.toLowerCase() || "").includes(filterCli);
+            const matchesReason = filterRea ? os.cancellationDetails?.reason === filterRea : true;
+
+            let matchesDate = true;
+            if (os.cancellationDetails?.date) {
+                const cancelDate = new Date(os.cancellationDetails.date + "T00:00:00Z");
+                if (filterDateStart && filterDateEnd) {
+                    const endDate = new Date(filterDateEnd + "T00:00:00Z");
+                    endDate.setDate(endDate.getDate() + 1);
+                    matchesDate = cancelDate >= new Date(filterDateStart + "T00:00:00Z") && cancelDate < endDate;
+                } else if (filterDateStart) {
+                    matchesDate = cancelDate >= new Date(filterDateStart + "T00:00:00Z");
+                } else if (filterDateEnd) {
+                     const endDate = new Date(filterDateEnd + "T00:00:00Z");
+                    endDate.setDate(endDate.getDate() + 1);
+                    matchesDate = cancelDate < endDate;
+                }
+            } else if (filterDateStart || filterDateEnd) {
+                matchesDate = false;
+            }
+            return matchesNumber && matchesClient && matchesReason && matchesDate;
+        }).sort((a,b) => new Date(b.cancellationDetails?.date || 0) - new Date(a.cancellationDetails?.date || 0));
+    }
+
+    function renderCanceledOSTable() {
+        const tableBody = document.getElementById('canceledOsTableBody');
+        if (!tableBody) { console.error("canceledOsTableBody não encontrado!"); return; }
+        tableBody.innerHTML = '';
+
+        const filteredData = getFilteredCanceledOS();
+
+        if (!filteredData || filteredData.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-400">Nenhuma OS cancelada encontrada.</td></tr>`;
+            renderPagination(0, 0, 'canceledPaginationControls', currentCanceledOsPage, changeCanceledOsPage);
+            return;
+        }
+
+        const paginatedData = paginateData(filteredData, currentCanceledOsPage, ITEMS_PER_PAGE);
+        paginatedData.forEach(os => {
+            const row = tableBody.insertRow();
+            row.className = 'table-row hover:bg-slate-700';
+            row.innerHTML = `
+                <td class="py-3 px-4 text-sm">${os.numero}</td>
+                <td class="py-3 px-4 text-sm">${os.cliente}</td>
+                <td class="py-3 px-4 text-sm">${os.produto || 'N/A'}</td>
+                <td class="py-3 px-4 text-sm">${formatDateToBR(os.dataAbertura)}</td>
+                <td class="py-3 px-4 text-sm">${formatDateToBR(os.prazoFinal)}</td>
+                <td class="py-3 px-4 text-sm">${formatDateToBR(os.cancellationDetails?.date)}</td>
+                <td class="py-3 px-4 text-sm">${os.cancellationDetails?.reason || 'N/A'}</td>
+                <td class="py-3 px-4 text-sm truncate max-w-xs" title="${os.cancellationDetails?.observations || ''}">${os.cancellationDetails?.observations || 'N/A'}</td>
+                <td class="py-3 px-4 text-sm">${os.responsavel || 'N/A'}</td>
+            `;
+        });
+        renderPagination(filteredData.length, currentCanceledOsPage, 'canceledPaginationControls', currentCanceledOsPage, changeCanceledOsPage);
+    }
+
+    function populateCancellationReasonFilter() {
+        const filterSelect = document.getElementById('filterCanceledReason');
+        if(filterSelect) {
+            populateSelectWithOptions(filterSelect, cancellationReasonOptions, false, "Todos Motivos");
+        }
+    }
+
+    // NOTIFICAÇÕES
+    function generateNotificationId() { return 'NOTIF' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5).toUpperCase(); }
+
+    function addNotification(message, osId = null, type = 'info', isRead = false) {
+        const newNotification = {
+            id: generateNotificationId(),
+            message: message,
+            osId: osId, // ID da OS para navegação, se aplicável
+            type: type, // 'info', 'compliance_reminder', 'error', 'success'
+            timestamp: new Date().toISOString(),
+            isRead: isRead
+        };
+        notifications.unshift(newNotification); // Adiciona no início
+        if (notifications.length > 50) { // Limita o número de notificações armazenadas
+            notifications.pop();
+        }
+        saveDataToLocalStorage();
+        updateNotificationBell();
+        renderNotifications(); // Atualiza a lista se o dropdown estiver aberto
+    }
+
+    function updateNotificationBell() {
+        if (!notificationCountSpan || !notificationBell) return;
+        const unreadCount = notifications.filter(n => !n.isRead).length;
+        notificationCountSpan.textContent = unreadCount;
+        if (unreadCount > 0) {
+            notificationCountSpan.style.display = 'inline-block';
+            notificationBell.classList.add('text-yellow-400'); // Destaca o sino
+        } else {
+            notificationCountSpan.style.display = 'none';
+            notificationBell.classList.remove('text-yellow-400');
+        }
+    }
+
+    function renderNotifications() {
+        if (!notificationListUl) return;
+        notificationListUl.innerHTML = ''; // Limpa a lista
+
+        if (notifications.length === 0) {
+            notificationListUl.innerHTML = '<li class="no-notifications">Nenhuma notificação.</li>';
+            return;
+        }
+
+        notifications.forEach(notif => {
+            const li = document.createElement('li');
+            li.className = `notification-item ${!notif.isRead ? 'unread' : ''}`;
+            li.dataset.notificationId = notif.id;
+            li.dataset.osId = notif.osId || ''; // Para navegação
+
+            const messageP = document.createElement('p');
+            messageP.textContent = notif.message;
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'timestamp';
+            timeSpan.textContent = new Date(notif.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+            li.appendChild(messageP);
+            li.appendChild(timeSpan);
+
+            li.onclick = () => handleNotificationClick(notif.id, notif.osId);
+            notificationListUl.appendChild(li);
+        });
+    }
+
+    function toggleNotificationDropdown() {
+        if (!notificationDropdown) return;
+        const isOpen = notificationDropdown.style.display === 'block';
+        notificationDropdown.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) {
+            renderNotifications(); // Re-renderiza ao abrir para garantir que está atualizado
+        }
+    }
+
+    function handleNotificationClick(notificationId, osId) {
+        const notifIndex = notifications.findIndex(n => n.id === notificationId);
+        if (notifIndex !== -1) {
+            notifications[notifIndex].isRead = true;
+            saveDataToLocalStorage();
+            updateNotificationBell();
+            renderNotifications(); // Re-renderiza para remover o estilo 'unread'
+        }
+
+        if (osId) {
+            // Lógica para navegar para a OS específica (a ser implementada na Parte 3)
+            console.log(`Navegar para OS ID: ${osId}`);
+            // Exemplo: showView('osListView'); /* e então filtrar/selecionar a OS */
+            // Para já: adiciona uma notificação de teste se a OS clicada for a OS 'Teste'
+            // if (osId === 'OS_TEST_ID_NON_COMPLIANT') {
+            //     addNotification("OS de Teste 'OS000' verificada.", null, 'info');
+            // }
+            // alert(`Redirecionando para OS ${osId} (funcionalidade pendente)`);
+            const osToView = ordensServico.find(os => os.id === osId) || canceledOS.find(os => os.id === osId);
+            if (osToView) {
+                showView('osListView'); // Ou a view apropriada
+                // Aqui você precisaria de uma função para destacar ou filtrar para esta OS
+                // Por agora, apenas um log e talvez um alerta
+                console.log("Tentando focar na OS:", osToView);
+                // Temporariamente, vamos abrir o modal de edição se for uma OS ativa
+                if(ordensServico.some(os => os.id === osId)) {
+                    editOS(osId);
+                } else {
+                     addNotification(`OS ${osToView.numero} é uma OS cancelada. Detalhes na aba 'OS's Canceladas'.`, null, 'info');
+                }
+            } else {
+                 addNotification(`OS ID ${osId} não encontrada. Pode ter sido excluída.`, null, 'error');
+            }
+        }
+        // Fecha o dropdown após o clique, opcional
+        // if (notificationDropdown) notificationDropdown.style.display = 'none';
+    }
+
+    function clearAllNotifications() {
+        if (confirm("Limpar todas as notificações?")) {
+            notifications = [];
+            saveDataToLocalStorage();
+            updateNotificationBell();
+            renderNotifications();
+            addRecentActivity("Todas as notificações foram limpas.");
+        }
+    }
+    // Fim das Funções de Notificação
+
 
     // INICIALIZAÇÃO DA APLICAÇÃO E EVENTOS GLOBAIS
     document.addEventListener('DOMContentLoaded', () => {
@@ -1195,12 +2016,30 @@
         filterLogisticaStatusSelect = document.getElementById('filterLogisticaStatus');
         reportFilterLogisticaStatusSelect = document.getElementById('reportFilterLogisticaStatus');
         osLogisticaStatusModalSelect = document.getElementById('osLogisticaStatusModal');
+        cancelOsModal = document.getElementById('cancelOsModal');
+        cancelOsForm = document.getElementById('cancelOsForm');
+        cancelOsModalTitle = document.getElementById('cancelOsModalTitle');
+        cancelOsReasonModalSelect = document.getElementById('cancelOsReasonModal');
         recentActivityList=document.getElementById('recentActivityList');
         importStatusMessage=document.getElementById('importStatusMessage');
         importSummaryDiv=document.getElementById('importSummary');
         importSummaryList=document.getElementById('importSummaryList');
         filterDateStartInput = document.getElementById('filterDateStart');
         filterDateEndInput = document.getElementById('filterDateEnd');
+        filterConformidadeSelect = document.getElementById('filterConformidade');
+        reportFilterConformidadeSelect = document.getElementById('reportFilterConformidade');
+        notificationBell = document.getElementById('notificationBell');
+        notificationCountSpan = document.getElementById('notificationCount');
+        notificationDropdown = document.getElementById('notificationDropdown');
+        notificationListUl = document.getElementById('notificationList');
+
+        confirmDuplicateDialog = document.getElementById('confirmDuplicateDialog');
+        confirmDuplicateTitle = document.getElementById('confirmDuplicateTitle');
+        confirmDuplicateMessage = document.getElementById('confirmDuplicateMessage');
+        confirmDuplicateReplaceBtn = document.getElementById('confirmDuplicateReplace');
+        confirmDuplicateAddAsNewBtn = document.getElementById('confirmDuplicateAddAsNew');
+        confirmDuplicateCancelBtn = document.getElementById('confirmDuplicateCancel');
+
 
         try {
             loadDataFromLocalStorage();
@@ -1211,6 +2050,7 @@
 
         populateProductFilters();
         populateLogisticaStatusFilters();
+        populateCancellationReasonFilter();
         $('.chosen-select').chosen({ width: '100%', no_results_text: 'Oops, nada encontrado!', allow_single_deselect: true });
         $('.chosen-select-reports').chosen({ width: '100%', no_results_text: 'Oops, nada encontrado!', allow_single_deselect: true });
 
@@ -1225,18 +2065,25 @@
         const pExcelBtn = document.getElementById('processExcelButton'); if (pExcelBtn) pExcelBtn.addEventListener('click', handleExcelImport);
 
         addRecentActivity(`Sistema V${APP_VERSION} inicializado.`); updateLoginUI();
+        updateNotificationBell(); // Garante que o sino seja atualizado ao carregar
+
 
         if (osForm) {
             osForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 try {
-                    const id = document.getElementById('osId').value;
+                    const id = document.getElementById('osId').value; // Se ID existe, é edição
+                    const osNumero = document.getElementById('osNumeroModal').value.trim();
                     const dAVal = document.getElementById('osDataAberturaModal').value;
                     const pFVal = document.getElementById('osPrazoFinalModal').value;
-                    if (!dAVal || !pFVal) { alert("Datas de Abertura e Prazo Final são obrigatórias."); return; }
 
-                    const osD = {
-                        numero: document.getElementById('osNumeroModal').value.trim(),
+                    if (!dAVal || !pFVal) { alert("Datas de Abertura e Prazo Final são obrigatórias."); return; }
+                    if (!osNumero||!document.getElementById('osClienteModal').value.trim()||!document.getElementById('osProdutoModal').value.trim()||!document.getElementById('osDescricaoModal').value.trim()||!document.getElementById('osResponsavelModal').value.trim()||!document.getElementById('osStatusModal').value||!document.getElementById('osPrioridadeModal').value||!document.getElementById('osLogisticaStatusModal').value) { alert("Preencha todos os campos obrigatórios (*), incluindo Status Logística."); return; }
+                    if (new Date(pFVal) < new Date(dAVal)) { alert("Prazo Final anterior à Data Abertura."); return; }
+
+
+                    osDataForDuplicateCheck = { // Armazena os dados do formulário temporariamente
+                        numero: osNumero,
                         cliente: document.getElementById('osClienteModal').value.trim(),
                         produto: document.getElementById('osProdutoModal').value.trim(),
                         solicitante: document.getElementById('osSolicitanteModal').value.trim() || 'N/A',
@@ -1246,23 +2093,76 @@
                         status: document.getElementById('osStatusModal').value,
                         prioridade: document.getElementById('osPrioridadeModal').value,
                         marcadorAtrasoManual: document.getElementById('osMarcadorAtrasoModal').checked,
-                        logisticaStatus: document.getElementById('osLogisticaStatusModal').value
+                        logisticaStatus: document.getElementById('osLogisticaStatusModal').value,
+                        isInCompliance: document.getElementById('osIsInComplianceModal').checked,
+                        isDuplicate: false // Inicialmente false
                     };
 
-                    if (!osD.numero||!osD.cliente||!osD.produto||!osD.descricao||!osD.responsavel||!osD.status||!osD.prioridade||!osD.logisticaStatus) { alert("Preencha todos os campos obrigatórios (*), incluindo Status Logística."); return; }
-                    if (new Date(osD.prazoFinal) < new Date(osD.dataAbertura)) { alert("Prazo Final anterior à Data Abertura."); return; }
+                    const existingOSByNumber = ordensServico.find(os => os.numero === osNumero && os.id !== id); // Não checar contra si mesmo em edição
 
-                    if (id) {
-                        const osIX = ordensServico.findIndex(o=>o.id===id);
-                        if (osIX!==-1) { ordensServico[osIX]={...ordensServico[osIX],...osD}; addRecentActivity(`OS ${osD.numero} editada.`);}
-                        else { alert("Erro ao editar OS: Não encontrada."); return; }
-                    } else {
-                        osD.id = generateId(); ordensServico.unshift(osD); addRecentActivity(`Nova OS ${osD.numero} adicionada.`);
+                    if (existingOSByNumber && !id) { // Apenas para NOVAS OS, se o número já existe
+                        confirmDuplicateTitle.textContent = "OS Duplicada Encontrada";
+                        confirmDuplicateMessage.textContent = `Já existe uma OS com o número "${osNumero}". Deseja substituir a OS existente ou adicionar esta como uma nova OS marcada como duplicada?`;
+                        confirmDuplicateDialog.classList.remove('hidden');
+
+                        confirmDuplicateReplaceBtn.onclick = () => {
+                            confirmDuplicateDialog.classList.add('hidden');
+                            handleSaveOS(osDataForDuplicateCheck, existingOSByNumber); // Passa a OS existente para substituição
+                        };
+                        confirmDuplicateAddAsNewBtn.onclick = () => {
+                            confirmDuplicateDialog.classList.add('hidden');
+                            osDataForDuplicateCheck.descricao += " (DUPLICADA)";
+                            osDataForDuplicateCheck.isDuplicate = true;
+                            handleSaveOS(osDataForDuplicateCheck); // Adiciona como nova, marcada como duplicada
+                        };
+                        confirmDuplicateCancelBtn.onclick = () => {
+                            confirmDuplicateDialog.classList.add('hidden');
+                            osDataForDuplicateCheck = null; // Limpa os dados temporários
+                        };
+                        return; // Interrompe o fluxo normal de salvamento até a decisão do usuário
                     }
-                    saveDataToLocalStorage(); populateProductFilters(); populateLogisticaStatusFilters(); closeOSModal(); currentPage=1; refreshAllViews();
-                } catch (er) { console.error("Erro CRÍTICO ao salvar OS:", er); alert("Erro ao salvar OS. Verifique o console."); }
+
+                    // Se for edição (id existe) ou não houver duplicata para nova OS, salva diretamente
+                    handleSaveOS(osDataForDuplicateCheck, id ? ordensServico.find(o => o.id === id) : null);
+                    osDataForDuplicateCheck = null; // Limpa após o uso
+
+                } catch (er) { console.error("Erro CRÍTICO ao salvar OS:", er); alert("Erro ao salvar OS. Verifique o console."); osDataForDuplicateCheck = null;}
             });
         }
+
+
+        if (cancelOsForm) {
+            cancelOsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const osId = document.getElementById('cancelOsId').value;
+                const reason = document.getElementById('cancelOsReasonModal').value;
+                const date = document.getElementById('cancelOsDateModal').value;
+                const observations = document.getElementById('cancelOsObservationsModal').value.trim();
+
+                if (!reason || !date) {
+                    alert("Motivo e Data do Cancelamento são obrigatórios.");
+                    return;
+                }
+
+                const osIndex = ordensServico.findIndex(os => os.id === osId);
+                if (osIndex !== -1) {
+                    const osToCancel = { ...ordensServico[osIndex] };
+                    osToCancel.cancellationDetails = { reason, date, observations };
+                    osToCancel.status = "Cancelada";
+
+                    canceledOS.unshift(osToCancel);
+                    ordensServico.splice(osIndex, 1);
+
+                    saveDataToLocalStorage();
+                    addRecentActivity(`OS ${osToCancel.numero} cancelada. Motivo: ${reason}.`);
+                    closeCancelOSModal();
+                    refreshAllViews();
+                } else {
+                    alert("Erro ao cancelar OS: OS não encontrada.");
+                }
+            });
+        }
+
 
         const addListenersToElements = (elementsAndListeners) => { elementsAndListeners.forEach(({selector, event, handler, isChosen = false, options = {}}) => { const element = document.getElementById(selector); if (element) { if (options.flagAttribute && element.getAttribute(options.flagAttribute)) { return; } if (isChosen) { $(element).on(event, handler); } else { element.addEventListener(event, handler); } if (options.flagAttribute) { element.setAttribute(options.flagAttribute, 'true'); } } }); };
 
@@ -1273,11 +2173,22 @@
             { selector: 'filterProduct', event: 'change', handler: applyFiltersAndRender },
             { selector: 'filterDescription', event: 'input', handler: applyFiltersAndRender },
             { selector: 'filterMarcadorAtraso', event: 'change', handler: applyFiltersAndRender },
+            { selector: 'filterConformidade', event: 'change', handler: applyFiltersAndRender },
             { selector: 'filterLogisticaStatus', event: 'change', handler: applyFiltersAndRender, isChosen: true },
             { selector: 'filterDateStart', event: 'change', handler: applyFiltersAndRender },
             { selector: 'filterDateEnd', event: 'change', handler: applyFiltersAndRender }
         ];
         addListenersToElements(osListFilters);
+
+        const canceledOsFilters = [
+            { selector: 'filterCanceledOsNumber', event: 'input', handler: () => { currentCanceledOsPage = 1; renderCanceledOSTable(); } },
+            { selector: 'filterCanceledClient', event: 'input', handler: () => { currentCanceledOsPage = 1; renderCanceledOSTable(); } },
+            { selector: 'filterCanceledReason', event: 'change', handler: () => { currentCanceledOsPage = 1; renderCanceledOSTable(); } },
+            { selector: 'filterCanceledDateStart', event: 'change', handler: () => { currentCanceledOsPage = 1; renderCanceledOSTable(); } },
+            { selector: 'filterCanceledDateEnd', event: 'change', handler: () => { currentCanceledOsPage = 1; renderCanceledOSTable(); } }
+        ];
+        addListenersToElements(canceledOsFilters);
+
 
         const reportFilters = [
             { selector: 'reportDateStartFilter', event: 'change', handler: clearReportOnChange },
@@ -1285,6 +2196,7 @@
             { selector: 'reportStatusFilter', event: 'change', handler: clearReportOnChange, options: { flagAttribute: 'dlset_rsf' } },
             { selector: 'reportProductFilter', event: 'change', handler: clearReportOnChange, options: { flagAttribute: 'dlset_rpf' } },
             { selector: 'reportFilterMarcadorAtraso', event: 'change', handler: clearReportOnChange, options: { flagAttribute: 'dlset_rfma' } },
+            { selector: 'reportFilterConformidade', event: 'change', handler: clearReportOnChange, options: { flagAttribute: 'dlset_rfc' } },
             { selector: 'reportFilterLogisticaStatus', event: 'change', handler: clearReportOnChange, isChosen: true, options: { flagAttribute: 'dlset_rfls' } }
         ];
         addListenersToElements(reportFilters);
@@ -1292,12 +2204,28 @@
 
     window.onclick = function (event) {
         const cOsModal = document.getElementById('osModal'); if (cOsModal && event.target == cOsModal) closeOSModal();
+        const cCancelOsModal = document.getElementById('cancelOsModal'); if (cCancelOsModal && event.target == cCancelOsModal) closeCancelOSModal();
+        const cConfirmDuplicateDialog = document.getElementById('confirmDuplicateDialog'); if (cConfirmDuplicateDialog && event.target == cConfirmDuplicateDialog) { cConfirmDuplicateDialog.classList.add('hidden'); osDataForDuplicateCheck = null;}
         const popover = document.getElementById('motivosPopover');
         if (popover && popover.style.display === 'block' && !popover.contains(event.target) && !event.target.closest('button[id*="motivo-btn-"]')) {
             closeMotivosPopover(false);
         }
+        // Fechar dropdown de notificações se clicar fora dele e não no sino
+        if (notificationDropdown && notificationDropdown.style.display === 'block') {
+            if (!notificationDropdown.contains(event.target) && event.target !== notificationBell && !notificationBell.contains(event.target)) {
+                notificationDropdown.style.display = 'none';
+            }
+        }
     };
-    window.onkeydown = function (event) { const cOsModal = document.getElementById('osModal'); if (cOsModal && !cOsModal.classList.contains('hidden') && event.key === "Escape") closeOSModal(); const popover = document.getElementById('motivosPopover'); if (popover && popover.style.display === 'block' && event.key === "Escape") closeMotivosPopover(false); };
+    window.onkeydown = function (event) {
+        const cOsModal = document.getElementById('osModal'); if (cOsModal && !cOsModal.classList.contains('hidden') && event.key === "Escape") closeOSModal();
+        const cCancelOsModal = document.getElementById('cancelOsModal'); if (cCancelOsModal && !cCancelOsModal.classList.contains('hidden') && event.key === "Escape") closeCancelOSModal();
+        const cConfirmDuplicateDialog = document.getElementById('confirmDuplicateDialog'); if (cConfirmDuplicateDialog && !cConfirmDuplicateDialog.classList.contains('hidden') && event.key === "Escape") {cConfirmDuplicateDialog.classList.add('hidden'); osDataForDuplicateCheck = null;}
+        const popover = document.getElementById('motivosPopover'); if (popover && popover.style.display === 'block' && event.key === "Escape") closeMotivosPopover(false);
+        if (notificationDropdown && notificationDropdown.style.display === 'block' && event.key === "Escape") {
+            notificationDropdown.style.display = 'none';
+        }
+    };
     console.log("Script principal (V" + APP_VERSION + ") completamente carregado e pronto.");
 </script>
 </body>

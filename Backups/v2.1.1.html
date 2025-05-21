@@ -2,7 +2,7 @@
 <html lang="pt-BR" class="dark"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de OS - V2.1.2</title> <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
+    <title>Controle de OS - V2.1.0</title> <meta name="google-signin-client_id" content="232267534625-ti8c7jd14nfqigmmj3lnevv8nvds3i0t.apps.googleusercontent.com">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -524,7 +524,7 @@
                     <li><strong>Home:</strong> Visão geral dos indicadores chave (OS Completas, Incompletas, Provisórias) e acesso rápido às funcionalidades.</li>
                     <li><strong>Ordens de Serviço:</strong> Liste, filtre (incluindo por marcadores manuais de "Não Realizada no Prazo", status de "Logística" e "OS em Conformidade"), edite, gerencie, cancele e importe OS em lote (com tratamento de duplicatas). Logística com status detalhados.</li>
                     <li><strong>OS's Canceladas:</strong> Visualize OS que foram canceladas, com detalhes do cancelamento e opções para editar ou excluir.</li>
-                    <li><strong>Relatórios:</strong> Gere relatórios personalizados com gráficos (OS por Produto, Solicitante, Status) para análises detalhadas. Exporte em CSV, PDF ou imagem. Coluna "Logística" com status detalhados e motivos de inconformidade.</li>
+                    <li><strong>Relatórios:</strong> Gere relatórios personalizados com gráficos para análises detalhadas. Exporte em CSV, PDF ou imagem. Coluna "Logística" com status detalhados e motivos de inconformidade. Configuração de gráficos personalizável.</li>
                     <li><strong>Nova OS:</strong> Crie novas Ordens de Serviço com seleção de status para Logística e marcador de conformidade (com tratamento de duplicatas).</li>
                     <li><strong>Configurações:</strong> Gerencie limpeza de dados, itens por página, motivos de inconformidade e motivos de cancelamento.</li>
                      <li><strong>Notificações:</strong> Receba alertas e lembretes importantes, incluindo lembretes de OS não conformes.</li>
@@ -578,8 +578,8 @@
             </div>
             <div id="importOsLoteContainer" class="card hidden mb-6 bg-slate-800 border border-slate-700">
                 <div class="flex justify-between items-center mb-3"> <h3 class="text-xl font-semibold text-slate-100"> <i class="fas fa-file-excel mr-2 text-green-500"></i>Importar OS em Lote </h3> <button onclick="toggleImportSection()" class="text-slate-400 hover:text-slate-200 text-xl">&times;</button> </div>
-                <p class="text-xs text-slate-400 mb-3"> Selecione (.xlsx, .xls, .csv). Colunas primárias: Código, Status, Cliente, Início, Término, Técnico, Solicitante. <strong>Opcionais: "Logística ok" (ex: Sim, Não, Pendente, N/A), "Descrição", "Prioridade", "Conformidade" (Sim/Não).</strong> </p>
-                <p class="text-xs text-slate-400 mb-3">OS com "Código" já existente poderão ser substituídas ou adicionadas como duplicatas, conforme sua escolha. "Conformidade" virá desmarcada por padrão na importação.</p>
+                <p class="text-xs text-slate-400 mb-3"> Selecione (.xlsx, .xls, .csv). Colunas primárias: Código, Status, Cliente, Início, Término, Técnico, Solicitante. <strong>Opcional: "Logística ok" (ex: Sim, Não, Pendente, N/A).</strong> </p>
+                <p class="text-xs text-slate-400 mb-3">OS com "Código" já existente poderão ser substituídas ou adicionadas como duplicatas, conforme sua escolha.</p>
                 <div class="flex flex-col sm:flex-row gap-3 items-start"> <input type="file" id="excelFileInput" class="input-field p-2 rounded-md border-slate-600 text-sm w-full sm:w-auto file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-700 file:text-sky-200 hover:file:bg-sky-600 cursor-pointer flex-grow" accept=".xlsx, .xls, .csv"> <button id="processExcelButton" class="btn btn-sm btn-success whitespace-nowrap w-full sm:w-auto mt-2 sm:mt-0"> <i class="fas fa-upload"></i> Processar Arquivo </button> </div>
                 <div id="importStatusMessage" class="mt-3 text-xs"> </div> <div id="importSummary" class="mt-2 text-xs hidden"> <p class="font-semibold mb-1"><strong>Resumo da Importação:</strong></p> <ul id="importSummaryList" class="list-disc list-inside pl-3 space-y-0.5 max-h-32 overflow-y-auto"></ul> </div>
             </div>
@@ -646,7 +646,7 @@
                 <h2 class="text-3xl font-bold">Relatórios Personalizados</h2>
                 <div class="flex gap-2 flex-wrap items-center">
                     <button class="btn btn-success !py-1.5 !px-3 !text-xs" onclick="exportTableToCSV('reportsTable', 'relatorio_os_personalizado.csv')"><i class="fas fa-file-csv mr-1"></i> CSV</button>
-                    <button class="btn btn-danger !py-1.5 !px-3 !text-xs" onclick="exportReportToPDFWithCharts('reportsTable', 'Relatório Detalhado de OS', 'reportsTableBody', ['reportChartByProduct', 'reportChartByUsuario', 'reportChartByStatus'], true)"><i class="fas fa-file-pdf mr-1"></i> PDF (c/ Gráficos)</button>
+                    <button class="btn btn-danger !py-1.5 !px-3 !text-xs" onclick="exportReportToPDFWithCharts('reportsTable', 'Relatório Detalhado de OS', 'reportsTableBody', ['reportChartByProduct', 'reportChartByUsuario', 'reportChartByStatus', 'customChart1', 'customChart2'], true)"><i class="fas fa-file-pdf mr-1"></i> PDF (c/ Gráficos)</button>
                     <button class="btn btn-danger !py-1.5 !px-3 !text-xs" onclick="exportReportToPDFWithCharts('reportsTable', 'Relatório de Dados OS', 'reportsTableBody', [], false)"><i class="fas fa-file-alt mr-1"></i> PDF (Lista)</button>
                     <button class="btn btn-teal !py-1.5 !px-3 !text-xs" onclick="exportVisibleListToImage('reportTableContainer', 'imagem_lista_os.png', false)"><i class="fas fa-image mr-1"></i> Img (Lista)</button>
                     <button class="btn btn-purple !py-1.5 !px-3 !text-xs" onclick="exportVisibleListToImage('reportsView', 'imagem_relatorio_completo.png', true)"><i class="fas fa-palette mr-1"></i> Img (Completo)</button>
@@ -667,10 +667,54 @@
                 <div class="mt-4"> <button class="btn btn-primary" onclick="generateCustomReport()"><i class="fas fa-filter"></i> Gerar Relatório</button> </div>
             </div>
 
+            <div id="chartConfigurationSection" class="mt-8 mb-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
+                <h3 class="text-xl font-semibold text-slate-100 mb-3"><i class="fas fa-tools mr-2"></i>Configuração de Gráficos</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="chartTypeSelect" class="block text-sm font-medium mb-1">Tipo de Gráfico:</label>
+                        <select id="chartTypeSelect" class="select-field w-full p-2 rounded-md">
+                            <option value="bar">Barra</option>
+                            <option value="pie">Pizza</option>
+                            <option value="doughnut">Rosca</option>
+                            <option value="line">Linha</option>
+                            <option value="polarArea">Área Polar</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="chartDataFieldSelect" class="block text-sm font-medium mb-1">Dados para Agrupar (Eixo X/Legenda):</label>
+                        <select id="chartDataFieldSelect" class="select-field w-full p-2 rounded-md">
+                            <option value="produto">Produto</option>
+                            <option value="status">Status OS</option>
+                            <option value="responsavel">Responsável</option>
+                            <option value="solicitante">Solicitante</option>
+                            <option value="prioridade">Prioridade</option>
+                            <option value="logisticaStatus">Status Logística</option>
+                            <option value="isInCompliance">Conformidade</option>
+                        </select>
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="chartTimeFieldSelect" class="block text-sm font-medium mb-1">Agrupar por Tempo (Eixo X para Linha/Barra):</label>
+                        <select id="chartTimeFieldSelect" class="select-field w-full p-2 rounded-md">
+                            <option value="">Nenhum (Usar Campo Acima)</option>
+                            <option value="dataAbertura_mes">Mês de Abertura</option>
+                            <option value="prazoFinal_mes">Mês do Prazo Final</option>
+                            <option value="dataAbertura_ano">Ano de Abertura</option>
+                            <option value="prazoFinal_ano">Ano do Prazo Final</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-info" onclick="addCustomChart()"><i class="fas fa-plus-circle"></i> Adicionar/Atualizar Gráfico Personalizado 1</button>
+                    <button class="btn btn-info ml-2" onclick="addCustomChart(true)"><i class="fas fa-plus-circle"></i> Adicionar/Atualizar Gráfico Personalizado 2</button>
+                </div>
+            </div>
+
             <div id="customReportChartsContainer" class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="card !shadow-lg flex flex-col p-4 min-h-[380px]">  <h4 class="text-lg font-semibold mb-3 text-center text-slate-200">OS por Produto</h4>  <div class="flex-grow relative w-full h-full min-h-[280px]"> <canvas id="reportChartByProduct"></canvas> </div>  </div>
                 <div class="card !shadow-lg flex flex-col p-4 min-h-[380px]">  <h4 class="text-lg font-semibold mb-3 text-center text-slate-200">OS por Solicitante</h4>  <div class="flex-grow relative w-full h-full min-h-[280px]"> <canvas id="reportChartByUsuario"></canvas> </div>  </div>
                 <div class="card !shadow-lg flex flex-col p-4 min-h-[380px]">  <h4 class="text-lg font-semibold mb-3 text-center text-slate-200">OS por Status (Relatório)</h4>  <div class="flex-grow relative w-full h-full min-h-[280px]"> <canvas id="reportChartByStatus"></canvas> </div>  </div>
+                <div id="customChartContainer1" class="card !shadow-lg flex-col p-4 min-h-[380px] hidden"> <h4 id="customChartTitle1" class="text-lg font-semibold mb-3 text-center text-slate-200">Gráfico Personalizado 1</h4> <div class="flex-grow relative w-full h-full min-h-[280px]"> <canvas id="customChart1"></canvas> </div> </div>
+                <div id="customChartContainer2" class="card !shadow-lg flex-col p-4 min-h-[380px] hidden"> <h4 id="customChartTitle2" class="text-lg font-semibold mb-3 text-center text-slate-200">Gráfico Personalizado 2</h4> <div class="flex-grow relative w-full h-full min-h-[280px]"> <canvas id="customChart2"></canvas> </div> </div>
             </div>
             <div id="reportTableContainer" class="overflow-x-auto shadow-md rounded-lg">
                 <table id="reportsTable" class="min-w-full">
@@ -846,7 +890,7 @@
     // ==========================================================================
     // VARIÁVEIS GLOBAIS E CONFIGURAÇÕES INICIAIS
     // ==========================================================================
-    const APP_VERSION = "2.1.2"; // Versão atualizada
+    const APP_VERSION = "2.1.1"; // Versão atualizada
     const ITEMS_PER_PAGE_DEFAULT = 10;
     let ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
     let currentPage = 1;
@@ -856,9 +900,8 @@
     let notifications = [];
     let reportOsMotivos = {};
     let currentEditingOsIdForMotivos = null;
-    let importedDuplicateOSData = [];
-    let originalOSDataForImport = [];
-    let currentImportLog = []; // Para armazenar logs temporariamente durante a importação
+    let importedDuplicateOSData = []; // Para armazenar OSs duplicadas da importação para decisão do usuário
+    let originalOSDataForImport = []; // Para armazenar todas as OSs válidas da importação antes da decisão de duplicata
 
     const defaultProducts = ["WORKNC", "EDGECAM", "ESPRIT", "ALPHACAM", "LANTEK", "SOLIDWORKS CAD", "SOLIDWORKS PDM", "SYNECO", "HEXAGON Scanner", "Impressora 3D Markforged", "Serviço de Consultoria", "Treinamento Software X", "Outro"];
     let motivoOptions = [
@@ -880,21 +923,21 @@
     let reportChartByProductInstance = null;
     let reportChartByUsuarioInstance = null;
     let reportChartByStatusInstance = null;
-    // Removido: customChart1Instance, customChart2Instance
+    let customChart1Instance = null;
+    let customChart2Instance = null;
 
 
     // Elementos DOM
     let osModal, osForm, modalTitle, productDatalist, filterProductSelect, reportProductSelect, filterLogisticaStatusSelect, reportFilterLogisticaStatusSelect, osLogisticaStatusModalSelect;
     let cancelOsModal, cancelOsForm, cancelOsModalTitle, cancelOsReasonModalSelect;
-    let editCanceledOsModal, editCanceledOsForm, editCanceledOsModalTitle, editCanceledOsReasonModalSelect;
+    let editCanceledOsModal, editCanceledOsForm, editCanceledOsModalTitle, editCanceledOsReasonModalSelect; // Para editar OS cancelada
     let recentActivityList, importStatusMessage, importSummaryDiv, importSummaryList;
     let mainContent;
     let filterDateStartInput, filterDateEndInput, filterConformidadeSelect, reportFilterConformidadeSelect;
     let notificationBell, notificationCountSpan, notificationDropdown, notificationListUl;
     let confirmDuplicateDialog, confirmDuplicateTitle, confirmDuplicateMessage, confirmDuplicateReplaceBtn, confirmDuplicateAddAsNewBtn, confirmDuplicateCancelBtn;
-    let importDuplicateDialog, importDuplicateTitle, importDuplicateMessage, importDuplicateReplaceAllBtn, importDuplicateAddAllAsNewBtn, importDuplicateAbortBtn;
+    let importDuplicateDialog, importDuplicateTitle, importDuplicateMessage, importDuplicateReplaceAllBtn, importDuplicateAddAllAsNewBtn, importDuplicateAbortBtn; // Para importação em massa
     let osDataForDuplicateCheck = null;
-    let jsonDataForImport = null; // Para armazenar os dados JSON brutos da importação
 
 
     // ==========================================================================
@@ -926,6 +969,7 @@
                 cancellationReasonOptions: cancellationReasonOptions
             };
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+            // console.log(`Dados salvos com sucesso no localStorage (chave: ${LOCAL_STORAGE_KEY}).`);
         } catch (e) {
             console.error("Erro CRÍTICO ao salvar dados no localStorage:", e);
             alert("ATENÇÃO: Erro ao salvar os dados. Verifique o console para detalhes e se o localStorage não está cheio.");
@@ -938,7 +982,10 @@
         if (storedDataString) {
             try {
                 const storedData = JSON.parse(storedDataString);
-                if (storedData.version) {
+                // console.log(`Dados crus do localStorage (chave: ${LOCAL_STORAGE_KEY}):`, storedData);
+
+                // Simplificado: Se a versão for diferente, pode-se optar por limpar ou migrar. Por agora, carrega se existir.
+                if (storedData.version) { // Assume que se tem versão, os dados são minimamente estruturados
                     ordensServico = storedData.ordensServico || [];
                     canceledOS = storedData.canceledOS || [];
                     notifications = storedData.notifications || [];
@@ -951,7 +998,7 @@
                     ordensServico.forEach(os => {
                         if (os.marcadorAtrasoManual === undefined) os.marcadorAtrasoManual = false;
                         if (os.produto === undefined) os.produto = '';
-                        if (os.isInCompliance === undefined) os.isInCompliance = false; // Padrão false se não definido
+                        if (os.isInCompliance === undefined) os.isInCompliance = false;
                         if (os.isDuplicate === undefined) os.isDuplicate = false;
 
                         if (typeof os.logisticaOk === 'boolean' && typeof os.logisticaStatus === 'undefined') {
@@ -970,6 +1017,7 @@
 
                     canceledOS.forEach(os => {
                          if (os.isInCompliance === undefined) os.isInCompliance = false;
+                         // Assegurar que cancellationDetails existe e tem os campos necessários
                          os.cancellationDetails = os.cancellationDetails || {};
                          if (!os.cancellationDetails.date) {
                              const today = new Date().toISOString().split('T')[0];
@@ -983,15 +1031,23 @@
                          os.cancellationDetails.observations = os.cancellationDetails.observations || "";
                     });
 
-                     if (storedData.version !== APP_VERSION) {
+                     if (storedData.version !== APP_VERSION) { // Se a versão for diferente, salva os dados migrados/padronizados com a nova versão
                         addNotification(`Dados atualizados da versão ${storedData.version} para ${APP_VERSION}.`, null, 'info', true);
-                        saveDataToLocalStorage();
+                        saveDataToLocalStorage(); // Salva os dados no novo formato/versão
                     }
-                } else {
-                    console.warn(`Versão dos dados não encontrada ou incompatível. Carregando padrões.`);
-                    ordensServico = []; canceledOS = []; notifications = []; googleUser = null; savedFilters = {}; ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
-                    motivoOptions = [ "Sem Pré-OS", "Sem Anexos", "Sem informações", "Sem Atividades", "Sem Participantes", "Informações incompletas" ];
-                    cancellationReasonOptions = [ "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro" ];
+                } else { // Dados antigos ou sem versão
+                    console.warn(`Versão dos dados não encontrada ou incompatível. Carregando padrões e tentando migrar se possível.`);
+                    // Tenta carregar o que for possível, senão usa padrões
+                    ordensServico = storedData.ordensServico || []; // Exemplo de tentativa
+                    // ... (lógica de migração mais robusta pode ser necessária aqui para versões muito antigas)
+                    // Se a migração não for clara, melhor resetar para padrões para evitar erros.
+                    // Por agora, se não houver 'version', assumimos que é uma estrutura antiga e tentamos carregar,
+                    // mas se der erro, os catch abaixo tratarão.
+                    if (!storedData.ordensServico) { // Se nem ordensServico existir, provavelmente é um LS vazio ou corrompido
+                         notifications = []; googleUser = null; savedFilters = {}; ITEMS_PER_PAGE = ITEMS_PER_PAGE_DEFAULT;
+                         motivoOptions = [ "Sem Pré-OS", "Sem Anexos", "Sem informações", "Sem Atividades", "Sem Participantes", "Informações incompletas" ];
+                         cancellationReasonOptions = [ "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro" ];
+                    }
                 }
             } catch (e) {
                 console.error("Erro CRÍTICO ao carregar/migrar dados do localStorage:", e);
@@ -1009,7 +1065,7 @@
         const itemsPerPageSettingElement = document.getElementById('itemsPerPageSetting');
         if (itemsPerPageSettingElement) itemsPerPageSettingElement.value = ITEMS_PER_PAGE;
         updateNotificationBell();
-        checkOSComplianceOnLoad();
+        checkOSComplianceOnLoad(); // Checa conformidade ao carregar
     }
 
     function populateSelectWithOptions(selectElement, optionsArray, isMultiple = false, defaultText = "Todos", addEmptyOptionFirst = true) {
@@ -1050,6 +1106,7 @@
             if (currentValue && optionsArray.includes(currentValue)) {
                 selectElement.value = currentValue;
             } else if (addEmptyOptionFirst && selectElement.querySelector('option[value=""]')) {
+                 // Default
             } else if (optionsArray.length > 0 && !addEmptyOptionFirst) {
                  selectElement.value = optionsArray[0];
             }
@@ -1099,7 +1156,7 @@
         if (osIndex !== -1) {
             ordensServico[osIndex].isInCompliance = checkboxElement.checked;
             addRecentActivity(`Status de conformidade da OS ${ordensServico[osIndex].numero} alterado para ${checkboxElement.checked ? 'Conforme' : 'Não Conforme'}.`);
-            if (!checkboxElement.checked) {
+            if (!checkboxElement.checked) { // Se desmarcado, adiciona notificação
                 addNotification(`Lembrete: OS ${ordensServico[osIndex].numero} (${ordensServico[osIndex].cliente}) não está marcada como "Em Conformidade".`, osId, 'compliance_reminder');
             }
             saveDataToLocalStorage();
@@ -1133,7 +1190,7 @@
         const dataAberturaEl = document.getElementById('osDataAberturaModal');
         if (dataAberturaEl) dataAberturaEl.value = new Date().toISOString().split('T')[0];
         document.getElementById('osMarcadorAtrasoModal').checked = false;
-        document.getElementById('osIsInComplianceModal').checked = false; // Default para false ao adicionar nova
+        document.getElementById('osIsInComplianceModal').checked = true; // Default to true for new OS
 
         populateSelectWithOptions(osLogisticaStatusModalSelect, logisticaStatusOptions, false, "", false);
         osLogisticaStatusModalSelect.value = defaultLogisticaStatus;
@@ -1171,24 +1228,26 @@
     function deleteOS(id) { const osToDelete = ordensServico.find(os => os.id === id); if (confirm(`Tem certeza que deseja excluir a OS ${osToDelete?.numero || id}? Esta ação é irreversível.`)) { ordensServico = ordensServico.filter(os => os.id !== id); addRecentActivity(`OS ${osToDelete?.numero || 'ID ' + id} foi excluída.`); saveDataToLocalStorage(); if (currentPage > 1 && paginateData(getFilteredOS(), currentPage, ITEMS_PER_PAGE).length === 0) currentPage--; refreshAllViews(); } }
 
     function handleSaveOS(osData, existingOsToReplace = null) {
-        const isEditing = !!(existingOsToReplace && existingOsToReplace.id && osData.id && existingOsToReplace.id === osData.id);
+        const isEditing = !!(existingOsToReplace && existingOsToReplace.id); // Check if we are editing (existingOsToReplace has an id)
 
         if (isEditing) {
-             const osIndex = ordensServico.findIndex(o => o.id === osData.id);
+             const osIndex = ordensServico.findIndex(o => o.id === existingOsToReplace.id);
              if (osIndex !== -1) {
-                const duplicateByNumberWhenEditing = ordensServico.find(os => os.numero === osData.numero && os.id !== osData.id);
-                if (duplicateByNumberWhenEditing) {
-                    alert(`Erro: Já existe uma OS (${duplicateByNumberWhenEditing.numero} - ${duplicateByNumberWhenEditing.cliente}) com o número "${osData.numero}". Não é possível salvar a alteração.`);
-                    return;
+                // Se estiver editando, e o número da OS foi alterado para um que já existe (e não é a própria OS sendo editada)
+                const duplicateByNumber = ordensServico.find(os => os.numero === osData.numero && os.id !== existingOsToReplace.id);
+                if (duplicateByNumber) {
+                    alert(`Erro: Já existe uma OS (${duplicateByNumber.numero} - ${duplicateByNumber.cliente}) com o número "${osData.numero}". Não é possível salvar a alteração.`);
+                    return; // Não salva
                 }
-                ordensServico[osIndex] = { ...ordensServico[osIndex], ...osData }; // Atualiza mantendo o ID original
+                ordensServico[osIndex] = { ...existingOsToReplace, ...osData };
                 addRecentActivity(`OS ${osData.numero} atualizada.`);
             } else {
                 alert("Erro ao atualizar OS: OS original não encontrada para edição."); return;
             }
-        } else if (existingOsToReplace && !isEditing) { // Substituindo uma OS existente por uma nova (caso de duplicata no modal de adicionar)
+        } else if (existingOsToReplace && !isEditing) { // Substituindo uma OS existente por uma nova (caso de duplicata)
             const osIndex = ordensServico.findIndex(o => o.id === existingOsToReplace.id);
             if (osIndex !== -1) {
+                // Manter o ID da OS original que está sendo substituída, mas atualizar todos os outros dados.
                 ordensServico[osIndex] = { ...existingOsToReplace, ...osData, id: existingOsToReplace.id, isDuplicate: false };
                 addRecentActivity(`OS ${osData.numero} substituída (era ${existingOsToReplace.numero}).`);
             } else {
@@ -1206,8 +1265,8 @@
         closeOSModal();
         currentPage = 1;
         refreshAllViews();
-        if (!osData.isInCompliance && (isEditing || !existingOsToReplace)) { // Notificação para nova OS não conforme ou editada para não conforme
-             addNotification(`Lembrete: OS ${osData.numero} (${osData.cliente}) salva e não está marcada como "Em Conformidade".`, osData.id, 'compliance_reminder');
+        if (!osData.isInCompliance && !isEditing) { // Notificação para nova OS não conforme
+             addNotification(`Lembrete: Nova OS ${osData.numero} (${osData.cliente}) criada e não está marcada como "Em Conformidade".`, osData.id, 'compliance_reminder');
         }
     }
 // --- CONTINUAÇÃO DA PARTE 1 ---
@@ -1216,11 +1275,11 @@
     function processAndValidateOSData(jsonData) {
         const headersFromFile = jsonData[0].map(header => String(header || '').trim().toLowerCase());
         const dataRows = jsonData.slice(1);
-        const processedOSs = [];
-        let importLog = [];
-        originalOSDataForImport = [];
-        importedDuplicateOSData = [];
-        jsonDataForImport = jsonData; // Armazena para reuso se necessário
+        const processedOSs = []; // Todas as OSs processadas do arquivo
+        let importLog = []; // Log de importação
+        originalOSDataForImport = []; // Limpa antes de novo processamento
+        importedDuplicateOSData = []; // Limpa antes de novo processamento
+
 
         const expectedHeaderMapping = {
             codigo: 'código', status: 'status', cliente: 'cliente',
@@ -1228,9 +1287,9 @@
             solicitante: 'solicitante', cidade: 'cidade', duracao_h: 'duração (h)',
             produto_import: 'produto',
             logistica: 'logística ok',
-            descricao_import: 'descrição',
-            prioridade_import: 'prioridade',
-            conformidade_import: 'conformidade'
+            descricao_import: 'descrição', // Adicionando descrição da planilha
+            prioridade_import: 'prioridade', // Adicionando prioridade da planilha
+            conformidade_import: 'conformidade' // Adicionando conformidade da planilha (Sim/Não)
         };
 
         const colIndices = {};
@@ -1243,8 +1302,9 @@
                     break;
                 }
             }
-            if (colIndices[key] === undefined) colIndices[key] = -1;
+            if (colIndices[key] === undefined) colIndices[key] = -1; // Garante que a chave existe
         });
+
 
         const essentialCols = ['codigo', 'cliente', 'inicio', 'termino', 'tecnico'];
         let missingEssentialHeader = false;
@@ -1262,12 +1322,12 @@
             if (row.every(cell => cell === null || String(cell || '').trim() === '')) return;
 
             let newOS = {
-                id: null,
+                id: null, // ID será gerado depois, se necessário
                 produto: colIndices.produto_import !== -1 && String(row[colIndices.produto_import] || '').trim() !== '' ? String(row[colIndices.produto_import]).trim() : "N/A (Importado)",
                 prioridade: "Média",
                 marcadorAtrasoManual: false,
                 logisticaStatus: defaultLogisticaStatus,
-                isInCompliance: false, // PADRÃO ALTERADO PARA FALSE
+                isInCompliance: true, // Default true para importadas, pode ser sobrescrito
                 isDuplicate: false
             };
             let rowIsValid = true, currentLogMessages = [];
@@ -1294,24 +1354,23 @@
 
             const logisticaRawValue = colIndices.logistica !== -1 ? (row[colIndices.logistica] !== null && row[colIndices.logistica] !== undefined ? String(row[colIndices.logistica]).trim().toLowerCase() : null) : null;
             if (logisticaRawValue !== null && logisticaRawValue !== '') {
-                if (['sim', 's', 'ok', 'pronta'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[0];
-                else if (['pendente'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[1];
-                else if (['não', 'nao', 'n', 'não iniciada', 'nao iniciada'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[2];
-                else if (['em cotação', 'em cotacao', 'cotação', 'cotacao'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[3];
-                else if (['n/a', 'na', 'não aplicável', 'nao aplicavel'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[4];
+                if (['sim', 's', 'ok', 'pronta'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[0]; // Pronta
+                else if (['pendente'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[1]; // Pendente
+                else if (['não', 'nao', 'n', 'não iniciada', 'nao iniciada'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[2]; // Não Iniciada
+                else if (['em cotação', 'em cotacao', 'cotação', 'cotacao'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[3]; // Em Cotação
+                else if (['n/a', 'na', 'não aplicável', 'nao aplicavel'].includes(logisticaRawValue)) newOS.logisticaStatus = logisticaStatusOptions[4]; // Não Aplicável
                 else {
                     currentLogMessages.push(`Valor de Logística "${row[colIndices.logistica]}" não reconhecido. Usando padrão "${defaultLogisticaStatus}".`);
                 }
             }
-            // Sobrescreve isInCompliance se a coluna existir e for "sim" ou "conforme"
+
             const conformidadeRawValue = colIndices.conformidade_import !== -1 ? String(row[colIndices.conformidade_import] || '').trim().toLowerCase() : '';
             if (conformidadeRawValue === 'sim' || conformidadeRawValue === 'conforme') {
                 newOS.isInCompliance = true;
             } else if (conformidadeRawValue === 'não' || conformidadeRawValue === 'nao' || conformidadeRawValue === 'não conforme' || conformidadeRawValue === 'nao conforme') {
-                newOS.isInCompliance = false; // Já é false por padrão, mas explícito aqui
-            } else if (conformidadeRawValue !== '' && newOS.isInCompliance) { // Se houver valor não reconhecido E o padrão era true (não é mais o caso)
-                 currentLogMessages.push(`Valor de Conformidade "${row[colIndices.conformidade_import]}" não reconhecido. Usando padrão "Não Conforme".`);
-                 newOS.isInCompliance = false; // Garante false se valor estranho
+                newOS.isInCompliance = false;
+            } else if (conformidadeRawValue !== '') { // Se houver valor mas não for reconhecido
+                currentLogMessages.push(`Valor de Conformidade "${row[colIndices.conformidade_import]}" não reconhecido. Usando padrão "Conforme".`);
             }
 
 
@@ -1343,7 +1402,7 @@
             const duracaoVal = colIndices.duracao_h !== -1 && row[colIndices.duracao_h] ? String(row[colIndices.duracao_h]).trim() : '';
             if (duracaoVal) descParts.push(`Duração: ${duracaoVal}h`);
             newOS.descricao = descParts.length > 0 ? descParts.join('; ') : "(OS Importada)";
-            if (descParts.length > 0 && !descFromFile && (cidadeVal || duracaoVal)) newOS.descricao += ". (OS Importada)";
+            if (descParts.length > 0 && !descFromFile) newOS.descricao += " (OS Importada)";
 
 
             if (rowIsValid) {
@@ -1360,7 +1419,7 @@
 
         let hasDuplicates = false;
         if (processedOSs.length > 0) {
-            originalOSDataForImport = [...processedOSs];
+            originalOSDataForImport = [...processedOSs]; // Guarda todas as OSs válidas da importação
             importedDuplicateOSData = originalOSDataForImport.filter(importedOS =>
                 ordensServico.some(existingOS => existingOS.numero === importedOS.numero)
             );
@@ -1398,19 +1457,19 @@
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellNF: false, cellStyles: false });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const rawJsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 , raw: true, defval: null});
-                jsonDataForImport = rawJsonData; // Salva para reuso no displayImportResults
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 , raw: true, defval: null});
 
-                while (jsonDataForImport.length > 0 && jsonDataForImport[jsonDataForImport.length-1].every(cell => cell === null || String(cell||'').trim() === '')) {
-                    jsonDataForImport.pop();
+                while (jsonData.length > 0 && jsonData[jsonData.length-1].every(cell => cell === null || String(cell||'').trim() === '')) {
+                    jsonData.pop();
                 }
-                if (jsonDataForImport.length < 2) throw new Error("Arquivo vazio ou apenas com cabeçalho. Verifique o conteúdo da primeira aba.");
+                if (jsonData.length < 2) throw new Error("Arquivo vazio ou apenas com cabeçalho. Verifique o conteúdo da primeira aba.");
 
-                const { processedOSs, importLog, hasDuplicates } = processAndValidateOSData(jsonDataForImport);
-                currentImportLog = importLog;
+                const { processedOSs, importLog, hasDuplicates } = processAndValidateOSData(jsonData);
 
-                if (processedOSs.length === 0 && !hasDuplicates) {
-                    displayImportResults([], currentImportLog, file.name, jsonDataForImport);
+                currentImportLog = importLog; // Salva o log atual para uso posterior
+
+                if (processedOSs.length === 0 && !hasDuplicates) { // Nenhuma OS válida e nenhuma duplicata potencial
+                    displayImportResults([], currentImportLog, file.name);
                     return;
                 }
 
@@ -1420,13 +1479,13 @@
                 } else {
                     // Nenhuma duplicata, processa diretamente
                     processedOSs.forEach(os => {
-                        os.id = generateId();
+                        os.id = generateId(); // Gera ID para OSs não duplicadas
                         ordensServico.unshift(os);
-                         if (!os.isInCompliance) { // Checa se a OS importada (já com valor de conformidade definido) está como não conforme
+                         if (!os.isInCompliance) {
                             addNotification(`Lembrete: OS ${os.numero} (${os.cliente}) importada e não está "Em Conformidade".`, os.id, 'compliance_reminder');
                         }
                     });
-                    displayImportResults(processedOSs, currentImportLog, file.name, jsonDataForImport);
+                    displayImportResults(processedOSs, currentImportLog, file.name);
                 }
 
             } catch (error) {
@@ -1434,10 +1493,10 @@
                 cISM.textContent = `Erro: ${error.message}. Verifique o console.`;
                 cISM.className = 'mt-4 text-sm text-red-400';
                 cISD.classList.add('hidden');
-                currentImportLog = [{ success: false, message: `Erro crítico: ${error.message}` }];
-                displayImportResults([], currentImportLog, file.name, null); // Passa null para jsonDataForImport em caso de erro crítico
+                currentImportLog = [{ success: false, message: `Erro crítico: ${error.message}` }]; // Atualiza log para erros críticos
+                displayImportResults([], currentImportLog, file.name);
             } finally {
-                fileInput.value = '';
+                fileInput.value = ''; // Limpa o input de arquivo
             }
         };
         reader.onerror = function(error) {
@@ -1446,7 +1505,7 @@
             cISM.className = 'mt-4 text-sm text-red-400';
             fileInput.value = '';
             currentImportLog = [{ success: false, message: `Erro de leitura do arquivo.` }];
-            displayImportResults([], currentImportLog, "N/A", null);
+            displayImportResults([], currentImportLog, "N/A");
         };
         reader.readAsArrayBuffer(file);
     }
@@ -1460,13 +1519,13 @@
             duplicateHandlingLog.push({ success: true, message: "Ação: Substituir Todas as OSs existentes correspondentes.", isInfo: true });
             originalOSDataForImport.forEach(importedOS => {
                 const existingOSIndex = ordensServico.findIndex(os => os.numero === importedOS.numero);
-                if (existingOSIndex !== -1) {
+                if (existingOSIndex !== -1) { // Duplicata encontrada, substituir
                     const oldOSInfo = `(Substituída OS existente: ${ordensServico[existingOSIndex].cliente}, Status: ${ordensServico[existingOSIndex].status})`;
-                    importedOS.id = ordensServico[existingOSIndex].id;
-                    ordensServico[existingOSIndex] = { ...importedOS };
+                    importedOS.id = ordensServico[existingOSIndex].id; // Mantém o ID da OS existente
+                    ordensServico[existingOSIndex] = { ...importedOS }; // Substitui
                     successfullyProcessedOS.push(importedOS);
                     duplicateHandlingLog.push({ success: true, message: `OS ${importedOS.numero} substituída. ${oldOSInfo}`, isWarning: false });
-                } else {
+                } else { // Não é duplicata, adicionar como nova
                     importedOS.id = generateId();
                     ordensServico.unshift(importedOS);
                     successfullyProcessedOS.push(importedOS);
@@ -1488,28 +1547,25 @@
         } else if (action === 'abort') {
             duplicateHandlingLog.push({ success: true, message: "Importação cancelada pelo usuário devido a duplicatas.", isInfo: true });
             currentImportLog = [...currentImportLog, ...duplicateHandlingLog];
-            displayImportResults([], currentImportLog, "N/A (Cancelado)", jsonDataForImport);
+            displayImportResults([], currentImportLog, "N/A (Cancelado)");
             return;
         }
 
         successfullyProcessedOS.forEach(os => {
-            if (!os.isInCompliance) { // Checa conformidade após a decisão e processamento
+            if (!os.isInCompliance) {
                  addNotification(`Lembrete: OS ${os.numero} (${os.cliente}) importada/atualizada e não está "Em Conformidade".`, os.id, 'compliance_reminder');
             }
         });
 
         currentImportLog = [...currentImportLog, ...duplicateHandlingLog];
-        displayImportResults(successfullyProcessedOS, currentImportLog, document.getElementById('excelFileInput').files[0]?.name || "Arquivo Importado", jsonDataForImport);
+        displayImportResults(successfullyProcessedOS, currentImportLog, document.getElementById('excelFileInput').files[0]?.name || "Arquivo Importado");
     }
 
 
-    function displayImportResults(processedOSList, logEntries, fileName, rawJsonData) {
+    function displayImportResults(processedOSList, logEntries, fileName) {
         const cISM = document.getElementById('importStatusMessage');
         const cISD = document.getElementById('importSummary');
         const cISL = document.getElementById('importSummaryList');
-
-        // Verifica se houve duplicatas processadas pelo diálogo (pela presença de logs de info sobre duplicatas)
-        const hadDuplicateChoices = logEntries.some(log => log.isInfo && log.message.includes("Ação:"));
 
         if (processedOSList.length > 0) {
             saveDataToLocalStorage();
@@ -1519,48 +1575,40 @@
             addRecentActivity(`${processedOSList.length} OS(s) processada(s) de ${fileName}.`);
         }
 
-        let finalMessage;
-        if (processedOSList.length > 0 && !hadDuplicateChoices && !logEntries.some(log => !log.success || log.isWarning)) {
-             finalMessage = `${processedOSList.length} OS(s) importada(s) com sucesso!`;
-             cISM.className = 'mt-4 text-sm text-green-400';
-        } else {
-            finalMessage = processedOSList.length > 0 ? `${processedOSList.length} OS(s) processada(s)! ` : "Nenhuma OS nova/atualizada do arquivo. ";
-            cISM.className = `mt-4 text-sm ${processedOSList.length > 0 ? 'text-green-400' : 'text-amber-400'}`;
+        let finalMessage = processedOSList.length > 0 ? `${processedOSList.length} OS(s) processada(s) com sucesso! ` : "Nenhuma OS nova/atualizada do arquivo. ";
+        cISM.className = `mt-4 text-sm ${processedOSList.length > 0 ? 'text-green-400' : 'text-amber-400'}`;
 
-            const errorsCount = logEntries.filter(log => !log.success).length;
-            const warningsCount = logEntries.filter(log => log.success && log.isWarning).length;
+        const errorsCount = logEntries.filter(log => !log.success).length;
+        const warningsCount = logEntries.filter(log => log.success && log.isWarning).length;
 
-            if (errorsCount > 0) {
-                finalMessage += `${errorsCount} linha(s) com erros. `;
-                cISM.className = `mt-4 text-sm ${processedOSList.length > 0 ? 'text-amber-400' : 'text-red-400'}`;
-            }
-            if (warningsCount > 0) {
-                 finalMessage += `${warningsCount} linha(s) com avisos (ver resumo). `;
-                 if (cISM.className.includes('text-green-400')) {
-                    cISM.className = 'mt-4 text-sm text-amber-400';
-                 }
-            }
-            if (logEntries.filter(log => log.isInfo).length > 0) {
-                 finalMessage += `Ações de duplicatas aplicadas. `;
-            }
-            if (errorsCount > 0 || warningsCount > 0 || logEntries.filter(log => log.isInfo).length > 0) {
-                finalMessage += "Veja resumo abaixo.";
-            }
+        if (errorsCount > 0) {
+            finalMessage += `${errorsCount} linha(s) com erros. `;
+            cISM.className = `mt-4 text-sm ${processedOSList.length > 0 ? 'text-amber-400' : 'text-red-400'}`;
+        }
+        if (warningsCount > 0) {
+             finalMessage += `${warningsCount} linha(s) com avisos (ver resumo). `;
+             if (cISM.className.includes('text-green-400')) { // Se era verde, torna âmbar por causa dos avisos
+                cISM.className = 'mt-4 text-sm text-amber-400';
+             }
+        }
+        if (logEntries.filter(log => log.isInfo).length > 0) {
+             finalMessage += `Ações de duplicatas aplicadas. `;
         }
 
+        if (errorsCount > 0 || warningsCount > 0 || logEntries.filter(log => log.isInfo).length > 0) {
+            finalMessage += "Veja resumo abaixo.";
+        }
 
-        const totalDataRowsInFile = rawJsonData ? rawJsonData.slice(1).filter(r => !r.every(c => c === null || String(c||'').trim() === '')).length : 0;
-        if (processedOSList.length === 0 && !logEntries.some(log => !log.success) && !logEntries.some(log => log.isWarning) && totalDataRowsInFile > 0 && !logEntries.some(l => l.message.includes("cancelada"))) {
-            if(!hadDuplicateChoices) { // Se não teve diálogo de duplicata, e não teve outros erros/avisos mas nada processado
-                finalMessage = `Arquivo lido, mas nenhuma OS válida foi processada. Verifique o formato dos dados e se as colunas essenciais estão corretas.`;
-                cISM.className = 'mt-4 text-sm text-amber-400';
-            }
+        const totalDataRowsInFile = jsonData ? jsonData.slice(1).filter(r => !r.every(c => c === null || String(c||'').trim() === '')).length : 0;
+        if (processedOSList.length === 0 && errorsCount === 0 && warningsCount === 0 && totalDataRowsInFile > 0 && !logEntries.some(l => l.message.includes("cancelada"))) {
+             finalMessage = `Arquivo lido, mas nenhuma OS válida foi processada. Verifique o formato dos dados e se as colunas essenciais estão corretas.`;
+             cISM.className = 'mt-4 text-sm text-amber-400';
         }
         cISM.textContent = finalMessage.trim();
 
         if (logEntries.length > 0) {
             cISD.classList.remove('hidden');
-            cISL.innerHTML = '';
+            cISL.innerHTML = ''; // Limpa antes de adicionar
             logEntries.forEach(log => {
                 const li = document.createElement('li');
                 li.textContent = log.message;
@@ -1572,8 +1620,6 @@
         }
         originalOSDataForImport = [];
         importedDuplicateOSData = [];
-        jsonDataForImport = null; // Limpa os dados brutos
-        currentImportLog = []; // Limpa o log
     }
 
 
@@ -1776,21 +1822,22 @@
             populateLogisticaStatusFilters();
             applyFiltersAndRender();
         } else if (viewId === 'canceledOsView') {
-            populateCancellationReasonFilter();
-            if(editCanceledOsReasonModalSelect) populateSelectWithOptions(editCanceledOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false);
+            populateCancellationReasonFilter(); // Popula filtro
+            if(editCanceledOsReasonModalSelect) populateSelectWithOptions(editCanceledOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false); // Popula modal
             renderCanceledOSTable();
         } else if (viewId === 'reportsView') {
             populateProductFilters();
             populateLogisticaStatusFilters();
             $('.chosen-select-reports').chosen({ width: '100%', no_results_text: 'Oops, nada encontrado!', allow_single_deselect: true });
-            reportOsMotivos = {};
-            generateCustomReport();
+            reportOsMotivos = {}; // Limpa motivos ao entrar na view
+            generateCustomReport(); // Gera relatório com filtros padrão e gráficos
         } else if (viewId === 'settingsView') {
             const itemsInput = document.getElementById('itemsPerPageSetting');
             if (itemsInput) itemsInput.value = ITEMS_PER_PAGE;
             renderInconformityReasonList();
             renderCancellationReasonList();
         }
+
 
         const importContainer = document.getElementById('importOsLoteContainer');
         if (viewId !== 'osListView' && importContainer && !importContainer.classList.contains('hidden')) {
@@ -1804,7 +1851,10 @@
             if (reportChartByProductInstance) { reportChartByProductInstance.destroy(); reportChartByProductInstance = null; }
             if (reportChartByUsuarioInstance) { reportChartByUsuarioInstance.destroy(); reportChartByUsuarioInstance = null; }
             if (reportChartByStatusInstance) { reportChartByStatusInstance.destroy(); reportChartByStatusInstance = null; }
+            if (customChart1Instance) { customChart1Instance.destroy(); customChart1Instance = null; document.getElementById('customChartContainer1').classList.add('hidden');}
+            if (customChart2Instance) { customChart2Instance.destroy(); customChart2Instance = null; document.getElementById('customChartContainer2').classList.add('hidden');}
         }
+        // Fechar dropdown de notificações ao mudar de view
         if (notificationDropdown && !notificationDropdown.classList.contains('hidden')) {
             notificationDropdown.style.display = 'none';
         }
@@ -1854,7 +1904,7 @@
             let mDF = true;
             if (fDFIV && os.dataAbertura) {
                 const filterEndDate = new Date(fDFIV + "T00:00:00Z");
-                filterEndDate.setDate(filterEndDate.getDate() + 1);
+                filterEndDate.setDate(filterEndDate.getDate() + 1); // Para incluir o dia final
                 mDF = new Date(os.dataAbertura + "T00:00:00Z") < filterEndDate;
             } else if (fDFIV && !os.dataAbertura) {
                  mDF = false;
@@ -1877,10 +1927,181 @@
     function navigateToOsListWithFilter(sF) { const fSI=document.getElementById('filterStatus'),fONI=document.getElementById('filterOsNumber'),fCI=document.getElementById('filterClient'),fPI=document.getElementById('filterProduct'),fDI=document.getElementById('filterDescription'),fMAI=document.getElementById('filterMarcadorAtraso'),fLSI=document.getElementById('filterLogisticaStatus'), fDS=document.getElementById('filterDateStart'), fDE=document.getElementById('filterDateEnd'), fConf=document.getElementById('filterConformidade'); if(fONI)fONI.value="";if(fCI)fCI.value="";if(fPI)fPI.value="";if(fDI)fDI.value="";if(fMAI)fMAI.value="";if(fDS)fDS.value="";if(fDE)fDE.value="";if(fConf)fConf.value=""; if(fLSI) $(fLSI).val([]).trigger('chosen:updated'); if(fSI){if(Array.isArray(sF)){fSI.value="";addRecentActivity("Visualizando OS. Refine filtros para pendentes.");}else{fSI.value=sF;}} showView('osListView',document.querySelector('.app-header .sidebar-item[onclick*="osListView"]'));}
     function refreshAllViews() { console.log("Atualizando todas as visualizações..."); renderOSTable(); updateHomeCounts(); renderCanceledOSTable(); updateNotificationBell(); if(document.getElementById('homeView')&&!document.getElementById('homeView').classList.contains('hidden'))renderOSStatusChart(); const rVE=document.getElementById('reportsView'); if(rVE&&!rVE.classList.contains('hidden'))generateCustomReport(); console.log("Visualizações atualizadas."); }
 
-    // RELATÓRIOS PERSONALIZADOS (SEM CONFIGURAÇÃO DE GRÁFICOS)
+    // RELATÓRIOS PERSONALIZADOS E CONFIGURAÇÃO DE GRÁFICOS
     function generateCustomReport() { console.log("Gerando relatório personalizado..."); const rTB = document.getElementById('reportsTableBody'), rDSI = document.getElementById('reportDateStartFilter'), rDEI = document.getElementById('reportDateEndFilter'), rSI = document.getElementById('reportStatusFilter'), rPI = document.getElementById('reportProductFilter'), rFMAI = document.getElementById('reportFilterMarcadorAtraso'), rFCI = reportFilterConformidadeSelect; const rFLSI = document.getElementById('reportFilterLogisticaStatus'); if (!rTB || !rDSI || !rDEI || !rSI || !rPI || !rFMAI || !rFLSI || !rFCI) { console.error("Elementos do filtro de relatório não encontrados."); return; } rTB.innerHTML = ''; reportOsMotivos = {}; if (reportChartByProductInstance) { reportChartByProductInstance.destroy(); reportChartByProductInstance = null; } if (reportChartByUsuarioInstance) { reportChartByUsuarioInstance.destroy(); reportChartByUsuarioInstance = null; } if (reportChartByStatusInstance) { reportChartByStatusInstance.destroy(); reportChartByStatusInstance = null; } document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c => { const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); }); const dSV=rDSI.value, dEV=rDEI.value, sV=rSI.value, pV=rPI.value, fMAVal=rFMAI.value, fCVal = rFCI.value; const fLSVal_array = $(rFLSI).val() || []; if (dSV&&dEV&&new Date(dEV)<new Date(dSV)) { alert("Data Final anterior à Data Inicial."); rTB.innerHTML='<tr><td colspan="11" class="text-center py-10 text-red-500">Erro: Data Final anterior à Data Inicial.</td></tr>'; return; } const fRD = ordensServico.filter(os => { let matchPrazo=true; if(os.prazoFinal){const pFD=new Date(os.prazoFinal+"T00:00:00Z"); if(dSV&&dEV)matchPrazo=pFD>=new Date(dSV+"T00:00:00Z")&&pFD<=new Date(dEV+"T23:59:59Z"); else if(dSV)matchPrazo=pFD>=new Date(dSV+"T00:00:00Z"); else if(dEV)matchPrazo=pFD<=new Date(dEV+"T23:59:59Z");}else if(dSV||dEV)matchPrazo=false; const mS=sV?os.status===sV:true, mP=pV?os.produto===pV:true; let mMA=true; if(fMAVal==="marcada")mMA=os.marcadorAtrasoManual===true; else if(fMAVal==="nao_marcada")mMA=os.marcadorAtrasoManual===false||os.marcadorAtrasoManual===undefined; let mLS = fLSVal_array.length > 0 ? fLSVal_array.includes(os.logisticaStatus) : true; let mConf = true; if (fCVal === "conforme") mConf = os.isInCompliance === true; else if (fCVal === "nao_conforme") mConf = os.isInCompliance === false || os.isInCompliance === undefined; return matchPrazo && mS && mP && mMA && mLS && mConf; }); if (fRD.length === 0) { rTB.innerHTML = '<tr><td colspan="11" class="text-center py-10 text-slate-400">Nenhuma OS encontrada para os filtros.</td></tr>'; return; } fRD.sort((a,b)=>new Date(a.dataAbertura)-new Date(b.dataAbertura)); fRD.forEach(os => { const rw = rTB.insertRow(); rw.className = 'table-row hover:bg-slate-700'; rw.dataset.osIdForMotivos = os.id; const osStatusClass = getStatusClass(os.status); const motivosButtonId = `motivo-btn-${os.id}`; const motivosDisplayId = `motivos-display-${os.id}`; rw.innerHTML = `<td class="py-2 px-3 text-sm">${os.numero}</td> <td class="py-2 px-3 text-sm">${os.solicitante||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.cliente}</td> <td class="py-2 px-3 text-sm">${formatDateToBR(os.dataAbertura)}</td> <td class="py-2 px-3 text-sm">${formatDateToBR(os.prazoFinal)}</td> <td class="py-2 px-3 text-sm">${os.responsavel||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.logisticaStatus||'N/A'}</td> <td class="py-2 px-3 text-sm">${os.produto||'N/A'}</td> <td class="py-2 px-3 text-sm text-center"><span class="status-tag ${osStatusClass}">${os.status}</span></td> <td class="py-2 px-3 text-sm text-center compliance-cell-report"><input type="checkbox" class="form-checkbox h-4 w-4" ${os.isInCompliance ? 'checked' : ''} disabled></td> <td class="py-2 px-3 text-sm"> <button id="${motivosButtonId}" class="btn btn-xs btn-info !py-1 !px-2 !text-xs" onclick="openMotivosPopover('${os.id}', this)">Gerenciar Motivos</button> <div id="${motivosDisplayId}" class="selected-motivos-display mt-1 text-xs"></div> </td>`; updateMotivosDisplay(os.id); }); addRecentActivity("Relatório personalizado gerado."); renderReportCharts(fRD); }
     function renderReportCharts(d) { const cCO=(tTJS=null)=>({responsive:true,maintainAspectRatio:false,animation:{duration:1e3,easing:'easeInOutQuart',animateScale:true,animateRotate:true},plugins:{legend:{display:true,position:'bottom',labels:{color:'#cbd5e1',padding:15,boxWidth:12,font:{size:11}}},title:{display:!!tTJS,text:tTJS,color:'#cbd5e1',font:{size:14,weight:'normal'}},tooltip:{backgroundColor:'rgba(30,41,59,0.95)',titleColor:'#f1f5f9',bodyColor:'#cbd5e1',borderColor:'#475569',borderWidth:1,padding:10,callbacks:{label:function(c){const t=c.chart.getDatasetMeta(0).total;const p=t>0?((c.parsed/t)*100).toFixed(1)+'%':'0%';return`${c.label||''}: ${c.parsed||0} (${p})`}}}},scales:{y:{beginAtZero:true,ticks:{color:'#94a3b8',stepSize:1,precision:0},grid:{color:'#334155',drawBorder:false}},x:{ticks:{color:'#94a3b8',autoSkip:true,maxRotation:45,minRotation:0},grid:{display:false}}}}); const cCl=['rgba(54,162,235,0.8)','rgba(255,159,64,0.8)','rgba(75,192,192,0.8)','rgba(255,99,132,0.8)','rgba(153,102,255,0.8)','rgba(255,205,86,0.8)','rgba(245,158,11,0.8)','rgba(123,239,178,0.8)','rgba(250,130,49,0.8)','rgba(179,57,57,0.8)','rgba(72,126,176,0.8)','rgba(246,229,141,0.8)','rgba(113,88,226,0.8)']; const cBC='rgba(15,23,42,0.8)'; const pC=d.reduce((acc,os)=>{acc[os.produto||'N/Esp.']=(acc[os.produto||'N/Esp.']||0)+1;return acc},{}); if(document.getElementById('reportChartByProduct')){if(reportChartByProductInstance)reportChartByProductInstance.destroy();reportChartByProductInstance=new Chart(document.getElementById('reportChartByProduct').getContext('2d'),{type:'bar',data:{labels:Object.keys(pC),datasets:[{label:'OS',data:Object.values(pC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5}]},options:cCO()})} const solC=d.reduce((acc,os)=>{const sol=os.solicitante||'N/Atrib.';acc[sol]=(acc[sol]||0)+1;return acc},{}); if(document.getElementById('reportChartByUsuario')){if(reportChartByUsuarioInstance)reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=new Chart(document.getElementById('reportChartByUsuario').getContext('2d'),{type:'pie',data:{labels:Object.keys(solC),datasets:[{label:'OS',data:Object.values(solC),backgroundColor:cCl,borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:{...cCO(),scales:{}}});} const sCR=d.reduce((acc,os)=>{acc[os.status]=(acc[os.status]||0)+1;return acc},{}); const sCM={'Aberta':'rgba(54,162,235,0.8)','Em Andamento':'rgba(255,159,64,0.8)','Pendente Informação':'rgba(255,205,86,0.8)','Aguardando Aprovação':'rgba(153,102,255,0.8)','Completa':'rgba(75,192,192,0.8)','Cancelada':'rgba(255,99,132,0.8)','Incompleta':'rgba(201,203,207,0.8)','Provisória':'rgba(160,160,160,0.8)','Conflitante':'rgba(245,158,11,0.8)'}; if(document.getElementById('reportChartByStatus')){if(reportChartByStatusInstance)reportChartByStatusInstance.destroy();reportChartByStatusInstance=new Chart(document.getElementById('reportChartByStatus').getContext('2d'),{type:'doughnut',data:{labels:Object.keys(sCR),datasets:[{label:'OS',data:Object.values(sCR),backgroundColor:Object.keys(sCR).map((s,i)=>sCM[s]||cCl[i%cCl.length]),borderColor:cBC,borderWidth:1.5,hoverOffset:8}]},options:{...cCO(),scales:{}}});}}
     const clearReportOnChange = () => { if(document.getElementById('reportsView')&&!document.getElementById('reportsView').classList.contains('hidden')){document.getElementById('reportsTableBody').innerHTML='<tr><td colspan="11" class="text-center py-10 text-slate-400">Filtros alterados. Clique "Gerar Relatório".</td></tr>'; reportOsMotivos = {}; if(reportChartByProductInstance){reportChartByProductInstance.destroy();reportChartByProductInstance=null} if(reportChartByUsuarioInstance){reportChartByUsuarioInstance.destroy();reportChartByUsuarioInstance=null} if(reportChartByStatusInstance){reportChartByStatusInstance.destroy();reportChartByStatusInstance=null} document.getElementById('customReportChartsContainer').querySelectorAll('canvas').forEach(c=>{const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)})}};
+
+    function addCustomChart(isSecondChart = false) {
+        const chartType = document.getElementById('chartTypeSelect').value;
+        const dataField = document.getElementById('chartDataFieldSelect').value;
+        const timeField = document.getElementById('chartTimeFieldSelect').value;
+        const filteredReportData = getFilteredReportDataForCharts(); // Pega os dados já filtrados da tabela de relatório
+
+        if (filteredReportData.length === 0) {
+            alert("Não há dados no relatório para gerar o gráfico personalizado.");
+            return;
+        }
+
+        let chartData, chartLabels;
+        let chartTitleText = `OS por ${document.getElementById('chartDataFieldSelect').options[document.getElementById('chartDataFieldSelect').selectedIndex].text}`;
+
+        if (timeField) { // Agregação por tempo
+            chartTitleText += ` ao longo do Tempo (${document.getElementById('chartTimeFieldSelect').options[document.getElementById('chartTimeFieldSelect').selectedIndex].text})`;
+            const { labels, datasets } = aggregateDataByTimeAndField(filteredReportData, timeField, dataField, chartType);
+            chartLabels = labels;
+            chartData = datasets;
+        } else { // Agregação simples por campo
+            const aggregated = filteredReportData.reduce((acc, os) => {
+                let key = os[dataField];
+                if (dataField === 'isInCompliance') key = os.isInCompliance ? 'Conforme' : 'Não Conforme';
+                else if (!key) key = 'N/A';
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+            chartLabels = Object.keys(aggregated);
+            chartData = [{ label: 'Contagem de OS', data: Object.values(aggregated), backgroundColor: CHART_COLORS_PALETTE, borderColor: CHART_BORDER_COLOR, borderWidth: 1.5 }];
+        }
+
+
+        const chartCanvasId = isSecondChart ? 'customChart2' : 'customChart1';
+        const chartContainerId = isSecondChart ? 'customChartContainer2' : 'customChartContainer1';
+        const chartTitleId = isSecondChart ? 'customChartTitle2' : 'customChartTitle1';
+        let chartInstance = isSecondChart ? customChart2Instance : customChart1Instance;
+
+        const chartContainer = document.getElementById(chartContainerId);
+        const chartTitleEl = document.getElementById(chartTitleId);
+        if (chartInstance) chartInstance.destroy();
+
+        const ctx = document.getElementById(chartCanvasId).getContext('2d');
+        const commonOptions = getCommonChartOptions(chartTitleText);
+        let specificOptions = {};
+
+        if (chartType === 'line') {
+            specificOptions = { scales: { y: { beginAtZero: true, ticks:{stepSize: 1} }, x: {} } }; // Linha pode ter eixos X e Y
+        } else if (chartType === 'bar') {
+             specificOptions = { scales: { y: { beginAtZero: true, ticks:{stepSize: 1} }, x: {} } };
+        } else { // Pie, Doughnut, PolarArea não usam scales dessa forma
+            specificOptions = { scales: {} };
+             commonOptions.plugins.legend.position = 'right'; // Melhor para pizza/rosca
+        }
+
+
+        chartInstance = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: chartLabels,
+                datasets: chartData
+            },
+            options: { ...commonOptions, ...specificOptions }
+        });
+
+        if (isSecondChart) customChart2Instance = chartInstance;
+        else customChart1Instance = chartInstance;
+
+        if (chartTitleEl) chartTitleEl.textContent = chartTitleText;
+        if (chartContainer) chartContainer.classList.remove('hidden');
+        addRecentActivity(`Gráfico personalizado "${chartTitleText}" (${chartType}) ${isSecondChart ? '2 ' : '1 '}gerado/atualizado.`);
+    }
+
+    function getFilteredReportDataForCharts() {
+        // Esta função deve retornar os dados que estão atualmente na tabela de relatórios.
+        // Para simplificar, vamos assumir que `generateCustomReport` já filtrou e `fRD` (variável local de generateCustomReport) é o que queremos.
+        // Precisamos de uma forma de acessar esses dados filtrados.
+        // Solução: `generateCustomReport` pode armazenar seus resultados em uma variável global temporária ou podemos refiltrar aqui.
+        // Por simplicidade, refiltraremos. Em uma aplicação maior, otimizaríamos isso.
+        const rDSI = document.getElementById('reportDateStartFilter'), rDEI = document.getElementById('reportDateEndFilter'), rSI = document.getElementById('reportStatusFilter'), rPI = document.getElementById('reportProductFilter'), rFMAI = document.getElementById('reportFilterMarcadorAtraso'), rFCI = reportFilterConformidadeSelect;
+        const rFLSI = document.getElementById('reportFilterLogisticaStatus');
+        const dSV=rDSI.value, dEV=rDEI.value, sV=rSI.value, pV=rPI.value, fMAVal=rFMAI.value, fCVal = rFCI.value;
+        const fLSVal_array = $(rFLSI).val() || [];
+
+        return ordensServico.filter(os => {
+            let matchPrazo=true; if(os.prazoFinal){const pFD=new Date(os.prazoFinal+"T00:00:00Z"); if(dSV&&dEV)matchPrazo=pFD>=new Date(dSV+"T00:00:00Z")&&pFD<=new Date(dEV+"T23:59:59Z"); else if(dSV)matchPrazo=pFD>=new Date(dSV+"T00:00:00Z"); else if(dEV)matchPrazo=pFD<=new Date(dEV+"T23:59:59Z");}else if(dSV||dEV)matchPrazo=false;
+            const mS=sV?os.status===sV:true, mP=pV?os.produto===pV:true;
+            let mMA=true; if(fMAVal==="marcada")mMA=os.marcadorAtrasoManual===true; else if(fMAVal==="nao_marcada")mMA=os.marcadorAtrasoManual===false||os.marcadorAtrasoManual===undefined;
+            let mLS = fLSVal_array.length > 0 ? fLSVal_array.includes(os.logisticaStatus) : true;
+            let mConf = true; if (fCVal === "conforme") mConf = os.isInCompliance === true; else if (fCVal === "nao_conforme") mConf = os.isInCompliance === false || os.isInCompliance === undefined;
+            return matchPrazo && mS && mP && mMA && mLS && mConf;
+        });
+    }
+
+    const CHART_COLORS_PALETTE = ['rgba(54, 162, 235, 0.7)', 'rgba(255, 99, 132, 0.7)', 'rgba(75, 192, 192, 0.7)', 'rgba(255, 205, 86, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)', 'rgba(201, 203, 207, 0.7)', 'rgba(23, 162, 184, 0.7)', 'rgba(40, 167, 69, 0.7)', 'rgba(220, 53, 69, 0.7)'];
+    const CHART_BORDER_COLOR = 'rgba(15, 23, 42, 0.8)';
+
+    function getCommonChartOptions(titleText = null) {
+        return {
+            responsive: true, maintainAspectRatio: false,
+            animation: { duration: 800, easing: 'easeInOutCubic' },
+            plugins: {
+                legend: { display: true, position: 'bottom', labels: { color: '#cbd5e1', padding: 12, font: { size: 10 } } },
+                title: { display: !!titleText, text: titleText, color: '#e2e8f0', font: { size: 13, weight: '500' }, padding: { top: 5, bottom: 10 } },
+                tooltip: {
+                    backgroundColor: 'rgba(30,41,59,0.9)', titleFont: { size: 12 }, bodyFont: { size: 11 },
+                    titleColor: '#f1f5f9', bodyColor: '#cbd5e1', borderColor: '#475569', borderWidth: 1, padding: 8,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || context.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null && context.dataset.data) { // Para Bar, Line
+                                label += context.parsed.y;
+                                const total = context.dataset.data.reduce((sum, val) => sum + (typeof val === 'number' ? val : (val.y || 0)), 0);
+                                if (total > 0) label += ` (${((context.parsed.y / total) * 100).toFixed(1)}%)`;
+                            } else if (context.parsed !== null && context.chart.config.type.match(/pie|doughnut|polarArea/)) { // Para Pie, Doughnut, PolarArea
+                                label += context.parsed;
+                                const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                if (total > 0) label += ` (${((context.parsed / total) * 100).toFixed(1)}%)`;
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+            // Scales são adicionadas dinamicamente baseadas no tipo de gráfico
+        };
+    }
+
+    function aggregateDataByTimeAndField(data, timeFieldKey, groupByFieldKey, chartType) {
+        const datasets = {}; // { "GroupValue1": { "TimeLabel1": count, "TimeLabel2": count }, "GroupValue2": { ... } }
+        const allTimeLabels = new Set();
+
+        data.forEach(os => {
+            let timeValue = os[timeFieldKey.split('_')[0]]; // e.g., os.dataAbertura
+            if (!timeValue) return;
+
+            let timeLabel;
+            const dateObj = new Date(timeValue + "T00:00:00Z"); // Assegura UTC
+            if (timeFieldKey.endsWith('_mes')) {
+                timeLabel = `${dateObj.getUTCFullYear()}-${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
+            } else if (timeFieldKey.endsWith('_ano')) {
+                timeLabel = `${dateObj.getUTCFullYear()}`;
+            } else return; // Tipo de tempo não suportado
+
+            allTimeLabels.add(timeLabel);
+
+            let groupKey = os[groupByFieldKey];
+            if (groupByFieldKey === 'isInCompliance') groupKey = os.isInCompliance ? 'Conforme' : 'Não Conforme';
+            else if (!groupKey) groupKey = 'N/A';
+
+            if (!datasets[groupKey]) datasets[groupKey] = {};
+            datasets[groupKey][timeLabel] = (datasets[groupKey][timeLabel] || 0) + 1;
+        });
+
+        const sortedTimeLabels = Array.from(allTimeLabels).sort();
+        const chartDatasets = Object.keys(datasets).map((groupKey, index) => {
+            return {
+                label: groupKey,
+                data: sortedTimeLabels.map(timeLabel => datasets[groupKey][timeLabel] || 0),
+                backgroundColor: CHART_COLORS_PALETTE[index % CHART_COLORS_PALETTE.length],
+                borderColor: CHART_BORDER_COLOR,
+                borderWidth: (chartType === 'line' ? 2 : 1),
+                fill: chartType === 'line' ? false : true, // Linhas não preenchidas por padrão
+                tension: chartType === 'line' ? 0.1 : undefined // Suaviza linhas
+            };
+        });
+
+        return { labels: sortedTimeLabels, datasets: chartDatasets };
+    }
+
 
     // FUNÇÕES DE CONFIGURAÇÕES DA APLICAÇÃO (INCLUINDO MOTIVOS)
     function confirmClearAllData() { if (confirm("ATENÇÃO!\nLimpar TODOS os dados de OS, OS Canceladas, Filtros Salvos, Motivos Personalizados, Notificações e Configurações Locais?\nEsta ação é IRREVERSÍVEL!")) { if (confirm("CONFIRMAÇÃO FINAL:\nTodos os dados locais serão permanentemente apagados. Tem certeza que deseja continuar?")) { ordensServico=[]; canceledOS=[]; notifications=[]; savedFilters={}; motivoOptions = [ "Sem Pré-OS", "Sem Anexos", "Sem informações", "Sem Atividades", "Sem Participantes", "Informações incompletas" ]; cancellationReasonOptions = [ "Solicitação do cliente", "Erro interno", "Falta de material/recurso", "Projeto descontinuado", "Outro" ]; ITEMS_PER_PAGE=ITEMS_PER_PAGE_DEFAULT; localStorage.removeItem(LOCAL_STORAGE_KEY); addRecentActivity("Todos dados locais limpos."); currentPage=1; currentCanceledOsPage = 1; refreshAllViews(); populateSavedFiltersSelect(); renderInconformityReasonList(); renderCancellationReasonList(); updateNotificationBell(); const iPSI=document.getElementById('itemsPerPageSetting');if(iPSI)iPSI.value=ITEMS_PER_PAGE; alert("Todos os dados locais foram limpos com sucesso."); } else alert("Limpeza de dados cancelada."); } else alert("Limpeza de dados cancelada."); }
@@ -1963,9 +2184,9 @@
             cancellationReasonOptions.sort((a,b) => a.localeCompare(b));
             saveDataToLocalStorage();
             renderCancellationReasonList();
-            populateCancellationReasonFilter();
-            if(cancelOsReasonModalSelect) populateSelectWithOptions(cancelOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false);
-            if(editCanceledOsReasonModalSelect) populateSelectWithOptions(editCanceledOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false);
+            populateCancellationReasonFilter(); // Atualiza o filtro na aba OS Canceladas
+            if(cancelOsReasonModalSelect) populateSelectWithOptions(cancelOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false); // Atualiza modal de cancelar OS
+            if(editCanceledOsReasonModalSelect) populateSelectWithOptions(editCanceledOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false); // Atualiza modal de editar OS cancelada
             inputElement.value = '';
             addRecentActivity(`Motivo de cancelamento "${newReason}" adicionado.`);
         } else if (!newReason) {
@@ -2037,7 +2258,7 @@
             editCanceledOsReasonModalSelect.value = os.cancellationDetails.reason;
             document.getElementById('editCanceledOsDateModal').value = os.cancellationDetails.date;
             document.getElementById('editCanceledOsObservationsModal').value = os.cancellationDetails.observations;
-        } else {
+        } else { // Fallback se cancellationDetails não existir (improvável com a migração)
             document.getElementById('editCanceledOsDateModal').value = new Date().toISOString().split('T')[0];
         }
         editCanceledOsModal.classList.remove('hidden');
@@ -2170,7 +2391,7 @@
             const existingUnreadReminder = notifications.find(n => n.osId === osId && n.type === 'compliance_reminder' && !n.isRead);
             if (existingUnreadReminder) {
                 console.log(`Notificação de lembrete de conformidade para OS ${osId} já existe e não está lida. Não adicionando duplicata.`);
-                return;
+                return; // Não adiciona se já existe uma não lida para a mesma OS e tipo
             }
         }
 
@@ -2262,7 +2483,7 @@
             notifications[notifIndex].isRead = true;
             saveDataToLocalStorage();
             updateNotificationBell();
-             if (notificationDropdown && notificationDropdown.style.display === 'block') {
+             if (notificationDropdown && notificationDropdown.style.display === 'block') { // Só re-renderiza se estiver aberto
                 renderNotifications();
             }
         }
@@ -2271,7 +2492,9 @@
             const osToView = ordensServico.find(os => os.id === osId);
             if (osToView) {
                 showView('osListView', document.querySelector('.app-header .sidebar-item[onclick*="osListView"]'));
+                // Destacar ou filtrar a OS específica (pode ser complexo, por agora abre o modal de edição)
                 editOS(osId);
+                // Fecha o dropdown de notificações
                 if (notificationDropdown) notificationDropdown.style.display = 'none';
             } else {
                  addNotification(`OS ID ${osId} não encontrada na lista principal. Pode ter sido cancelada ou excluída.`, null, 'error', false, false);
@@ -2284,7 +2507,7 @@
             notifications = [];
             saveDataToLocalStorage();
             updateNotificationBell();
-            renderNotifications();
+            renderNotifications(); // Atualiza a lista (que agora estará vazia ou com "Nenhuma notificação")
             addRecentActivity("Todas as notificações foram limpas.");
         }
     }
@@ -2346,7 +2569,7 @@
 
 
         try {
-            loadDataFromLocalStorage();
+            loadDataFromLocalStorage(); // checkOSComplianceOnLoad é chamado dentro desta
         } catch (e) {
             console.error("Erro crítico durante loadDataFromLocalStorage na inicialização:", e);
             alert("Um erro ocorreu ao carregar os dados iniciais. A aplicação pode não funcionar como esperado.");
@@ -2354,9 +2577,9 @@
 
         populateProductFilters();
         populateLogisticaStatusFilters();
-        populateCancellationReasonFilter();
-        if(cancelOsReasonModalSelect) populateSelectWithOptions(cancelOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false);
-        if(editCanceledOsReasonModalSelect) populateSelectWithOptions(editCanceledOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false);
+        populateCancellationReasonFilter(); // Para filtro da tabela
+        if(cancelOsReasonModalSelect) populateSelectWithOptions(cancelOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false); // Para modal de cancelar
+        if(editCanceledOsReasonModalSelect) populateSelectWithOptions(editCanceledOsReasonModalSelect, cancellationReasonOptions, false, "Selecione...", false); // Para modal de editar cancelada
 
         $('.chosen-select').chosen({ width: '100%', no_results_text: 'Oops, nada encontrado!', allow_single_deselect: true });
         $('.chosen-select-reports').chosen({ width: '100%', no_results_text: 'Oops, nada encontrado!', allow_single_deselect: true });
@@ -2390,7 +2613,6 @@
 
 
                     osDataForDuplicateCheck = {
-                        id: id, // Inclui o ID para diferenciar edição de adição
                         numero: osNumero,
                         cliente: document.getElementById('osClienteModal').value.trim(),
                         produto: document.getElementById('osProdutoModal').value.trim(),
@@ -2406,22 +2628,22 @@
                         isDuplicate: false
                     };
 
-                    const existingOSByNumber = ordensServico.find(os => os.numero === osNumero && os.id !== id); // Não checa contra si mesmo em edição
+                    const existingOSByNumber = ordensServico.find(os => os.numero === osNumero && os.id !== id);
 
-                    if (existingOSByNumber && !id) { // Apenas para NOVAS OS (sem ID)
+                    if (existingOSByNumber && !id) { // Apenas para NOVAS OS
                         confirmDuplicateTitle.textContent = "OS Duplicada Encontrada";
                         confirmDuplicateMessage.textContent = `Já existe uma OS com o número "${osNumero}" (${existingOSByNumber.cliente}). Deseja substituir a OS existente ou adicionar esta como uma nova OS marcada como duplicada?`;
                         confirmDuplicateDialog.classList.remove('hidden');
 
                         confirmDuplicateReplaceBtn.onclick = () => {
                             confirmDuplicateDialog.classList.add('hidden');
-                            handleSaveOS(osDataForDuplicateCheck, existingOSByNumber); // Passa a OS existente para substituição
+                            handleSaveOS(osDataForDuplicateCheck, existingOSByNumber);
                         };
                         confirmDuplicateAddAsNewBtn.onclick = () => {
                             confirmDuplicateDialog.classList.add('hidden');
                             osDataForDuplicateCheck.descricao = `(DUPLICADA) ${osDataForDuplicateCheck.descricao}`;
                             osDataForDuplicateCheck.isDuplicate = true;
-                            handleSaveOS(osDataForDuplicateCheck); // Adiciona como nova
+                            handleSaveOS(osDataForDuplicateCheck);
                         };
                         confirmDuplicateCancelBtn.onclick = () => {
                             confirmDuplicateDialog.classList.add('hidden');
@@ -2434,7 +2656,7 @@
                          return;
                     }
 
-                    // Se for edição (id existe e não há conflito de número com OUTRA OS) ou não houver duplicata para nova OS, salva diretamente
+
                     handleSaveOS(osDataForDuplicateCheck, id ? ordensServico.find(o => o.id === id) : null);
                     osDataForDuplicateCheck = null;
 
@@ -2458,17 +2680,18 @@
 
                 const osIndex = ordensServico.findIndex(os => os.id === osId);
                 if (osIndex !== -1) {
-                    const osToCancel = { ...ordensServico[osIndex] };
+                    const osToCancel = { ...ordensServico[osIndex] }; // Clona a OS
                     osToCancel.cancellationDetails = { reason, date, observations };
-                    osToCancel.status = "Cancelada";
+                    osToCancel.status = "Cancelada"; // Define o status como Cancelada
 
+                    // Adiciona à lista de canceladas e remove da lista principal
                     canceledOS.unshift(osToCancel);
                     ordensServico.splice(osIndex, 1);
 
                     saveDataToLocalStorage();
                     addRecentActivity(`OS ${osToCancel.numero} cancelada. Motivo: ${reason}.`);
                     closeCancelOSModal();
-                    refreshAllViews();
+                    refreshAllViews(); // Atualiza todas as visualizações
                 } else {
                     alert("Erro ao cancelar OS: OS não encontrada.");
                 }
@@ -2527,7 +2750,7 @@
         const cCancelOsModal = document.getElementById('cancelOsModal'); if (cCancelOsModal && event.target == cCancelOsModal) closeCancelOSModal();
         const cEditCanceledOsModal = document.getElementById('editCanceledOsModal'); if (cEditCanceledOsModal && event.target == cEditCanceledOsModal) closeEditCanceledOSModal();
         const cConfirmDuplicateDialog = document.getElementById('confirmDuplicateDialog'); if (cConfirmDuplicateDialog && event.target == cConfirmDuplicateDialog) { cConfirmDuplicateDialog.classList.add('hidden'); osDataForDuplicateCheck = null;}
-        const cImportDuplicateDialog = document.getElementById('importDuplicateDialog'); if (cImportDuplicateDialog && event.target == cImportDuplicateDialog) { cImportDuplicateDialog.classList.add('hidden'); originalOSDataForImport = []; importedDuplicateOSData = []; jsonDataForImport = null; currentImportLog = [];}
+        const cImportDuplicateDialog = document.getElementById('importDuplicateDialog'); if (cImportDuplicateDialog && event.target == cImportDuplicateDialog) { cImportDuplicateDialog.classList.add('hidden'); originalOSDataForImport = []; importedDuplicateOSData = [];}
 
         const popover = document.getElementById('motivosPopover');
         if (popover && popover.style.display === 'block' && !popover.contains(event.target) && !event.target.closest('button[id*="motivo-btn-"]')) {
@@ -2544,7 +2767,7 @@
         const cCancelOsModal = document.getElementById('cancelOsModal'); if (cCancelOsModal && !cCancelOsModal.classList.contains('hidden') && event.key === "Escape") closeCancelOSModal();
         const cEditCanceledOsModal = document.getElementById('editCanceledOsModal'); if (cEditCanceledOsModal && !cEditCanceledOsModal.classList.contains('hidden') && event.key === "Escape") closeEditCanceledOSModal();
         const cConfirmDuplicateDialog = document.getElementById('confirmDuplicateDialog'); if (cConfirmDuplicateDialog && !cConfirmDuplicateDialog.classList.contains('hidden') && event.key === "Escape") {cConfirmDuplicateDialog.classList.add('hidden'); osDataForDuplicateCheck = null;}
-        const cImportDuplicateDialog = document.getElementById('importDuplicateDialog'); if (cImportDuplicateDialog && !cImportDuplicateDialog.classList.contains('hidden') && event.key === "Escape") {cImportDuplicateDialog.classList.add('hidden'); originalOSDataForImport = []; importedDuplicateOSData = []; jsonDataForImport = null; currentImportLog = [];}
+        const cImportDuplicateDialog = document.getElementById('importDuplicateDialog'); if (cImportDuplicateDialog && !cImportDuplicateDialog.classList.contains('hidden') && event.key === "Escape") {cImportDuplicateDialog.classList.add('hidden'); originalOSDataForImport = []; importedDuplicateOSData = [];}
         const popover = document.getElementById('motivosPopover'); if (popover && popover.style.display === 'block' && event.key === "Escape") closeMotivosPopover(false);
         if (notificationDropdown && notificationDropdown.style.display === 'block' && event.key === "Escape") {
             notificationDropdown.style.display = 'none';
