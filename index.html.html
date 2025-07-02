@@ -1507,9 +1507,9 @@
                     </div>`;
                 okrHtml += cardEngajamento;
 
+                const clientesContatadosBase = dataStore['cob-carteira'] || [];
+
                 if (selectedSegmento === 'SMB CAD') {
-                    const clientesContatadosBase = dataStore['cob-carteira'] || [];
-                    
                     const preenchidosModelo = dataStore['modelo-negocio-preenchido'] || [];
                     const percModelo = clientesContatadosBase.length > 0 ? (preenchidosModelo.length / clientesContatadosBase.length) * 100 : 0;
                     const cardModeloNegocio = `
@@ -1534,7 +1534,9 @@
                         </div>
                     `;
                     okrHtml += cardModeloNegocio;
-
+                }
+                
+                if (selectedSegmento === 'SMB CAD' || selectedSegmento === 'SMB Multiprodutos') {
                     const preenchidosPotencial = dataStore['cliente-potencial-preenchido'] || [];
                     const percPotencial = clientesContatadosBase.length > 0 ? (preenchidosPotencial.length / clientesContatadosBase.length) * 100 : 0;
                     const cardClientePotencial = `
