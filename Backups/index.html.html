@@ -573,7 +573,7 @@
 <body>
     <div class="container">
         <header>
-            <div class="revision-marker">Rev. 4.5</div> <h1>Dashboard de OKRs</h1>
+            <div class="revision-marker">Rev. 4.6</div> <h1>Dashboard de OKRs</h1>
             <p>Avaliação de Resultados e Performance</p>
             <div class="header-actions">
                 <div class="theme-switcher">
@@ -1142,7 +1142,25 @@
             };
             
             for (const [key, def] of Object.entries(playbookDefs)) {
-                const filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+                let filterFn;
+
+                if (key === 'plano') {
+                    // Lógica customizada para "Plano de Ação"
+                    filterFn = (item) => {
+                        const atividadeNormalizada = normalizeText(item.Atividade);
+                        const playbookNormalizado = normalizeText(item.Playbook);
+                        
+                        // Condição original
+                        const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
+                        // Nova condição para "Alerta Suporte"
+                        const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
+
+                        return isPlanoOriginal || isAlertaSuporte;
+                    };
+                } else {
+                    // Lógica padrão para todos os outros playbooks
+                    filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+                }
                 
                 const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
                 metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
@@ -1219,7 +1237,26 @@
             }
             
             for (const [key, def] of Object.entries(playbookDefs)) {
-                const filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+                let filterFn;
+
+                if (key === 'plano') {
+                    // Lógica customizada para "Plano de Ação"
+                    filterFn = (item) => {
+                        const atividadeNormalizada = normalizeText(item.Atividade);
+                        const playbookNormalizado = normalizeText(item.Playbook);
+
+                        // Condição original
+                        const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
+                        // Nova condição para "Alerta Suporte"
+                        const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
+                        
+                        return isPlanoOriginal || isAlertaSuporte;
+                    };
+                } else {
+                    // Lógica padrão para todos os outros playbooks
+                    filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+                }
+                
                 metrics[`${key}-previsto`] = activitiesByCS_previstos.filter(filterFn).filter(isPredictedForPeriod);
             }
             

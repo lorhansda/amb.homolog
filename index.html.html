@@ -126,7 +126,7 @@
             background: none; border: none;
             color: var(--text-light-color);
             font-size: 1.5rem; cursor: pointer;
-            transition: color 0.3s ease, transform 0.3s ease;
+            transition: color 0.3s ease, transform 0.3s ease, opacity 0.3s;
         }
         #settings-button:hover {
             color: var(--primary-color);
@@ -139,6 +139,12 @@
          #export-html-button:hover {
             color: var(--primary-color);
             transform: scale(1.1);
+        }
+        #export-csv-button:disabled, #export-html-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            color: var(--text-light-color);
         }
         
         .theme-switcher { display: flex; align-items: center; gap: 12px; }
@@ -328,6 +334,9 @@
         .card h3:contains("Geral do Onboarding")::before { content: '\f500'; }
         .card h3:contains("Contatos em Onboarding")::before { content: '\f2b9'; }
         .card h3:contains("Atividades em Onboarding")::before { content: '\f0ae'; }
+        .card h3:contains("Média de Cobertura")::before { content: '\f51a'; }
+        .card h3:contains("Total:")::before { content: '\f681'; }
+
 
 
         .trend-chart-button {
@@ -573,7 +582,7 @@
 <body>
     <div class="container">
         <header>
-            <div class="revision-marker">Rev. 4.6</div> <h1>Dashboard de OKRs</h1>
+            <div class="revision-marker">Rev. 5.0</div> <h1>Dashboard de OKRs</h1>
             <p>Avaliação de Resultados e Performance</p>
             <div class="header-actions">
                 <div class="theme-switcher">
@@ -599,8 +608,21 @@
         <section class="controls">
             <div class="control-group"><label for="file-atividades"><i class="fas fa-tasks"></i> 1. Planilha de Atividades</label><input type="file" id="file-atividades" accept=".csv, .xlsx, .txt"></div>
             <div class="control-group"><label for="file-clientes"><i class="fas fa-users"></i> 2. Planilha de Clientes</label><input type="file" id="file-clientes" accept=".csv, .xlsx, .txt"></div>
-            <div class="control-group"><label for="select-month"><i class="fas fa-calendar-alt"></i> Mês</label><select id="select-month"></select></div>
+            <div class="control-group">
+                <label for="select-period"><i class="fas fa-calendar-check"></i> Análise de Período</label>
+                <select id="select-period">
+                    <option value="monthly" selected>Mensal</option>
+                    <option value="q1">1º Trimestre</option>
+                    <option value="q2">2º Trimestre</option>
+                    <option value="q3">3º Trimestre</option>
+                    <option value="q4">4º Trimestre</option>
+                    <option value="s1">1º Semestre</option>
+                    <option value="s2">2º Semestre</option>
+                    <option value="year">Ano Inteiro</option>
+                </select>
+            </div>
             <div class="control-group"><label for="select-year"><i class="fas fa-calendar-week"></i> Ano</label><select id="select-year"></select></div>
+            <div class="control-group"><label for="select-month"><i class="fas fa-calendar-alt"></i> Mês</label><select id="select-month"></select></div>
             <div class="control-group"><label for="select-cs"><i class="fas fa-user-tie"></i> CS</label><select id="select-cs" disabled><option>Aguardando...</option></select></div>
             <div class="control-group"><label for="select-segmento"><i class="fas fa-chart-pie"></i> Segmento</label><select id="select-segmento" disabled><option>Aguardando...</option></select></div>
             <div class="control-group">
@@ -652,6 +674,8 @@
                     </div>
 
                 </div>
+                 <div id="period-view" style="display: none;">
+                    </div>
             </div>
 
             <div id="onboarding-view" class="tab-content">
@@ -759,10 +783,8 @@
     -- INSTRUÇÃO PARA ATUALIZAÇÃO --
     Sempre que uma alteração funcional for implementada neste script,
     lembre-se de incrementar o número da revisão no HTML, no elemento <div class="revision-marker">.
-    Exemplo: de "Rev. 4.4" para "Rev. 4.5".
+    Exemplo: de "Rev. 4.6" para "Rev. 5.0".
     */
-    // O código JavaScript permanece idêntico à versão anterior (com a lógica de Onboarding corrigida).
-    // As alterações para a rolagem do modal são apenas no CSS.
     document.addEventListener('DOMContentLoaded', () => {
         const themeToggle = document.getElementById('theme-toggle');
         
@@ -839,8 +861,10 @@
         const fileAtividadesInput = document.getElementById('file-atividades'), fileClientesInput = document.getElementById('file-clientes');
         const selectCS = document.getElementById('select-cs'), selectSegmento = document.getElementById('select-segmento');
         const selectMonth = document.getElementById('select-month'), selectYear = document.getElementById('select-year');
+        const selectPeriod = document.getElementById('select-period');
         const onboardingToggle = document.getElementById('include-onboarding-toggle');
         const statusMessage = document.getElementById('status-message'), dashboard = document.getElementById('dashboard');
+        const periodView = document.getElementById('period-view');
         const okrGrid = document.getElementById('okr-grid-container'), generalGrid = document.getElementById('general-indicators-grid');
         const playbookGrid = document.getElementById('playbooks-grid'), okrTitleHeader = document.getElementById('okr-title-header');
         const tabsContainer = document.querySelector('.tabs');
@@ -965,7 +989,7 @@
             dashboard.style.display = 'block';
             onboardingDashboard.style.display = 'block';
             tabsContainer.style.display = 'flex';
-            [selectCS, selectSegmento, selectMonth, selectYear, onboardingToggle].forEach(el => el.disabled = false);
+            [selectCS, selectSegmento, selectMonth, selectYear, onboardingToggle, selectPeriod].forEach(el => el.disabled = false);
             [selectOnboardingTeam, selectISM].forEach(el => el.disabled = false);
             updateDashboard();
         };
@@ -1311,55 +1335,209 @@
             
             return metrics;
         };
+        
+        const getPeriodDateRange = (period, year) => {
+            switch (period) {
+                case 'q1': return { start: new Date(Date.UTC(year, 0, 1)), end: new Date(Date.UTC(year, 2, 31, 23, 59, 59)) };
+                case 'q2': return { start: new Date(Date.UTC(year, 3, 1)), end: new Date(Date.UTC(year, 5, 30, 23, 59, 59)) };
+                case 'q3': return { start: new Date(Date.UTC(year, 6, 1)), end: new Date(Date.UTC(year, 8, 30, 23, 59, 59)) };
+                case 'q4': return { start: new Date(Date.UTC(year, 9, 1)), end: new Date(Date.UTC(year, 11, 31, 23, 59, 59)) };
+                case 's1': return { start: new Date(Date.UTC(year, 0, 1)), end: new Date(Date.UTC(year, 5, 30, 23, 59, 59)) };
+                case 's2': return { start: new Date(Date.UTC(year, 6, 1)), end: new Date(Date.UTC(year, 11, 31, 23, 59, 59)) };
+                case 'year': return { start: new Date(Date.UTC(year, 0, 1)), end: new Date(Date.UTC(year, 11, 31, 23, 59, 59)) };
+                default: return null;
+            }
+        };
 
-        const updateDashboard = () => {
-            if (rawClients.length === 0 || rawActivities.length === 0) return;
-            const includeOnboarding = onboardingToggle.checked;
-            const selectedCS = selectCS.value;
-            const mesSelecionado = parseInt(selectMonth.value, 10);
-            const anoSelecionado = parseInt(selectYear.value, 10);
-            const filteredClients = (selectedCS === 'Todos') ? rawClients : rawClients.filter(d => d.CS?.trim() === selectedCS);
-            
-            dataStore = {};
-            Object.assign(dataStore, calculateMetricsForPeriod(mesSelecionado, anoSelecionado, rawActivities, filteredClients, selectedCS, includeOnboarding));
+        const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClients, selectedCS, includeOnboarding) => {
+            const periodMetrics = {
+                monthlyCoverages: [],
+                totalClientsInPeriod: new Set(),
+                playbookTotals: {}
+            };
 
-            const selectedComparison = document.getElementById('select-comparison').value;
-            if (selectedComparison !== 'none') {
-                let compMes = mesSelecionado, compAno = anoSelecionado;
-                if (selectedComparison === 'prev_month') {
-                    compMes--;
-                    if (compMes < 0) { compMes = 11; compAno--; }
-                } else if (selectedComparison === 'prev_year') {
-                    compAno--;
-                }
-                
-                const baseClientsComp = (selectedCS === 'Todos') ? rawClients : rawClients.filter(d => d.CS?.trim() === selectedCS);
-                const comparisonMetrics = calculateMetricsForPeriod(compMes, compAno, rawActivities, baseClientsComp, selectedCS, includeOnboarding);
-                Object.keys(comparisonMetrics).forEach(key => {
-                    dataStore[`${key}_comp`] = comparisonMetrics[key];
+            const playbookKeys = ['plano', 'adocao', 'reunioes-qbr', 'planos-sucesso', 'followup', 'discovery', 'engajamento-smb', 'baixo-engajamento-mid'];
+            playbookKeys.forEach(key => periodMetrics.playbookTotals[key] = { previsto: 0, realizado: 0 });
+
+            const clientsForPeriod = (selectedCS === 'Todos') ? allClients : allClients.filter(d => d.CS?.trim() === selectedCS);
+
+            for (let d = new Date(startDate); d <= endDate; d.setUTCMonth(d.getUTCMonth() + 1)) {
+                if (d > endDate) break;
+                const currentMonth = d.getUTCMonth();
+                const currentYear = d.getUTCFullYear();
+
+                const monthlyMetrics = calculateMetricsForPeriod(currentMonth, currentYear, allActivities, clientsForPeriod, selectedCS, includeOnboarding);
+
+                const totalClientsUnicosCS = monthlyMetrics['total-clientes-unicos-cs'] || 0;
+                const clientesContatadosCount = monthlyMetrics['cob-carteira']?.length || 0;
+                const cobCarteiraPerc = totalClientsUnicosCS > 0 ? (clientesContatadosCount / totalClientsUnicosCS) * 100 : 0;
+                periodMetrics.monthlyCoverages.push(cobCarteiraPerc);
+
+                (monthlyMetrics['total-clientes'] || []).forEach(client => periodMetrics.totalClientsInPeriod.add(client.Cliente));
+
+                playbookKeys.forEach(key => {
+                    periodMetrics.playbookTotals[key].previsto += (monthlyMetrics[`${key}-previsto`] || []).length;
+                    const realizadoNoPrazo = (monthlyMetrics[`${key}-realizado`] || []).length;
+                    const realizadoAtrasado = (monthlyMetrics[`${key}-atrasado-concluido`] || []).length;
+                    periodMetrics.playbookTotals[key].realizado += realizadoNoPrazo + realizadoAtrasado;
                 });
             }
 
-            const activitiesByCS = (selectedCS === 'Todos') ? rawActivities : rawActivities.filter(a => (a['Responsável'] || '').trim() === selectedCS);
-            const concludedInPeriodActivities = activitiesByCS.filter(a => a.ConcluidaEm?.getMonth() === mesSelecionado && a.ConcluidaEm?.getFullYear() === anoSelecionado);
-            const divergentActivities = concludedInPeriodActivities.filter(a => {
-                return a.CS && a.CS.trim() !== selectedCS && selectedCS !== 'Todos';
-            });
-            dataStore['divergent-activities'] = divergentActivities;
-            const divergenceMarker = document.getElementById('divergence-marker');
-            const divergenceText = document.getElementById('divergence-text');
-            const divergentClientCount = new Set(divergentActivities.map(a => a.ClienteCompleto)).size;
-            if (divergentClientCount > 0) {
-                divergenceText.textContent = `Atenção: ${divergentClientCount} clientes fora da carteira receberam atividades neste mês. Clique para ver detalhes.`;
-                divergenceMarker.style.display = 'flex';
+            if (periodMetrics.monthlyCoverages.length > 0) {
+                const sum = periodMetrics.monthlyCoverages.reduce((acc, val) => acc + val, 0);
+                periodMetrics.averageCoverage = sum / periodMetrics.monthlyCoverages.length;
             } else {
-                divergenceMarker.style.display = 'none';
+                periodMetrics.averageCoverage = 0;
             }
+            
+            periodMetrics.totalUniqueClients = periodMetrics.totalClientsInPeriod.size;
 
-            renderOKRs();
-            renderOnboardingDashboard();
+            return periodMetrics;
         };
         
+        const renderPeriodView = (periodData, periodName) => {
+            dashboard.style.display = 'none';
+            periodView.style.display = 'block';
+
+            const avgCoverageCard = `
+                <div class="card">
+                    <h3>Média de Cobertura de Carteira</h3>
+                    <div class="card-content">
+                        <div class="metric">
+                            <span class="metric-label">Período Analisado:</span>
+                            <span class="metric-value">${periodName}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Média Mensal de Cobertura:</span>
+                            <span class="metric-value" style="font-size: 2.5rem; color: var(--primary-color);">${periodData.averageCoverage.toFixed(1)}%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Total de Clientes Únicos no Período:</span>
+                            <span class="metric-value">${periodData.totalUniqueClients}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            let playbookCardsHtml = '';
+            const playbookTitles = { 'plano': 'Planos de Ação', 'adocao': 'Atividades de Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery', 'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso', 'engajamento-smb': 'Engajamento (Contato Consolidado)', 'baixo-engajamento-mid': 'Baixo Engajamento (MID/ENT)' };
+            
+            for (const key in playbookTitles) {
+                const data = periodData.playbookTotals[key];
+                if (data && (data.previsto > 0 || data.realizado > 0)) {
+                    playbookCardsHtml += `
+                        <div class="card">
+                            <h3>Total: ${playbookTitles[key]}</h3>
+                            <div class="card-content">
+                                <div class="metric">
+                                    <span class="metric-label">Total Previsto no Período:</span>
+                                    <span class="metric-value">${data.previsto}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Total Realizado no Período:</span>
+                                    <span class="metric-value success">${data.realizado}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            periodView.innerHTML = `
+                <div class="metric-group">
+                    <h2 class="group-title">Resumo do Período: ${periodName}</h2>
+                    <div class="group-content">
+                        ${avgCoverageCard}
+                        ${playbookCardsHtml}
+                    </div>
+                </div>
+            `;
+        };
+        
+        const updateDashboard = () => {
+            if (rawClients.length === 0 || rawActivities.length === 0) return;
+
+            const period = selectPeriod.value;
+            const selectedYear = parseInt(selectYear.value, 10);
+            const exportCsvBtn = document.getElementById('export-csv-button');
+            const exportHtmlBtn = document.getElementById('export-html-button');
+
+            if (period === 'monthly') {
+                periodView.style.display = 'none';
+                dashboard.style.display = 'block';
+                exportCsvBtn.disabled = false;
+                exportHtmlBtn.disabled = false;
+                
+                const includeOnboarding = onboardingToggle.checked;
+                const selectedCS = selectCS.value;
+                const mesSelecionado = parseInt(selectMonth.value, 10);
+                const anoSelecionado = parseInt(selectYear.value, 10);
+                const filteredClients = (selectedCS === 'Todos') ? rawClients : rawClients.filter(d => d.CS?.trim() === selectedCS);
+                
+                dataStore = {};
+                Object.assign(dataStore, calculateMetricsForPeriod(mesSelecionado, anoSelecionado, rawActivities, filteredClients, selectedCS, includeOnboarding));
+
+                const selectedComparison = document.getElementById('select-comparison').value;
+                if (selectedComparison !== 'none') {
+                    let compMes = mesSelecionado, compAno = anoSelecionado;
+                    if (selectedComparison === 'prev_month') {
+                        compMes--;
+                        if (compMes < 0) { compMes = 11; compAno--; }
+                    } else if (selectedComparison === 'prev_year') {
+                        compAno--;
+                    }
+                    
+                    const baseClientsComp = (selectedCS === 'Todos') ? rawClients : rawClients.filter(d => d.CS?.trim() === selectedCS);
+                    const comparisonMetrics = calculateMetricsForPeriod(compMes, compAno, rawActivities, baseClientsComp, selectedCS, includeOnboarding);
+                    Object.keys(comparisonMetrics).forEach(key => {
+                        dataStore[`${key}_comp`] = comparisonMetrics[key];
+                    });
+                }
+
+                const activitiesByCS = (selectedCS === 'Todos') ? rawActivities : rawActivities.filter(a => (a['Responsável'] || '').trim() === selectedCS);
+                const concludedInPeriodActivities = activitiesByCS.filter(a => a.ConcluidaEm?.getMonth() === mesSelecionado && a.ConcluidaEm?.getFullYear() === anoSelecionado);
+                const divergentActivities = concludedInPeriodActivities.filter(a => {
+                    return a.CS && a.CS.trim() !== selectedCS && selectedCS !== 'Todos';
+                });
+                dataStore['divergent-activities'] = divergentActivities;
+                const divergenceMarker = document.getElementById('divergence-marker');
+                const divergenceText = document.getElementById('divergence-text');
+                const divergentClientCount = new Set(divergentActivities.map(a => a.ClienteCompleto)).size;
+                if (divergentClientCount > 0 && period === 'monthly') {
+                    divergenceText.textContent = `Atenção: ${divergentClientCount} clientes fora da carteira receberam atividades neste mês. Clique para ver detalhes.`;
+                    divergenceMarker.style.display = 'flex';
+                } else {
+                    divergenceMarker.style.display = 'none';
+                }
+
+                renderOKRs();
+                renderOnboardingDashboard();
+
+            } else {
+                exportCsvBtn.disabled = true;
+                exportHtmlBtn.disabled = true;
+
+                const includeOnboarding = onboardingToggle.checked;
+                const selectedCS = selectCS.value;
+                const dateRange = getPeriodDateRange(period, selectedYear);
+                const periodName = selectPeriod.options[selectPeriod.selectedIndex].text;
+                
+                if (dateRange) {
+                    statusMessage.textContent = `Calculando métricas para: ${periodName}...`;
+                    statusMessage.style.display = 'block';
+                    dashboard.style.display = 'none';
+                    periodView.style.display = 'none';
+                    document.getElementById('divergence-marker').style.display = 'none';
+
+                    setTimeout(() => {
+                        const periodData = calculateMetricsForDateRange(dateRange.start, dateRange.end, rawActivities, rawClients, selectedCS, includeOnboarding);
+                        renderPeriodView(periodData, periodName);
+                        statusMessage.style.display = 'none';
+                    }, 50);
+                }
+            }
+        };
+
         const renderOnboardingDashboard = () => {
             if (rawClients.length === 0 || rawActivities.length === 0) return;
             const mesSelecionado = parseInt(selectMonth.value, 10);
@@ -1909,6 +2087,17 @@
         fileAtividadesInput.addEventListener('change', (e) => { atividadesFile = e.target.files[0]; attemptProcess(); });
         fileClientesInput.addEventListener('change', (e) => { clientesFile = e.target.files[0]; attemptProcess(); });
         
+        selectPeriod.addEventListener('change', () => {
+            const isMonthly = selectPeriod.value === 'monthly';
+            selectMonth.disabled = !isMonthly;
+            document.getElementById('select-comparison').disabled = !isMonthly;
+
+            if (!isMonthly) {
+                document.getElementById('select-comparison').value = 'none';
+            }
+            updateDashboard();
+        });
+
         selectOnboardingTeam.addEventListener('change', () => {
             updateIsmFilter();
             updateDashboard();
