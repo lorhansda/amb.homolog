@@ -572,9 +572,15 @@
             font-size: 0.9rem; font-weight: 500;
             color: var(--warning-color);
         }
-        .overdue-metric .metric-label .fa-history { margin-right: 6px; }
+        .overdue-metric .metric-label .fa-history,
+        .overdue-metric .metric-label .fa-exclamation-triangle { 
+            margin-right: 6px; 
+        }
         .overdue-metric .metric-value {
             font-size: 1.2rem; color: var(--warning-color);
+        }
+        .metric.overdue-metric .metric-value.danger {
+            color: var(--danger-color);
         }
 
     </style>
@@ -582,7 +588,7 @@
 <body>
     <div class="container">
         <header>
-            <div class="revision-marker">Rev. 5.0</div> <h1>Dashboard de OKRs</h1>
+            <div class="revision-marker">Rev. 5.1</div> <h1>Dashboard de OKRs</h1>
             <p>Avaliação de Resultados e Performance</p>
             <div class="header-actions">
                 <div class="theme-switcher">
@@ -651,6 +657,7 @@
         <div class="tabs" style="display: none;">
             <button class="tab-button active" data-tab="dashboard-view"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
             <button class="tab-button" data-tab="onboarding-view"><i class="fas fa-rocket"></i> Onboarding</button>
+            <button class="tab-button" data-tab="overdue-view" style="color: var(--danger-color);"><i class="fas fa-clock-rotate-left"></i> Atrasadas</button>
             <button class="tab-button" data-tab="data-view"><i class="fas fa-table"></i> Dados Carregados</button>
         </div>
 
@@ -702,6 +709,15 @@
                      <div class="metric-group">
                         <h2 class="group-title" id="onboarding-activities-title">Acompanhamento de Atividades</h2>
                         <div class="group-content" id="onboarding-activities-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="overdue-view" class="tab-content">
+                <div class="metric-group">
+                    <h2 class="group-title">Visão de Atividades Atrasadas</h2>
+                    <div class="group-content" id="overdue-grid-container">
+                        <div class="loader">Selecione um CS para ver as atividades atrasadas.</div>
                     </div>
                 </div>
             </div>
@@ -992,6 +1008,7 @@
             [selectCS, selectSegmento, selectMonth, selectYear, onboardingToggle, selectPeriod].forEach(el => el.disabled = false);
             [selectOnboardingTeam, selectISM].forEach(el => el.disabled = false);
             updateDashboard();
+            renderOverdueView();
         };
         
         const updateIsmFilter = () => {
@@ -1113,14 +1130,147 @@
             
             return metrics;
         };
+        
+        const calculateOverdueMetrics = (activities, selectedCS) => {
+            const metrics = { overdueActivities: {} };
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
+
+            // Filtra as atividades que pertencem ao CS selecionado (ou todas, se "Todos")
+            const csActivities = selectedCS === 'Todos'
+                ? activities
+                : activities.filter(a => (a['Responsável'] || '').trim() === selectedCS);
+
+            // Identifica as atividades realmente atrasadas
+            const overdue = csActivities.filter(a => {
+                const dueDate = a.PrevisaoConclusao;
+                // Está atrasada se: Não foi concluída E a data de previsão existe E é anterior a hoje.
+                return !a.ConcluidaEm && dueDate && dueDate < today;
+            });
+
+            // Reutiliza a mesma definição de playbooks do seu código original
+            const playbookDefs = {
+                'plano': { p: 'plano de acao', a: 'analise do cenario do cliente' },
+                'adocao': { p: null, a: ["revisao da adocao - sponsor (mid/enterprise)","revisao da adocao - ku (mid/enterprise)","revisao da adocao - ku (smb)"] },
+                'reunioes-qbr': { p: null, a: "ligacao de sensibilizacao com o sponsor" },
+                'planos-sucesso': { p: null, a: "plano de sucesso desenvolvido" },
+                'followup': { p: 'pos fechamento de loop cs', a: 'follow-up 1' },
+                'discovery': { p: 'discovery potencial', a: 'contato com o cliente' },
+                'engajamento-smb': { p: 'contato consolidado', a: 'contato com o cliente' },
+                'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
+            };
+
+            // Separa as atividades atrasadas por categoria (playbook)
+            for (const [key, def] of Object.entries(playbookDefs)) {
+                let filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+                
+                if (key === 'plano') {
+                     filterFn = (item) => {
+                        const atividadeNormalizada = normalizeText(item.Atividade);
+                        const playbookNormalizado = normalizeText(item.Playbook);
+                        const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
+                        const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
+                        return isPlanoOriginal || isAlertaSuporte;
+                    };
+                }
+                
+                metrics.overdueActivities[key] = overdue.filter(filterFn);
+            }
+            
+            return metrics;
+        };
+        
+        const renderOverdueView = () => {
+            if (rawActivities.length === 0) return;
+
+            const selectedCS = selectCS.value;
+            const overdueGrid = document.getElementById('overdue-grid-container');
+            const overdueMetrics = calculateOverdueMetrics(rawActivities, selectedCS);
+
+            let html = '';
+            const playbookTitles = {
+                'plano': 'Planos de Ação', 'adocao': 'Atividades de Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery',
+                'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso', 'engajamento-smb': 'Engajamento (Contato Consolidado)',
+                'baixo-engajamento-mid': 'Baixo Engajamento (MID/ENT)'
+            };
+
+            let totalOverdue = 0;
+            const metricDataMap = {}; // Armazenar dados para o modal
+            for (const key in playbookTitles) {
+                const activities = overdueMetrics.overdueActivities[key] || [];
+                totalOverdue += activities.length;
+                if (activities.length > 0) {
+                    const metricId = `overdue-${key}`;
+                    metricDataMap[metricId] = activities;
+
+                    html += `
+                        <div class="card">
+                            <h3>${playbookTitles[key]}</h3>
+                            <div class="card-content">
+                                <div class="metric overdue-metric" style="border-top: none; padding-top: 0; margin-top: 0;" data-metric-id="${metricId}" data-metric-title="Atrasadas: ${playbookTitles[key]}">
+                                    <span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Total Atrasado:</span>
+                                    <span class="metric-value danger" style="font-size: 2rem;">${activities.length}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            if (totalOverdue === 0) {
+                overdueGrid.innerHTML = `<div class="loader" style="color: var(--secondary-color); border-color: var(--secondary-color);"><i class="fas fa-check-circle" style="margin-right: 10px;"></i>Nenhuma atividade atrasada para o filtro selecionado!</div>`;
+            } else {
+                overdueGrid.innerHTML = html;
+                 // Adiciona o gatilho para o modal de detalhes
+                document.querySelectorAll('#overdue-grid-container .metric').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const metricId = el.dataset.metricId;
+                        const title = el.dataset.metricTitle;
+                        const data = metricDataMap[metricId];
+                        
+                        if(data && data.length > 0) {
+                            detailsModal.querySelector('#modal-title').textContent = title;
+                            const modalBody = detailsModal.querySelector('#modal-body');
+                            const searchInput = detailsModal.querySelector('#modal-search-input');
+
+                            const renderTable = (tableData) => {
+                                modalBody.innerHTML = createHtmlTable(tableData);
+                            };
+
+                            searchInput.value = '';
+                            searchInput.oninput = () => {
+                                const searchTerm = normalizeText(searchInput.value);
+                                if (!searchTerm) {
+                                    renderTable(data);
+                                    return;
+                                }
+                                const filteredData = data.filter(row => Object.values(row).some(value => normalizeText(String(value)).includes(searchTerm)));
+                                renderTable(filteredData);
+                            };
+                            
+                            renderTable(data);
+                            showModal(detailsModal);
+                        } else {
+                            alert("Não há dados detalhados para esta métrica.");
+                        }
+                    });
+                });
+            }
+        };
 
         const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS, includeOnboarding) => {
             const metrics = {};
 
-            const getPeriodFilter = (dateField) => (item) => item[dateField]?.getMonth() === month && item[dateField]?.getFullYear() === year;
-            const isPredictedForPeriod = getPeriodFilter('PrevisaoConclusao');
-            const isConcludedInPeriod = getPeriodFilter('ConcluidaEm');
             const startOfPeriod = new Date(Date.UTC(year, month, 1));
+            
+            const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
+            
+            const isPredictedForPeriod = (activity) => {
+                const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
+                const notCompletedBeforePeriod = !activity.ConcluidaEm || activity.ConcluidaEm >= startOfPeriod;
+                return isDueInPeriod && notCompletedBeforePeriod;
+            };
+            
             const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
 
             const clientOwnerMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), { cs: cli.CS, fase: normalizeText(cli.Fase || '') }]));
@@ -2116,6 +2266,7 @@
                     }
                 }
                 updateDashboard();
+                renderOverdueView();
             });
         });
         
@@ -2125,6 +2276,10 @@
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
                 e.target.classList.add('active'); 
                 document.getElementById(e.target.dataset.tab).classList.add('active');
+                
+                if (e.target.dataset.tab === 'overdue-view') {
+                    renderOverdueView();
+                }
                 if (e.target.dataset.tab === 'data-view') {
                     renderDataTables();
                 } else if (e.target.dataset.tab === 'onboarding-view') {
@@ -2135,7 +2290,7 @@
         
         document.body.addEventListener('click', (e) => {
             const metricElement = e.target.closest('.metric[data-metric-id]');
-            if (metricElement) {
+            if (metricElement && !metricElement.closest('#overdue-grid-container')) { // Evita conflito com o listener da aba de atrasadas
                 showDetailsModal(metricElement.dataset.metricId, metricElement.dataset.metricTitle);
             }
             const clientNameSpan = e.target.closest('span[data-client-name]');
