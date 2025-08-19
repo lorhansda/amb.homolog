@@ -2353,22 +2353,17 @@ onboardingActivitiesGrid.innerHTML = cardAtividades;
         de clientes com e sem onboarding, o cálculo de clientes a contatar
         para a meta e quantos faltam.
         */
+// ... (código existente acima) ...
+
 const renderOKRs = () => {
     const selectedSegmento = selectSegmento.value;
     okrTitleHeader.textContent = `OKRs do Segmento: ${selectedSegmento}`;
 
-    const totalClientesSemOnboarding = (dataStore['total-clientes'] || []).filter(c => normalizeText(c.Fase) !== 'onboarding');
-    const totalClientesComOnboarding = (dataStore['total-clientes'] || []).filter(c => normalizeText(c.Fase) === 'onboarding');
+    const totalClientesUnicosCS = dataStore['total-clientes-unicos-cs'] || 0;
     const clientesContatadosCount = dataStore['cob-carteira']?.length || 0;
-    
-    const totalClientesUnicosCS = (dataStore['total-clientes'] || []).length;
     const cobCarteiraPerc = totalClientesUnicosCS > 0 ? (clientesContatadosCount / totalClientesUnicosCS) * 100 : 0;
-    
-    // NOVO CÁLCULO: Clientes necessários para a meta de 40%
-    const clientesParaMeta = Math.ceil(totalClientesUnicosCS * (appGoals.coverage / 100));
-    const clientesFaltamContatar = Math.max(0, clientesParaMeta - clientesContatadosCount);
-
     const sensescore_avg = dataStore['sensescore-avg'] || 0;
+
     const totalClientesUnicosCS_comp = dataStore['total-clientes-unicos-cs_comp'] || 0;
     const cobCarteiraPerc_comp = totalClientesUnicosCS_comp > 0 ? ((dataStore['cob-carteira_comp']?.length || 0) / totalClientesUnicosCS_comp) * 100 : null;
     const sensescore_comp = dataStore['sensescore-avg_comp'] !== undefined ? dataStore['sensescore-avg_comp'] : null;
@@ -2379,7 +2374,12 @@ const renderOKRs = () => {
     const totalLabsBaseComp = dataStore['total-labs-eligible_comp'] || 0;
     const labsRealizadoPerc_comp = totalLabsBaseComp > 0 ? ((dataStore['ska-labs-realizado-list_comp']?.length || 0) / totalLabsBaseComp) * 100 : null;
 
-    const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp);
+    // NOVO CÁLCULO: Clientes Faltantes para a meta de cobertura
+    const metaCobertura = appGoals.coverage / 100;
+    const clientesParaAtingirMeta = Math.max(0, Math.ceil(totalClientesUnicosCS * metaCobertura));
+    const clientesFaltantes = Math.max(0, clientesParaAtingirMeta - clientesContatadosCount);
+
+    const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes); // NOVO PARÂMETRO
     const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
     const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
 
@@ -2391,84 +2391,50 @@ const renderOKRs = () => {
     const onboardingContacts = dataStore['onboarding-contacts-display'] || [];
     if (includeOnboarding && onboardingContacts.length > 0) {
         onboardingMetricHtml = `
-                                            <div class="metric" data-metric-id="onboarding-contacts-display" data-metric-title="Contatos de Onboarding">
-                                                <span class="metric-label"><i class="fas fa-user-plus" style="margin-right: 6px; color: var(--primary-color);"></i>Contatos Onboarding:</span>
-                                                <span class="metric-value">${onboardingContacts.length}</span>
-                                            </div>
-                                        `;
+            <div class="metric" data-metric-id="onboarding-contacts-display" data-metric-title="Contatos de Onboarding">
+                <span class="metric-label"><i class="fas fa-user-plus" style="margin-right: 6px; color: var(--primary-color);"></i>Contatos Onboarding:</span>
+                <span class="metric-value">${onboardingContacts.length}</span>
+            </div>
+        `;
     }
 
     const cardTiposDeContato = `
-                                <div class="card">
-                                    <h3>Tipos de Contato (Mês)</h3>
-                                    <div class="card-content">
-                                        <div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião">
-                                            <span class="metric-label">📞 Ligação/Reunião (CS):</span>
-                                            <span class="metric-value">
-                                                ${(dataStore['contato-ligacao'] || []).length} 
-                                                <span class="sub-metric" title="${(dataStore['ligacao-com-consolidado'] || 0)} destes contatos tiveram o playbook 'Contato Consolidado' realizado">
-                                                    (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacao-com-consolidado'] || 0)})
-                                                </span>
-                                            </span>
-                                        </div>
-                                        <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
-                                            <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${(dataStore['contato-email'] || []).length}</span>
-                                        </div>
-                                        ${onboardingMetricHtml}
-                                    </div>
-                                </div>`;
-    
-    // NOVO CÓDIGO: CARD DE COBERTURA DE CARTEIRA ATUALIZADO
-    const novoCardCobertura = `
-                                <div class="card">
-                                    <h3>Cobertura de Carteira <button class="trend-chart-button" data-metric-id="cob-carteira" data-metric-title="Cobertura de Carteira" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button></h3>
-                                    <div class="card-content">
-                                        <div class="metric">
-                                            <span class="metric-label">Total de Clientes na Carteira:</span>
-                                            <span class="metric-value">${totalClientesUnicosCS}
-                                                <span class="sub-metric" title="${totalClientesSemOnboarding.length} clientes sem onboarding e ${totalClientesComOnboarding.length} clientes com onboarding">
-                                                    (${totalClientesSemOnboarding.length} s/Onb. | ${totalClientesComOnboarding.length} c/Onb.)
-                                                </span>
-                                            </span>
-                                        </div>
-                                        <div class="metric">
-                                            <span class="metric-label">Clientes Contatados no Mês:</span>
-                                            <span class="metric-value">${clientesContatadosCount}</span>
-                                        </div>
-                                        <div class="metric">
-                                            <span class="metric-label">Clientes para atingir a meta (${appGoals.coverage}%):</span>
-                                            <span class="metric-value">${clientesParaMeta}</span>
-                                        </div>
-                                        <div class="metric">
-                                            <span class="metric-label">Faltam Contatar para a meta:</span>
-                                            <span class="metric-value danger">${clientesFaltamContatar}</span>
-                                        </div>
-                                    </div>
-                                    <div class="progress-bar-container" title="Atingimento da meta de cobertura: ${cobCarteiraPerc.toFixed(1)}%">
-                                        <div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(cobCarteiraPerc, 100)}%;"></div></div>
-                                        <span class="progress-percentage">${cobCarteiraPerc.toFixed(1)}%</span>
-                                    </div>
-                                </div>
-                                `;
-    // FIM DO NOVO CÓDIGO
+        <div class="card">
+            <h3>Tipos de Contato (Mês)</h3>
+            <div class="card-content">
+                <div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião">
+                    <span class="metric-label">📞 Ligação/Reunião (CS):</span>
+                    <span class="metric-value">
+                        ${(dataStore['contato-ligacao'] || []).length} 
+                        <span class="sub-metric" title="${(dataStore['ligacao-com-consolidado'] || 0)} destes contatos tiveram o playbook 'Contato Consolidado' realizado">
+                            (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacao-com-consolidado'] || 0)})
+                        </span>
+                    </span>
+                </div>
+                <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
+                    <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${(dataStore['contato-email'] || []).length}</span>
+                </div>
+                ${onboardingMetricHtml}
+            </div>
+        </div>`;
 
-    generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${novoCardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
+    generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
 
     playbookGrid.innerHTML = `
-                                ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
-                                ${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length)}
-                                ${followupCard}
-                                ${(selectedSegmento !== 'MID/Enterprise') ? discoveryCard : ''}
-                                `;
+        ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
+        ${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length)}
+        ${followupCard}
+        ${(selectedSegmento !== 'MID/Enterprise') ? discoveryCard : ''}
+        `;
 
     let okrHtml = '';
     if (selectedSegmento === 'MID/Enterprise') {
         okrHtml = `
-                                            ${createPrevistoRealizadoCard('Reuniões de QBR', (dataStore['reunioes-qbr-previsto'] || []).length, (dataStore['reunioes-qbr-realizado'] || []).length, 'reunioes-qbr', appGoals.qbr, (dataStore['reunioes-qbr-atrasado-concluido'] || []).length)}
-                                            ${createPrevistoRealizadoCard('Planos de Sucesso', (dataStore['planos-sucesso-previsto'] || []).length, (dataStore['planos-sucesso-realizado'] || []).length, 'planos-sucesso', appGoals.successplan, (dataStore['planos-sucesso-atrasado-concluido'] || []).length)}
-                                            ${createPrevistoRealizadoCard('Baixo Engajamento (MID/ENT)', (dataStore['baixo-engajamento-mid-previsto'] || []).length, (dataStore['baixo-engajamento-mid-realizado'] || []).length, 'baixo-engajamento-mid', null, (dataStore['baixo-engajamento-mid-atrasado-concluido'] || []).length)}
-                                            ${labsCard}`;
-    } else {
+            ${createPrevistoRealizadoCard('Reuniões de QBR', (dataStore['reunioes-qbr-previsto'] || []).length, (dataStore['reunioes-qbr-realizado'] || []).length, 'reunioes-qbr', appGoals.qbr, (dataStore['reunioes-qbr-atrasado-concluido'] || []).length)}
+            ${createPrevistoRealizadoCard('Planos de Sucesso', (dataStore['planos-sucesso-previsto'] || []).length, (dataStore['planos-sucesso-realizado'] || []).length, 'planos-sucesso', appGoals.successplan, (dataStore['planos-sucesso-atrasado-concluido'] || []).length)}
+            ${createPrevistoRealizadoCard('Baixo Engajamento (MID/ENT)', (dataStore['baixo-engajamento-mid-previsto'] || []).length, (dataStore['baixo-engajamento-mid-realizado'] || []).length, 'baixo-engajamento-mid', null, (dataStore['baixo-engajamento-mid-atrasado-concluido'] || []).length)}
+            ${labsCard}`;
+    } else { 
         const previstos = dataStore['engajamento-smb-previsto'] || [];
         const realizadosNoPrazo = dataStore['engajamento-smb-realizado'] || [];
         const realizadosAtrasado = dataStore['engajamento-smb-atrasado-concluido'] || [];
@@ -2480,26 +2446,26 @@ const renderOKRs = () => {
         const realizadoVsPrevistoPerc = previstos.length > 0 ? (totalRealizado / previstos.length) * 100 : 0;
 
         const cardEngajamento = `
-                                            <div class="card">
-                                                <h3>Engajamento (Contato Consolidado)</h3>
-                                                <div class="card-content">
-                                                    <div class="metric" data-metric-id="engajamento-smb-previsto" data-metric-title="Contatos Previstos (SMB)"><span class="metric-label">Previsto:</span><span class="metric-value">${previstos.length}</span></div>
-                                                    <div class="metric" data-metric-id="engajamento-smb-realizado" data-metric-title="Total Realizado (SMB)">
-                                                        <span class="metric-label">Total Realizado:</span>
-                                                        <span class="metric-value">${totalRealizado} <span class="sub-metric" title="${realizadoVsPrevistoPerc.toFixed(0)}% do previsto foi realizado">(${realizadoVsPrevistoPerc.toFixed(0)}%)</span></span>
-                                                    </div>
-                                                    <div class="metric" data-metric-id="engajamento-smb-engajado" data-metric-title="Total Engajado (SMB)"><span class="metric-label">Total Engajado:</span><span class="metric-value success">${engajados.length}</span></div>
-                                                    <div class="metric" data-metric-id="engajamento-smb-desengajado" data-metric-title="Total Desengajado (SMB)"><span class="metric-label">Total Desengajado:</span><span class="metric-value danger">${desengajados.length}</span></div>
-                                                    <div class="metric">
-                                                        <span class="metric-label" style="font-weight: 600;">Meta de Performance:</span>
-                                                        <span class="metric-value" style="color: var(--primary-color);">${appGoals.engagement}%</span>
-                                                    </div>
-                                                </div>
-                                                <div class="progress-bar-container" style="margin-top: 20px;" title="Performance de Engajamento: ${performancePerc.toFixed(1)}% dos contatos realizados foram classificados como 'Engajado'">
-                                                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${performancePerc.toFixed(1)}%;"></div></div>
-                                                    <span class="progress-percentage">${performancePerc.toFixed(1)}%</span>
-                                                </div>
-                                            </div>`;
+            <div class="card">
+                <h3>Engajamento (Contato Consolidado)</h3>
+                <div class="card-content">
+                    <div class="metric" data-metric-id="engajamento-smb-previsto" data-metric-title="Contatos Previstos (SMB)"><span class="metric-label">Previsto:</span><span class="metric-value">${previstos.length}</span></div>
+                    <div class="metric" data-metric-id="engajamento-smb-realizado" data-metric-title="Total Realizado (SMB)">
+                        <span class="metric-label">Total Realizado:</span>
+                        <span class="metric-value">${totalRealizado} <span class="sub-metric" title="${realizadoVsPrevistoPerc.toFixed(0)}% do previsto foi realizado">(${realizadoVsPrevistoPerc.toFixed(0)}%)</span></span>
+                    </div>
+                    <div class="metric" data-metric-id="engajamento-smb-engajado" data-metric-title="Total Engajado (SMB)"><span class="metric-label">Total Engajado:</span><span class="metric-value success">${engajados.length}</span></div>
+                    <div class="metric" data-metric-id="engajamento-smb-desengajado" data-metric-title="Total Desengajado (SMB)"><span class="metric-label">Total Desengajado:</span><span class="metric-value danger">${desengajados.length}</span></div>
+                    <div class="metric">
+                        <span class="metric-label" style="font-weight: 600;">Meta de Performance:</span>
+                        <span class="metric-value" style="color: var(--primary-color);">${appGoals.engagement}%</span>
+                    </div>
+                </div>
+                <div class="progress-bar-container" style="margin-top: 20px;" title="Performance de Engajamento: ${performancePerc.toFixed(1)}% dos contatos realizados foram classificados como 'Engajado'">
+                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${performancePerc.toFixed(1)}%;"></div></div>
+                    <span class="progress-percentage">${performancePerc.toFixed(1)}%</span>
+                </div>
+            </div>`;
         okrHtml += cardEngajamento;
 
         const clientesContatadosBase = dataStore['cob-carteira'] || [];
@@ -2508,26 +2474,26 @@ const renderOKRs = () => {
             const preenchidosModelo = dataStore['modelo-negocio-preenchido'] || [];
             const percModelo = clientesContatadosBase.length > 0 ? (preenchidosModelo.length / clientesContatadosBase.length) * 100 : 0;
             const cardModeloNegocio = `
-                                                <div class="card">
-                                                    <h3>Adoção do Modelo de Negócio</h3>
-                                                    <div class="card-content">
-                                                        <div class="metric" data-metric-id="modelo-negocio-preenchido" data-metric-title="Clientes com Modelo Preenchido">
-                                                            <span class="metric-label">Preenchido:</span>
-                                                            <span class="metric-value success">${preenchidosModelo.length}</span>
-                                                        </div>
-                                                        <div class="metric" data-metric-id="cob-carteira" data-metric-title="Total de Clientes Contatados no Mês">
-                                                            <span class="metric-label">Total Avaliado:</span>
-                                                            <span class="metric-value">${clientesContatadosBase.length}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="progress-bar-container" title="${percModelo.toFixed(1)}% dos clientes contatados possuem modelo de negócio definido">
-                                                        <div class="progress-bar">
-                                                            <div class="progress-bar-fill" style="width: ${percModelo.toFixed(1)}%;"></div>
-                                                        </div>
-                                                        <span class="progress-percentage">${percModelo.toFixed(1)}%</span>
-                                                    </div>
-                                                </div>
-                                            `;
+                <div class="card">
+                    <h3>Adoção do Modelo de Negócio</h3>
+                    <div class="card-content">
+                        <div class="metric" data-metric-id="modelo-negocio-preenchido" data-metric-title="Clientes com Modelo Preenchido">
+                            <span class="metric-label">Preenchido:</span>
+                            <span class="metric-value success">${preenchidosModelo.length}</span>
+                        </div>
+                        <div class="metric" data-metric-id="cob-carteira" data-metric-title="Total de Clientes Contatados no Mês">
+                            <span class="metric-label">Total Avaliado:</span>
+                            <span class="metric-value">${clientesContatadosBase.length}</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container" title="${percModelo.toFixed(1)}% dos clientes contatados possuem modelo de negócio definido">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: ${percModelo.toFixed(1)}%;"></div>
+                        </div>
+                        <span class="progress-percentage">${percModelo.toFixed(1)}%</span>
+                    </div>
+                </div>
+            `;
             okrHtml += cardModeloNegocio;
         }
 
@@ -2535,70 +2501,84 @@ const renderOKRs = () => {
             const preenchidosPotencial = dataStore['cliente-potencial-preenchido'] || [];
             const percPotencial = clientesContatadosBase.length > 0 ? (preenchidosPotencial.length / clientesContatadosBase.length) * 100 : 0;
             const cardClientePotencial = `
-                                                <div class="card">
-                                                    <h3>Mapeamento de Cliente Potencial</h3>
-                                                    <div class="card-content">
-                                                        <div class="metric" data-metric-id="cliente-potencial-preenchido" data-metric-title="Clientes com Potencial Mapeado">
-                                                            <span class="metric-label">Mapeado:</span>
-                                                            <span class="metric-value success">${preenchidosPotencial.length}</span>
-                                                        </div>
-                                                        <div class="metric" data-metric-id="cob-carteira" data-metric-title="Total de Clientes Contatados no Mês">
-                                                            <span class="metric-label">Total Avaliado:</span>
-                                                            <span class="metric-value">${clientesContatadosBase.length}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="progress-bar-container" title="${percPotencial.toFixed(1)}% dos clientes contatados possuem potencial mapeado">
-                                                        <div class="progress-bar">
-                                                            <div class="progress-bar-fill" style="width: ${percPotencial.toFixed(1)}%;"></div>
-                                                        </div>
-                                                        <span class="progress-percentage">${percPotencial.toFixed(1)}%</span>
-                                                    </div>
-                                                </div>
-                                            `;
+                <div class="card">
+                    <h3>Mapeamento de Cliente Potencial</h3>
+                    <div class="card-content">
+                        <div class="metric" data-metric-id="cliente-potencial-preenchido" data-metric-title="Clientes com Potencial Mapeado">
+                            <span class="metric-label">Mapeado:</span>
+                            <span class="metric-value success">${preenchidosPotencial.length}</span>
+                        </div>
+                        <div class="metric" data-metric-id="cob-carteira" data-metric-title="Total de Clientes Contatados no Mês">
+                            <span class="metric-label">Total Avaliado:</span>
+                            <span class="metric-value">${clientesContatadosBase.length}</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container" title="${percPotencial.toFixed(1)}% dos clientes contatados possuem potencial mapeado">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: ${percPotencial.toFixed(1)}%;"></div>
+                        </div>
+                        <span class="progress-percentage">${percPotencial.toFixed(1)}%</span>
+                    </div>
+                </div>
+            `;
             okrHtml += cardClientePotencial;
         }
 
         okrHtml += labsCard;
     }
     okrGrid.innerHTML = okrHtml;
+}; 
+
+const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null) => { // NOVO PARÂMETRO
+    const percentage = goal > 0 ? (value / goal) * 100 : 0;
+    let valueText;
+    let labelText = `Meta: ${goal}${unit}`;
+    
+    // NOVO: Adiciona a métrica de clientes faltantes
+    let clientesFaltantesHtml = '';
+    if (clientesFaltantes !== null && clientesFaltantes > 0) {
+        clientesFaltantesHtml = `
+            <div class="metric overdue-metric" style="border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                <span class="metric-label danger"><i class="fas fa-exclamation-triangle"></i>Faltam contatar:</span>
+                <span class="metric-value danger">${clientesFaltantes}</span>
+            </div>
+        `;
+    }
+
+    if (currentValue !== null) {
+        if (goalValue !== null) {
+            valueText = `${currentValue} de ${goalValue} <span class="sub-metric">(${value.toFixed(1)}%)</span>`;
+        } else {
+            valueText = `${currentValue}${unit}`;
+        }
+    } else {
+        valueText = `${unit === '%' ? value.toFixed(1) : Number(value).toFixed(0)}${unit}`;
+    }
+
+    let trendHtml = '';
+    if (comparisonValue !== null && isFinite(comparisonValue)) {
+        const trend = value - comparisonValue;
+        const trendClass = trend > 0.1 ? 'trend-positive' : (trend < -0.1 ? 'trend-negative' : 'trend-neutral');
+        const trendIcon = trend > 0.1 ? '▲' : (trend < -0.1 ? '▼' : '▬');
+
+        let trendText;
+        if(unit === '%') {
+            trendText = `${trend.toFixed(1)}pp`;
+        } else {
+            const percChange = comparisonValue > 0 ? ((trend / comparisonValue) * 100) : (trend > 0 ? 100 : 0);
+            trendText = `${percChange.toFixed(0)}%`;
+        }
+
+        trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
+    }
+    
+    const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
+
+    // Modifica o retorno para incluir a nova métrica
+    return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
 };
-const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null) => {
-const percentage = goal > 0 ? (value / goal) * 100 : 0;
-let valueText;
-let labelText = `Meta: ${goal}${unit}`;
 
-if (currentValue !== null) {
-if (goalValue !== null) {
-valueText = `${currentValue} de ${goalValue} <span class="sub-metric">(${value.toFixed(1)}%)</span>`;
-} else {
-valueText = `${currentValue}${unit}`;
-}
-} else {
-valueText = `${unit === '%' ? value.toFixed(1) : Number(value).toFixed(0)}${unit}`;
-}
-
-let trendHtml = '';
-if (comparisonValue !== null && isFinite(comparisonValue)) {
-const trend = value - comparisonValue;
-const trendClass = trend > 0.1 ? 'trend-positive' : (trend < -0.1 ? 'trend-negative' : 'trend-neutral');
-const trendIcon = trend > 0.1 ? '▲' : (trend < -0.1 ? '▼' : '▬');
-
-let trendText;
-if(unit === '%') {
-trendText = `${trend.toFixed(1)}pp`;
-} else {
-const percChange = comparisonValue > 0 ? ((trend / comparisonValue) * 100) : (trend > 0 ? 100 : 0);
-trendText = `${percChange.toFixed(0)}%`;
-}
-
-trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
-}
-
-const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
-
-return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div></div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
-};
-
+// ... (código existente abaixo) ...
 const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
 const totalRealizado = realizadoNoPrazo + overdueCount;
 const percentage = previsto > 0 ? (realizadoNoPrazo / previsto) * 100 : 0;
