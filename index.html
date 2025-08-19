@@ -11,11 +11,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 /*
-       -- REESTILIZAÇÃO VISUAL COMPLETA --
-       O código CSS abaixo foi totalmente reescrito para criar uma interface mais moderna,
-       atraente e dinâmica, conforme solicitado. Nenhuma funcionalidade ou ID utilizado
-       pelo JavaScript foi alterado. O foco foi em layout, cores, tipografia e interatividade.
-       */
+        -- REESTILIZAÇÃO VISUAL COMPLETA --
+        O código CSS abaixo foi totalmente reescrito para criar uma interface mais moderna,
+        atraente e dinâmica, conforme solicitado. Nenhuma funcionalidade ou ID utilizado
+        pelo JavaScript foi alterado. O foco foi em layout, cores, tipografia e interatividade.
+        */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
@@ -697,20 +697,35 @@ opacity: 1;
 </head>
 <body>
 <div id="login-container">
-<h1>Dashboard de OKRs</h1>
-<p>Por favor, faça login com sua conta Google para acessar os dados de performance.</p>
-<div id="g_id_onload"
-data-client_id="232267534625-oju4j8ob02rn6tim24tcdas26c5rh3j4.apps.googleusercontent.com"
-data-callback="handleCredentialResponse">
-</div>
-<div class="g_id_signin"
-data-type="standard"
-data-size="large"
-data-theme="outline"
-data-text="sign_in_with"
-data-shape="rectangular"
-data-logo_alignment="left">
-</div>
+    <h1>Dashboard de OKRs</h1>
+    <p>Por favor, faça login com sua conta Google para acessar os dados de performance.</p>
+    <div id="g_id_onload"
+        data-client_id="232267534625-oju4j8ob02rn6tim24tcdas26c5rh3j4.apps.googleusercontent.com"
+        data-callback="handleCredentialResponse">
+    </div>
+    <div class="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="outline"
+        data-text="sign_in_with"
+        data-shape="rectangular"
+        data-logo_alignment="left">
+    </div>
+
+    <button id="force-clear-button" style="
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-light-color);
+        padding: 10px 20px;
+        margin-top: 30px;
+        border-radius: var(--border-radius-sm);
+        cursor: pointer;
+        font-family: var(--font-family);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;">
+        <i class="fas fa-sync-alt" style="margin-right: 8px;"></i>
+        Problemas para acessar? Limpar dados e recarregar
+    </button>
 </div>
 
 <div id="dashboard-wrapper">
@@ -954,6 +969,52 @@ data-logo_alignment="left">
 </div>
 </div> 
 <script>
+// --- SCRIPT DE LIMPEZA FORÇADA E CONTROLE DE VERSÃO ---
+document.addEventListener('DOMContentLoaded', () => {
+    const clearButton = document.getElementById('force-clear-button');
+
+    if (clearButton) {
+        clearButton.addEventListener('click', () => {
+            if (confirm("Isso limpará todos os dados salvos da aplicação no seu navegador (planilhas em cache, tema, etc.).\n\nEsta ação é recomendada se você está com problemas para acessar ou visualizar os dados.\n\nDeseja continuar?")) {
+                forceClearAllData(true);
+            }
+        });
+    }
+});
+
+/**
+ * Limpa todos os dados de armazenamento do navegador para esta aplicação.
+ * @param {boolean} showAlert - Se true, exibe um alerta ao final e recarrega a página.
+ */
+async function forceClearAllData(showAlert = false) {
+    console.log("Iniciando limpeza forçada dos dados de armazenamento...");
+    try {
+        // 1. Limpa o IndexedDB (onde as planilhas são cacheadas)
+        await dbHelper.clear();
+        console.log("IndexedDB (cache de planilhas) limpo com sucesso.");
+
+        // 2. Limpa o Local Storage (onde o tema, token e versão ficam)
+        localStorage.clear();
+        console.log("localStorage limpo com sucesso.");
+
+        // 3. Limpa o Session Storage (boa prática)
+        sessionStorage.clear();
+        console.log("sessionStorage limpo com sucesso.");
+
+        if (showAlert) {
+            alert("A limpeza foi concluída! A página será recarregada agora.");
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error("Ocorreu um erro durante a limpeza forçada:", error);
+        if (showAlert) {
+            alert("Ocorreu um erro ao tentar limpar os dados. Por favor, tente limpar o cache do seu navegador manualmente.");
+        }
+    }
+}
+// --- FIM DO SCRIPT DE LIMPEZA FORÇADA ---
+
+
 // --- IndexedDB Cache Helper ---
 const dbHelper = {
     db: null,
@@ -1115,7 +1176,31 @@ localStorage.removeItem('googleUserToken');
 })();
 
 // O Dashboard só inicializa após o login
-function initializeDashboard() {
+async function initializeDashboard() {
+    // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
+    const APP_VERSION = '1.0'; // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.1', '1.2')
+    const storedVersion = localStorage.getItem('appVersion');
+
+    if (storedVersion !== APP_VERSION) {
+        console.warn(`Versão da aplicação desatualizada detectada (Cache: ${storedVersion} | Atual: ${APP_VERSION}). Forçando limpeza completa.`);
+        
+        // Guarda o token do usuário para tentar relogar após a limpeza
+        const userToken = localStorage.getItem('googleUserToken');
+        
+        await forceClearAllData(false); // Limpa tudo, sem alerta/reload
+        
+        localStorage.setItem('appVersion', APP_VERSION); // Define a nova versão
+        
+        // Recoloca o token para tentar o login automático
+        if (userToken) {
+            localStorage.setItem('googleUserToken', userToken);
+        }
+
+        window.location.reload(); // Recarrega a página com o cache limpo
+        return; // Impede que o resto do script seja executado com dados antigos
+    }
+    // --- FIM DO CONTROLE DE VERSÃO ---
+
 /*
         -- INSTRUÇÃO PARA ATUALIZAÇÃO --
         Sempre que uma alteração funcional for implementada neste script,
@@ -1131,7 +1216,7 @@ const logoutButton = document.getElementById('logout-button');
 if (currentUser.name) {
     // Adiciona um ícone e o nome do usuário ao card
     userInfoText.innerHTML = `<i class="fas fa-user-check" style="margin-right: 8px; color: var(--secondary-color);"></i> ${currentUser.name}`;
-    
+   
     // ADICIONADO: Verifica se o usuário é gestor e insere a etiqueta
     if (currentUser.isManager) {
         userInfoCard.insertAdjacentHTML('beforeend', '<span class="admin-badge">Login ADM</span>');
@@ -1328,7 +1413,7 @@ const buildCsToSquadMap = () => {
 
     allCSs.forEach(csName => {
         const clientsOfCS = rawClients.filter(c => c.CS === csName);
-        
+       
         if (!clientsOfCS.some(c => c['Squad CS'])) {
             return;
         }
@@ -1349,7 +1434,7 @@ const buildCsToSquadMap = () => {
                 majoritySquad = squad;
             }
         }
-        
+       
         if (majoritySquad) {
             csToSquadMap.set(csName, majoritySquad);
         }
@@ -1398,13 +1483,13 @@ const processInitialData = () => {
     tabsContainer.style.display = 'flex';
     const selectSquad = document.getElementById('select-squad');
     [selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, selectPeriod].forEach(el => el.disabled = false);
-    
+   
     if (!currentUser.isManager) {
         selectCS.disabled = true;
     }
-    
+   
     [selectOnboardingTeam, selectISM].forEach(el => el.disabled = false);
-    
+   
     updateDashboard();
     renderOverdueView();
 };
@@ -1448,7 +1533,7 @@ const processAndCacheFiles = () => {
     if (atividadesFile && clientesFile) {
         // Primeiro, processa os arquivos para a sessão atual
         attemptProcess();
-        
+       
         // Em seguida, salva em cache para as próximas sessões
         const now = new Date();
         Promise.all([
@@ -1488,20 +1573,20 @@ const loadDataFromCache = async () => {
 
             const atividadesLabel = document.querySelector('label[for="file-atividades"]');
             const clientesLabel = document.querySelector('label[for="file-clientes"]');
-            
+           
             atividadesLabel.innerHTML = `<i class="fas fa-database" style="color: var(--secondary-color);"></i> 1. Atividades (Cache)`;
             clientesLabel.innerHTML = `<i class="fas fa-database" style="color: var(--secondary-color);"></i> 2. Clientes (Cache)`;
 
             fileAtividadesInput.parentElement.title = `Arquivo em cache: ${atividadesFile.name}`;
             fileClientesInput.parentElement.title = `Arquivo em cache: ${clientesFile.name}`;
-            
+           
             fileAtividadesInput.disabled = true;
             fileClientesInput.disabled = true;
 
             if (cachedTimestamp) {
                 displayLastLoadTime(cachedTimestamp);
             }
-            
+           
             attemptProcess();
         } else {
             console.log("Nenhum arquivo em cache encontrado. Aguardando upload.");
@@ -1552,7 +1637,7 @@ selectISM.appendChild(option);
 const populateFilters = () => {
     // Adicionado .trim() para remover espaços em branco do nome do CS
     const csSet = new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean));
-    
+   
     const selectSquad = document.getElementById('select-squad');
     selectCS.innerHTML = ''; 
 
@@ -1592,7 +1677,7 @@ const populateFilters = () => {
                 }
             }
         }
-        
+       
         // 3. APLICA O RESULTADO
         if (foundCS && sortedCS.includes(foundCS)) {
             selectCS.value = foundCS;
@@ -2189,7 +2274,7 @@ const updateDashboard = () => {
 
         const selectedCS = selectCS.value;
         let filteredClients = rawClients;
-        
+       
         let csForCalc = selectedCS;
 
         if (currentUser.isManager) {
@@ -2204,7 +2289,7 @@ const updateDashboard = () => {
         else {
             filteredClients = rawClients.filter(d => d.CS?.trim() === selectedCS);
         }
-        
+       
         dataStore = {};
         Object.assign(dataStore, calculateMetricsForPeriod(mesSelecionado, anoSelecionado, rawActivities, filteredClients, csForCalc, includeOnboarding));
 
@@ -2233,7 +2318,7 @@ const updateDashboard = () => {
         const divergenceMarker = document.getElementById('divergence-marker');
         const divergenceText = document.getElementById('divergence-text');
         const divergentClientCount = new Set(divergentActivities.map(a => a.ClienteCompleto)).size;
-        
+       
         if (divergentClientCount > 0 && period === 'monthly') {
             divergenceText.textContent = `Atenção: ${divergentClientCount} clientes fora da carteira receberam atividades neste mês. Clique para ver detalhes.`;
             divergenceMarker.style.display = 'flex';
@@ -2329,17 +2414,17 @@ onboardingGeneralGrid.innerHTML = cardGeral + cardContatos;
 
 const cardAtividades = `
                                  <div class="card">
-                                    <h3>Atividades em Onboarding (Mês)</h3>
-                                    <div class="card-content">
-                                        <div class="metric" data-metric-id="onb-atividades-previstas" data-metric-title="Atividades Previstas (Onboarding)">
-                                            <span class="metric-label">Previstas para o Mês:</span>
-                                            <span class="metric-value">${(onboardingDataStore['onb-atividades-previstas'] || []).length}</span>
-                                        </div>
-                                        <div class="metric" data-metric-id="onb-atividades-concluidas" data-metric-title="Atividades Concluídas (Onboarding)">
-                                            <span class="metric-label">Concluídas no Mês:</span>
-                                            <span class="metric-value success">${(onboardingDataStore['onb-atividades-concluidas'] || []).length}</span>
-                                        </div>
-                                    </div>
+                                     <h3>Atividades em Onboarding (Mês)</h3>
+                                     <div class="card-content">
+                                         <div class="metric" data-metric-id="onb-atividades-previstas" data-metric-title="Atividades Previstas (Onboarding)">
+                                             <span class="metric-label">Previstas para o Mês:</span>
+                                             <span class="metric-value">${(onboardingDataStore['onb-atividades-previstas'] || []).length}</span>
+                                         </div>
+                                         <div class="metric" data-metric-id="onb-atividades-concluidas" data-metric-title="Atividades Concluídas (Onboarding)">
+                                             <span class="metric-label">Concluídas no Mês:</span>
+                                             <span class="metric-value success">${(onboardingDataStore['onb-atividades-concluidas'] || []).length}</span>
+                                         </div>
+                                     </div>
                                 </div>
                                 `;
 
@@ -2347,12 +2432,12 @@ onboardingActivitiesGrid.innerHTML = cardAtividades;
 };
 
 /*
-        -- ALTERAÇÃO DE CÓDIGO --
-        A função 'renderOKRs' foi modificada para implementar a visualização
-        solicitada no card de 'Cobertura de Carteira', incluindo a visão
-        de clientes com e sem onboarding, o cálculo de clientes a contatar
-        para a meta e quantos faltam.
-        */
+        -- ALTERAÇÃO DE CÓDIGO --
+        A função 'renderOKRs' foi modificada para implementar a visualização
+        solicitada no card de 'Cobertura de Carteira', incluindo a visão
+        de clientes com e sem onboarding, o cálculo de clientes a contatar
+        para a meta e quantos faltam.
+        */
 // ... (código existente acima) ...
 
 const renderOKRs = () => {
@@ -2533,7 +2618,7 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
     const percentage = goal > 0 ? (value / goal) * 100 : 0;
     let valueText;
     let labelText = `Meta: ${goal}${unit}`;
-    
+   
     // NOVO: Adiciona a métrica de clientes faltantes
     let clientesFaltantesHtml = '';
     if (clientesFaltantes !== null) {
@@ -2572,7 +2657,7 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
 
         trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
     }
-    
+   
     const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
 
     return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
@@ -2589,11 +2674,11 @@ if(goal !== null && currentUser.isManager) metaHtml = `<div class="metric"><span
 let overdueHtml = '';
 if (overdueCount > 0) {
 overdueHtml = `
-                                        <div class="metric overdue-metric" data-metric-id="${metricIdPrefix}-atrasado-concluido" data-metric-title="${title} (Concluídas com Atraso)" title="${overdueCount} atividades concluídas estavam previstas para meses anteriores">
-                                            <span class="metric-label"><i class="fas fa-history"></i>Concluídas (Atraso):</span>
-                                            <span class="metric-value">${overdueCount}</span>
-                                        </div>
-                                    `;
+                                            <div class="metric overdue-metric" data-metric-id="${metricIdPrefix}-atrasado-concluido" data-metric-title="${title} (Concluídas com Atraso)" title="${overdueCount} atividades concluídas estavam previstas para meses anteriores">
+                                                <span class="metric-label"><i class="fas fa-history"></i>Concluídas (Atraso):</span>
+                                                <span class="metric-value">${overdueCount}</span>
+                                            </div>
+                                        `;
 }
 
 const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricIdPrefix}" data-metric-title="${title}" data-metric-type="playbook" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
@@ -2633,19 +2718,19 @@ if (!data || data.length === 0) return '<p style="padding: 20px; text-align: cen
 const headers = Object.keys(data[0]);
 const headerHtml = `<thead><tr>${headers.map(h => `<th><span>${h}</span></th>`).join('')}</tr></thead>`;
 const bodyHtml = `<tbody>${data.map(row => `<tr>${headers.map(h => {
-                                        const cellValue = row[h];
-                                        let displayValue = '';
-                                        if (cellValue instanceof Date) {
-                                            displayValue = formatDate(cellValue);
-                                        } else if (cellValue !== null && cellValue !== undefined) {
-                                            displayValue = cellValue;
-                                        }
-                                        
-                                        if(normalizeText(h) === 'cliente') {
-                                            return `<td><span data-client-name="${row[h]}">${displayValue}</span></td>`;
-                                        }
-                                        return `<td>${displayValue}</td>`;
-                                    }).join('')}</tr>`).join('')}</tbody>`;
+                                            const cellValue = row[h];
+                                            let displayValue = '';
+                                            if (cellValue instanceof Date) {
+                                                displayValue = formatDate(cellValue);
+                                            } else if (cellValue !== null && cellValue !== undefined) {
+                                                displayValue = cellValue;
+                                            }
+                                           
+                                            if(normalizeText(h) === 'cliente') {
+                                                return `<td><span data-client-name="${row[h]}">${displayValue}</span></td>`;
+                                            }
+                                            return `<td>${displayValue}</td>`;
+                                        }).join('')}</tr>`).join('')}</tbody>`;
 return `<table class="data-table">${headerHtml}${bodyHtml}</table>`;
 };
 
@@ -2726,12 +2811,12 @@ if(!clientData) return;
 document.getElementById('client-360-name').textContent = clientData.Cliente;
 const infoContainer = document.getElementById('client-360-info');
 infoContainer.innerHTML = `
-                                        <div class="client-info-item"><span class="client-info-label">CS Responsável</span><span class="client-info-value">${clientData.CS || 'N/A'}</span></div>
-                                        <div class="client-info-item"><span class="client-info-label">ISM Responsável</span><span class="client-info-value">${clientData.ISM || 'N/A'}</span></div>
-                                        <div class="client-info-item"><span class="client-info-label">Segmento</span><span class="client-info-value">${clientData.Segmento || 'N/A'}</span></div>
-                                        <div class="client-info-item"><span class="client-info-label">Sense Score</span><span class="client-info-value">${clientData['Sense Score'] || 'N/A'}</span></div>
-                                        <div class="client-info-item"><span class="client-info-label">Fase</span><span class="client-info-value">${clientData.Fase || 'N/A'}</span></div>
-                                    `;
+                                                <div class="client-info-item"><span class="client-info-label">CS Responsável</span><span class="client-info-value">${clientData.CS || 'N/A'}</span></div>
+                                                <div class="client-info-item"><span class="client-info-label">ISM Responsável</span><span class="client-info-value">${clientData.ISM || 'N/A'}</span></div>
+                                                <div class="client-info-item"><span class="client-info-label">Segmento</span><span class="client-info-value">${clientData.Segmento || 'N/A'}</span></div>
+                                                <div class="client-info-item"><span class="client-info-label">Sense Score</span><span class="client-info-value">${clientData['Sense Score'] || 'N/A'}</span></div>
+                                                <div class="client-info-item"><span class="client-info-label">Fase</span><span class="client-info-value">${clientData.Fase || 'N/A'}</span></div>
+                                            `;
 
 const clientActivities = rawActivities
 .filter(a => a.ClienteCompleto === clientName.toLowerCase())
@@ -2839,7 +2924,7 @@ const squadCsListDiv = document.getElementById('squad-cs-list');
                 if (selectedSquadValue !== 'Todos') {
                     if(selectCS.value !== 'Todos') selectCS.value = 'Todos';
                     selectCS.disabled = true;
-                    
+                   
                     const csInSquad = [];
                     for (const [cs, squad] of csToSquadMap.entries()) {
                         if (squad === selectedSquadValue) {
@@ -2867,7 +2952,7 @@ const squadCsListDiv = document.getElementById('squad-cs-list');
             const filteredClients = clientsForSegmentCheck.filter(d => d.CS?.trim() === selectedCSValue);
             autoSelectSegment(filteredClients);
         }
-        
+       
         if (targetId === 'select-onboarding-team') {
             updateIsmFilter();
         }
@@ -2914,7 +2999,7 @@ showTrendChart(metricId, metricTitle, metricType);
 
 document.getElementById('divergence-marker').addEventListener('click', () => {
 showDetailsModal('divergent-activities', 'Atividades para Clientes Fora da Carteira');
-});        
+});       
 
 document.getElementById('settings-button').addEventListener('click', () => {
 loadGoals();
@@ -2990,29 +3075,29 @@ const selectedSegmento = selectSegmento.value;
 const includeOnboarding = onboardingToggle.checked;
 
 const indicadoresGeraisHtml = `
-                                        <h2><i class="fas fa-chart-bar"></i> Indicadores Gerais</h2>
-                                        <table>
-                                            <thead><tr><th>Indicador</th><th>Valor</th><th>Meta</th></tr></thead>
-                                            <tbody>
-                                                <tr><td>Total de Clientes na Carteira</td><td>${(reportData['total-clientes'] || []).length}</td><td>N/A</td></tr>
-                                                <tr><td>Clientes Únicos Contatados</td><td>${(reportData['cob-carteira'] || []).length}</td><td>N/A</td></tr>
-                                                <tr><td>Cobertura de Carteira</td><td>${((reportData['cob-carteira']?.length || 0) * 100 / (reportData['total-clientes-unicos-cs'] || 1)).toFixed(1)}%</td><td>${goals.coverage}%</td></tr>
-                                                <tr><td>Média Sense Score</td><td>${(reportData['sensescore-avg'] || 0).toFixed(1)} pts</td><td>${goals.sensescore} pts</td></tr>
-                                                <tr><td>Participação SKA LABS (Trimestre)</td><td>${(((reportData['ska-labs-realizado-list']?.length || 0) * 100) / (reportData['total-labs-eligible'] || 1)).toFixed(1)}%</td><td>${goals.labs}%</td></tr>
-                                            </tbody>
-                                        </table>`;
+                                            <h2><i class="fas fa-chart-bar"></i> Indicadores Gerais</h2>
+                                            <table>
+                                                <thead><tr><th>Indicador</th><th>Valor</th><th>Meta</th></tr></thead>
+                                                <tbody>
+                                                    <tr><td>Total de Clientes na Carteira</td><td>${(reportData['total-clientes'] || []).length}</td><td>N/A</td></tr>
+                                                    <tr><td>Clientes Únicos Contatados</td><td>${(reportData['cob-carteira'] || []).length}</td><td>N/A</td></tr>
+                                                    <tr><td>Cobertura de Carteira</td><td>${((reportData['cob-carteira']?.length || 0) * 100 / (reportData['total-clientes-unicos-cs'] || 1)).toFixed(1)}%</td><td>${goals.coverage}%</td></tr>
+                                                    <tr><td>Média Sense Score</td><td>${(reportData['sensescore-avg'] || 0).toFixed(1)} pts</td><td>${goals.sensescore} pts</td></tr>
+                                                    <tr><td>Participação SKA LABS (Trimestre)</td><td>${(((reportData['ska-labs-realizado-list']?.length || 0) * 100) / (reportData['total-labs-eligible'] || 1)).toFixed(1)}%</td><td>${goals.labs}%</td></tr>
+                                                </tbody>
+                                            </table>`;
 
 const tiposDeContatoHtml = `
-                                        <h2><i class="fas fa-headset"></i> Tipos de Contato (Mês)</h2>
-                                        <table>
-                                            <thead><tr><th>Tipo de Contato</th><th>Quantidade</th></tr></thead>
-                                            <tbody>
-                                                <tr><td>📞 Ligação/Reunião (CS)</td><td>${(reportData['contato-ligacao'] || []).length}</td></tr>
-                                                <tr><td style="padding-left: 30px;">↳ com 'Contato Consolidado' Concluído</td><td>${reportData['ligacao-com-consolidado'] || 0}</td></tr>
-                                                <tr><td>✉️ E-mail/Whatsapp (CS)</td><td>${(reportData['contato-email'] || []).length}</td></tr>
-                                                ${includeOnboarding ? `<tr><td>🚀 Contatos de Onboarding</td><td>${(reportData['onboarding-contacts-display'] || []).length}</td></tr>` : ''}
-                                            </tbody>
-                                        </table>`;
+                                            <h2><i class="fas fa-headset"></i> Tipos de Contato (Mês)</h2>
+                                            <table>
+                                                <thead><tr><th>Tipo de Contato</th><th>Quantidade</th></tr></thead>
+                                                <tbody>
+                                                    <tr><td>📞 Ligação/Reunião (CS)</td><td>${(reportData['contato-ligacao'] || []).length}</td></tr>
+                                                    <tr><td style="padding-left: 30px;">↳ com 'Contato Consolidado' Concluído</td><td>${reportData['ligacao-com-consolidado'] || 0}</td></tr>
+                                                    <tr><td>✉️ E-mail/Whatsapp (CS)</td><td>${(reportData['contato-email'] || []).length}</td></tr>
+                                                    ${includeOnboarding ? `<tr><td>🚀 Contatos de Onboarding</td><td>${(reportData['onboarding-contacts-display'] || []).length}</td></tr>` : ''}
+                                                </tbody>
+                                            </table>`;
 
 const playbooksData = [];
 const playbookDefs = {
@@ -3100,13 +3185,13 @@ const csSet = new Set(rawClients.map(d => d.CS).filter(Boolean));
 csSelectionList.innerHTML = '';
 [...csSet].sort().forEach(cs => {
 csSelectionList.innerHTML += `
-                                        <div class="cs-item">
-                                            <label>
-                                                <input type="checkbox" class="cs-checkbox" value="${cs}" checked>
-                                                ${cs}
-                                            </label>
-                                        </div>
-                                    `;
+                                            <div class="cs-item">
+                                                <label>
+                                                    <input type="checkbox" class="cs-checkbox" value="${cs}" checked>
+                                                    ${cs}
+                                                </label>
+                                            </div>
+                                        `;
 });
 
 showModal(bulkExportModal);
