@@ -2529,18 +2529,19 @@ const renderOKRs = () => {
     okrGrid.innerHTML = okrHtml;
 }; 
 
-const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null) => { // NOVO PARÂMETRO
+const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null) => {
     const percentage = goal > 0 ? (value / goal) * 100 : 0;
     let valueText;
     let labelText = `Meta: ${goal}${unit}`;
     
     // NOVO: Adiciona a métrica de clientes faltantes
     let clientesFaltantesHtml = '';
-    if (clientesFaltantes !== null && clientesFaltantes > 0) {
+    if (clientesFaltantes !== null) {
+        const totalParaMeta = (dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100);
         clientesFaltantesHtml = `
             <div class="metric overdue-metric" style="border-top: 1px dashed var(--border-color); padding-top: 10px;">
-                <span class="metric-label danger"><i class="fas fa-exclamation-triangle"></i>Faltam contatar:</span>
-                <span class="metric-value danger">${clientesFaltantes}</span>
+                <span class="metric-label"><i class="fas fa-bullseye" style="color: var(--primary-color);"></i>Para a Meta:</span>
+                <span class="metric-value" style="font-size: 1.2rem;">${Math.ceil(totalParaMeta)} clientes (${clientesFaltantes} faltantes)</span>
             </div>
         `;
     }
@@ -2574,10 +2575,8 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
     
     const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
 
-    // Modifica o retorno para incluir a nova métrica
     return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
 };
-
 // ... (código existente abaixo) ...
 const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
 const totalRealizado = realizadoNoPrazo + overdueCount;
