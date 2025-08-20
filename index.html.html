@@ -2420,11 +2420,11 @@ const cardContatos = `
                                 <div class="card">
                                     <h3>Contatos em Onboarding (Mês)</h3>
                                     <div class="card-content">
-                                        <div class="metric" data-metric-id="onb-contato-ligacao" data-metric-title="Meta: Contatos por Ligação/Reunião (Onboarding)">
+                                        <div class="metric" data-metric-id="onb-contato-ligacao" data-metric-title="Contatos por Ligação/Reunião (Onboarding)">
                                             <span class="metric-label">📞 Ligação/Reunião:</span>
                                             <span class="metric-value">${(onboardingDataStore['onb-contato-ligacao'] || []).length}</span>
                                         </div>
-                                        <div class="metric" data-metric-id="onb-contato-email" data-metric-title="Meta: Contatos por E-mail/Whatsapp (Onboarding)">
+                                        <div class="metric" data-metric-id="onb-contato-email" data-metric-title="Contatos por E-mail/Whatsapp (Onboarding)">
                                             <span class="metric-label">✉️ E-mail/Whatsapp:</span>
                                             <span class="metric-value">${(onboardingDataStore['onb-contato-email'] || []).length}</span>
                                         </div>
@@ -2658,11 +2658,11 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
 
         distribuicaoContatosHtml = `
             <div class="metric" style="font-size: 0.9rem; padding-top: 5px; padding-bottom: 0px;">
-                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Contatos (Ligação/Reunião):</span>
+                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Meta: Contatos (Ligação/Reunião):</span>
                 <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosLigacaoNecessarios}</span>
             </div>
             <div class="metric" style="font-size: 0.9rem; padding-top: 5px;">
-                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Contatos (E-mail/Whats):</span>
+                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Meta: Contatos (E-mail/Whats):</span>
                 <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosEmailNecessarios}</span>
             </div>
         `;
