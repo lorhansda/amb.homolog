@@ -385,7 +385,7 @@ color: var(--primary-color);
 .card h3:contains("Planos de Sucesso")::before { content: '\f19d'; }
 .card h3:contains("Baixo Engajamento")::before { content: '\f7a4'; }
 .card h3:contains("Geral do Onboarding")::before { content: '\f500'; }
-.card h3:contains("Contatos em Onboarding")::before { content: '\f2b9'; }
+.card h3:contains(" em Onboarding")::before { content: '\f2b9'; }
 .card h3:contains("Atividades em Onboarding")::before { content: '\f0ae'; }
 .card h3:contains("Média de Cobertura")::before { content: '\f51a'; }
 .card h3:contains("Total:")::before { content: '\f681'; }
@@ -2420,11 +2420,11 @@ const cardContatos = `
                                 <div class="card">
                                     <h3>Contatos em Onboarding (Mês)</h3>
                                     <div class="card-content">
-                                        <div class="metric" data-metric-id="onb-contato-ligacao" data-metric-title="Contatos por Ligação/Reunião (Onboarding)">
+                                        <div class="metric" data-metric-id="onb-contato-ligacao" data-metric-title="Meta: Contatos por Ligação/Reunião (Onboarding)">
                                             <span class="metric-label">📞 Ligação/Reunião:</span>
                                             <span class="metric-value">${(onboardingDataStore['onb-contato-ligacao'] || []).length}</span>
                                         </div>
-                                        <div class="metric" data-metric-id="onb-contato-email" data-metric-title="Contatos por E-mail/Whatsapp (Onboarding)">
+                                        <div class="metric" data-metric-id="onb-contato-email" data-metric-title="Meta: Contatos por E-mail/Whatsapp (Onboarding)">
                                             <span class="metric-label">✉️ E-mail/Whatsapp:</span>
                                             <span class="metric-value">${(onboardingDataStore['onb-contato-email'] || []).length}</span>
                                         </div>
