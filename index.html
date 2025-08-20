@@ -693,6 +693,22 @@ opacity: 1;
 }
 /* FIM CSS NOVO */
 
+/* --- MARCADOR DE VERSÃO --- */
+#app-version-marker {
+    position: fixed;
+    bottom: 10px;
+    right: 15px;
+    background-color: var(--card-bg-color);
+    color: var(--text-light-color);
+    padding: 5px 12px;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    z-index: 1001;
+    opacity: 0.8;
+}
+
 </style>
 </head>
 <body>
@@ -968,6 +984,7 @@ opacity: 1;
 </div>
 </div>
 </div> 
+
 <script>
 // --- SCRIPT DE LIMPEZA FORÇADA E CONTROLE DE VERSÃO ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -1178,7 +1195,9 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    const APP_VERSION = '1.0'; // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.1', '1.2')
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.1.1', '1.2.0')
+    const APP_VERSION = '1.1.0'; 
+    
     const storedVersion = localStorage.getItem('appVersion');
 
     if (storedVersion !== APP_VERSION) {
@@ -1199,14 +1218,13 @@ async function initializeDashboard() {
         window.location.reload(); // Recarrega a página com o cache limpo
         return; // Impede que o resto do script seja executado com dados antigos
     }
-    // --- FIM DO CONTROLE DE VERSÃO ---
 
-/*
-        -- INSTRUÇÃO PARA ATUALIZAÇÃO --
-        Sempre que uma alteração funcional for implementada neste script,
-        lembre-se de incrementar o número da revisão no HTML, no elemento <div class="revision-marker">.
-        Exemplo: de "Rev. 5.1" para "Rev. 5.2".
-        */
+    // --- Exibe o marcador de versão ---
+    const versionMarker = document.getElementById('app-version-marker');
+    if (versionMarker) {
+        versionMarker.textContent = `Versão: ${APP_VERSION}`;
+    }
+    // --- Fim do novo código ---
 
 // --- NOVO: Exibe o card de usuário e configura o botão de logout ---
 const userInfoCard = document.getElementById('user-info-card');
@@ -2433,14 +2451,6 @@ const cardAtividades = `
 onboardingActivitiesGrid.innerHTML = cardAtividades;
 };
 
-/*
-        -- ALTERAÇÃO DE CÓDIGO --
-        A função 'renderOKRs' foi modificada para implementar a visualização
-        solicitada no card de 'Cobertura de Carteira', incluindo a visão
-        de clientes com e sem onboarding, o cálculo de clientes a contatar
-        para a meta e quantos faltam.
-        */
-// ... (código existente acima) ...
 
 const renderOKRs = () => {
     const selectedSegmento = selectSegmento.value;
@@ -2461,12 +2471,10 @@ const renderOKRs = () => {
     const totalLabsBaseComp = dataStore['total-labs-eligible_comp'] || 0;
     const labsRealizadoPerc_comp = totalLabsBaseComp > 0 ? ((dataStore['ska-labs-realizado-list_comp']?.length || 0) / totalLabsBaseComp) * 100 : null;
 
-    // NOVO CÁLCULO: Clientes Faltantes para a meta de cobertura
     const metaCobertura = appGoals.coverage / 100;
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(totalClientesUnicosCS * metaCobertura));
     const clientesFaltantes = Math.max(0, clientesParaAtingirMeta - clientesContatadosCount);
 
-    // AJUSTE: Passa o segmento selecionado para o card de cobertura para o cálculo da distribuição
     const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento);
     const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
     const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
@@ -2533,7 +2541,6 @@ const renderOKRs = () => {
         const performancePerc = totalRealizado > 0 ? (engajados.length / totalRealizado) * 100 : 0;
         const realizadoVsPrevistoPerc = previstos.length > 0 ? (totalRealizado / previstos.length) * 100 : 0;
 
-        // AJUSTE: O card de Engajamento agora mostra a divisão entre realizado no prazo e atrasado.
         const cardEngajamento = `
             <div class="card">
                 <h3>Engajamento (Contato Consolidado)</h3>
@@ -2623,14 +2630,13 @@ const renderOKRs = () => {
     okrGrid.innerHTML = okrHtml;
 }; 
 
-// AJUSTE: Função modificada para incluir a distribuição de contatos necessários
 const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '') => {
     const percentage = goal > 0 ? (value / goal) * 100 : 0;
     let valueText;
     let labelText = `Meta: ${goal}${unit}`;
     
     let clientesFaltantesHtml = '';
-    let distribuicaoContatosHtml = ''; // Nova variável para o detalhamento
+    let distribuicaoContatosHtml = '';
 
     if (clientesFaltantes !== null && clientesFaltantes > 0) {
         const totalParaMeta = (dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100);
@@ -2641,22 +2647,21 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
             </div>
         `;
 
-        // Lógica de distribuição de contatos
-        let ligacaoPerc = 0.65; // Padrão para SMB
+        let ligacaoPerc = 0.65;
         if (selectedSegmento === 'MID/Enterprise') {
             ligacaoPerc = 0.75;
         }
         
         const contatosLigacaoNecessarios = Math.ceil(clientesFaltantes * ligacaoPerc);
-        const contatosEmailNecessarios = clientesFaltantes - contatosLigacaoNecessarios; // Garante que a soma seja exata
+        const contatosEmailNecessarios = clientesFaltantes - contatosLigacaoNecessarios;
 
         distribuicaoContatosHtml = `
             <div class="metric" style="font-size: 0.9rem; padding-top: 5px; padding-bottom: 0px;">
-                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Meta: Contatos (Ligação/Reunião):</span>
+                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Contatos (Ligação/Reunião):</span>
                 <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosLigacaoNecessarios}</span>
             </div>
             <div class="metric" style="font-size: 0.9rem; padding-top: 5px;">
-                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Meta: Contatos (E-mail/Whats):</span>
+                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Contatos (E-mail/Whats):</span>
                 <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosEmailNecessarios}</span>
             </div>
         `;
@@ -2694,7 +2699,6 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
     return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
 };
 
-// ... (código existente abaixo) ...
 const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
 const totalRealizado = realizadoNoPrazo + overdueCount;
 const percentage = previsto > 0 ? (realizadoNoPrazo / previsto) * 100 : 0;
@@ -3284,5 +3288,6 @@ s1.setAttribute('crossorigin','*');
 s0.parentNode.insertBefore(s1,s0);
 })();
 </script>
+<div id="app-version-marker"></div> 
 </body>
 </html>
