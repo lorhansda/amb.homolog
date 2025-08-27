@@ -1202,8 +1202,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.3')
-    const APP_VERSION = '1.2.3'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.4')
+    const APP_VERSION = '1.2.4'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -1937,239 +1937,238 @@ alert("Não há dados detalhados para esta métrica.");
 };
 
 const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS, includeOnboarding) => {
-const metrics = {};
+    const metrics = {};
 
-const startOfPeriod = new Date(Date.UTC(year, month, 1));
+    const startOfPeriod = new Date(Date.UTC(year, month, 1));
 
-const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
+    const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
 
-const isPredictedForPeriod = (activity) => {
-const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
-const notCompletedBeforePeriod = !activity.ConcluidaEm || activity.ConcluidaEm >= startOfPeriod;
-return isDueInPeriod && notCompletedBeforePeriod;
-};
+    const isPredictedForPeriod = (activity) => {
+        const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
+        const notCompletedBeforePeriod = !activity.ConcluidaEm || activity.ConcluidaEm >= startOfPeriod;
+        return isDueInPeriod && notCompletedBeforePeriod;
+    };
 
-const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
+    const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
 
-const clientOwnerMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), { cs: cli.CS, fase: normalizeText(cli.Fase || '') }]));
+    const clientOwnerMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), { cs: cli.CS, fase: normalizeText(cli.Fase || '') }]));
 
-const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
+    const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
 
-const allConcludedActivitiesInPortfolio = rawActivities
-.filter(isConcludedInPeriod)
-.filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto));
+    const allConcludedActivitiesInPortfolio = rawActivities
+        .filter(isConcludedInPeriod)
+        .filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto));
 
-let csRealizedActivities = [];
-let onboardingRealizedActivities = [];
+    let csRealizedActivities = [];
+    let onboardingRealizedActivities = [];
 
-if (selectedCS === 'Todos') {
-allConcludedActivitiesInPortfolio.forEach(activity => {
-const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-if (clientInfo?.fase === 'onboarding') onboardingRealizedActivities.push(activity);
-else csRealizedActivities.push(activity);
-});
-} else {
-allConcludedActivitiesInPortfolio.forEach(activity => {
-const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-const activityOwner = (activity['Responsável'] || '').trim();
-const isClientOnboarding = clientInfo?.fase === 'onboarding';
+    if (selectedCS === 'Todos') {
+        allConcludedActivitiesInPortfolio.forEach(activity => {
+            const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
+            if (clientInfo?.fase === 'onboarding') onboardingRealizedActivities.push(activity);
+            else csRealizedActivities.push(activity);
+        });
+    } else {
+        allConcludedActivitiesInPortfolio.forEach(activity => {
+            const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
+            const activityOwner = (activity['Responsável'] || '').trim();
+            const isClientOnboarding = clientInfo?.fase === 'onboarding';
 
-if (isClientOnboarding && activityOwner === selectedCS) csRealizedActivities.push(activity);
-else if (isClientOnboarding) onboardingRealizedActivities.push(activity);
-else if (activityOwner === selectedCS) csRealizedActivities.push(activity);
-});
-}
-
-const combinedRealizedActivities = [...csRealizedActivities, ...onboardingRealizedActivities];
-
-const playbookDefs = {
-'plano': { p: 'plano de acao', a: 'analise do cenario do cliente' },
-'adocao': { p: null, a: ["revisao da adocao - sponsor (mid/enterprise)","revisao da adocao - ku (mid/enterprise)","revisao da adocao - ku (smb)"] },
-'reunioes-qbr': { p: null, a: "ligacao de sensibilizacao com o sponsor" },
-'planos-sucesso': { p: null, a: "plano de sucesso desenvolvido" },
-'followup': { p: 'pos fechamento de loop cs', a: 'follow-up 1' },
-'discovery': { p: 'discovery potencial', a: 'contato com o cliente' },
-'engajamento-smb': { p: 'contato consolidado', a: 'contato com o cliente' },
-'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
-};
-
-for (const [key, def] of Object.entries(playbookDefs)) {
-let filterFn;
-
-if (key === 'plano') {
-filterFn = (item) => {
-const atividadeNormalizada = normalizeText(item.Atividade);
-const playbookNormalizado = normalizeText(item.Playbook);
-const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
-const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
-return isPlanoOriginal || isAlertaSuporte;
-};
-} else {
-filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
-}
-
-const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
-metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
-metrics[`${key}-realizado`] = totalRealizadoList.filter(a => !isOverdue(a));
-}
-
-const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
-const isCountableContact = (a) => {
-const activityType = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
-const activityName = normalizeText(a.Atividade || '');
-return !activityName.includes('regra') && (validContactKeywords.some(type => activityType.includes(type)) || activityName.startsWith('whatsapp octadesk'));
-};
-
-const csContactActivities = csRealizedActivities.filter(isCountableContact);
-const onboardingContactActivities = onboardingRealizedActivities.filter(isCountableContact);
-
-let contactsForCoverage = [...csContactActivities];
-if (includeOnboarding) {
-contactsForCoverage = [...contactsForCoverage, ...onboardingContactActivities];
-}
-const uniqueClientContactsMap = new Map();
-contactsForCoverage.forEach(activity => uniqueClientContactsMap.set(activity.ClienteCompleto, activity));
-metrics['cob-carteira'] = Array.from(uniqueClientContactsMap.values());
-
-const callKeywords = ['ligacao', 'reuniao', 'call sponsor'];
-const emailKeywords = ['e-mail', 'whatsapp'];
-const prioritizedCsContacts = new Map();
-csContactActivities.forEach(activity => {
-const clientKey = activity.ClienteCompleto; if (!clientKey) return;
-const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || a['Tipo']);
-let currentCategory = '';
-if (callKeywords.some(k => activityType.includes(k))) currentCategory = 'call';
-else if (emailKeywords.some(k => activityType.includes(k))) currentCategory = 'email';
-if (currentCategory === 'call') prioritizedCsContacts.set(clientKey, { activity, category: 'call' });
-else if (currentCategory === 'email' && (!prioritizedCsContacts.has(clientKey) || prioritizedCsContacts.get(clientKey).category !== 'call')) prioritizedCsContacts.set(clientKey, { activity, category: 'email' });
-});
-const finalCsContactList = Array.from(prioritizedCsContacts.values());
-metrics['contato-ligacao'] = finalCsContactList.filter(item => item.category === 'call').map(item => item.activity);
-metrics['contato-email'] = finalCsContactList.filter(item => item.category === 'email').map(item => item.activity);
-
-const prioritizedOnboardingContacts = new Map();
-onboardingContactActivities.forEach(activity => {
-const clientKey = activity.ClienteCompleto; if (!clientKey) return;
-prioritizedOnboardingContacts.set(clientKey, activity);
-});
-metrics['onboarding-contacts-display'] = Array.from(prioritizedOnboardingContacts.values());
-
-const ligacaoClientSet = new Set(metrics['contato-ligacao'].map(a => a.ClienteCompleto));
-const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
-const intersectionList = smbConcluidoList.filter(a => ligacaoClientSet.has(a.ClienteCompleto));
-metrics['ligacao-com-consolidado'] = new Set(intersectionList.map(a => a.ClienteCompleto)).size;
-
-metrics['total-clientes-unicos-cs'] = clientsForPeriod.length;
-metrics['total-clientes'] = clientsForPeriod;
-const senseScores = clientsForPeriod.map(c => parseFloat(c['Sense Score'])).filter(s => !isNaN(s) && s !== null);
-metrics['sensescore-avg'] = senseScores.length > 0 ? senseScores.reduce((acc, val) => acc + val, 0) / senseScores.length : 0;
-
-const applyOwnershipRule = (activity) => {
-const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-if (!clientInfo) return false;
-if (selectedCS === 'Todos') return true;
-return clientInfo.cs === selectedCS;
-};
-
-let activitiesByCS_previstos = rawActivities
-.filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto))
-.filter(applyOwnershipRule);
-
-if (!includeOnboarding) {
-activitiesByCS_previstos = activitiesByCS_previstos.filter(activity => {
-const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-return clientInfo?.fase !== 'onboarding';
-});
-}
-
-for (const [key, def] of Object.entries(playbookDefs)) {
-let filterFn;
-
-if (key === 'plano') {
-filterFn = (item) => {
-const atividadeNormalizada = normalizeText(item.Atividade);
-const playbookNormalizado = normalizeText(item.Playbook);
-const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
-const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
-return isPlanoOriginal || isAlertaSuporte;
-};
-} else {
-filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
-}
-
-metrics[`${key}-previsto`] = activitiesByCS_previstos.filter(filterFn).filter(isPredictedForPeriod);
-}
-
-const uniqueSmbContacts = new Map();
-smbConcluidoList.forEach(a => {
-const status = normalizeText(a['Categoria']);
-if (status === 'engajado' || status === 'desengajado') {
-uniqueSmbContacts.set(a.ClienteCompleto, { activity: a, status: status });
-}
-});
-const finalSmbList = Array.from(uniqueSmbContacts.values());
-metrics['engajamento-smb-engajado'] = finalSmbList.filter(item => item.status === 'engajado').map(item => item.activity);
-metrics['engajamento-smb-desengajado'] = finalSmbList.filter(item => item.status === 'desengajado').map(item => item.activity);
-
-const clientesContatados = metrics['cob-carteira'] || [];
-
-metrics['modelo-negocio-preenchido'] = clientesContatados.reduce((acc, atividade) => {
-const clienteData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
-if (clienteData && clienteData['Modelo de negócio'] !== undefined && clienteData['Modelo de negócio'] !== null && String(clienteData['Modelo de negócio']).trim() !== '') {
-acc.push({
-...atividade,
-'Modelo de Negócio': clienteData['Modelo de negócio']
-});
-}
-return acc;
-}, []);
-
-metrics['cliente-potencial-preenchido'] = clientesContatados.reduce((acc, atividade) => {
-const clienteData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
-if (clienteData && clienteData['Potencial'] !== undefined && clienteData['Potencial'] !== null && String(clienteData['Potencial']).trim() !== '') {
-acc.push({
-...atividade,
-'Potencial Mapeado': clienteData['Potencial']
-});
-}
-return acc;
-}, []);
-
-const selectedQuarter = Math.floor(month / 3);
-const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getMonth() / 3) === selectedQuarter && item.ConcluidaEm.getFullYear() === year;
-const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
-
-metrics['total-labs-eligible'] = clients.length;
-
-metrics['ska-labs-realizado-list'] = [...new Map(
-rawActivities
-.filter(isConcludedInQuarter)
-.filter(a => normalizeText(a.Atividade).includes('participou do ska labs'))
-.filter(a => eligibleClientSet.has(a.ClienteCompleto))
-.map(a => [a.ClienteCompleto, a])
-).values()];
-
-// LÓGICA NOVA: CALCULAR CONTATOS POR NEGÓCIO E COMERCIAL
-const contatosPorNegocio = {};
-const contatosPorComercial = {};
-
-(metrics['cob-carteira'] || []).forEach(activity => {
-    // A informação já foi adicionada ao objeto 'activity' na função processInitialData
-    const negocio = activity.Negocio || 'Não Definido';
-    const comercial = activity.Comercial || 'Não Definido';
-
-    if (negocio) {
-        contatosPorNegocio[negocio] = (contatosPorNegocio[negocio] || 0) + 1;
+            if (isClientOnboarding && activityOwner === selectedCS) csRealizedActivities.push(activity);
+            else if (isClientOnboarding) onboardingRealizedActivities.push(activity);
+            else if (activityOwner === selectedCS) csRealizedActivities.push(activity);
+        });
     }
-    if (comercial) {
-        contatosPorComercial[comercial] = (contatosPorComercial[comercial] || 0) + 1;
+
+    const combinedRealizedActivities = [...csRealizedActivities, ...onboardingRealizedActivities];
+
+    const playbookDefs = {
+        'plano': { p: 'plano de acao', a: 'analise do cenario do cliente' },
+        'adocao': { p: null, a: ["revisao da adocao - sponsor (mid/enterprise)","revisao da adocao - ku (mid/enterprise)","revisao da adocao - ku (smb)"] },
+        'reunioes-qbr': { p: null, a: "ligacao de sensibilizacao com o sponsor" },
+        'planos-sucesso': { p: null, a: "plano de sucesso desenvolvido" },
+        'followup': { p: 'pos fechamento de loop cs', a: 'follow-up 1' },
+        'discovery': { p: 'discovery potencial', a: 'contato com o cliente' },
+        'engajamento-smb': { p: 'contato consolidado', a: 'contato com o cliente' },
+        'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
+    };
+
+    for (const [key, def] of Object.entries(playbookDefs)) {
+        let filterFn;
+
+        if (key === 'plano') {
+            filterFn = (item) => {
+                const atividadeNormalizada = normalizeText(item.Atividade);
+                const playbookNormalizado = normalizeText(item.Playbook);
+                const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
+                const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
+                return isPlanoOriginal || isAlertaSuporte;
+            };
+        } else {
+            filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+        }
+
+        const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
+        metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
+        metrics[`${key}-realizado`] = totalRealizadoList.filter(a => !isOverdue(a));
     }
-});
-metrics['contatos-por-negocio'] = contatosPorNegocio;
-metrics['contatos-por-comercial'] = contatosPorComercial;
+
+    const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
+    const isCountableContact = (a) => {
+        const activityType = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
+        const activityName = normalizeText(a.Atividade || '');
+        return !activityName.includes('regra') && (validContactKeywords.some(type => activityType.includes(type)) || activityName.startsWith('whatsapp octadesk'));
+    };
+
+    const csContactActivities = csRealizedActivities.filter(isCountableContact);
+    const onboardingContactActivities = onboardingRealizedActivities.filter(isCountableContact);
+
+    let contactsForCoverage = [...csContactActivities];
+    if (includeOnboarding) {
+        contactsForCoverage = [...contactsForCoverage, ...onboardingContactActivities];
+    }
+    const uniqueClientContactsMap = new Map();
+    contactsForCoverage.forEach(activity => uniqueClientContactsMap.set(activity.ClienteCompleto, activity));
+    metrics['cob-carteira'] = Array.from(uniqueClientContactsMap.values());
+
+    const callKeywords = ['ligacao', 'reuniao', 'call sponsor'];
+    const emailKeywords = ['e-mail', 'whatsapp'];
+    const prioritizedCsContacts = new Map();
+    csContactActivities.forEach(activity => {
+        const clientKey = activity.ClienteCompleto; if (!clientKey) return;
+        const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || a['Tipo']);
+        let currentCategory = '';
+        if (callKeywords.some(k => activityType.includes(k))) currentCategory = 'call';
+        else if (emailKeywords.some(k => activityType.includes(k))) currentCategory = 'email';
+        if (currentCategory === 'call') prioritizedCsContacts.set(clientKey, { activity, category: 'call' });
+        else if (currentCategory === 'email' && (!prioritizedCsContacts.has(clientKey) || prioritizedCsContacts.get(clientKey).category !== 'call')) prioritizedCsContacts.set(clientKey, { activity, category: 'email' });
+    });
+    const finalCsContactList = Array.from(prioritizedCsContacts.values());
+    metrics['contato-ligacao'] = finalCsContactList.filter(item => item.category === 'call').map(item => item.activity);
+    metrics['contato-email'] = finalCsContactList.filter(item => item.category === 'email').map(item => item.activity);
+
+    const prioritizedOnboardingContacts = new Map();
+    onboardingContactActivities.forEach(activity => {
+        const clientKey = activity.ClienteCompleto; if (!clientKey) return;
+        prioritizedOnboardingContacts.set(clientKey, activity);
+    });
+    metrics['onboarding-contacts-display'] = Array.from(prioritizedOnboardingContacts.values());
+
+    const ligacaoClientSet = new Set(metrics['contato-ligacao'].map(a => a.ClienteCompleto));
+    const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
+    const intersectionList = smbConcluidoList.filter(a => ligacaoClientSet.has(a.ClienteCompleto));
+    metrics['ligacao-com-consolidado'] = new Set(intersectionList.map(a => a.ClienteCompleto)).size;
+
+    metrics['total-clientes-unicos-cs'] = clientsForPeriod.length;
+    metrics['total-clientes'] = clientsForPeriod;
+    const senseScores = clientsForPeriod.map(c => parseFloat(c['Sense Score'])).filter(s => !isNaN(s) && s !== null);
+    metrics['sensescore-avg'] = senseScores.length > 0 ? senseScores.reduce((acc, val) => acc + val, 0) / senseScores.length : 0;
+
+    const applyOwnershipRule = (activity) => {
+        const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
+        if (!clientInfo) return false;
+        if (selectedCS === 'Todos') return true;
+        return clientInfo.cs === selectedCS;
+    };
+
+    let activitiesByCS_previstos = rawActivities
+        .filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto))
+        .filter(applyOwnershipRule);
+
+    if (!includeOnboarding) {
+        activitiesByCS_previstos = activitiesByCS_previstos.filter(activity => {
+            const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
+            return clientInfo?.fase !== 'onboarding';
+        });
+    }
+
+    for (const [key, def] of Object.entries(playbookDefs)) {
+        let filterFn;
+
+        if (key === 'plano') {
+            filterFn = (item) => {
+                const atividadeNormalizada = normalizeText(item.Atividade);
+                const playbookNormalizado = normalizeText(item.Playbook);
+                const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
+                const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
+                return isPlanoOriginal || isAlertaSuporte;
+            };
+        } else {
+            filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+        }
+
+        metrics[`${key}-previsto`] = activitiesByCS_previstos.filter(filterFn).filter(isPredictedForPeriod);
+    }
+
+    const uniqueSmbContacts = new Map();
+    smbConcluidoList.forEach(a => {
+        const status = normalizeText(a['Categoria']);
+        if (status === 'engajado' || status === 'desengajado') {
+            uniqueSmbContacts.set(a.ClienteCompleto, { activity: a, status: status });
+        }
+    });
+    const finalSmbList = Array.from(uniqueSmbContacts.values());
+    metrics['engajamento-smb-engajado'] = finalSmbList.filter(item => item.status === 'engajado').map(item => item.activity);
+    metrics['engajamento-smb-desengajado'] = finalSmbList.filter(item => item.status === 'desengajado').map(item => item.activity);
+
+    const clientesContatados = metrics['cob-carteira'] || [];
+
+    const clientesContatadosComDados = clientesContatados.map(atividade => {
+        const clienteData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
+        return {
+            ...atividade,
+            'Modelo de negócio': clienteData ? (clienteData['Modelo de negócio'] || 'Vazio') : 'Não encontrado',
+            'Potencial': clienteData ? (clienteData['Potencial'] || 'Vazio') : 'Não encontrado'
+        };
+    });
+
+    metrics['modelo-negocio-preenchido'] = clientesContatadosComDados.filter(item => 
+        item['Modelo de negócio'] && item['Modelo de negócio'] !== 'Vazio'
+    );
+    metrics['modelo-negocio-faltante'] = clientesContatadosComDados.filter(item =>
+        !item['Modelo de negócio'] || item['Modelo de negócio'] === 'Vazio'
+    );
+
+    metrics['cliente-potencial-preenchido'] = clientesContatadosComDados.filter(item => 
+        item['Potencial'] && item['Potencial'] !== 'Vazio'
+    );
+    metrics['cliente-potencial-faltante'] = clientesContatadosComDados.filter(item =>
+        !item['Potencial'] || item['Potencial'] === 'Vazio'
+    );
+
+    const selectedQuarter = Math.floor(month / 3);
+    const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getMonth() / 3) === selectedQuarter && item.ConcluidaEm.getFullYear() === year;
+    const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
+
+    metrics['total-labs-eligible'] = clients.length;
+
+    metrics['ska-labs-realizado-list'] = [...new Map(
+        rawActivities
+            .filter(isConcludedInQuarter)
+            .filter(a => normalizeText(a.Atividade).includes('participou do ska labs'))
+            .filter(a => eligibleClientSet.has(a.ClienteCompleto))
+            .map(a => [a.ClienteCompleto, a])
+    ).values()];
+
+    const contatosPorNegocio = {};
+    const contatosPorComercial = {};
+
+    (metrics['cob-carteira'] || []).forEach(activity => {
+        const negocio = activity.Negocio || 'Não Definido';
+        const comercial = activity.Comercial || 'Não Definido';
+
+        if (negocio) {
+            contatosPorNegocio[negocio] = (contatosPorNegocio[negocio] || 0) + 1;
+        }
+        if (comercial) {
+            contatosPorComercial[comercial] = (contatosPorComercial[comercial] || 0) + 1;
+        }
+    });
+    metrics['contatos-por-negocio'] = contatosPorNegocio;
+    metrics['contatos-por-comercial'] = contatosPorComercial;
 
 
-return metrics;
+    return metrics;
 };
 
 const getPeriodDateRange = (period, year) => {
@@ -2471,7 +2470,7 @@ onboardingActivitiesGrid.innerHTML = cardAtividades;
 let chartInstances = {};
 
 /**
- * NOVO: Handler customizado para o clique na legenda dos gráficos.
+ * Handler customizado para o clique na legenda dos gráficos.
  * 1º Clique: Oculta a série.
  * 2º Clique: Isola a série (mostra apenas ela).
  * 3º Clique: Restaura a visualização de todas as séries.
@@ -2791,9 +2790,13 @@ const renderOKRs = () => {
 
         const clientesContatadosBase = dataStore['cob-carteira'] || [];
 
+        // LÓGICA ATUALIZADA PARA O CARD DE MODELO DE NEGÓCIO
         if (selectedSegmento === 'SMB CAD') {
             const preenchidosModelo = dataStore['modelo-negocio-preenchido'] || [];
-            const percModelo = clientesContatadosBase.length > 0 ? (preenchidosModelo.length / clientesContatadosBase.length) * 100 : 0;
+            const faltantesModelo = dataStore['modelo-negocio-faltante'] || [];
+            const totalAvaliadoModelo = preenchidosModelo.length + faltantesModelo.length;
+            const percModelo = totalAvaliadoModelo > 0 ? (preenchidosModelo.length / totalAvaliadoModelo) * 100 : 0;
+            
             const cardModeloNegocio = `
                 <div class="card">
                     <h3>Adoção do Modelo de Negócio</h3>
@@ -2802,25 +2805,28 @@ const renderOKRs = () => {
                             <span class="metric-label">Preenchido:</span>
                             <span class="metric-value success">${preenchidosModelo.length}</span>
                         </div>
-                        <div class="metric" data-metric-id="cob-carteira" data-metric-title="Total de Clientes Contatados no Mês">
-                            <span class="metric-label">Total Avaliado:</span>
-                            <span class="metric-value">${clientesContatadosBase.length}</span>
+                        <div class="metric overdue-metric" style="border-top: none; margin-top: 0; padding-top: 0;" data-metric-id="modelo-negocio-faltante" data-metric-title="Clientes com Modelo Faltante">
+                            <span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Faltante:</span>
+                            <span class="metric-value">${faltantesModelo.length}</span>
                         </div>
                     </div>
-                    <div class="progress-bar-container" title="${percModelo.toFixed(1)}% dos clientes contatados possuem modelo de negócio definido">
+                    <div class="progress-bar-container" title="${percModelo.toFixed(1)}% de ${totalAvaliadoModelo} clientes contatados possuem modelo de negócio definido">
                         <div class="progress-bar">
                             <div class="progress-bar-fill" style="width: ${percModelo.toFixed(1)}%;"></div>
                         </div>
                         <span class="progress-percentage">${percModelo.toFixed(1)}%</span>
                     </div>
-                </div>
-            `;
+                </div>`;
             okrHtml += cardModeloNegocio;
         }
 
+        // LÓGICA ATUALIZADA PARA O CARD DE CLIENTE POTENCIAL
         if (selectedSegmento === 'SMB CAD' || selectedSegmento === 'SMB Multiprodutos') {
             const preenchidosPotencial = dataStore['cliente-potencial-preenchido'] || [];
-            const percPotencial = clientesContatadosBase.length > 0 ? (preenchidosPotencial.length / clientesContatadosBase.length) * 100 : 0;
+            const faltantesPotencial = dataStore['cliente-potencial-faltante'] || [];
+            const totalAvaliadoPotencial = preenchidosPotencial.length + faltantesPotencial.length;
+            const percPotencial = totalAvaliadoPotencial > 0 ? (preenchidosPotencial.length / totalAvaliadoPotencial) * 100 : 0;
+
             const cardClientePotencial = `
                 <div class="card">
                     <h3>Mapeamento de Cliente Potencial</h3>
@@ -2829,19 +2835,18 @@ const renderOKRs = () => {
                             <span class="metric-label">Mapeado:</span>
                             <span class="metric-value success">${preenchidosPotencial.length}</span>
                         </div>
-                        <div class="metric" data-metric-id="cob-carteira" data-metric-title="Total de Clientes Contatados no Mês">
-                            <span class="metric-label">Total Avaliado:</span>
-                            <span class="metric-value">${clientesContatadosBase.length}</span>
+                        <div class="metric overdue-metric" style="border-top: none; margin-top: 0; padding-top: 0;" data-metric-id="cliente-potencial-faltante" data-metric-title="Clientes com Potencial Faltante">
+                            <span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Faltante:</span>
+                            <span class="metric-value">${faltantesPotencial.length}</span>
                         </div>
                     </div>
-                    <div class="progress-bar-container" title="${percPotencial.toFixed(1)}% dos clientes contatados possuem potencial mapeado">
+                    <div class="progress-bar-container" title="${percPotencial.toFixed(1)}% de ${totalAvaliadoPotencial} clientes contatados possuem potencial mapeado">
                         <div class="progress-bar">
                             <div class="progress-bar-fill" style="width: ${percPotencial.toFixed(1)}%;"></div>
                         </div>
                         <span class="progress-percentage">${percPotencial.toFixed(1)}%</span>
                     </div>
-                </div>
-            `;
+                </div>`;
             okrHtml += cardClientePotencial;
         }
 
