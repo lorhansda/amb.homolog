@@ -1202,8 +1202,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.1.1', '1.2.0')
-    const APP_VERSION = '1.2.0'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.1')
+    const APP_VERSION = '1.2.1'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -1489,7 +1489,6 @@ const processInitialData = () => {
             Squad: clienteInfo['Squad CS'],
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
-            // NOVOS CAMPOS ADICIONADOS AQUI
             Negocio: clienteInfo['Negócio'],
             Comercial: clienteInfo['Comercial'],
             PrevisaoConclusao: parseDate(ativ['Previsão de conclusão']), 
@@ -1928,27 +1927,7 @@ const title = el.dataset.metricTitle;
 const data = metricDataMap[metricId];
 
 if(data && data.length > 0) {
-detailsModal.querySelector('#modal-title').textContent = title;
-const modalBody = detailsModal.querySelector('#modal-body');
-const searchInput = detailsModal.querySelector('#modal-search-input');
-
-const renderTable = (tableData) => {
-modalBody.innerHTML = createHtmlTable(tableData);
-};
-
-searchInput.value = '';
-searchInput.oninput = () => {
-const searchTerm = normalizeText(searchInput.value);
-if (!searchTerm) {
-renderTable(data);
-return;
-}
-const filteredData = data.filter(row => Object.values(row).some(value => normalizeText(String(value)).includes(searchTerm)));
-renderTable(filteredData);
-};
-
-renderTable(data);
-showModal(detailsModal);
+showDataInModal(data, title);
 } else {
 alert("Não há dados detalhados para esta métrica.");
 }
@@ -2492,11 +2471,7 @@ onboardingActivitiesGrid.innerHTML = cardAtividades;
 let chartInstances = {};
 
 /**
- * Nova função para renderizar um gráfico de rosca (doughnut).
- * @param {string} containerId - O ID do elemento que conterá o card do gráfico.
- * @param {string} canvasId - O ID a ser atribuído ao elemento canvas.
- * @param {string} title - O título do card.
- * @param {object} data - Um objeto com chaves (labels) e valores (dados).
+ * Nova função para renderizar um gráfico de rosca (doughnut) interativo.
  */
 function renderDoughnutChart(containerId, canvasId, title, data) {
     const container = document.getElementById(containerId);
@@ -2505,7 +2480,6 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
     const labels = Object.keys(data);
     const values = Object.values(data);
 
-    // Se não houver dados, exibe uma mensagem no card
     if (labels.length === 0) {
         container.innerHTML = `
             <div class="card">
@@ -2516,7 +2490,6 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
         return;
     }
 
-    // Cria o HTML do card e do canvas
     container.innerHTML = `
         <div class="card">
             <h3>${title}</h3>
@@ -2526,18 +2499,15 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
         </div>
     `;
 
-    // Destrói a instância anterior do gráfico, se existir
     if (chartInstances[canvasId]) {
         chartInstances[canvasId].destroy();
     }
 
     const ctx = document.getElementById(canvasId).getContext('2d');
     
-    // Paleta de cores para os segmentos do gráfico
     const colors = ['#007BFF', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#6f42c1', '#e83e8c'];
     const backgroundColors = labels.map((_, i) => colors[i % colors.length]);
 
-    // Define as cores com base no tema atual
     const isLightTheme = document.body.classList.contains('light-theme');
     const legendColor = isLightTheme ? '#2c3e50' : '#F0F2F5';
     const borderColor = isLightTheme ? '#ffffff' : '#1a2238';
@@ -2582,7 +2552,33 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
                     }
                 }
             },
-            cutout: '60%' // Define o tamanho do furo central
+            cutout: '60%',
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const chart = elements[0].chart;
+                    const elementIndex = elements[0].index;
+                    const label = chart.data.labels[elementIndex];
+
+                    const allContactedClients = dataStore['cob-carteira'] || [];
+                    let filteredData = [];
+                    let modalTitle = '';
+
+                    if (canvasId === 'negocioChart') {
+                        modalTitle = `Clientes Contatados | Negócio: ${label}`;
+                        filteredData = allContactedClients.filter(client => (client.Negocio || 'Não Definido') === label);
+                    } else if (canvasId === 'comercialChart') {
+                        modalTitle = `Clientes Contatados | Comercial: ${label}`;
+                        filteredData = allContactedClients.filter(client => (client.Comercial || 'Não Definido') === label);
+                    }
+
+                    if (filteredData.length > 0) {
+                        showDataInModal(filteredData, modalTitle);
+                    }
+                }
+            },
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+            }
         }
     });
 }
@@ -2950,40 +2946,49 @@ searchInput.value = '';
 modalElement.style.display = 'none';
 };
 
+/**
+ * Nova função genérica para exibir dados em um modal com busca.
+ * @param {Array} data - Os dados a serem exibidos na tabela.
+ * @param {string} title - O título do modal.
+ */
+function showDataInModal(data, title) {
+    if (!data || data.length === 0) {
+        alert(`Não há dados para exibir para "${title}".`);
+        return;
+    }
+
+    detailsModal.querySelector('#modal-title').textContent = title;
+    const modalBody = detailsModal.querySelector('#modal-body');
+    const searchInput = detailsModal.querySelector('#modal-search-input');
+
+    const renderTable = (tableData) => {
+        modalBody.innerHTML = createHtmlTable(tableData);
+    };
+
+    searchInput.value = '';
+    searchInput.oninput = () => {
+        const searchTerm = normalizeText(searchInput.value);
+        if (!searchTerm) {
+            renderTable(data);
+            return;
+        }
+        const filteredData = data.filter(row =>
+            Object.values(row).some(value =>
+                normalizeText(String(value)).includes(searchTerm)
+            )
+        );
+        renderTable(filteredData);
+    };
+
+    renderTable(data);
+    showModal(detailsModal);
+}
+
 const showDetailsModal = (metricId, title) => {
-const data = dataStore[metricId] || onboardingDataStore[metricId];
-if (!data || data.length === 0) {
-alert(`Não há dados para exibir para "${title}".`);
-return;
-}
-
-detailsModal.querySelector('#modal-title').textContent = title;
-const modalBody = detailsModal.querySelector('#modal-body');
-const searchInput = detailsModal.querySelector('#modal-search-input');
-
-const renderTable = (tableData) => {
-modalBody.innerHTML = createHtmlTable(tableData);
+    const data = dataStore[metricId] || onboardingDataStore[metricId];
+    showDataInModal(data, title);
 };
 
-searchInput.value = '';
-searchInput.oninput = () => { 
-const searchTerm = normalizeText(searchInput.value);
-if (!searchTerm) {
-renderTable(data);
-return;
-}
-
-const filteredData = data.filter(row => {
-return Object.values(row).some(value => 
-normalizeText(String(value)).includes(searchTerm)
-);
-});
-renderTable(filteredData);
-};
-
-renderTable(data);
-showModal(detailsModal);
-};
 
 const showClient360Modal = (clientName) => {
 const clientData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === clientName.toLowerCase());
