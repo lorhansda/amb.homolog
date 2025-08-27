@@ -1202,8 +1202,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.1')
-    const APP_VERSION = '1.2.1'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.2')
+    const APP_VERSION = '1.2.2'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -2555,7 +2555,10 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
             cutout: '60%',
             onClick: (event, elements) => {
                 if (elements.length > 0) {
-                    const chart = elements[0].chart;
+                    // CORREÇÃO: Usar event.chart para obter a instância do gráfico de forma segura.
+                    const chart = event.chart;
+                    if (!chart) return;
+
                     const elementIndex = elements[0].index;
                     const label = chart.data.labels[elementIndex];
 
@@ -2947,7 +2950,7 @@ modalElement.style.display = 'none';
 };
 
 /**
- * Nova função genérica para exibir dados em um modal com busca.
+ * Função genérica para exibir dados em um modal com busca.
  * @param {Array} data - Os dados a serem exibidos na tabela.
  * @param {string} title - O título do modal.
  */
