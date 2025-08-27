@@ -2480,6 +2480,7 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
     const labels = Object.keys(data);
     const values = Object.values(data);
 
+    // Se não houver dados, exibe uma mensagem no card
     if (labels.length === 0) {
         container.innerHTML = `
             <div class="card">
@@ -2512,6 +2513,14 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
     const legendColor = isLightTheme ? '#2c3e50' : '#F0F2F5';
     const borderColor = isLightTheme ? '#ffffff' : '#1a2238';
 
+    // Lógica da fonte dinâmica para a legenda
+    const itemCount = labels.length;
+    let legendFontSize = 12;
+    if (itemCount > 12) { // Começa a reduzir a fonte após 12 itens
+        legendFontSize = Math.max(9, 12 - Math.floor((itemCount - 12) / 6)); // Reduz 1px a cada 6 itens extras
+    }
+
+
     chartInstances[canvasId] = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -2521,7 +2530,8 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
                 data: values,
                 backgroundColor: backgroundColors,
                 borderColor: borderColor,
-                borderWidth: 3
+                borderWidth: 3,
+                hoverOffset: 20 // Efeito de "explodir" ao passar o mouse
             }]
         },
         options: {
@@ -2534,7 +2544,9 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
                         color: legendColor,
                         padding: 15,
                         boxWidth: 12,
-                        font: { size: 12 }
+                        font: {
+                            size: legendFontSize // Usa o tamanho de fonte dinâmico
+                        }
                     }
                 },
                 tooltip: {
@@ -2555,7 +2567,6 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
             cutout: '60%',
             onClick: (event, elements) => {
                 if (elements.length > 0) {
-                    // CORREÇÃO: Usar event.chart para obter a instância do gráfico de forma segura.
                     const chart = event.chart;
                     if (!chart) return;
 
