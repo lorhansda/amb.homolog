@@ -1202,8 +1202,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.2')
-    const APP_VERSION = '1.2.2'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.3')
+    const APP_VERSION = '1.2.3'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -2471,7 +2471,81 @@ onboardingActivitiesGrid.innerHTML = cardAtividades;
 let chartInstances = {};
 
 /**
- * Nova função para renderizar um gráfico de rosca (doughnut) interativo.
+ * NOVO: Handler customizado para o clique na legenda dos gráficos.
+ * 1º Clique: Oculta a série.
+ * 2º Clique: Isola a série (mostra apenas ela).
+ * 3º Clique: Restaura a visualização de todas as séries.
+ */
+function customLegendClickHandler(e, legendItem, legend) {
+    const chart = legend.chart;
+    const index = legendItem.index;
+
+    // Inicializa o estado de clique na instância do gráfico, se não existir
+    if (!chart.legendClickState) {
+        chart.legendClickState = { lastClickedIndex: null, clickCount: 0 };
+    }
+
+    // Se clicar em uma legenda diferente, reseta o estado
+    if (index !== chart.legendClickState.lastClickedIndex) {
+        // Antes de processar o novo clique, verifica se o gráfico já está com um item isolado
+        let visibleCount = 0;
+        const meta = chart.getDatasetMeta(0);
+        meta.data.forEach(dataPoint => {
+            if (!dataPoint.hidden) {
+                visibleCount++;
+            }
+        });
+        const isIsolated = visibleCount === 1 && chart.data.labels.length > 1;
+        
+        // Se estiver isolado, o primeiro clique em qualquer outra legenda restaura o gráfico
+        if (isIsolated) {
+            for (let i = 0; i < chart.data.labels.length; i++) {
+                chart.show(i);
+            }
+        }
+        
+        // Zera a contagem de cliques para a nova sequência
+        chart.legendClickState.clickCount = 0;
+    }
+
+    // Atualiza o estado para o clique atual
+    chart.legendClickState.lastClickedIndex = index;
+    chart.legendClickState.clickCount++;
+
+    const clickCount = chart.legendClickState.clickCount;
+
+    if (clickCount === 1) {
+        // 1º CLIQUE: Comportamento padrão de ocultar/mostrar o item
+        chart.toggleDataVisibility(index);
+    } else if (clickCount === 2) {
+        // 2º CLIQUE: Isola o item clicado
+        // Garante que todos os itens estejam visíveis antes de esconder os outros
+        for (let i = 0; i < chart.data.labels.length; i++) {
+             chart.show(i);
+        }
+        // Oculta todos, exceto o item clicado
+        for (let i = 0; i < chart.data.labels.length; i++) {
+            if (i !== index) {
+                chart.hide(i);
+            }
+        }
+    } else { 
+        // 3º CLIQUE: Restaura a visualização
+        // Mostra todos os itens novamente
+        for (let i = 0; i < chart.data.labels.length; i++) {
+            chart.show(i);
+        }
+        // Reseta a máquina de estados do clique
+        chart.legendClickState.clickCount = 0;
+        chart.legendClickState.lastClickedIndex = null;
+    }
+    
+    chart.update();
+}
+
+
+/**
+ * Função para renderizar um gráfico de rosca com as novas melhorias.
  */
 function renderDoughnutChart(containerId, canvasId, title, data) {
     const container = document.getElementById(containerId);
@@ -2480,7 +2554,6 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
     const labels = Object.keys(data);
     const values = Object.values(data);
 
-    // Se não houver dados, exibe uma mensagem no card
     if (labels.length === 0) {
         container.innerHTML = `
             <div class="card">
@@ -2516,10 +2589,9 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
     // Lógica da fonte dinâmica para a legenda
     const itemCount = labels.length;
     let legendFontSize = 12;
-    if (itemCount > 12) { // Começa a reduzir a fonte após 12 itens
-        legendFontSize = Math.max(9, 12 - Math.floor((itemCount - 12) / 6)); // Reduz 1px a cada 6 itens extras
+    if (itemCount > 12) {
+        legendFontSize = Math.max(9, 12 - Math.floor((itemCount - 12) / 6));
     }
-
 
     chartInstances[canvasId] = new Chart(ctx, {
         type: 'doughnut',
@@ -2547,7 +2619,8 @@ function renderDoughnutChart(containerId, canvasId, title, data) {
                         font: {
                             size: legendFontSize // Usa o tamanho de fonte dinâmico
                         }
-                    }
+                    },
+                    onClick: customLegendClickHandler // NOVO: Handler customizado
                 },
                 tooltip: {
                     callbacks: {
