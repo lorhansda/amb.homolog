@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-signin-client_id" content="232267534625-oju4j8ob02rn6tim24tcdas26c5rh3j4.apps.googleusercontent.com">
 <title>Dashboard de OKRs - CS (Nova Versão)</title>
+<link rel="icon" type="image/png" href="icone.png">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -848,6 +849,11 @@ opacity: 1;
 </div>
 
 <div class="metric-group">
+    <h2 class="group-title">Visão por Negócio e Comercial</h2>
+    <div class="group-content" id="business-commercial-grid">
+        </div>
+</div>
+<div class="metric-group">
 <h2 class="group-title">Acompanhamento de Playbooks</h2>
 <div class="group-content" id="playbooks-grid"></div>
 </div>
@@ -1197,7 +1203,7 @@ localStorage.removeItem('googleUserToken');
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
     // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.1.1', '1.2.0')
-    const APP_VERSION = '1.1.0'; 
+    const APP_VERSION = '1.2.0'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -1253,26 +1259,33 @@ logoutButton.addEventListener('click', logout);
 const themeToggle = document.getElementById('theme-toggle');
 
 const applyTheme = (isLight) => {
-if (isLight) {
-document.body.classList.add('light-theme');
-localStorage.setItem('theme', 'light');
-} else {
-document.body.classList.remove('light-theme');
-localStorage.setItem('theme', 'dark');
-}
+    if (isLight) {
+        document.body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.body.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
+    }
 };
 
 themeToggle.addEventListener('change', () => {
-applyTheme(themeToggle.checked);
+    applyTheme(themeToggle.checked);
+    // Redesenha os gráficos com as cores do novo tema
+    if (dataStore['contatos-por-negocio']) {
+        renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio']);
+    }
+    if (dataStore['contatos-por-comercial']) {
+        renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial']);
+    }
 });
 
 const savedTheme = localStorage.getItem('theme');
 if (savedTheme === 'light') {
-themeToggle.checked = true;
-applyTheme(true);
+    themeToggle.checked = true;
+    applyTheme(true);
 } else {
-themeToggle.checked = false;
-applyTheme(false);
+    themeToggle.checked = false;
+    applyTheme(false);
 }
 const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const getQuarter = (date) => Math.floor(date.getMonth() / 3);
@@ -1476,6 +1489,9 @@ const processInitialData = () => {
             Squad: clienteInfo['Squad CS'],
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
+            // NOVOS CAMPOS ADICIONADOS AQUI
+            Negocio: clienteInfo['Negócio'],
+            Comercial: clienteInfo['Comercial'],
             PrevisaoConclusao: parseDate(ativ['Previsão de conclusão']), 
             ConcluidaEm: parseDate(ativ['Concluída em']) 
         };
@@ -2154,6 +2170,26 @@ rawActivities
 .map(a => [a.ClienteCompleto, a])
 ).values()];
 
+// LÓGICA NOVA: CALCULAR CONTATOS POR NEGÓCIO E COMERCIAL
+const contatosPorNegocio = {};
+const contatosPorComercial = {};
+
+(metrics['cob-carteira'] || []).forEach(activity => {
+    // A informação já foi adicionada ao objeto 'activity' na função processInitialData
+    const negocio = activity.Negocio || 'Não Definido';
+    const comercial = activity.Comercial || 'Não Definido';
+
+    if (negocio) {
+        contatosPorNegocio[negocio] = (contatosPorNegocio[negocio] || 0) + 1;
+    }
+    if (comercial) {
+        contatosPorComercial[comercial] = (contatosPorComercial[comercial] || 0) + 1;
+    }
+});
+metrics['contatos-por-negocio'] = contatosPorNegocio;
+metrics['contatos-por-comercial'] = contatosPorComercial;
+
+
 return metrics;
 };
 
@@ -2452,6 +2488,105 @@ const cardAtividades = `
 onboardingActivitiesGrid.innerHTML = cardAtividades;
 };
 
+// Armazena instâncias de gráficos para poder destruí-las antes de redesenhar
+let chartInstances = {};
+
+/**
+ * Nova função para renderizar um gráfico de rosca (doughnut).
+ * @param {string} containerId - O ID do elemento que conterá o card do gráfico.
+ * @param {string} canvasId - O ID a ser atribuído ao elemento canvas.
+ * @param {string} title - O título do card.
+ * @param {object} data - Um objeto com chaves (labels) e valores (dados).
+ */
+function renderDoughnutChart(containerId, canvasId, title, data) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+
+    // Se não houver dados, exibe uma mensagem no card
+    if (labels.length === 0) {
+        container.innerHTML = `
+            <div class="card">
+                <h3>${title}</h3>
+                <div class="loader" style="padding: 80px 20px; font-size: 1rem;">Nenhum contato para exibir.</div>
+            </div>
+        `;
+        return;
+    }
+
+    // Cria o HTML do card e do canvas
+    container.innerHTML = `
+        <div class="card">
+            <h3>${title}</h3>
+            <div class="card-content" style="position: relative; height: 320px; padding-top: 10px;">
+                <canvas id="${canvasId}"></canvas>
+            </div>
+        </div>
+    `;
+
+    // Destrói a instância anterior do gráfico, se existir
+    if (chartInstances[canvasId]) {
+        chartInstances[canvasId].destroy();
+    }
+
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    // Paleta de cores para os segmentos do gráfico
+    const colors = ['#007BFF', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#6f42c1', '#e83e8c'];
+    const backgroundColors = labels.map((_, i) => colors[i % colors.length]);
+
+    // Define as cores com base no tema atual
+    const isLightTheme = document.body.classList.contains('light-theme');
+    const legendColor = isLightTheme ? '#2c3e50' : '#F0F2F5';
+    const borderColor = isLightTheme ? '#ffffff' : '#1a2238';
+
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Contatos',
+                data: values,
+                backgroundColor: backgroundColors,
+                borderColor: borderColor,
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: legendColor,
+                        padding: 15,
+                        boxWidth: 12,
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed !== null) {
+                                const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
+                                const percentage = total > 0 ? (context.raw / total * 100).toFixed(1) : 0;
+                                label += `${context.raw} contatos (${percentage}%)`;
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            cutout: '60%' // Define o tamanho do furo central
+        }
+    });
+}
+
 
 const renderOKRs = () => {
     const selectedSegmento = selectSegmento.value;
@@ -2516,6 +2651,16 @@ const renderOKRs = () => {
         </div>`;
 
     generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
+
+    // RENDERIZA OS GRÁFICOS DA NOVA SEÇÃO
+    const businessCommercialGrid = document.getElementById('business-commercial-grid');
+    businessCommercialGrid.innerHTML = `
+        <div id="negocio-chart-container"></div>
+        <div id="comercial-chart-container"></div>
+    `;
+    renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio'] || {});
+    renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial'] || {});
+
 
     playbookGrid.innerHTML = `
         ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
@@ -2658,11 +2803,11 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
 
         distribuicaoContatosHtml = `
             <div class="metric" style="font-size: 0.9rem; padding-top: 5px; padding-bottom: 0px;">
-                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Meta: Contatos (Ligação/Reunião):</span>
+                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Faltante (Ligação/Reunião):</span>
                 <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosLigacaoNecessarios}</span>
             </div>
             <div class="metric" style="font-size: 0.9rem; padding-top: 5px;">
-                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Meta: Contatos (E-mail/Whats):</span>
+                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Faltante (E-mail/Whats):</span>
                 <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosEmailNecessarios}</span>
             </div>
         `;
@@ -2754,19 +2899,19 @@ if (!data || data.length === 0) return '<p style="padding: 20px; text-align: cen
 const headers = Object.keys(data[0]);
 const headerHtml = `<thead><tr>${headers.map(h => `<th><span>${h}</span></th>`).join('')}</tr></thead>`;
 const bodyHtml = `<tbody>${data.map(row => `<tr>${headers.map(h => {
-                                        const cellValue = row[h];
-                                        let displayValue = '';
-                                        if (cellValue instanceof Date) {
-                                            displayValue = formatDate(cellValue);
-                                        } else if (cellValue !== null && cellValue !== undefined) {
-                                            displayValue = cellValue;
-                                        }
-                                        
-                                        if(normalizeText(h) === 'cliente') {
-                                            return `<td><span data-client-name="${row[h]}">${displayValue}</span></td>`;
-                                        }
-                                        return `<td>${displayValue}</td>`;
-                                    }).join('')}</tr>`).join('')}</tbody>`;
+                                            const cellValue = row[h];
+                                            let displayValue = '';
+                                            if (cellValue instanceof Date) {
+                                                displayValue = formatDate(cellValue);
+                                            } else if (cellValue !== null && cellValue !== undefined) {
+                                                displayValue = cellValue;
+                                            }
+                                            
+                                            if(normalizeText(h) === 'cliente') {
+                                                return `<td><span data-client-name="${row[h]}">${displayValue}</span></td>`;
+                                            }
+                                            return `<td>${displayValue}</td>`;
+                                        }).join('')}</tr>`).join('')}</tbody>`;
 return `<table class="data-table">${headerHtml}${bodyHtml}</table>`;
 };
 
