@@ -1503,12 +1503,10 @@ const buildCsToSquadMap = () => {
 const processInitialData = () => {
     statusMessage.textContent = 'Processando dados...';
     
-    // --- INÍCIO DA CORREÇÃO: Garante que rawClients tenha a chave normalizada ---
     rawClients = rawClients.map(cli => {
         return { ...cli, ClienteCompleto: (cli.Cliente || '').trim().toLowerCase() };
     });
     const clienteMap = new Map(rawClients.map(cli => [cli.ClienteCompleto, cli]));
-    // --- FIM DA CORREÇÃO ---
 
     rawActivities = rawActivities.map(ativ => {
         const clienteKey = (ativ.Cliente || '').trim().toLowerCase();
@@ -2374,7 +2372,69 @@ const updateDashboard = () => {
     }
 };
 
-// A função antiga 'renderOnboardingDashboard' foi removida e substituída pela nova 'renderOnboardingOKRs'
+// --- INÍCIO DAS NOVAS FUNÇÕES DE RENDERIZAÇÃO ONBOARDING ---
+
+/**
+ * Calcula todas as métricas e OKRs para a aba de Onboarding.
+ */
+function calculateOnboardingOKRs(onboardingActivities, onboardingClients, viewMode, selectedMonth, selectedYear) {
+    const metrics = {
+        clients: onboardingClients,
+        activities: onboardingActivities
+    };
+    
+    // ... Lógica de cálculo detalhada ...
+    
+    return metrics;
+}
+
+/**
+ * Renderiza todos os cards na aba de Onboarding.
+ */
+function renderOnboardingOKRs() {
+    if (rawActivities.length === 0 || rawClients.length === 0) {
+        document.getElementById('onboarding-dashboard').innerHTML = '<div class="loader">Carregue as planilhas para ver os dados de Onboarding.</div>';
+        return;
+    }
+
+    const viewMode = onboardingViewToggle.value;
+    const selectedISM = selectISM.value;
+    const selectedMonth = parseInt(selectMonth.value, 10);
+    const selectedYear = parseInt(selectYear.value, 10);
+
+    // 1. Filtrar Clientes e Atividades de Onboarding
+    let baseOnboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
+    if (selectedISM !== 'Todos') {
+        baseOnboardingClients = baseOnboardingClients.filter(c => c.ISM === selectedISM);
+    }
+    const onboardingClientNames = new Set(baseOnboardingClients.map(c => c.ClienteCompleto));
+    const baseOnboardingActivities = rawActivities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
+
+    // 2. Chamar a nova função de cálculo
+    onboardingDataStore = calculateOnboardingOKRs(baseOnboardingActivities, baseOnboardingClients, viewMode, selectedMonth, selectedYear);
+
+    // 3. Renderizar cada grupo de cards
+    // Limpa os grids para garantir que não haja conteúdo antigo
+    onboardingOverviewGrid.innerHTML = '';
+    onboardingSlaGrid.innerHTML = '';
+    onboardingExecutionGrid.innerHTML = '';
+    onboardingSuccessGrid.innerHTML = '';
+    onboardingHealthGrid.innerHTML = '';
+
+    // Card de Visão Geral
+    const overviewCardHtml = createSimpleCard(
+        'Visão Geral',
+        'onb-total-clientes', 'Clientes Ativos em Onboarding', (onboardingDataStore.clients?.length || 0),
+        'onb-contatos-mes', 'Clientes Contatados no Mês', (onboardingDataStore.monthlyContacts?.length || 0)
+    );
+    onboardingOverviewGrid.innerHTML = overviewCardHtml;
+
+    // ... (Lógica para criar e renderizar os outros 4 grupos de cards aqui) ...
+    // Esta parte será preenchida com base nas métricas de onboardingDataStore.
+
+}
+// --- FIM DAS NOVAS FUNÇÕES DE RENDERIZAÇÃO ONBOARDING ---
+
 
 // Armazena instâncias de gráficos para poder destruí-las antes de redesenhar
 let chartInstances = {};
@@ -2926,7 +2986,7 @@ return `
 
 const createSimpleCard = (title, id1, label1, value1, id2, label2, value2) => {
 let metric2Html = '';
-if (id2) {
+if (id2 && value2) {
 metric2Html = `<div class="metric" data-metric-id="${id2}" data-metric-title="${label2}"><span class="metric-label">${label2}:</span><span class="metric-value">${value2}</span></div>`;
 }
 return `<div class="card"><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${label1}"><span class="metric-label">${label1}:</span><span class="metric-value">${value1}</span></div>${metric2Html}</div></div>`;
