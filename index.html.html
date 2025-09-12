@@ -1353,7 +1353,6 @@ return date;
 return null;
 };
 
-// --- INÍCIO DA REFORMULAÇÃO DOS ELEMENTOS DO ONBOARDING ---
 const onboardingViewToggle = document.getElementById('onboarding-view-toggle');
 const selectISM = document.getElementById('select-ism');
 const onboardingOverviewGrid = document.getElementById('onboarding-overview-grid');
@@ -1361,7 +1360,6 @@ const onboardingSlaGrid = document.getElementById('onboarding-sla-grid');
 const onboardingExecutionGrid = document.getElementById('onboarding-execution-grid');
 const onboardingSuccessGrid = document.getElementById('onboarding-success-grid');
 const onboardingHealthGrid = document.getElementById('onboarding-health-grid');
-// --- FIM DA REFORMULAÇÃO ---
 
 const fileAtividadesInput = document.getElementById('file-atividades'), fileClientesInput = document.getElementById('file-clientes');
 const selectCS = document.getElementById('select-cs'), selectSegmento = document.getElementById('select-segmento');
@@ -1504,12 +1502,18 @@ const buildCsToSquadMap = () => {
 
 const processInitialData = () => {
     statusMessage.textContent = 'Processando dados...';
-
-    const clienteMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), cli]));
+    
+    // --- INÍCIO DA CORREÇÃO: Garante que rawClients tenha a chave normalizada ---
+    rawClients = rawClients.map(cli => {
+        return { ...cli, ClienteCompleto: (cli.Cliente || '').trim().toLowerCase() };
+    });
+    const clienteMap = new Map(rawClients.map(cli => [cli.ClienteCompleto, cli]));
+    // --- FIM DA CORREÇÃO ---
 
     rawActivities = rawActivities.map(ativ => {
         const clienteKey = (ativ.Cliente || '').trim().toLowerCase();
         const clienteInfo = clienteMap.get(clienteKey) || {};
+        const valorNaoFaturadoRaw = clienteInfo['Valor total não faturado'] || '0';
         return { 
             ...ativ, 
             ClienteCompleto: clienteKey, 
@@ -1520,10 +1524,8 @@ const processInitialData = () => {
             ISM: clienteInfo.ISM,
             Negocio: clienteInfo['Negócio'],
             Comercial: clienteInfo['Comercial'],
-            // --- INÍCIO DA ALTERAÇÃO: NOVOS CAMPOS DE CLIENTE ---
             NPSOnboarding: clienteInfo['NPS onboarding'],
-            ValorNaoFaturado: parseFloat(String(clienteInfo['Valor total não faturado']).replace(/[^\d,-]/g, '').replace(',', '.')) || 0,
-            // --- FIM DA ALTERAÇÃO ---
+            ValorNaoFaturado: parseFloat(String(valorNaoFaturadoRaw).replace(/[^\d,-]/g, '').replace(',', '.')) || 0,
             CriadoEm: parseDate(ativ['Criado em']),
             PrevisaoConclusao: parseDate(ativ['Previsão de conclusão']), 
             ConcluidaEm: parseDate(ativ['Concluída em']) 
@@ -1561,6 +1563,7 @@ const processInitialData = () => {
     renderOverdueView();
     renderOnboardingOKRs(); // Renderiza o dashboard de onboarding com os dados iniciais
 };
+
 
 let atividadesFile, clientesFile;
 
@@ -2591,7 +2594,6 @@ const renderOKRs = () => {
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(totalClientesUnicosCS * metaCobertura));
     const clientesFaltantes = Math.max(0, clientesParaAtingirMeta - clientesContatadosCount);
 
-    // --- INÍCIO DA ALTERAÇÃO: PREPARAÇÃO DOS DADOS DE CLASSIFICAÇÃO ---
     let classificacaoHtml = '';
     const totalCalls = (dataStore['contato-ligacao'] || []).length;
     const totalClassified = (dataStore['ligacoes-classificadas'] || []).length;
@@ -2602,7 +2604,6 @@ const renderOKRs = () => {
     const percEngaged = totalClassified > 0 ? (totalEngaged / totalClassified) * 100 : 0;
     const percDisengaged = totalClassified > 0 ? (totalDisengaged / totalClassified) * 100 : 0;
     
-    // Cria o bloco HTML que será injetado no card de Cobertura
     classificacaoHtml = `
         <div style="border-top: 1px dashed var(--border-color); margin-top: 15px; padding-top: 10px;">
             <div class="metric" data-metric-id="ligacoes-classificadas" data-metric-title="Ligações/Reuniões Classificadas">
@@ -2621,7 +2622,6 @@ const renderOKRs = () => {
             </div>
         </div>
     `;
-    // --- FIM DA ALTERAÇÃO ---
 
     const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento, classificacaoHtml);
     const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
@@ -3167,7 +3167,6 @@ plugins: { legend: { display: false } }
 const selectSquad = document.getElementById('select-squad');
 const squadCsListDiv = document.getElementById('squad-cs-list');
 
-// --- INÍCIO DA ALTERAÇÃO DOS EVENT LISTENERS ---
 [selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, document.getElementById('select-comparison'), selectPeriod, selectISM, onboardingViewToggle].forEach(el => {
     el.addEventListener('change', (event) => {
         const targetId = event.target.id;
@@ -3175,8 +3174,14 @@ const squadCsListDiv = document.getElementById('squad-cs-list');
         // Lógica para desabilitar/habilitar filtros de data na aba Onboarding
         if (targetId === 'onboarding-view-toggle') {
             const isTrajectoryView = onboardingViewToggle.value === 'trajectory';
-            selectMonth.disabled = isTrajectoryView;
-            selectYear.disabled = isTrajectoryView;
+            document.getElementById('select-month').disabled = isTrajectoryView;
+            document.getElementById('select-year').disabled = isTrajectoryView;
+            
+            // Re-habilita os seletores do dashboard principal se eles foram desabilitados pelo de onboarding
+            if(!isTrajectoryView){
+                document.getElementById('select-month').disabled = false;
+                document.getElementById('select-year').disabled = false;
+            }
         }
 
         if (currentUser.isManager) {
@@ -3219,7 +3224,6 @@ const squadCsListDiv = document.getElementById('squad-cs-list');
         renderOnboardingOKRs(); // Sempre atualiza a aba de onboarding
     });
 });
-// --- FIM DA ALTERAÇÃO ---
 
 
 tabsContainer.addEventListener('click', (e) => {
