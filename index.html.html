@@ -1220,8 +1220,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.6')
-    const APP_VERSION = '1.2.6'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.7')
+    const APP_VERSION = '1.2.7'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -2774,38 +2774,64 @@ const renderOKRs = () => {
         const realizadosAtrasado = dataStore['engajamento-smb-atrasado-concluido'] || [];
         const totalRealizado = realizadosNoPrazo.length + realizadosAtrasado.length;
 
+        // --- INÍCIO DA ALTERAÇÃO DO CARD DE ENGAJAMENTO ---
+        // Combina as listas de realizados para que o total seja clicável
+        const totalRealizadoList = [...realizadosNoPrazo, ...realizadosAtrasado];
+        dataStore['engajamento-smb-realizado-total'] = totalRealizadoList;
+        // --- FIM DA ALTERAÇÃO DO CARD DE ENGAJAMENTO ---
+
         const engajados = dataStore['engajamento-smb-engajado'] || [];
         const desengajados = dataStore['engajamento-smb-desengajado'] || [];
         const performancePerc = totalRealizado > 0 ? (engajados.length / totalRealizado) * 100 : 0;
         const realizadoVsPrevistoPerc = previstos.length > 0 ? (totalRealizado / previstos.length) * 100 : 0;
 
+        // --- INÍCIO DA ALTERAÇÃO DO CARD DE ENGAJAMENTO ---
+        // Nova estrutura do card, seguindo o layout solicitado
         const cardEngajamento = `
-            <div class="card">
-                <h3>Engajamento (Contato Consolidado)</h3>
-                <div class="card-content">
-                    <div class="metric" data-metric-id="engajamento-smb-previsto" data-metric-title="Contatos Previstos (SMB)"><span class="metric-label">Previsto:</span><span class="metric-value">${previstos.length}</span></div>
-                    <div class="metric" data-metric-id="engajamento-smb-realizado" data-metric-title="Realizado no Prazo (SMB)">
-                        <span class="metric-label">Realizado (Prazo):</span>
-                        <span class="metric-value success">${realizadosNoPrazo.length}</span>
+        <div class="card">
+            <h3>Engajamento (Contato Consolidado)</h3>
+            <div class="card-content">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <div class="metric" data-metric-id="engajamento-smb-previsto" data-metric-title="Contatos Previstos (SMB)">
+                            <span class="metric-label">Previsto:</span>
+                            <span class="metric-value">${previstos.length}</span>
+                        </div>
+                        <div class="metric" data-metric-id="engajamento-smb-realizado-total" data-metric-title="Total Realizado (SMB)">
+                            <span class="metric-label">Realizado:</span>
+                            <span class="metric-value">${totalRealizado}</span>
+                        </div>
                     </div>
-                    ${realizadosAtrasado.length > 0 ? `
-                    <div class="metric overdue-metric" data-metric-id="engajamento-smb-atrasado-concluido" data-metric-title="Concluídas com Atraso (SMB)">
-                        <span class="metric-label"><i class="fas fa-history"></i>Concluídas (Atraso):</span>
-                        <span class="metric-value">${realizadosAtrasado.length}</span>
-                    </div>` : ''}
-                    <div class="metric" data-metric-id="engajamento-smb-engajado" data-metric-title="Total Engajado (SMB)"><span class="metric-label">Total Engajado:</span><span class="metric-value success">${engajados.length}</span></div>
-                    <div class="metric" data-metric-id="engajamento-smb-desengajado" data-metric-title="Total Desengajado (SMB)"><span class="metric-label">Total Desengajado:</span><span class="metric-value danger">${desengajados.length}</span></div>
-                    <div class="metric">
-                        <span class="metric-label" style="font-weight: 600;">Meta de Performance:</span>
-                        <span class="metric-value" style="color: var(--primary-color);">${appGoals.engagement}%</span>
+                    <div>
+                        <div class="metric" data-metric-id="engajamento-smb-engajado" data-metric-title="Total Engajado (SMB)">
+                            <span class="metric-label">Total engajado:</span>
+                            <span class="metric-value success">${engajados.length}</span>
+                        </div>
+                        <div class="metric" data-metric-id="engajamento-smb-desengajado" data-metric-title="Total Desengajado (SMB)">
+                            <span class="metric-label">Total desengajado:</span>
+                            <span class="metric-value danger">${desengajados.length}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="progress-bar-container" style="margin-top: 20px;" title="Performance de Engajamento: ${performancePerc.toFixed(1)}% dos contatos realizados (${totalRealizado}) foram classificados como 'Engajado'">
-                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${performancePerc.toFixed(1)}%;"></div></div>
-                    <span class="progress-percentage">${performancePerc.toFixed(1)}%</span>
+
+                <div class="metric" style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+                    <span class="metric-label">Porcentagem de engajamento:</span>
+                    <span class="metric-value" style="color: ${performancePerc >= appGoals.engagement ? 'var(--secondary-color)' : 'var(--danger-color)'};">
+                        ${performancePerc.toFixed(1)}%
+                        <span class="sub-metric">(Meta: ${appGoals.engagement}%)</span>
+                    </span>
                 </div>
-            </div>`;
+            </div>
+
+            <div class="progress-bar-container" title="Realizado vs. Previsto: ${realizadoVsPrevistoPerc.toFixed(0)}% (Meta: 100%)">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" style="width: ${Math.min(realizadoVsPrevistoPerc, 100)}%;"></div>
+                </div>
+                <span class="progress-percentage">${realizadoVsPrevistoPerc.toFixed(0)}%</span>
+            </div>
+        </div>`;
         okrHtml += cardEngajamento;
+        // --- FIM DA ALTERAÇÃO DO CARD DE ENGAJAMENTO ---
 
         const clientesContatadosBase = dataStore['cob-carteira'] || [];
 
@@ -2993,7 +3019,6 @@ return `<div class="card"><h3>${title}</h3><div class="card-content"><div class=
 };
 
 
-// --- INÍCIO DA ALTERAÇÃO SIMPLIFICADA ---
 /**
  * Cria uma tabela HTML a partir de um array de objetos, sempre escondendo a coluna "Anotações".
  * @param {Array} data - Os dados a serem exibidos.
@@ -3050,7 +3075,6 @@ const renderDataTables = () => {
     renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
     renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
 };
-// --- FIM DA ALTERAÇÃO SIMPLIFICADA ---
 
 const showModal = (modalElement) => {
 modalElement.style.display = 'block';
