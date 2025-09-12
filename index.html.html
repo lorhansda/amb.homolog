@@ -1220,8 +1220,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.5')
-    const APP_VERSION = '1.2.5'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.6')
+    const APP_VERSION = '1.2.6'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -2992,22 +2992,19 @@ metric2Html = `<div class="metric" data-metric-id="${id2}" data-metric-title="${
 return `<div class="card"><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${label1}"><span class="metric-label">${label1}:</span><span class="metric-value">${value1}</span></div>${metric2Html}</div></div>`;
 };
 
-// --- INÍCIO DA ALTERAÇÃO ---
+
+// --- INÍCIO DA ALTERAÇÃO SIMPLIFICADA ---
 /**
- * Cria uma tabela HTML a partir de um array de objetos.
+ * Cria uma tabela HTML a partir de um array de objetos, sempre escondendo a coluna "Anotações".
  * @param {Array} data - Os dados a serem exibidos.
- * @param {Array<string>} [columnsToHide=[]] - Uma lista de nomes de colunas a serem ocultadas.
  * @returns {string} A string HTML da tabela.
  */
-const createHtmlTable = (data, columnsToHide = []) => {
+const createHtmlTable = (data) => {
     if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Nenhum dado para exibir.</p>';
     
-    // Normaliza os nomes das colunas a serem escondidas para uma comparação sem case-sensitive
-    const hiddenColsNormalized = columnsToHide.map(normalizeText);
-    
-    // Filtra os cabeçalhos para remover as colunas escondidas
+    // Filtra os cabeçalhos para sempre remover a coluna "Anotações", se existir.
     const allHeaders = Object.keys(data[0]);
-    const headers = allHeaders.filter(h => !hiddenColsNormalized.includes(normalizeText(h)));
+    const headers = allHeaders.filter(h => normalizeText(h) !== 'anotacoes');
 
     const headerHtml = `<thead><tr>${headers.map(h => `<th><span>${h}</span></th>`).join('')}</tr></thead>`;
     
@@ -3030,15 +3027,7 @@ const createHtmlTable = (data, columnsToHide = []) => {
     return `<table class="data-table">${headerHtml}${bodyHtml}</table>`;
 };
 
-/**
- * Renderiza uma tabela paginada.
- * @param {string} tableId - ID do container da tabela.
- * @param {string} paginationId - ID do container da paginação.
- * @param {Array} fullData - O conjunto completo de dados.
- * @param {number} [rowsPerPage=100] - Linhas por página.
- * @param {Array<string>} [columnsToHide=[]] - Colunas a serem ocultadas.
- */
-const renderPaginatedTable = (tableId, paginationId, fullData, rowsPerPage = 100, columnsToHide = []) => {
+const renderPaginatedTable = (tableId, paginationId, fullData, rowsPerPage = 100) => {
     const tableContainer = document.getElementById(tableId);
     const paginationContainer = document.getElementById(paginationId);
     if (!tableContainer) return;
@@ -3048,7 +3037,7 @@ const renderPaginatedTable = (tableId, paginationId, fullData, rowsPerPage = 100
         const start = (currentPage - 1) * rowsPerPage;
         const end = start + rowsPerPage;
         const pageData = fullData.slice(start, end);
-        tableContainer.innerHTML = createHtmlTable(pageData, columnsToHide); // Passa as colunas a serem escondidas
+        tableContainer.innerHTML = createHtmlTable(pageData); // A lógica de esconder a coluna já está centralizada aqui
         paginationContainer.innerHTML = `<button id="${paginationId}-prev" ${currentPage === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${currentPage} de ${totalPages || 1}</span><button id="${paginationId}-next" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
         document.getElementById(`${paginationId}-prev`).addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderPage(); } });
         document.getElementById(`${paginationId}-next`).addEventListener('click', () => { if(currentPage < totalPages) { currentPage++; renderPage(); } });
@@ -3057,11 +3046,11 @@ const renderPaginatedTable = (tableId, paginationId, fullData, rowsPerPage = 100
 };
 
 const renderDataTables = () => {
-    // Ao renderizar a tabela de atividades, passa a coluna "Anotações" para ser ocultada
-    renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100, ['Anotações']);
+    // A chamada foi simplificada, pois a lógica de esconder a coluna está agora em createHtmlTable
+    renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
     renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
 };
-// --- FIM DA ALTERAÇÃO ---
+// --- FIM DA ALTERAÇÃO SIMPLIFICADA ---
 
 const showModal = (modalElement) => {
 modalElement.style.display = 'block';
@@ -3091,6 +3080,7 @@ function showDataInModal(data, title) {
     const searchInput = detailsModal.querySelector('#modal-search-input');
 
     const renderTable = (tableData) => {
+        // A função createHtmlTable aqui também esconderá a coluna "Anotações" automaticamente.
         modalBody.innerHTML = createHtmlTable(tableData);
     };
 
