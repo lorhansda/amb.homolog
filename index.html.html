@@ -481,8 +481,16 @@ box-shadow: 0 4px 15px var(--shadow-color);
 .data-table-container { max-height: 500px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.95rem; }
-.data-table td span[data-client-name] { cursor: pointer; color: var(--primary-color); font-weight: 500; transition: color 0.2s; }
-.data-table td span[data-client-name]:hover { color: var(--primary-hover-color); }
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* O gatilho de clique agora é esta classe, para mostrar a anotação da atividade */
+.data-table td span.client-activity-trigger { 
+    cursor: pointer; 
+    color: var(--primary-color); 
+    font-weight: 500; 
+    transition: color 0.2s; 
+}
+.data-table td span.client-activity-trigger:hover { color: var(--primary-hover-color); }
+/* --- FIM DA ALTERAÇÃO --- */
 .data-table thead { position: sticky; top: 0; background-color: var(--bg-color); z-index: 10; }
 .data-table th { font-weight: 600; color: var(--text-color); }
 .data-table tbody tr:nth-child(even) { background-color: color-mix(in srgb, var(--border-color) 20%, transparent); }
@@ -990,6 +998,17 @@ opacity: 1;
 </button>
 </div>
 </div>
+
+<div id="anotacao-modal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 id="anotacao-modal-title"><i class="fas fa-sticky-note" style="margin-right: 15px;"></i>Anotações da Atividade</h2>
+            <span class="close-button">&times;</span>
+        </div>
+        <div id="anotacao-modal-body" style="padding: 20px 5px; white-space: pre-wrap; word-wrap: break-word; font-size: 1.1rem; line-height: 1.7;">
+            </div>
+    </div>
+</div>
 </div> 
 
 <script>
@@ -1346,6 +1365,9 @@ const okrGrid = document.getElementById('okr-grid-container'), generalGrid = doc
 const playbookGrid = document.getElementById('playbooks-grid'), okrTitleHeader = document.getElementById('okr-title-header');
 const tabsContainer = document.querySelector('.tabs');
 const detailsModal = document.getElementById('details-modal'), settingsModal = document.getElementById('settings-modal'), client360Modal = document.getElementById('client-360-modal');
+// --- INÍCIO DA ALTERAÇÃO ---
+const anotacaoModal = document.getElementById('anotacao-modal');
+// --- FIM DA ALTERAÇÃO ---
 
 let rawActivities = [], rawClients = [];
 let dataStore = {};
@@ -2419,12 +2441,12 @@ const cardGeral = `
                                             <span class="metric-label">Total de Clientes:</span>
                                             <span class="metric-value">${totalClientes}</span>
                                         </div>
-                                         <div class="metric" data-metric-id="onb-clientes-contatados" data-metric-title="Clientes Contatados em Onboarding">
+                                        <div class="metric" data-metric-id="onb-clientes-contatados" data-metric-title="Clientes Contatados em Onboarding">
                                             <span class="metric-label">Clientes Contatados:</span>
                                             <span class="metric-value">${clientesContatados}</span>
                                         </div>
                                     </div>
-                                     <div class="progress-bar-container" title="Cobertura de contatos na base de Onboarding: ${percCobertura.toFixed(1)}%">
+                                    <div class="progress-bar-container" title="Cobertura de contatos na base de Onboarding: ${percCobertura.toFixed(1)}%">
                                         <div class="progress-bar"><div class="progress-bar-fill" style="width: ${percCobertura.toFixed(1)}%;"></div></div>
                                         <span class="progress-percentage">${percCobertura.toFixed(1)}%</span>
                                     </div>
@@ -2448,18 +2470,18 @@ const cardContatos = `
 onboardingGeneralGrid.innerHTML = cardGeral + cardContatos;
 
 const cardAtividades = `
-                                 <div class="card">
-                                     <h3>Atividades em Onboarding (Mês)</h3>
-                                     <div class="card-content">
-                                         <div class="metric" data-metric-id="onb-atividades-previstas" data-metric-title="Atividades Previstas (Onboarding)">
-                                             <span class="metric-label">Previstas para o Mês:</span>
-                                             <span class="metric-value">${(onboardingDataStore['onb-atividades-previstas'] || []).length}</span>
-                                         </div>
-                                         <div class="metric" data-metric-id="onb-atividades-concluidas" data-metric-title="Atividades Concluídas (Onboarding)">
-                                             <span class="metric-label">Concluídas no Mês:</span>
-                                             <span class="metric-value success">${(onboardingDataStore['onb-atividades-concluidas'] || []).length}</span>
-                                         </div>
-                                     </div>
+                                <div class="card">
+                                    <h3>Atividades em Onboarding (Mês)</h3>
+                                    <div class="card-content">
+                                        <div class="metric" data-metric-id="onb-atividades-previstas" data-metric-title="Atividades Previstas (Onboarding)">
+                                            <span class="metric-label">Previstas para o Mês:</span>
+                                            <span class="metric-value">${(onboardingDataStore['onb-atividades-previstas'] || []).length}</span>
+                                        </div>
+                                        <div class="metric" data-metric-id="onb-atividades-concluidas" data-metric-title="Atividades Concluídas (Onboarding)">
+                                            <span class="metric-label">Concluídas no Mês:</span>
+                                            <span class="metric-value success">${(onboardingDataStore['onb-atividades-concluidas'] || []).length}</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 `;
 
@@ -2978,19 +3000,24 @@ if (!data || data.length === 0) return '<p style="padding: 20px; text-align: cen
 const headers = Object.keys(data[0]);
 const headerHtml = `<thead><tr>${headers.map(h => `<th><span>${h}</span></th>`).join('')}</tr></thead>`;
 const bodyHtml = `<tbody>${data.map(row => `<tr>${headers.map(h => {
-                                            const cellValue = row[h];
-                                            let displayValue = '';
-                                            if (cellValue instanceof Date) {
-                                                displayValue = formatDate(cellValue);
-                                            } else if (cellValue !== null && cellValue !== undefined) {
-                                                displayValue = cellValue;
-                                            }
-                                            
-                                            if(normalizeText(h) === 'cliente') {
-                                                return `<td><span data-client-name="${row[h]}">${displayValue}</span></td>`;
-                                            }
-                                            return `<td>${displayValue}</td>`;
-                                        }).join('')}</tr>`).join('')}</tbody>`;
+                                                const cellValue = row[h];
+                                                let displayValue = '';
+                                                if (cellValue instanceof Date) {
+                                                    displayValue = formatDate(cellValue);
+                                                } else if (cellValue !== null && cellValue !== undefined) {
+                                                    displayValue = cellValue;
+                                                }
+                                                
+                                                // --- INÍCIO DA ALTERAÇÃO ---
+                                                // Se a coluna for "Cliente" e houver anotação, adiciona a classe e o data attribute.
+                                                if(normalizeText(h) === 'cliente') {
+                                                    // Escapa as aspas duplas no conteúdo da anotação para não quebrar o HTML
+                                                    const anotacaoContent = (row['Anotações'] || '').replace(/"/g, '&quot;');
+                                                    return `<td><span class="client-activity-trigger" data-anotacao="${anotacaoContent}">${displayValue}</span></td>`;
+                                                }
+                                                // --- FIM DA ALTERAÇÃO ---
+                                                return `<td>${displayValue}</td>`;
+                                            }).join('')}</tr>`).join('')}</tbody>`;
 return `<table class="data-table">${headerHtml}${bodyHtml}</table>`;
 };
 
@@ -3072,6 +3099,18 @@ const showDetailsModal = (metricId, title) => {
     showDataInModal(data, title);
 };
 
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Exibe o modal com o texto da anotação da atividade.
+ * @param {string} anotacaoText - O texto a ser exibido.
+ */
+function showAnotacaoModal(anotacaoText) {
+    const modalBody = anotacaoModal.querySelector('#anotacao-modal-body');
+    // Usar textContent é mais seguro pois previne a injeção de HTML
+    modalBody.textContent = anotacaoText || 'Nenhuma anotação fornecida para esta atividade.';
+    showModal(anotacaoModal);
+}
+// --- FIM DA ALTERAÇÃO ---
 
 const showClient360Modal = (clientName) => {
 const clientData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === clientName.toLowerCase());
@@ -3080,12 +3119,12 @@ if(!clientData) return;
 document.getElementById('client-360-name').textContent = clientData.Cliente;
 const infoContainer = document.getElementById('client-360-info');
 infoContainer.innerHTML = `
-                                                <div class="client-info-item"><span class="client-info-label">CS Responsável</span><span class="client-info-value">${clientData.CS || 'N/A'}</span></div>
-                                                <div class="client-info-item"><span class="client-info-label">ISM Responsável</span><span class="client-info-value">${clientData.ISM || 'N/A'}</span></div>
-                                                <div class="client-info-item"><span class="client-info-label">Segmento</span><span class="client-info-value">${clientData.Segmento || 'N/A'}</span></div>
-                                                <div class="client-info-item"><span class="client-info-label">Sense Score</span><span class="client-info-value">${clientData['Sense Score'] || 'N/A'}</span></div>
-                                                <div class="client-info-item"><span class="client-info-label">Fase</span><span class="client-info-value">${clientData.Fase || 'N/A'}</span></div>
-                                            `;
+                                            <div class="client-info-item"><span class="client-info-label">CS Responsável</span><span class="client-info-value">${clientData.CS || 'N/A'}</span></div>
+                                            <div class="client-info-item"><span class="client-info-label">ISM Responsável</span><span class="client-info-value">${clientData.ISM || 'N/A'}</span></div>
+                                            <div class="client-info-item"><span class="client-info-label">Segmento</span><span class="client-info-value">${clientData.Segmento || 'N/A'}</span></div>
+                                            <div class="client-info-item"><span class="client-info-label">Sense Score</span><span class="client-info-value">${clientData['Sense Score'] || 'N/A'}</span></div>
+                                            <div class="client-info-item"><span class="client-info-label">Fase</span><span class="client-info-value">${clientData.Fase || 'N/A'}</span></div>
+                                        `;
 
 const clientActivities = rawActivities
 .filter(a => a.ClienteCompleto === clientName.toLowerCase())
@@ -3250,20 +3289,28 @@ tabsContainer.addEventListener('click', (e) => {
 });
 
 document.body.addEventListener('click', (e) => {
-const metricElement = e.target.closest('.metric[data-metric-id]');
-if (metricElement && !metricElement.closest('#overdue-grid-container')) {
-showDetailsModal(metricElement.dataset.metricId, metricElement.dataset.metricTitle);
-}
-const clientNameSpan = e.target.closest('span[data-client-name]');
-if(clientNameSpan) {
-showClient360Modal(clientNameSpan.dataset.clientName);
-}
-const trendButton = e.target.closest('.trend-chart-button');
-if(trendButton) {
-e.preventDefault();
-const { metricId, metricTitle, metricType } = trendButton.dataset;
-showTrendChart(metricId, metricTitle, metricType);
-}
+    // Listener para métricas dos cards
+    const metricElement = e.target.closest('.metric[data-metric-id]');
+    if (metricElement && !metricElement.closest('#overdue-grid-container')) {
+        showDetailsModal(metricElement.dataset.metricId, metricElement.dataset.metricTitle);
+    }
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // Novo listener para o clique no nome do cliente na tabela, para mostrar a anotação.
+    const activityTrigger = e.target.closest('span.client-activity-trigger');
+    if (activityTrigger) {
+        const anotacao = activityTrigger.dataset.anotacao;
+        showAnotacaoModal(anotacao);
+    }
+    // --- FIM DA ALTERAÇÃO ---
+
+    // Listener para o botão de gráfico de tendência
+    const trendButton = e.target.closest('.trend-chart-button');
+    if (trendButton) {
+        e.preventDefault();
+        const { metricId, metricTitle, metricType } = trendButton.dataset;
+        showTrendChart(metricId, metricTitle, metricType);
+    }
 });
 
 document.getElementById('divergence-marker').addEventListener('click', () => {
