@@ -1188,7 +1188,7 @@ function handleCredentialResponse(response) {
 }
 
 // ... COLE O RESTANTE DO SEU CÓDIGO JAVASCRIPT A PARTIR DAQUI ...
-// (A partir da função "logout()")
+// (a partir da função "logout()")
 
 // Função para fazer logout
 function logout() {
@@ -1220,8 +1220,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.7')
-    const APP_VERSION = '1.2.7'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.8')
+    const APP_VERSION = '1.2.8'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -2073,10 +2073,16 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     });
     metrics['onboarding-contacts-display'] = Array.from(prioritizedOnboardingContacts.values());
 
-    const ligacaoClientSet = new Set(metrics['contato-ligacao'].map(a => a.ClienteCompleto));
-    const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
-    const intersectionList = smbConcluidoList.filter(a => ligacaoClientSet.has(a.ClienteCompleto));
-    metrics['ligacao-com-consolidado'] = new Set(intersectionList.map(a => a.ClienteCompleto)).size;
+    // --- INÍCIO DAS NOVAS MÉTRICAS DE CLASSIFICAÇÃO ---
+    const allCallsAndMeetings = metrics['contato-ligacao'] || [];
+    const classifiedCallsAndMeetings = allCallsAndMeetings.filter(a => {
+        const categoria = normalizeText(a['Categoria']);
+        return categoria === 'engajado' || categoria === 'desengajado';
+    });
+    metrics['ligacoes-classificadas'] = classifiedCallsAndMeetings;
+    metrics['ligacoes-engajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'engajado');
+    metrics['ligacoes-desengajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'desengajado');
+    // --- FIM DAS NOVAS MÉTRICAS DE CLASSIFICAÇÃO ---
 
     metrics['total-clientes-unicos-cs'] = clientsForPeriod.length;
     metrics['total-clientes'] = clientsForPeriod;
@@ -2119,6 +2125,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         metrics[`${key}-previsto`] = activitiesByCS_previstos.filter(filterFn).filter(isPredictedForPeriod);
     }
 
+    const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
     const uniqueSmbContacts = new Map();
     smbConcluidoList.forEach(a => {
         const status = normalizeText(a['Categoria']);
@@ -2703,7 +2710,39 @@ const renderOKRs = () => {
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(totalClientesUnicosCS * metaCobertura));
     const clientesFaltantes = Math.max(0, clientesParaAtingirMeta - clientesContatadosCount);
 
-    const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento);
+    // --- INÍCIO DA ALTERAÇÃO: PREPARAÇÃO DOS DADOS DE CLASSIFICAÇÃO ---
+    let classificacaoHtml = '';
+    const totalCalls = (dataStore['contato-ligacao'] || []).length;
+    const totalClassified = (dataStore['ligacoes-classificadas'] || []).length;
+    const totalEngaged = (dataStore['ligacoes-engajadas'] || []).length;
+    const totalDisengaged = (dataStore['ligacoes-desengajadas'] || []).length;
+
+    const percClassified = totalCalls > 0 ? (totalClassified / totalCalls) * 100 : 0;
+    const percEngaged = totalClassified > 0 ? (totalEngaged / totalClassified) * 100 : 0;
+    const percDisengaged = totalClassified > 0 ? (totalDisengaged / totalClassified) * 100 : 0;
+    
+    // Cria o bloco HTML que será injetado no card de Cobertura
+    classificacaoHtml = `
+        <div style="border-top: 1px dashed var(--border-color); margin-top: 15px; padding-top: 10px;">
+            <div class="metric" data-metric-id="ligacoes-classificadas" data-metric-title="Ligações/Reuniões Classificadas">
+                <span class="metric-label" title="${totalClassified} de ${totalCalls} ligações foram classificadas">
+                    <i class="fas fa-check-circle" style="margin-right: 6px;"></i> % Ligações Classificadas:
+                </span>
+                <span class="metric-value">${percClassified.toFixed(1)}%</span>
+            </div>
+            <div class="metric" data-metric-id="ligacoes-engajadas" data-metric-title="Ligações/Reuniões Engajadas">
+                <span class="metric-label" style="padding-left: 20px;">Engajadas:</span>
+                <span class="metric-value success">${totalEngaged} <span class="sub-metric">(${percEngaged.toFixed(1)}%)</span></span>
+            </div>
+             <div class="metric" data-metric-id="ligacoes-desengajadas" data-metric-title="Ligações/Reuniões Desengajadas">
+                <span class="metric-label" style="padding-left: 20px;">Desengajadas:</span>
+                <span class="metric-value danger">${totalDisengaged} <span class="sub-metric">(${percDisengaged.toFixed(1)}%)</span></span>
+            </div>
+        </div>
+    `;
+    // --- FIM DA ALTERAÇÃO ---
+
+    const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento, classificacaoHtml);
     const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
     const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
 
@@ -2730,10 +2769,10 @@ const renderOKRs = () => {
                     <span class="metric-label">📞 Ligação/Reunião (CS):</span>
                     <span class="metric-value">
                         ${(dataStore['contato-ligacao'] || []).length} 
-                        <span class="sub-metric" title="${(dataStore['ligacao-com-consolidado'] || 0)} destes contatos tiveram o playbook 'Contato Consolidado' realizado">
-                            (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacao-com-consolidado'] || 0)})
+                        <span class="sub-metric" title="${(dataStore['ligacoes-classificadas'] || []).length} destes contatos foram classificados como 'Engajado' ou 'Desengajado'">
+                            (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacoes-classificadas'] || []).length})
                         </span>
-                    </span>
+                        </span>
                 </div>
                 <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
                     <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${(dataStore['contato-email'] || []).length}</span>
@@ -2774,19 +2813,14 @@ const renderOKRs = () => {
         const realizadosAtrasado = dataStore['engajamento-smb-atrasado-concluido'] || [];
         const totalRealizado = realizadosNoPrazo.length + realizadosAtrasado.length;
 
-        // --- INÍCIO DA ALTERAÇÃO DO CARD DE ENGAJAMENTO ---
-        // Combina as listas de realizados para que o total seja clicável
         const totalRealizadoList = [...realizadosNoPrazo, ...realizadosAtrasado];
         dataStore['engajamento-smb-realizado-total'] = totalRealizadoList;
-        // --- FIM DA ALTERAÇÃO DO CARD DE ENGAJAMENTO ---
 
         const engajados = dataStore['engajamento-smb-engajado'] || [];
         const desengajados = dataStore['engajamento-smb-desengajado'] || [];
         const performancePerc = totalRealizado > 0 ? (engajados.length / totalRealizado) * 100 : 0;
         const realizadoVsPrevistoPerc = previstos.length > 0 ? (totalRealizado / previstos.length) * 100 : 0;
 
-        // --- INÍCIO DA ALTERAÇÃO DO CARD DE ENGAJAMENTO ---
-        // Nova estrutura do card, seguindo o layout solicitado
         const cardEngajamento = `
         <div class="card">
             <h3>Engajamento (Contato Consolidado)</h3>
@@ -2831,7 +2865,6 @@ const renderOKRs = () => {
             </div>
         </div>`;
         okrHtml += cardEngajamento;
-        // --- FIM DA ALTERAÇÃO DO CARD DE ENGAJAMENTO ---
 
         const clientesContatadosBase = dataStore['cob-carteira'] || [];
 
@@ -2900,7 +2933,9 @@ const renderOKRs = () => {
     okrGrid.innerHTML = okrHtml;
 }; 
 
-const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '') => {
+// --- INÍCIO DA ALTERAÇÃO: NOVO PARÂMETRO PARA HTML ADICIONAL ---
+const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '', additionalHtml = '') => {
+// --- FIM DA ALTERAÇÃO ---
     const percentage = goal > 0 ? (value / goal) * 100 : 0;
     let valueText;
     let labelText = `Meta: ${goal}${unit}`;
@@ -2966,7 +3001,9 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
     
     const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
 
-    return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
+    // --- INÍCIO DA ALTERAÇÃO: INJEÇÃO DO HTML ADICIONAL ---
+    return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}${additionalHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
+    // --- FIM DA ALTERAÇÃO ---
 };
 
 const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
