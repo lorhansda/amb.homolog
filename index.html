@@ -481,7 +481,6 @@ box-shadow: 0 4px 15px var(--shadow-color);
 .data-table-container { max-height: 500px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.95rem; }
-/* --- INÍCIO DA ALTERAÇÃO --- */
 /* O gatilho de clique agora é esta classe, para mostrar a anotação da atividade */
 .data-table td span.client-activity-trigger { 
     cursor: pointer; 
@@ -490,7 +489,6 @@ box-shadow: 0 4px 15px var(--shadow-color);
     transition: color 0.2s; 
 }
 .data-table td span.client-activity-trigger:hover { color: var(--primary-hover-color); }
-/* --- FIM DA ALTERAÇÃO --- */
 .data-table thead { position: sticky; top: 0; background-color: var(--bg-color); z-index: 10; }
 .data-table th { font-weight: 600; color: var(--text-color); }
 .data-table tbody tr:nth-child(even) { background-color: color-mix(in srgb, var(--border-color) 20%, transparent); }
@@ -1009,6 +1007,7 @@ opacity: 1;
             </div>
     </div>
 </div>
+
 </div> 
 
 <script>
@@ -1221,8 +1220,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.4')
-    const APP_VERSION = '1.2.4'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.5')
+    const APP_VERSION = '1.2.5'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -1365,9 +1364,7 @@ const okrGrid = document.getElementById('okr-grid-container'), generalGrid = doc
 const playbookGrid = document.getElementById('playbooks-grid'), okrTitleHeader = document.getElementById('okr-title-header');
 const tabsContainer = document.querySelector('.tabs');
 const detailsModal = document.getElementById('details-modal'), settingsModal = document.getElementById('settings-modal'), client360Modal = document.getElementById('client-360-modal');
-// --- INÍCIO DA ALTERAÇÃO ---
 const anotacaoModal = document.getElementById('anotacao-modal');
-// --- FIM DA ALTERAÇÃO ---
 
 let rawActivities = [], rawClients = [];
 let dataStore = {};
@@ -2995,54 +2992,76 @@ metric2Html = `<div class="metric" data-metric-id="${id2}" data-metric-title="${
 return `<div class="card"><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${label1}"><span class="metric-label">${label1}:</span><span class="metric-value">${value1}</span></div>${metric2Html}</div></div>`;
 };
 
-const createHtmlTable = (data) => {
-if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Nenhum dado para exibir.</p>';
-const headers = Object.keys(data[0]);
-const headerHtml = `<thead><tr>${headers.map(h => `<th><span>${h}</span></th>`).join('')}</tr></thead>`;
-const bodyHtml = `<tbody>${data.map(row => `<tr>${headers.map(h => {
-                                                const cellValue = row[h];
-                                                let displayValue = '';
-                                                if (cellValue instanceof Date) {
-                                                    displayValue = formatDate(cellValue);
-                                                } else if (cellValue !== null && cellValue !== undefined) {
-                                                    displayValue = cellValue;
-                                                }
-                                                
-                                                // --- INÍCIO DA ALTERAÇÃO ---
-                                                // Se a coluna for "Cliente" e houver anotação, adiciona a classe e o data attribute.
-                                                if(normalizeText(h) === 'cliente') {
-                                                    // Escapa as aspas duplas no conteúdo da anotação para não quebrar o HTML
-                                                    const anotacaoContent = (row['Anotações'] || '').replace(/"/g, '&quot;');
-                                                    return `<td><span class="client-activity-trigger" data-anotacao="${anotacaoContent}">${displayValue}</span></td>`;
-                                                }
-                                                // --- FIM DA ALTERAÇÃO ---
-                                                return `<td>${displayValue}</td>`;
-                                            }).join('')}</tr>`).join('')}</tbody>`;
-return `<table class="data-table">${headerHtml}${bodyHtml}</table>`;
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Cria uma tabela HTML a partir de um array de objetos.
+ * @param {Array} data - Os dados a serem exibidos.
+ * @param {Array<string>} [columnsToHide=[]] - Uma lista de nomes de colunas a serem ocultadas.
+ * @returns {string} A string HTML da tabela.
+ */
+const createHtmlTable = (data, columnsToHide = []) => {
+    if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Nenhum dado para exibir.</p>';
+    
+    // Normaliza os nomes das colunas a serem escondidas para uma comparação sem case-sensitive
+    const hiddenColsNormalized = columnsToHide.map(normalizeText);
+    
+    // Filtra os cabeçalhos para remover as colunas escondidas
+    const allHeaders = Object.keys(data[0]);
+    const headers = allHeaders.filter(h => !hiddenColsNormalized.includes(normalizeText(h)));
+
+    const headerHtml = `<thead><tr>${headers.map(h => `<th><span>${h}</span></th>`).join('')}</tr></thead>`;
+    
+    const bodyHtml = `<tbody>${data.map(row => `<tr>${headers.map(h => {
+        const cellValue = row[h];
+        let displayValue = '';
+        if (cellValue instanceof Date) {
+            displayValue = formatDate(cellValue);
+        } else if (cellValue !== null && cellValue !== undefined) {
+            displayValue = cellValue;
+        }
+        
+        if (normalizeText(h) === 'cliente') {
+            const anotacaoContent = (row['Anotações'] || '').replace(/"/g, '&quot;');
+            return `<td><span class="client-activity-trigger" data-anotacao="${anotacaoContent}">${displayValue}</span></td>`;
+        }
+        return `<td>${displayValue}</td>`;
+    }).join('')}</tr>`).join('')}</tbody>`;
+
+    return `<table class="data-table">${headerHtml}${bodyHtml}</table>`;
 };
 
-const renderPaginatedTable = (tableId, paginationId, fullData, rowsPerPage = 100) => {
-const tableContainer = document.getElementById(tableId);
-const paginationContainer = document.getElementById(paginationId);
-if(!tableContainer) return;
-let currentPage = 1;
-const totalPages = Math.ceil(fullData.length / rowsPerPage);
-const renderPage = () => {
-const start = (currentPage - 1) * rowsPerPage;
-const end = start + rowsPerPage;
-const pageData = fullData.slice(start, end);
-tableContainer.innerHTML = createHtmlTable(pageData);
-paginationContainer.innerHTML = `<button id="${paginationId}-prev" ${currentPage === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${currentPage} de ${totalPages || 1}</span><button id="${paginationId}-next" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
-document.getElementById(`${paginationId}-prev`).addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderPage(); } });
-document.getElementById(`${paginationId}-next`).addEventListener('click', () => { if(currentPage < totalPages) { currentPage++; renderPage(); } });
-};
-renderPage();
+/**
+ * Renderiza uma tabela paginada.
+ * @param {string} tableId - ID do container da tabela.
+ * @param {string} paginationId - ID do container da paginação.
+ * @param {Array} fullData - O conjunto completo de dados.
+ * @param {number} [rowsPerPage=100] - Linhas por página.
+ * @param {Array<string>} [columnsToHide=[]] - Colunas a serem ocultadas.
+ */
+const renderPaginatedTable = (tableId, paginationId, fullData, rowsPerPage = 100, columnsToHide = []) => {
+    const tableContainer = document.getElementById(tableId);
+    const paginationContainer = document.getElementById(paginationId);
+    if (!tableContainer) return;
+    let currentPage = 1;
+    const totalPages = Math.ceil(fullData.length / rowsPerPage);
+    const renderPage = () => {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = fullData.slice(start, end);
+        tableContainer.innerHTML = createHtmlTable(pageData, columnsToHide); // Passa as colunas a serem escondidas
+        paginationContainer.innerHTML = `<button id="${paginationId}-prev" ${currentPage === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${currentPage} de ${totalPages || 1}</span><button id="${paginationId}-next" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
+        document.getElementById(`${paginationId}-prev`).addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderPage(); } });
+        document.getElementById(`${paginationId}-next`).addEventListener('click', () => { if(currentPage < totalPages) { currentPage++; renderPage(); } });
+    };
+    renderPage();
 };
 
 const renderDataTables = () => {
-renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
-renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
+    // Ao renderizar a tabela de atividades, passa a coluna "Anotações" para ser ocultada
+    renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100, ['Anotações']);
+    renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
 };
+// --- FIM DA ALTERAÇÃO ---
 
 const showModal = (modalElement) => {
 modalElement.style.display = 'block';
@@ -3099,7 +3118,6 @@ const showDetailsModal = (metricId, title) => {
     showDataInModal(data, title);
 };
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Exibe o modal com o texto da anotação da atividade.
  * @param {string} anotacaoText - O texto a ser exibido.
@@ -3110,7 +3128,6 @@ function showAnotacaoModal(anotacaoText) {
     modalBody.textContent = anotacaoText || 'Nenhuma anotação fornecida para esta atividade.';
     showModal(anotacaoModal);
 }
-// --- FIM DA ALTERAÇÃO ---
 
 const showClient360Modal = (clientName) => {
 const clientData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === clientName.toLowerCase());
@@ -3295,14 +3312,12 @@ document.body.addEventListener('click', (e) => {
         showDetailsModal(metricElement.dataset.metricId, metricElement.dataset.metricTitle);
     }
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     // Novo listener para o clique no nome do cliente na tabela, para mostrar a anotação.
     const activityTrigger = e.target.closest('span.client-activity-trigger');
     if (activityTrigger) {
         const anotacao = activityTrigger.dataset.anotacao;
         showAnotacaoModal(anotacao);
     }
-    // --- FIM DA ALTERAÇÃO ---
 
     // Listener para o botão de gráfico de tendência
     const trendButton = e.target.closest('.trend-chart-button');
