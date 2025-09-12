@@ -1229,8 +1229,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.8')
-    const APP_VERSION = '1.2.8'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.9')
+    const APP_VERSION = '1.2.9'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -2378,12 +2378,65 @@ const updateDashboard = () => {
  * Calcula todas as métricas e OKRs para a aba de Onboarding.
  */
 function calculateOnboardingOKRs(onboardingActivities, onboardingClients, viewMode, selectedMonth, selectedYear) {
-    const metrics = {
-        clients: onboardingClients,
-        activities: onboardingActivities
-    };
+    const metrics = {};
+
+    const isMonthly = viewMode === 'monthly';
+    const isConcludedInPeriod = (item) => !isMonthly || (item.ConcluidaEm?.getMonth() === selectedMonth && item.ConcluidaEm?.getFullYear() === selectedYear);
+    const isDueInPeriod = (item) => !isMonthly || (item.PrevisaoConclusao?.getMonth() === selectedMonth && item.PrevisaoConclusao?.getFullYear() === selectedYear);
+
+    // Métricas Gerais
+    metrics.activeClients = onboardingClients;
+    const monthlyConcludedActivities = onboardingActivities.filter(isConcludedInPeriod);
+    const monthlyContactedClients = [...new Set(monthlyConcludedActivities.map(a => a.ClienteCompleto))];
+    metrics.monthlyContactedClients = rawClients.filter(c => monthlyContactedClients.includes(c.ClienteCompleto));
+    metrics.monthlyActivitiesCompleted = monthlyConcludedActivities;
+
+    // Métricas de SLA
+    const welcomeContacts = onboardingActivities.filter(a => normalizeText(a.Atividade).includes('contato de welcome'));
+    metrics.welcomeTotal = welcomeContacts.filter(isConcludedInPeriod);
+    metrics.welcomeInSLA = metrics.welcomeTotal.filter(a => (a.ConcluidaEm - a.CriadoEm) / (1000 * 60 * 60 * 24) <= 3);
     
-    // ... Lógica de cálculo detalhada ...
+    const kickoffCalls = onboardingActivities.filter(a => normalizeText(a.Atividade).includes('call/reunião kickoff'));
+    metrics.kickoffTotal = kickoffCalls.filter(isConcludedInPeriod);
+    metrics.kickoffInSLA = metrics.kickoffTotal.filter(a => (a.ConcluidaEm - a.CriadoEm) / (1000 * 60 * 60 * 24) <= 7);
+
+    // Métricas de Execução
+    const executionActivities = ['planejamento finalizado', 'call/reunião de go live', 'mapear contatos', 'acompanhamento / status reports'];
+    executionActivities.forEach(actName => {
+        const key = actName.split(' ')[0].toLowerCase();
+        const relevantActivities = onboardingActivities.filter(a => normalizeText(a.Atividade).includes(actName) && isDueInPeriod(a));
+        metrics[`${key}Due`] = relevantActivities;
+        metrics[`${key}OnTime`] = relevantActivities.filter(a => a.ConcluidaEm && a.ConcluidaEm <= a.PrevisaoConclusao);
+    });
+
+    // Métricas de Sucesso
+    metrics.goLivesInMonth = onboardingActivities.filter(a => normalizeText(a.Atividade).includes('go live') && isConcludedInPeriod(a));
+    const clientsWithGoLive = [...new Set(metrics.goLivesInMonth.map(a => a.ClienteCompleto))];
+    metrics.clientsWithGoLiveInMonth = rawClients.filter(c => clientsWithGoLive.includes(c.ClienteCompleto));
+    metrics.npsResponded = metrics.clientsWithGoLiveInMonth.filter(c => c.NPSOnboarding !== null && c.NPSOnboarding !== '');
+
+    // Métricas de Saúde
+    metrics.highValueUnbilled = onboardingClients.filter(c => c.ValorNaoFaturado > 50000);
+    const onboardingPlaybooks = ['onboarding lantek', 'onboarding elétrica', 'onboarding altium', 'onboarding solidworks', 'onboarding usinagem', 'onboarding hp', 'onboarding alphacam', 'onboarding mkf', 'onboarding formlabs', 'tech journey'];
+    const clientStartDate = {};
+    onboardingActivities.forEach(a => {
+        const playbookName = normalizeText(a.Playbook);
+        if (onboardingPlaybooks.some(p => playbookName.includes(p))) {
+            if (!clientStartDate[a.ClienteCompleto] || a.CriadoEm < clientStartDate[a.ClienteCompleto]) {
+                clientStartDate[a.ClienteCompleto] = a.CriadoEm;
+            }
+        }
+    });
+
+    const today = new Date();
+    metrics.timeInOnboarding = onboardingClients.map(c => {
+        const startDate = clientStartDate[c.ClienteCompleto];
+        if (startDate) {
+            const timeDiff = today - startDate;
+            return { client: c.Cliente, days: Math.floor(timeDiff / (1000 * 60 * 60 * 24)) };
+        }
+        return { client: c.Cliente, days: 0 };
+    }).filter(c => c.days > 0);
     
     return metrics;
 }
@@ -2402,39 +2455,85 @@ function renderOnboardingOKRs() {
     const selectedMonth = parseInt(selectMonth.value, 10);
     const selectedYear = parseInt(selectYear.value, 10);
 
-    // 1. Filtrar Clientes e Atividades de Onboarding
     let baseOnboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
     if (selectedISM !== 'Todos') {
         baseOnboardingClients = baseOnboardingClients.filter(c => c.ISM === selectedISM);
     }
     const onboardingClientNames = new Set(baseOnboardingClients.map(c => c.ClienteCompleto));
-    const baseOnboardingActivities = rawActivities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
+    let baseOnboardingActivities = rawActivities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
 
-    // 2. Chamar a nova função de cálculo
     onboardingDataStore = calculateOnboardingOKRs(baseOnboardingActivities, baseOnboardingClients, viewMode, selectedMonth, selectedYear);
 
-    // 3. Renderizar cada grupo de cards
-    // Limpa os grids para garantir que não haja conteúdo antigo
-    onboardingOverviewGrid.innerHTML = '';
-    onboardingSlaGrid.innerHTML = '';
-    onboardingExecutionGrid.innerHTML = '';
-    onboardingSuccessGrid.innerHTML = '';
-    onboardingHealthGrid.innerHTML = '';
+    // Visão Geral
+    onboardingOverviewGrid.innerHTML = createSimpleCard('Visão Geral', 'onb-active-clients', 'Clientes Ativos em Onboarding', (onboardingDataStore.activeClients?.length || 0), 'onb-monthly-contacted', 'Clientes Contatados', (onboardingDataStore.monthlyContactedClients?.length || 0));
+    
+    // SLA
+    onboardingSlaGrid.innerHTML = createSlaCard('Contato de Welcome (SLA: 3 dias)', onboardingDataStore.welcomeTotal, onboardingDataStore.welcomeInSLA, 'onb-welcome') +
+                                 createSlaCard('Call/Reunião Kickoff (SLA: 7 dias)', onboardingDataStore.kickoffTotal, onboardingDataStore.kickoffInSLA, 'onb-kickoff');
 
-    // Card de Visão Geral
-    const overviewCardHtml = createSimpleCard(
-        'Visão Geral',
-        'onb-total-clientes', 'Clientes Ativos em Onboarding', (onboardingDataStore.clients?.length || 0),
-        'onb-contatos-mes', 'Clientes Contatados no Mês', (onboardingDataStore.monthlyContacts?.length || 0)
-    );
-    onboardingOverviewGrid.innerHTML = overviewCardHtml;
+    // Execução
+    onboardingExecutionGrid.innerHTML = createExecutionCard('Planejamento Finalizado', onboardingDataStore.planejamentoDue, onboardingDataStore.planejamentoOnTime, 'onb-planejamento') +
+                                      createExecutionCard('Call/Reunião de GO LIVE', onboardingDataStore.callDue, onboardingDataStore.callOnTime, 'onb-golive') +
+                                      createExecutionCard('Mapear Contatos', onboardingDataStore.mapearDue, onboardingDataStore.mapearOnTime, 'onb-mapear') +
+                                      createExecutionCard('Acompanhamento / Status Reports', onboardingDataStore.acompanhamentoDue, onboardingDataStore.acompanhamentoOnTime, 'onb-acompanhamento');
 
-    // ... (Lógica para criar e renderizar os outros 4 grupos de cards aqui) ...
-    // Esta parte será preenchida com base nas métricas de onboardingDataStore.
-
+    // Sucesso
+    const npsPerc = (onboardingDataStore.clientsWithGoLiveInMonth?.length || 0) > 0 ? ((onboardingDataStore.npsResponded?.length || 0) / onboardingDataStore.clientsWithGoLiveInMonth.length) * 100 : 0;
+    onboardingSuccessGrid.innerHTML = createSimpleCard('Go Lives Realizados', 'onb-golives', 'Go Lives no Período', (onboardingDataStore.goLivesInMonth?.length || 0)) +
+                                    createOkrCard('Respostas NPS Pós Go-Live', npsPerc, 100, '%', 'onb-nps', (onboardingDataStore.npsResponded?.length || 0), (onboardingDataStore.clientsWithGoLiveInMonth?.length || 0));
+    
+    // Saúde
+    const avgTime = (onboardingDataStore.timeInOnboarding?.reduce((acc, c) => acc + c.days, 0) || 0) / (onboardingDataStore.timeInOnboarding?.length || 1);
+    onboardingHealthGrid.innerHTML = createSimpleCard('Risco Financeiro', 'onb-high-value', 'Clientes com > R$50k Não Faturado', (onboardingDataStore.highValueUnbilled?.length || 0)) +
+                                   createSimpleCard('Tempo em Onboarding', 'onb-time', 'Tempo Médio em Onboarding (dias)', avgTime.toFixed(0));
 }
-// --- FIM DAS NOVAS FUNÇÕES DE RENDERIZAÇÃO ONBOARDING ---
 
+function createSlaCard(title, totalList, inSlaList, metricIdPrefix) {
+    const total = totalList?.length || 0;
+    const inSla = inSlaList?.length || 0;
+    const percentage = total > 0 ? (inSla / total) * 100 : 0;
+    
+    return `<div class="card">
+                <h3>${title}</h3>
+                <div class="card-content">
+                    <div class="metric" data-metric-id="${metricIdPrefix}-total" data-metric-title="Total de '${title}' no período">
+                        <span class="metric-label">Total Realizado:</span>
+                        <span class="metric-value">${total}</span>
+                    </div>
+                    <div class="metric" data-metric-id="${metricIdPrefix}-insla" data-metric-title="'${title}' dentro do SLA">
+                        <span class="metric-label">Dentro do Prazo:</span>
+                        <span class="metric-value success">${inSla}</span>
+                    </div>
+                </div>
+                <div class="progress-bar-container" title="${percentage.toFixed(0)}% de conformidade com o SLA">
+                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${percentage.toFixed(0)}%;"></div></div>
+                    <span class="progress-percentage">${percentage.toFixed(0)}%</span>
+                </div>
+            </div>`;
+}
+
+function createExecutionCard(title, dueList, onTimeList, metricIdPrefix) {
+    const due = dueList?.length || 0;
+    const onTime = onTimeList?.length || 0;
+    const percentage = due > 0 ? (onTime / due) * 100 : 0;
+    return `<div class="card">
+                <h3>${title}</h3>
+                <div class="card-content">
+                    <div class="metric" data-metric-id="${metricIdPrefix}-due" data-metric-title="'${title}' com vencimento no período">
+                        <span class="metric-label">Total Previsto:</span>
+                        <span class="metric-value">${due}</span>
+                    </div>
+                    <div class="metric" data-metric-id="${metricIdPrefix}-ontime" data-metric-title="'${title}' concluídas no prazo">
+                        <span class="metric-label">Concluídas no Prazo:</span>
+                        <span class="metric-value success">${onTime}</span>
+                    </div>
+                </div>
+                <div class="progress-bar-container" title="${percentage.toFixed(0)}% das atividades previstas foram concluídas no prazo">
+                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${percentage.toFixed(0)}%;"></div></div>
+                    <span class="progress-percentage">${percentage.toFixed(0)}%</span>
+                </div>
+            </div>`;
+}
 
 // Armazena instâncias de gráficos para poder destruí-las antes de redesenhar
 let chartInstances = {};
