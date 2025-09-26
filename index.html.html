@@ -242,6 +242,7 @@ align-items: flex-end;
 border: 1px solid var(--primary-color);
 }
 
+
 .control-group { display: flex; flex-direction: column; }
 .control-group label {
 font-weight: 600;
@@ -874,43 +875,33 @@ opacity: 1;
 </div>
 
 <div id="onboarding-view" class="tab-content">
-    <section class="onboarding-controls">
-        <div class="control-group">
-            <label for="onboarding-view-toggle"><i class="fas fa-filter"></i> Tipo de Visão</label>
-            <select id="onboarding-view-toggle">
-                <option value="monthly">📅 Visão Mensal</option>
-                <option value="trajectory">🚀 Visão da Trajetória</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label for="select-ism"><i class="fas fa-user-astronaut"></i> ISM Responsável</label>
-            <select id="select-ism" disabled><option>Aguardando...</option></select>
-        </div>
-    </section>
-
-    <div id="onboarding-dashboard">
-        <div class="metric-group">
-            <h2 class="group-title">Visão Geral</h2>
-            <div class="group-content" id="onboarding-overview-grid"></div>
-        </div>
-        <div class="metric-group">
-            <h2 class="group-title">Performance de SLAs (Tempo de Resposta)</h2>
-            <div class="group-content" id="onboarding-sla-grid"></div>
-        </div>
-        <div class="metric-group">
-            <h2 class="group-title">Performance de Execução (Prazos)</h2>
-            <div class="group-content" id="onboarding-execution-grid"></div>
-        </div>
-        <div class="metric-group">
-            <h2 class="group-title">Métricas de Go Live e Sucesso</h2>
-            <div class="group-content" id="onboarding-success-grid"></div>
-        </div>
-        <div class="metric-group">
-            <h2 class="group-title">Saúde da Carteira de Onboarding</h2>
-            <div class="group-content" id="onboarding-health-grid"></div>
-        </div>
-    </div>
+<div id="onboarding-dashboard" style="display: none;">
+<section class="onboarding-controls">
+<div class="control-group">
+<label for="select-onboarding-team"><i class="fas fa-users-cog"></i> Visão do Time</label>
+<select id="select-onboarding-team" disabled>
+<option value="geral">Visão Geral</option>
+<option value="syneco">Syneco (Time CP)</option>
+<option value="outros">Outros Produtos (Time CS)</option>
+</select>
 </div>
+<div class="control-group">
+<label for="select-ism"><i class="fas fa-user-astronaut"></i> ISM Responsável</label>
+<select id="select-ism" disabled><option>Aguardando...</option></select>
+</div>
+</section>
+
+<div class="metric-group">
+<h2 class="group-title" id="onboarding-general-title">Visão Geral do Onboarding</h2>
+<div class="group-content" id="onboarding-general-grid"></div>
+</div>
+<div class="metric-group">
+<h2 class="group-title" id="onboarding-activities-title">Acompanhamento de Atividades</h2>
+<div class="group-content" id="onboarding-activities-grid"></div>
+</div>
+</div>
+</div>
+
 <div id="overdue-view" class="tab-content">
 <div class="metric-group">
 <h2 class="group-title">Visão de Atividades Atrasadas</h2>
@@ -1229,8 +1220,8 @@ localStorage.removeItem('googleUserToken');
 // O Dashboard só inicializa após o login
 async function initializeDashboard() {
     // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.9')
-    const APP_VERSION = '1.2.9'; 
+    // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.2.8')
+    const APP_VERSION = '1.2.8'; 
     
     const storedVersion = localStorage.getItem('appVersion');
 
@@ -1353,13 +1344,14 @@ return date;
 return null;
 };
 
-const onboardingViewToggle = document.getElementById('onboarding-view-toggle');
+const onboardingDashboard = document.getElementById('onboarding-dashboard');
+const selectOnboardingTeam = document.getElementById('select-onboarding-team');
 const selectISM = document.getElementById('select-ism');
-const onboardingOverviewGrid = document.getElementById('onboarding-overview-grid');
-const onboardingSlaGrid = document.getElementById('onboarding-sla-grid');
-const onboardingExecutionGrid = document.getElementById('onboarding-execution-grid');
-const onboardingSuccessGrid = document.getElementById('onboarding-success-grid');
-const onboardingHealthGrid = document.getElementById('onboarding-health-grid');
+const onboardingGeneralGrid = document.getElementById('onboarding-general-grid');
+const onboardingActivitiesGrid = document.getElementById('onboarding-activities-grid');
+const onboardingGeneralTitle = document.getElementById('onboarding-general-title');
+const onboardingActivitiesTitle = document.getElementById('onboarding-activities-title');
+
 
 const fileAtividadesInput = document.getElementById('file-atividades'), fileClientesInput = document.getElementById('file-clientes');
 const selectCS = document.getElementById('select-cs'), selectSegmento = document.getElementById('select-segmento');
@@ -1502,16 +1494,12 @@ const buildCsToSquadMap = () => {
 
 const processInitialData = () => {
     statusMessage.textContent = 'Processando dados...';
-    
-    rawClients = rawClients.map(cli => {
-        return { ...cli, ClienteCompleto: (cli.Cliente || '').trim().toLowerCase() };
-    });
-    const clienteMap = new Map(rawClients.map(cli => [cli.ClienteCompleto, cli]));
+
+    const clienteMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), cli]));
 
     rawActivities = rawActivities.map(ativ => {
         const clienteKey = (ativ.Cliente || '').trim().toLowerCase();
         const clienteInfo = clienteMap.get(clienteKey) || {};
-        const valorNaoFaturadoRaw = clienteInfo['Valor total não faturado'] || '0';
         return { 
             ...ativ, 
             ClienteCompleto: clienteKey, 
@@ -1522,9 +1510,6 @@ const processInitialData = () => {
             ISM: clienteInfo.ISM,
             Negocio: clienteInfo['Negócio'],
             Comercial: clienteInfo['Comercial'],
-            NPSOnboarding: clienteInfo['NPS onboarding'],
-            ValorNaoFaturado: parseFloat(String(valorNaoFaturadoRaw).replace(/[^\d,-]/g, '').replace(',', '.')) || 0,
-            CriadoEm: parseDate(ativ['Criado em']),
             PrevisaoConclusao: parseDate(ativ['Previsão de conclusão']), 
             ConcluidaEm: parseDate(ativ['Concluída em']) 
         };
@@ -1547,6 +1532,7 @@ const processInitialData = () => {
     renderDataTables();
     statusMessage.style.display = 'none';
     dashboard.style.display = 'block';
+    onboardingDashboard.style.display = 'block';
     tabsContainer.style.display = 'flex';
     const selectSquad = document.getElementById('select-squad');
     [selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, selectPeriod].forEach(el => el.disabled = false);
@@ -1555,13 +1541,11 @@ const processInitialData = () => {
         selectCS.disabled = true;
     }
     
-    [selectISM].forEach(el => el.disabled = false);
+    [selectOnboardingTeam, selectISM].forEach(el => el.disabled = false);
     
     updateDashboard();
     renderOverdueView();
-    renderOnboardingOKRs(); // Renderiza o dashboard de onboarding com os dados iniciais
 };
-
 
 let atividadesFile, clientesFile;
 
@@ -1683,8 +1667,19 @@ clearCacheButton.addEventListener('click', () => {
 // loadDataFromCache();
 
 const updateIsmFilter = () => {
+const teamView = selectOnboardingTeam.value;
 const onboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
-const ismSet = new Set(onboardingClients.map(c => c.ISM).filter(Boolean));
+
+let relevantClients = [];
+if (teamView === 'syneco') {
+relevantClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
+} else if (teamView === 'outros') {
+relevantClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
+} else {
+relevantClients = onboardingClients;
+}
+
+const ismSet = new Set(relevantClients.map(c => c.ISM).filter(Boolean));
 selectISM.innerHTML = '<option value="Todos">Todos os ISMs</option>';
 [...ismSet].sort().forEach(ism => {
 const option = document.createElement('option');
@@ -1812,7 +1807,52 @@ selectSegmento.value = smbCadCount > smbMultiCount ? 'SMB CAD' : 'SMB Multiprodu
 }
 };
 
-// A função antiga 'calculateOnboardingMetrics' foi removida e substituída pela nova 'calculateOnboardingOKRs'
+const calculateOnboardingMetrics = (month, year, activities, clients, teamView, selectedISM) => {
+const metrics = {};
+
+const getPeriodFilter = (dateField) => (item) => item[dateField]?.getMonth() === month && item[dateField]?.getFullYear() === year;
+const isPredictedForPeriod = getPeriodFilter('PrevisaoConclusao');
+const isConcludedInPeriod = getPeriodFilter('ConcluidaEm');
+
+let onboardingClients = clients.filter(c => normalizeText(c.Fase) === 'onboarding');
+
+if (teamView === 'syneco') {
+onboardingClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
+} else if (teamView === 'outros') {
+onboardingClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
+}
+
+if (selectedISM !== 'Todos') {
+onboardingClients = onboardingClients.filter(c => c.ISM === selectedISM);
+}
+
+metrics['onb-total-clientes'] = onboardingClients;
+const onboardingClientSet = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
+
+const relevantActivities = activities.filter(a => onboardingClientSet.has(a.ClienteCompleto));
+const concludedActivities = relevantActivities.filter(isConcludedInPeriod);
+const predictedActivities = relevantActivities.filter(isPredictedForPeriod);
+
+const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
+const isCountableContact = (a) => {
+const activityType = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
+return validContactKeywords.some(type => activityType.includes(type));
+};
+
+const contacts = concludedActivities.filter(isCountableContact);
+const uniqueClientContactsMap = new Map();
+contacts.forEach(activity => uniqueClientContactsMap.set(activity.ClienteCompleto, activity));
+metrics['onb-clientes-contatados'] = Array.from(uniqueClientContactsMap.values());
+
+const callKeywords = ['ligacao', 'reuniao', 'call sponsor'];
+metrics['onb-contato-ligacao'] = contacts.filter(a => callKeywords.some(k => normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']).includes(k)));
+metrics['onb-contato-email'] = contacts.filter(a => !callKeywords.some(k => normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']).includes(k)));
+
+metrics['onb-atividades-previstas'] = predictedActivities;
+metrics['onb-atividades-concluidas'] = concludedActivities;
+
+return metrics;
+};
 
 const calculateOverdueMetrics = (activities, selectedCS) => {
 const metrics = { overdueActivities: {} };
@@ -2033,6 +2073,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     });
     metrics['onboarding-contacts-display'] = Array.from(prioritizedOnboardingContacts.values());
 
+    // --- INÍCIO DAS NOVAS MÉTRICAS DE CLASSIFICAÇÃO ---
     const allCallsAndMeetings = metrics['contato-ligacao'] || [];
     const classifiedCallsAndMeetings = allCallsAndMeetings.filter(a => {
         const categoria = normalizeText(a['Categoria']);
@@ -2041,6 +2082,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['ligacoes-classificadas'] = classifiedCallsAndMeetings;
     metrics['ligacoes-engajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'engajado');
     metrics['ligacoes-desengajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'desengajado');
+    // --- FIM DAS NOVAS MÉTRICAS DE CLASSIFICAÇÃO ---
 
     metrics['total-clientes-unicos-cs'] = clientsForPeriod.length;
     metrics['total-clientes'] = clientsForPeriod;
@@ -2346,7 +2388,8 @@ const updateDashboard = () => {
         }
 
         renderOKRs();
-        
+        renderOnboardingDashboard();
+
     } else {
         exportCsvBtn.disabled = true;
         exportHtmlBtn.disabled = true;
@@ -2372,168 +2415,82 @@ const updateDashboard = () => {
     }
 };
 
-// --- INÍCIO DAS NOVAS FUNÇÕES DE RENDERIZAÇÃO ONBOARDING ---
 
-/**
- * Calcula todas as métricas e OKRs para a aba de Onboarding.
- */
-function calculateOnboardingOKRs(onboardingActivities, onboardingClients, viewMode, selectedMonth, selectedYear) {
-    const metrics = {};
+const renderOnboardingDashboard = () => {
+if (rawClients.length === 0 || rawActivities.length === 0) return;
+const mesSelecionado = parseInt(selectMonth.value, 10);
+const anoSelecionado = parseInt(selectYear.value, 10);
+const teamView = selectOnboardingTeam.value;
+const selectedISM = selectISM.value;
 
-    const isMonthly = viewMode === 'monthly';
-    const isConcludedInPeriod = (item) => !isMonthly || (item.ConcluidaEm?.getMonth() === selectedMonth && item.ConcluidaEm?.getFullYear() === selectedYear);
-    const isDueInPeriod = (item) => !isMonthly || (item.PrevisaoConclusao?.getMonth() === selectedMonth && item.PrevisaoConclusao?.getFullYear() === selectedYear);
+onboardingDataStore = calculateOnboardingMetrics(mesSelecionado, anoSelecionado, rawActivities, rawClients, teamView, selectedISM);
 
-    // Métricas Gerais
-    metrics.activeClients = onboardingClients;
-    const monthlyConcludedActivities = onboardingActivities.filter(isConcludedInPeriod);
-    const monthlyContactedClients = [...new Set(monthlyConcludedActivities.map(a => a.ClienteCompleto))];
-    metrics.monthlyContactedClients = rawClients.filter(c => monthlyContactedClients.includes(c.ClienteCompleto));
-    metrics.monthlyActivitiesCompleted = monthlyConcludedActivities;
+const totalClientes = (onboardingDataStore['onb-total-clientes'] || []).length;
+const clientesContatados = (onboardingDataStore['onb-clientes-contatados'] || []).length;
+const percCobertura = totalClientes > 0 ? (clientesContatados / totalClientes) * 100 : 0;
 
-    // Métricas de SLA
-    const welcomeContacts = onboardingActivities.filter(a => normalizeText(a.Atividade).includes('contato de welcome'));
-    metrics.welcomeTotal = welcomeContacts.filter(isConcludedInPeriod);
-    metrics.welcomeInSLA = metrics.welcomeTotal.filter(a => (a.ConcluidaEm - a.CriadoEm) / (1000 * 60 * 60 * 24) <= 3);
-    
-    const kickoffCalls = onboardingActivities.filter(a => normalizeText(a.Atividade).includes('call/reunião kickoff'));
-    metrics.kickoffTotal = kickoffCalls.filter(isConcludedInPeriod);
-    metrics.kickoffInSLA = metrics.kickoffTotal.filter(a => (a.ConcluidaEm - a.CriadoEm) / (1000 * 60 * 60 * 24) <= 7);
+const teamTitleMap = {
+'geral': 'Onboarding (Visão Geral)',
+'syneco': 'Onboarding - Syneco (Time CP)',
+'outros': 'Onboarding - Outros Produtos (Time CS)'
+};
+onboardingGeneralTitle.textContent = `Visão Geral: ${teamTitleMap[teamView]}`;
+onboardingActivitiesTitle.textContent = `Acompanhamento: ${teamTitleMap[teamView]}`;
 
-    // Métricas de Execução
-    const executionActivities = ['planejamento finalizado', 'call/reunião de go live', 'mapear contatos', 'acompanhamento / status reports'];
-    executionActivities.forEach(actName => {
-        const key = actName.split(' ')[0].toLowerCase();
-        const relevantActivities = onboardingActivities.filter(a => normalizeText(a.Atividade).includes(actName) && isDueInPeriod(a));
-        metrics[`${key}Due`] = relevantActivities;
-        metrics[`${key}OnTime`] = relevantActivities.filter(a => a.ConcluidaEm && a.ConcluidaEm <= a.PrevisaoConclusao);
-    });
+const cardGeral = `
+                                <div class="card">
+                                    <h3>Geral do Onboarding</h3>
+                                    <div class="card-content">
+                                        <div class="metric" data-metric-id="onb-total-clientes" data-metric-title="Total de Clientes em Onboarding">
+                                            <span class="metric-label">Total de Clientes:</span>
+                                            <span class="metric-value">${totalClientes}</span>
+                                        </div>
+                                        <div class="metric" data-metric-id="onb-clientes-contatados" data-metric-title="Clientes Contatados em Onboarding">
+                                            <span class="metric-label">Clientes Contatados:</span>
+                                            <span class="metric-value">${clientesContatados}</span>
+                                        </div>
+                                    </div>
+                                    <div class="progress-bar-container" title="Cobertura de contatos na base de Onboarding: ${percCobertura.toFixed(1)}%">
+                                        <div class="progress-bar"><div class="progress-bar-fill" style="width: ${percCobertura.toFixed(1)}%;"></div></div>
+                                        <span class="progress-percentage">${percCobertura.toFixed(1)}%</span>
+                                    </div>
+                                </div>`;
 
-    // Métricas de Sucesso
-    metrics.goLivesInMonth = onboardingActivities.filter(a => normalizeText(a.Atividade).includes('go live') && isConcludedInPeriod(a));
-    const clientsWithGoLive = [...new Set(metrics.goLivesInMonth.map(a => a.ClienteCompleto))];
-    metrics.clientsWithGoLiveInMonth = rawClients.filter(c => clientsWithGoLive.includes(c.ClienteCompleto));
-    metrics.npsResponded = metrics.clientsWithGoLiveInMonth.filter(c => c.NPSOnboarding !== null && c.NPSOnboarding !== '');
+const cardContatos = `
+                                <div class="card">
+                                    <h3>Contatos em Onboarding (Mês)</h3>
+                                    <div class="card-content">
+                                        <div class="metric" data-metric-id="onb-contato-ligacao" data-metric-title="Contatos por Ligação/Reunião (Onboarding)">
+                                            <span class="metric-label">📞 Ligação/Reunião:</span>
+                                            <span class="metric-value">${(onboardingDataStore['onb-contato-ligacao'] || []).length}</span>
+                                        </div>
+                                        <div class="metric" data-metric-id="onb-contato-email" data-metric-title="Contatos por E-mail/Whatsapp (Onboarding)">
+                                            <span class="metric-label">✉️ E-mail/Whatsapp:</span>
+                                            <span class="metric-value">${(onboardingDataStore['onb-contato-email'] || []).length}</span>
+                                        </div>
+                                    </div>
+                                </div>`;
 
-    // Métricas de Saúde
-    metrics.highValueUnbilled = onboardingClients.filter(c => c.ValorNaoFaturado > 50000);
-    const onboardingPlaybooks = ['onboarding lantek', 'onboarding elétrica', 'onboarding altium', 'onboarding solidworks', 'onboarding usinagem', 'onboarding hp', 'onboarding alphacam', 'onboarding mkf', 'onboarding formlabs', 'tech journey'];
-    const clientStartDate = {};
-    onboardingActivities.forEach(a => {
-        const playbookName = normalizeText(a.Playbook);
-        if (onboardingPlaybooks.some(p => playbookName.includes(p))) {
-            if (!clientStartDate[a.ClienteCompleto] || a.CriadoEm < clientStartDate[a.ClienteCompleto]) {
-                clientStartDate[a.ClienteCompleto] = a.CriadoEm;
-            }
-        }
-    });
+onboardingGeneralGrid.innerHTML = cardGeral + cardContatos;
 
-    const today = new Date();
-    metrics.timeInOnboarding = onboardingClients.map(c => {
-        const startDate = clientStartDate[c.ClienteCompleto];
-        if (startDate) {
-            const timeDiff = today - startDate;
-            return { client: c.Cliente, days: Math.floor(timeDiff / (1000 * 60 * 60 * 24)) };
-        }
-        return { client: c.Cliente, days: 0 };
-    }).filter(c => c.days > 0);
-    
-    return metrics;
-}
+const cardAtividades = `
+                                <div class="card">
+                                    <h3>Atividades em Onboarding (Mês)</h3>
+                                    <div class="card-content">
+                                        <div class="metric" data-metric-id="onb-atividades-previstas" data-metric-title="Atividades Previstas (Onboarding)">
+                                            <span class="metric-label">Previstas para o Mês:</span>
+                                            <span class="metric-value">${(onboardingDataStore['onb-atividades-previstas'] || []).length}</span>
+                                        </div>
+                                        <div class="metric" data-metric-id="onb-atividades-concluidas" data-metric-title="Atividades Concluídas (Onboarding)">
+                                            <span class="metric-label">Concluídas no Mês:</span>
+                                            <span class="metric-value success">${(onboardingDataStore['onb-atividades-concluidas'] || []).length}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                `;
 
-/**
- * Renderiza todos os cards na aba de Onboarding.
- */
-function renderOnboardingOKRs() {
-    if (rawActivities.length === 0 || rawClients.length === 0) {
-        document.getElementById('onboarding-dashboard').innerHTML = '<div class="loader">Carregue as planilhas para ver os dados de Onboarding.</div>';
-        return;
-    }
-
-    const viewMode = onboardingViewToggle.value;
-    const selectedISM = selectISM.value;
-    const selectedMonth = parseInt(selectMonth.value, 10);
-    const selectedYear = parseInt(selectYear.value, 10);
-
-    let baseOnboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
-    if (selectedISM !== 'Todos') {
-        baseOnboardingClients = baseOnboardingClients.filter(c => c.ISM === selectedISM);
-    }
-    const onboardingClientNames = new Set(baseOnboardingClients.map(c => c.ClienteCompleto));
-    let baseOnboardingActivities = rawActivities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
-
-    onboardingDataStore = calculateOnboardingOKRs(baseOnboardingActivities, baseOnboardingClients, viewMode, selectedMonth, selectedYear);
-
-    // Visão Geral
-    onboardingOverviewGrid.innerHTML = createSimpleCard('Visão Geral', 'onb-active-clients', 'Clientes Ativos em Onboarding', (onboardingDataStore.activeClients?.length || 0), 'onb-monthly-contacted', 'Clientes Contatados', (onboardingDataStore.monthlyContactedClients?.length || 0));
-    
-    // SLA
-    onboardingSlaGrid.innerHTML = createSlaCard('Contato de Welcome (SLA: 3 dias)', onboardingDataStore.welcomeTotal, onboardingDataStore.welcomeInSLA, 'onb-welcome') +
-                                 createSlaCard('Call/Reunião Kickoff (SLA: 7 dias)', onboardingDataStore.kickoffTotal, onboardingDataStore.kickoffInSLA, 'onb-kickoff');
-
-    // Execução
-    onboardingExecutionGrid.innerHTML = createExecutionCard('Planejamento Finalizado', onboardingDataStore.planejamentoDue, onboardingDataStore.planejamentoOnTime, 'onb-planejamento') +
-                                      createExecutionCard('Call/Reunião de GO LIVE', onboardingDataStore.callDue, onboardingDataStore.callOnTime, 'onb-golive') +
-                                      createExecutionCard('Mapear Contatos', onboardingDataStore.mapearDue, onboardingDataStore.mapearOnTime, 'onb-mapear') +
-                                      createExecutionCard('Acompanhamento / Status Reports', onboardingDataStore.acompanhamentoDue, onboardingDataStore.acompanhamentoOnTime, 'onb-acompanhamento');
-
-    // Sucesso
-    const npsPerc = (onboardingDataStore.clientsWithGoLiveInMonth?.length || 0) > 0 ? ((onboardingDataStore.npsResponded?.length || 0) / onboardingDataStore.clientsWithGoLiveInMonth.length) * 100 : 0;
-    onboardingSuccessGrid.innerHTML = createSimpleCard('Go Lives Realizados', 'onb-golives', 'Go Lives no Período', (onboardingDataStore.goLivesInMonth?.length || 0)) +
-                                    createOkrCard('Respostas NPS Pós Go-Live', npsPerc, 100, '%', 'onb-nps', (onboardingDataStore.npsResponded?.length || 0), (onboardingDataStore.clientsWithGoLiveInMonth?.length || 0));
-    
-    // Saúde
-    const avgTime = (onboardingDataStore.timeInOnboarding?.reduce((acc, c) => acc + c.days, 0) || 0) / (onboardingDataStore.timeInOnboarding?.length || 1);
-    onboardingHealthGrid.innerHTML = createSimpleCard('Risco Financeiro', 'onb-high-value', 'Clientes com > R$50k Não Faturado', (onboardingDataStore.highValueUnbilled?.length || 0)) +
-                                   createSimpleCard('Tempo em Onboarding', 'onb-time', 'Tempo Médio em Onboarding (dias)', avgTime.toFixed(0));
-}
-
-function createSlaCard(title, totalList, inSlaList, metricIdPrefix) {
-    const total = totalList?.length || 0;
-    const inSla = inSlaList?.length || 0;
-    const percentage = total > 0 ? (inSla / total) * 100 : 0;
-    
-    return `<div class="card">
-                <h3>${title}</h3>
-                <div class="card-content">
-                    <div class="metric" data-metric-id="${metricIdPrefix}-total" data-metric-title="Total de '${title}' no período">
-                        <span class="metric-label">Total Realizado:</span>
-                        <span class="metric-value">${total}</span>
-                    </div>
-                    <div class="metric" data-metric-id="${metricIdPrefix}-insla" data-metric-title="'${title}' dentro do SLA">
-                        <span class="metric-label">Dentro do Prazo:</span>
-                        <span class="metric-value success">${inSla}</span>
-                    </div>
-                </div>
-                <div class="progress-bar-container" title="${percentage.toFixed(0)}% de conformidade com o SLA">
-                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${percentage.toFixed(0)}%;"></div></div>
-                    <span class="progress-percentage">${percentage.toFixed(0)}%</span>
-                </div>
-            </div>`;
-}
-
-function createExecutionCard(title, dueList, onTimeList, metricIdPrefix) {
-    const due = dueList?.length || 0;
-    const onTime = onTimeList?.length || 0;
-    const percentage = due > 0 ? (onTime / due) * 100 : 0;
-    return `<div class="card">
-                <h3>${title}</h3>
-                <div class="card-content">
-                    <div class="metric" data-metric-id="${metricIdPrefix}-due" data-metric-title="'${title}' com vencimento no período">
-                        <span class="metric-label">Total Previsto:</span>
-                        <span class="metric-value">${due}</span>
-                    </div>
-                    <div class="metric" data-metric-id="${metricIdPrefix}-ontime" data-metric-title="'${title}' concluídas no prazo">
-                        <span class="metric-label">Concluídas no Prazo:</span>
-                        <span class="metric-value success">${onTime}</span>
-                    </div>
-                </div>
-                <div class="progress-bar-container" title="${percentage.toFixed(0)}% das atividades previstas foram concluídas no prazo">
-                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${percentage.toFixed(0)}%;"></div></div>
-                    <span class="progress-percentage">${percentage.toFixed(0)}%</span>
-                </div>
-            </div>`;
-}
+onboardingActivitiesGrid.innerHTML = cardAtividades;
+};
 
 // Armazena instâncias de gráficos para poder destruí-las antes de redesenhar
 let chartInstances = {};
@@ -2753,6 +2710,7 @@ const renderOKRs = () => {
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(totalClientesUnicosCS * metaCobertura));
     const clientesFaltantes = Math.max(0, clientesParaAtingirMeta - clientesContatadosCount);
 
+    // --- INÍCIO DA ALTERAÇÃO: PREPARAÇÃO DOS DADOS DE CLASSIFICAÇÃO ---
     let classificacaoHtml = '';
     const totalCalls = (dataStore['contato-ligacao'] || []).length;
     const totalClassified = (dataStore['ligacoes-classificadas'] || []).length;
@@ -2763,6 +2721,7 @@ const renderOKRs = () => {
     const percEngaged = totalClassified > 0 ? (totalEngaged / totalClassified) * 100 : 0;
     const percDisengaged = totalClassified > 0 ? (totalDisengaged / totalClassified) * 100 : 0;
     
+    // Cria o bloco HTML que será injetado no card de Cobertura
     classificacaoHtml = `
         <div style="border-top: 1px dashed var(--border-color); margin-top: 15px; padding-top: 10px;">
             <div class="metric" data-metric-id="ligacoes-classificadas" data-metric-title="Ligações/Reuniões Classificadas">
@@ -2781,6 +2740,7 @@ const renderOKRs = () => {
             </div>
         </div>
     `;
+    // --- FIM DA ALTERAÇÃO ---
 
     const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento, classificacaoHtml);
     const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
@@ -2812,7 +2772,7 @@ const renderOKRs = () => {
                         <span class="sub-metric" title="${(dataStore['ligacoes-classificadas'] || []).length} destes contatos foram classificados como 'Engajado' ou 'Desengajado'">
                             (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacoes-classificadas'] || []).length})
                         </span>
-                    </span>
+                        </span>
                 </div>
                 <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
                     <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${(dataStore['contato-email'] || []).length}</span>
@@ -2973,7 +2933,9 @@ const renderOKRs = () => {
     okrGrid.innerHTML = okrHtml;
 }; 
 
+// --- INÍCIO DA ALTERAÇÃO: NOVO PARÂMETRO PARA HTML ADICIONAL ---
 const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '', additionalHtml = '') => {
+// --- FIM DA ALTERAÇÃO ---
     const percentage = goal > 0 ? (value / goal) * 100 : 0;
     let valueText;
     let labelText = `Meta: ${goal}${unit}`;
@@ -3039,7 +3001,9 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
     
     const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
 
+    // --- INÍCIO DA ALTERAÇÃO: INJEÇÃO DO HTML ADICIONAL ---
     return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}${additionalHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
+    // --- FIM DA ALTERAÇÃO ---
 };
 
 const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
@@ -3085,7 +3049,7 @@ return `
 
 const createSimpleCard = (title, id1, label1, value1, id2, label2, value2) => {
 let metric2Html = '';
-if (id2 && value2) {
+if (id2) {
 metric2Html = `<div class="metric" data-metric-id="${id2}" data-metric-title="${label2}"><span class="metric-label">${label2}:</span><span class="metric-value">${value2}</span></div>`;
 }
 return `<div class="card"><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${label1}"><span class="metric-label">${label1}:</span><span class="metric-value">${value1}</span></div>${metric2Html}</div></div>`;
@@ -3326,22 +3290,9 @@ plugins: { legend: { display: false } }
 const selectSquad = document.getElementById('select-squad');
 const squadCsListDiv = document.getElementById('squad-cs-list');
 
-[selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, document.getElementById('select-comparison'), selectPeriod, selectISM, onboardingViewToggle].forEach(el => {
+[selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, document.getElementById('select-comparison'), selectPeriod, selectOnboardingTeam, selectISM].forEach(el => {
     el.addEventListener('change', (event) => {
         const targetId = event.target.id;
-
-        // Lógica para desabilitar/habilitar filtros de data na aba Onboarding
-        if (targetId === 'onboarding-view-toggle') {
-            const isTrajectoryView = onboardingViewToggle.value === 'trajectory';
-            document.getElementById('select-month').disabled = isTrajectoryView;
-            document.getElementById('select-year').disabled = isTrajectoryView;
-            
-            // Re-habilita os seletores do dashboard principal se eles foram desabilitados pelo de onboarding
-            if(!isTrajectoryView){
-                document.getElementById('select-month').disabled = false;
-                document.getElementById('select-year').disabled = false;
-            }
-        }
 
         if (currentUser.isManager) {
             if (targetId === 'select-squad') {
@@ -3378,12 +3329,14 @@ const squadCsListDiv = document.getElementById('squad-cs-list');
             autoSelectSegment(filteredClients);
         }
         
+        if (targetId === 'select-onboarding-team') {
+            updateIsmFilter();
+        }
+
         updateDashboard();
         renderOverdueView();
-        renderOnboardingOKRs(); // Sempre atualiza a aba de onboarding
     });
 });
-
 
 tabsContainer.addEventListener('click', (e) => {
     if (e.target.matches('.tab-button')) {
@@ -3398,7 +3351,7 @@ tabsContainer.addEventListener('click', (e) => {
         if (e.target.dataset.tab === 'data-view') {
             renderDataTables();
         } else if (e.target.dataset.tab === 'onboarding-view') {
-            renderOnboardingOKRs();
+            renderOnboardingDashboard();
         }
     }
 });
