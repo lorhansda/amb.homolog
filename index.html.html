@@ -2597,137 +2597,7 @@ const renderNewOnboardingCards = (metrics) => {
 // ------------------------------------------------------------------------------------------------
 // AÇÃO: SUBSTITUA COMPLETAMENTE a função renderOnboardingDashboard() existente pela versão abaixo.
 // ------------------------------------------------------------------------------------------------
-const renderOnboardingDashboard = () => {
-    if (rawClients.length === 0 || rawActivities.length === 0) {
-        document.getElementById('onboarding-okr-grid').innerHTML = '<div class="loader">Carregue as planilhas para ver os dados de Onboarding.</div>';
-        return;
-    }
 
-    const mesSelecionado = parseInt(selectMonth.value, 10);
-    const anoSelecionado = parseInt(selectYear.value, 10);
-    const teamView = selectOnboardingTeam.value;
-    const selectedISM = selectISM.value;
-
-    // Filtragem base de clientes
-    let onboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
-    if (teamView === 'syneco') {
-        onboardingClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
-    } else if (teamView === 'outros') {
-        onboardingClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
-    }
-    if (selectedISM !== 'Todos') {
-        onboardingClients = onboardingClients.filter(c => c.ISM === selectedISM);
-    }
-
-    // Filtragem de atividades concluídas no período para esses clientes
-    const onboardingClientSet = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
-    const onboardingActivitiesInPeriod = rawActivities.filter(a => {
-        const isConcludedInPeriod = a.ConcluidaEm?.getUTCMonth() === mesSelecionado && a.ConcluidaEm?.getUTCFullYear() === anoSelecionado;
-        return onboardingClientSet.has(a.ClienteCompleto) && isConcludedInPeriod;
-    });
-
-    // Calcula as novas métricas
-    const okrResults = calculateNewOnboardingOKRs(onboardingActivitiesInPeriod, onboardingClients, rawActivities);
-
-    // Armazena os dados detalhados para os modais
-    onboardingDataStore['onb-go-live-activities'] = okrResults.goLiveActivities;
-    onboardingDataStore['onb-clients-with-go-live'] = okrResults.clientsWithGoLiveList;
-    onboardingDataStore['onb-welcome-on-sla'] = okrResults.welcomeOnSLA;
-    onboardingDataStore['onb-kickoff-on-sla'] = okrResults.kickoffOnSLA;
-    onboardingDataStore['onb-high-value'] = okrResults.highValueClients;
-    Object.entries(okrResults.onTimeTasks).forEach(([task, data]) => {
-        const metricId = `onb-ontime-${normalizeText(task).replace(/\s/g, '-')}`;
-        onboardingDataStore[metricId] = data.list;
-    });
-    
-    // Atualiza o título e renderiza os cards
-    const teamTitleMap = {
-        'geral': 'Onboarding (Visão Geral)',
-        'syneco': 'Onboarding - Syneco (Time CP)',
-        'outros': 'Onboarding - Outros Produtos (Time CS)'
-    };
-    document.getElementById('onboarding-okr-title').textContent = `OKRs: ${teamTitleMap[teamView]}`;
-    
-    renderNewOnboardingCards(okrResults);
-};
-        renderOKRs();
-      
-
-const renderOnboardingDashboard = () => {
-if (rawClients.length === 0 || rawActivities.length === 0) return;
-const mesSelecionado = parseInt(selectMonth.value, 10);
-const anoSelecionado = parseInt(selectYear.value, 10);
-const teamView = selectOnboardingTeam.value;
-const selectedISM = selectISM.value;
-
-onboardingDataStore = calculateOnboardingMetrics(mesSelecionado, anoSelecionado, rawActivities, rawClients, teamView, selectedISM);
-
-const totalClientes = (onboardingDataStore['onb-total-clientes'] || []).length;
-const clientesContatados = (onboardingDataStore['onb-clientes-contatados'] || []).length;
-const percCobertura = totalClientes > 0 ? (clientesContatados / totalClientes) * 100 : 0;
-
-const teamTitleMap = {
-'geral': 'Onboarding (Visão Geral)',
-'syneco': 'Onboarding - Syneco (Time CP)',
-'outros': 'Onboarding - Outros Produtos (Time CS)'
-};
-onboardingGeneralTitle.textContent = `Visão Geral: ${teamTitleMap[teamView]}`;
-onboardingActivitiesTitle.textContent = `Acompanhamento: ${teamTitleMap[teamView]}`;
-
-const cardGeral = `
-                                <div class="card">
-                                    <h3>Geral do Onboarding</h3>
-                                    <div class="card-content">
-                                        <div class="metric" data-metric-id="onb-total-clientes" data-metric-title="Total de Clientes em Onboarding">
-                                            <span class="metric-label">Total de Clientes:</span>
-                                            <span class="metric-value">${totalClientes}</span>
-                                        </div>
-                                        <div class="metric" data-metric-id="onb-clientes-contatados" data-metric-title="Clientes Contatados em Onboarding">
-                                            <span class="metric-label">Clientes Contatados:</span>
-                                            <span class="metric-value">${clientesContatados}</span>
-                                        </div>
-                                    </div>
-                                    <div class="progress-bar-container" title="Cobertura de contatos na base de Onboarding: ${percCobertura.toFixed(1)}%">
-                                        <div class="progress-bar"><div class="progress-bar-fill" style="width: ${percCobertura.toFixed(1)}%;"></div></div>
-                                        <span class="progress-percentage">${percCobertura.toFixed(1)}%</span>
-                                    </div>
-                                </div>`;
-
-const cardContatos = `
-                                <div class="card">
-                                    <h3>Contatos em Onboarding (Mês)</h3>
-                                    <div class="card-content">
-                                        <div class="metric" data-metric-id="onb-contato-ligacao" data-metric-title="Contatos por Ligação/Reunião (Onboarding)">
-                                            <span class="metric-label">📞 Ligação/Reunião:</span>
-                                            <span class="metric-value">${(onboardingDataStore['onb-contato-ligacao'] || []).length}</span>
-                                        </div>
-                                        <div class="metric" data-metric-id="onb-contato-email" data-metric-title="Contatos por E-mail/Whatsapp (Onboarding)">
-                                            <span class="metric-label">✉️ E-mail/Whatsapp:</span>
-                                            <span class="metric-value">${(onboardingDataStore['onb-contato-email'] || []).length}</span>
-                                        </div>
-                                    </div>
-                                </div>`;
-
-onboardingGeneralGrid.innerHTML = cardGeral + cardContatos;
-
-const cardAtividades = `
-                                <div class="card">
-                                    <h3>Atividades em Onboarding (Mês)</h3>
-                                    <div class="card-content">
-                                        <div class="metric" data-metric-id="onb-atividades-previstas" data-metric-title="Atividades Previstas (Onboarding)">
-                                            <span class="metric-label">Previstas para o Mês:</span>
-                                            <span class="metric-value">${(onboardingDataStore['onb-atividades-previstas'] || []).length}</span>
-                                        </div>
-                                        <div class="metric" data-metric-id="onb-atividades-concluidas" data-metric-title="Atividades Concluídas (Onboarding)">
-                                            <span class="metric-label">Concluídas no Mês:</span>
-                                            <span class="metric-value success">${(onboardingDataStore['onb-atividades-concluidas'] || []).length}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                `;
-
-onboardingActivitiesGrid.innerHTML = cardAtividades;
-};
 
 // Armazena instâncias de gráficos para poder destruí-las antes de redesenhar
 let chartInstances = {};
@@ -3588,7 +3458,7 @@ tabsContainer.addEventListener('click', (e) => {
         if (e.target.dataset.tab === 'data-view') {
             renderDataTables();
         } else if (e.target.dataset.tab === 'onboarding-view') {
-            renderOnboardingDashboard();
+            
         }
     }
 });
