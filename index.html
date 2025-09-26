@@ -876,30 +876,27 @@ opacity: 1;
 
 <div id="onboarding-view" class="tab-content">
 <div id="onboarding-dashboard" style="display: none;">
-<section class="onboarding-controls">
-<div class="control-group">
-<label for="select-onboarding-team"><i class="fas fa-users-cog"></i> Visão do Time</label>
-<select id="select-onboarding-team" disabled>
-<option value="geral">Visão Geral</option>
-<option value="syneco">Syneco (Time CP)</option>
-<option value="outros">Outros Produtos (Time CS)</option>
-</select>
-</div>
-<div class="control-group">
-<label for="select-ism"><i class="fas fa-user-astronaut"></i> ISM Responsável</label>
-<select id="select-ism" disabled><option>Aguardando...</option></select>
-</div>
-</section>
+    <section class="onboarding-controls">
+        <div class="control-group">
+            <label for="select-onboarding-team"><i class="fas fa-users-cog"></i> Visão do Time</label>
+            <select id="select-onboarding-team" disabled>
+                <option value="geral">Visão Geral</option>
+                <option value="syneco">Syneco (Time CP)</option>
+                <option value="outros">Outros Produtos (Time CS)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="select-ism"><i class="fas fa-user-astronaut"></i> ISM Responsável</label>
+            <select id="select-ism" disabled><option>Aguardando...</option></select>
+        </div>
+    </section>
 
-<div class="metric-group">
-<h2 class="group-title" id="onboarding-general-title">Visão Geral do Onboarding</h2>
-<div class="group-content" id="onboarding-general-grid"></div>
-</div>
-<div class="metric-group">
-<h2 class="group-title" id="onboarding-activities-title">Acompanhamento de Atividades</h2>
-<div class="group-content" id="onboarding-activities-grid"></div>
-</div>
-</div>
+    <div class="metric-group">
+        <h2 class="group-title" id="onboarding-okr-title">OKRs Estratégicas de Onboarding</h2>
+        <div class="group-content" id="onboarding-okr-grid">
+            <div class="loader">Calculando métricas de Onboarding...</div>
+        </div>
+    </div>
 </div>
 
 <div id="overdue-view" class="tab-content">
@@ -2386,35 +2383,275 @@ const updateDashboard = () => {
         } else {
             divergenceMarker.style.display = 'none';
         }
+// CÓDIGO NOVO - COLE ACIMA DA FUNÇÃO renderOKRs()
 
-        renderOKRs();
-        renderOnboardingDashboard();
+const ONBOARDING_PLAYBOOKS = [
+    'onboarding lantek', 'onboarding elétrica', 'onboarding altium',
+    'onboarding solidworks', 'onboarding usinagem', 'onboarding hp',
+    'onboarding alphacam', 'onboarding mkf', 'onboarding formlabs', 'tech journey'
+];
 
+/**
+ * Calcula todas as novas métricas e OKRs para a visão de Onboarding.
+ */
+const calculateNewOnboardingOKRs = (activities, clients, allRawActivities) => {
+    const okrMetrics = {};
+    const today = new Date();
+    const clientSet = new Set(clients.map(c => c.Cliente.trim().toLowerCase()));
+
+    // 1. Go Live & NPS
+    const goLiveActivities = activities.filter(a => normalizeText(a['Tipo de Atividade']).includes('go live') && a.ConcluidaEm);
+    okrMetrics.goLiveActivities = goLiveActivities;
+    okrMetrics.goLiveCountByType = goLiveActivities.reduce((acc, activity) => {
+        const type = activity.Atividade || 'Não especificado';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+    }, {});
+
+    const clientsWithGoLive = [...new Set(goLiveActivities.map(a => a.ClienteCompleto))];
+    okrMetrics.clientsWithGoLiveList = clients.filter(c => clientsWithGoLive.includes(c.Cliente.trim().toLowerCase()));
+    
+    const npsRespondedClients = okrMetrics.clientsWithGoLiveList.filter(c => c['NPS onboarding'] && String(c['NPS onboarding']).trim() !== '');
+    okrMetrics.npsRespondedCount = npsRespondedClients.length;
+    okrMetrics.npsTotalGoLive = clientsWithGoLive.length;
+
+    // 2. SLAs (Welcome & Kickoff)
+    const welcomeActivities = activities.filter(a => normalizeText(a.Atividade) === 'contato de welcome' && a.ConcluidaEm && a['Criado em']);
+    const welcomeOnSLA = welcomeActivities.filter(a => {
+        const created = new Date(a['Criado em']);
+        const concluded = new Date(a.ConcluidaEm);
+        const diffDays = (concluded - created) / (1000 * 60 * 60 * 24);
+        return diffDays <= 3;
+    });
+    okrMetrics.welcomeActivities = welcomeActivities;
+    okrMetrics.welcomeOnSLA = welcomeOnSLA;
+
+    const kickoffActivities = activities.filter(a => normalizeText(a.Atividade) === 'call/reunião kickoff' && a.ConcluidaEm && a['Criado em']);
+    const kickoffOnSLA = kickoffActivities.filter(a => {
+        const created = new Date(a['Criado em']);
+        const concluded = new Date(a.ConcluidaEm);
+        const diffDays = (concluded - created) / (1000 * 60 * 60 * 24);
+        return diffDays <= 7;
+    });
+    okrMetrics.kickoffActivities = kickoffActivities;
+    okrMetrics.kickoffOnSLA = kickoffOnSLA;
+    
+    // 3. Atingimento de Prazos (Tarefas Críticas)
+    const onTimeTasks = {};
+    const tasksToTrack = ["Planejamento Finalizado", "Call/Reunião de GO LIVE", "Mapear contatos", "Acompanhamento / Status Reports"];
+    tasksToTrack.forEach(taskName => {
+        const relevantActivities = activities.filter(a => normalizeText(a.Atividade) === normalizeText(taskName) && a.ConcluidaEm && a.PrevisaoConclusao);
+        const onTime = relevantActivities.filter(a => a.ConcluidaEm <= a.PrevisaoConclusao);
+        onTimeTasks[taskName] = {
+            total: relevantActivities.length,
+            onTime: onTime.length,
+            list: relevantActivities,
+            onTimeList: onTime
+        };
+    });
+    okrMetrics.onTimeTasks = onTimeTasks;
+
+    // 4. Saúde e Duração
+    const highValueClients = clients.filter(c => parseFloat(c['valor total não faturado']) > 50000);
+    okrMetrics.highValueClients = highValueClients;
+
+    const clientDurations = clients.map(client => {
+        const clientName = client.Cliente.trim().toLowerCase();
+        const clientOnboardingActivities = allRawActivities.filter(a => 
+            a.ClienteCompleto === clientName && ONBOARDING_PLAYBOOKS.includes(normalizeText(a.Playbook))
+        );
+        if (clientOnboardingActivities.length === 0) return null;
+        
+        const firstActivityDate = clientOnboardingActivities.reduce((earliest, act) => {
+            const actDate = new Date(act['Criado em']);
+            return actDate < earliest ? actDate : earliest;
+        }, new Date());
+        
+        const duration = Math.floor((today - firstActivityDate) / (1000 * 60 * 60 * 24));
+        return { name: client.Cliente, duration };
+    }).filter(Boolean);
+
+    if (clientDurations.length > 0) {
+        const totalDuration = clientDurations.reduce((sum, item) => sum + item.duration, 0);
+        okrMetrics.averageOnboardingTime = totalDuration / clientDurations.length;
+        okrMetrics.longestOnboardings = [...clientDurations].sort((a, b) => b.duration - a.duration).slice(0, 3);
     } else {
-        exportCsvBtn.disabled = true;
-        exportHtmlBtn.disabled = true;
-
-        const includeOnboarding = onboardingToggle.checked;
-        const selectedCSValue = selectCS.value;
-        const dateRange = getPeriodDateRange(period, selectedYear);
-        const periodName = selectPeriod.options[selectPeriod.selectedIndex].text;
-
-        if (dateRange) {
-            statusMessage.textContent = `Calculando métricas para: ${periodName}...`;
-            statusMessage.style.display = 'block';
-            dashboard.style.display = 'none';
-            periodView.style.display = 'none';
-            document.getElementById('divergence-marker').style.display = 'none';
-
-            setTimeout(() => {
-                const periodData = calculateMetricsForDateRange(dateRange.start, dateRange.end, rawActivities, rawClients, selectedCSValue, includeOnboarding);
-                renderPeriodView(periodData, periodName);
-                statusMessage.style.display = 'none';
-            }, 50);
-        }
+        okrMetrics.averageOnboardingTime = 0;
+        okrMetrics.longestOnboardings = [];
     }
+
+    return okrMetrics;
 };
 
+
+/**
+ * Renderiza os novos cards de OKR na interface de Onboarding.
+ */
+const renderNewOnboardingCards = (metrics) => {
+    const grid = document.getElementById('onboarding-okr-grid');
+    if (!grid) return;
+
+    // Card 1: Go Live & NPS
+    const npsPerc = metrics.npsTotalGoLive > 0 ? (metrics.npsRespondedCount / metrics.npsTotalGoLive) * 100 : 0;
+    const goLiveTypesHtml = Object.entries(metrics.goLiveCountByType).map(([type, count]) => 
+        `<div class="metric"><span class="metric-label" style="font-size: 0.9em;">- ${type}:</span><span class="metric-value" style="font-size: 1.2rem;">${count}</span></div>`
+    ).join('');
+
+    const cardGoLive = `
+        <div class="card">
+            <h3>🚀 Performance de Go Live & NPS</h3>
+            <div class="card-content">
+                <div class="metric" data-metric-id="onb-go-live-activities" data-metric-title="Atividades de Go Live Concluídas">
+                    <span class="metric-label">Total de Go Lives no mês:</span>
+                    <span class="metric-value" style="font-size: 2rem;">${metrics.goLiveActivities.length}</span>
+                </div>
+                ${goLiveTypesHtml}
+                <div class="metric" style="border-top: 1px dashed var(--border-color); margin-top: 10px; padding-top: 10px;" data-metric-id="onb-clients-with-go-live" data-metric-title="Clientes com Go Live que responderam NPS">
+                    <span class="metric-label">Respostas NPS Pós Go-Live:</span>
+                    <span class="metric-value">${metrics.npsRespondedCount} de ${metrics.npsTotalGoLive}</span>
+                </div>
+            </div>
+            <div class="progress-bar-container" title="${npsPerc.toFixed(1)}% de resposta">
+                <div class="progress-bar"><div class="progress-bar-fill" style="width: ${npsPerc}%;"></div></div>
+                <span class="progress-percentage">${npsPerc.toFixed(1)}%</span>
+            </div>
+        </div>`;
+
+    // Card 2: SLA Performance
+    const welcomePerc = metrics.welcomeActivities.length > 0 ? (metrics.welcomeOnSLA.length / metrics.welcomeActivities.length) * 100 : 0;
+    const kickoffPerc = metrics.kickoffActivities.length > 0 ? (metrics.kickoffOnSLA.length / metrics.kickoffActivities.length) * 100 : 0;
+    const cardSLA = `
+        <div class="card">
+            <h3>⏱️ Performance de SLA</h3>
+            <div class="card-content">
+                <div class="metric" data-metric-id="onb-welcome-on-sla" data-metric-title="Contatos de Welcome dentro do SLA (3 dias)">
+                    <span class="metric-label">Welcome em até 3 dias:</span>
+                    <span class="metric-value ${welcomePerc >= 95 ? 'success' : 'danger'}">${metrics.welcomeOnSLA.length} de ${metrics.welcomeActivities.length}</span>
+                </div>
+                <div class="progress-bar-container" style="margin-top: 5px; margin-bottom: 20px;" title="${welcomePerc.toFixed(1)}% no prazo">
+                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${welcomePerc}%;"></div></div>
+                    <span class="progress-percentage">${welcomePerc.toFixed(1)}%</span>
+                </div>
+
+                <div class="metric" data-metric-id="onb-kickoff-on-sla" data-metric-title="Kickoffs dentro do SLA (7 dias)">
+                    <span class="metric-label">Kickoff em até 7 dias:</span>
+                    <span class="metric-value ${kickoffPerc >= 95 ? 'success' : 'danger'}">${metrics.kickoffOnSLA.length} de ${metrics.kickoffActivities.length}</span>
+                </div>
+                <div class="progress-bar-container" style="margin-top: 5px;" title="${kickoffPerc.toFixed(1)}% no prazo">
+                    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${kickoffPerc}%;"></div></div>
+                    <span class="progress-percentage">${kickoffPerc.toFixed(1)}%</span>
+                </div>
+            </div>
+        </div>`;
+
+    // Card 3: Atingimento de Prazos
+    const onTimeTasksHtml = Object.entries(metrics.onTimeTasks).map(([task, data]) => {
+        const perc = data.total > 0 ? (data.onTime / data.total) * 100 : 0;
+        return `
+            <div class="metric" data-metric-id="onb-ontime-${normalizeText(task).replace(/\s/g, '-')}" data-metric-title="Atingimento de Prazo: ${task}">
+                <span class="metric-label">${task}:</span>
+                <span class="metric-value ${perc === 100 ? 'success' : ''}">${data.onTime}/${data.total}</span>
+            </div>
+            <div class="progress-bar-container" style="margin-top: 0; margin-bottom: 15px;" title="${perc.toFixed(1)}% concluído no prazo">
+                <div class="progress-bar"><div class="progress-bar-fill" style="width: ${perc}%;"></div></div>
+                <span class="progress-percentage">${perc.toFixed(0)}%</span>
+            </div>
+        `;
+    }).join('');
+    const cardOnTime = `
+        <div class="card">
+            <h3>✅ Atingimento de Prazos</h3>
+            <div class="card-content">
+                ${onTimeTasksHtml}
+            </div>
+        </div>`;
+
+    // Card 4: Saúde e Duração
+    const longestOnboardingsHtml = metrics.longestOnboardings.map(c => 
+        `<div class="metric"><span class="metric-label" style="font-size: 0.9em;">- ${c.name}</span><span class="metric-value" style="font-size: 1.1rem; color: var(--warning-color);">${c.duration} dias</span></div>`
+    ).join('');
+
+    const cardHealth = `
+        <div class="card">
+            <h3>📊 Saúde e Duração do Onboarding</h3>
+            <div class="card-content">
+                <div class="metric" data-metric-id="onb-high-value" data-metric-title="Clientes com valor > R$50k não faturado">
+                    <span class="metric-label">Clientes c/ Alto Valor Não Faturado:</span>
+                    <span class="metric-value danger" style="font-size: 2rem;">${metrics.highValueClients.length}</span>
+                </div>
+                <div class="metric" style="border-top: 1px dashed var(--border-color); margin-top: 10px; padding-top: 10px;">
+                    <span class="metric-label">Tempo médio em Onboarding:</span>
+                    <span class="metric-value">${(metrics.averageOnboardingTime || 0).toFixed(0)} dias</span>
+                </div>
+                 <div class="metric" style="margin-top: 15px;">
+                    <span class="metric-label">Top 3 Onboardings Mais Longos:</span>
+                </div>
+                ${longestOnboardingsHtml || '<div class="metric-label" style="padding-left: 15px;">Nenhum cliente em onboarding para listar.</div>'}
+            </div>
+        </div>`;
+
+    grid.innerHTML = cardGoLive + cardSLA + cardOnTime + cardHealth;
+};
+
+
+// ------------------------------------------------------------------------------------------------
+// AÇÃO: SUBSTITUA COMPLETAMENTE a função renderOnboardingDashboard() existente pela versão abaixo.
+// ------------------------------------------------------------------------------------------------
+const renderOnboardingDashboard = () => {
+    if (rawClients.length === 0 || rawActivities.length === 0) {
+        document.getElementById('onboarding-okr-grid').innerHTML = '<div class="loader">Carregue as planilhas para ver os dados de Onboarding.</div>';
+        return;
+    }
+
+    const mesSelecionado = parseInt(selectMonth.value, 10);
+    const anoSelecionado = parseInt(selectYear.value, 10);
+    const teamView = selectOnboardingTeam.value;
+    const selectedISM = selectISM.value;
+
+    // Filtragem base de clientes
+    let onboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
+    if (teamView === 'syneco') {
+        onboardingClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
+    } else if (teamView === 'outros') {
+        onboardingClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
+    }
+    if (selectedISM !== 'Todos') {
+        onboardingClients = onboardingClients.filter(c => c.ISM === selectedISM);
+    }
+
+    // Filtragem de atividades concluídas no período para esses clientes
+    const onboardingClientSet = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
+    const onboardingActivitiesInPeriod = rawActivities.filter(a => {
+        const isConcludedInPeriod = a.ConcluidaEm?.getUTCMonth() === mesSelecionado && a.ConcluidaEm?.getUTCFullYear() === anoSelecionado;
+        return onboardingClientSet.has(a.ClienteCompleto) && isConcludedInPeriod;
+    });
+
+    // Calcula as novas métricas
+    const okrResults = calculateNewOnboardingOKRs(onboardingActivitiesInPeriod, onboardingClients, rawActivities);
+
+    // Armazena os dados detalhados para os modais
+    onboardingDataStore['onb-go-live-activities'] = okrResults.goLiveActivities;
+    onboardingDataStore['onb-clients-with-go-live'] = okrResults.clientsWithGoLiveList;
+    onboardingDataStore['onb-welcome-on-sla'] = okrResults.welcomeOnSLA;
+    onboardingDataStore['onb-kickoff-on-sla'] = okrResults.kickoffOnSLA;
+    onboardingDataStore['onb-high-value'] = okrResults.highValueClients;
+    Object.entries(okrResults.onTimeTasks).forEach(([task, data]) => {
+        const metricId = `onb-ontime-${normalizeText(task).replace(/\s/g, '-')}`;
+        onboardingDataStore[metricId] = data.list;
+    });
+    
+    // Atualiza o título e renderiza os cards
+    const teamTitleMap = {
+        'geral': 'Onboarding (Visão Geral)',
+        'syneco': 'Onboarding - Syneco (Time CP)',
+        'outros': 'Onboarding - Outros Produtos (Time CS)'
+    };
+    document.getElementById('onboarding-okr-title').textContent = `OKRs: ${teamTitleMap[teamView]}`;
+    
+    renderNewOnboardingCards(okrResults);
+};
+        renderOKRs();
+      
 
 const renderOnboardingDashboard = () => {
 if (rawClients.length === 0 || rawActivities.length === 0) return;
