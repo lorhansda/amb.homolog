@@ -181,7 +181,8 @@
             border: 1px solid var(--border-color);
         }
 
-        #clear-cache-button, /* Removido da UI, mas mantido para não quebrar referências caso existam */
+        #clear-cache-button,
+        /* Removido da UI, mas mantido para não quebrar referências caso existam */
         #settings-button,
         #export-csv-button,
         #export-html-button,
@@ -585,7 +586,7 @@
         .card h3:contains("NPS Pós Go-Live")::before { content: '\f59d'; }
         .card h3:contains("SLA: Contato de Welcome")::before { content: '\f0a1'; }
         .card h3:contains("SLA: Reunião Kickoff")::before { content: '\f680'; }
-        .card h3:contains("Go-Lives Realizados")::before { content: '\f135'; }
+        .card h3:contains("Go-Lives Realizados e Previstos")::before { content: '\f135'; }
         .card h3:contains("Prazo: Planejamento Finalizado")::before { content: '\f55b'; }
         .card h3:contains("Prazo: Reunião de GO LIVE")::before { content: '\f274'; }
         .card h3:contains("Prazo: Mapear Contatos")::before { content: '\f0c0'; }
@@ -1585,8 +1586,8 @@
     // O Dashboard só inicializa após o login
     async function initializeDashboard() {
         // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-        // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.3.0')
-        const APP_VERSION = '1.3.0';
+        // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.4.0')
+        const APP_VERSION = '1.4.0';
 
         const storedVersion = localStorage.getItem('appVersion');
 
@@ -2455,8 +2456,7 @@
 
             const clientesContatadosComDados = clientesContatados.map(atividade => {
                 const clienteData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
-                return {
-                    ...atividade,
+                return { ...atividade,
                     'Modelo de negócio': clienteData ? (clienteData['Modelo de negócio'] || 'Vazio') : 'Não encontrado',
                     'Potencial': clienteData ? (clienteData['Potencial'] || 'Vazio') : 'Não encontrado'
                 };
@@ -2755,6 +2755,8 @@
          */
         const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, selectedISM) => {
             const okrs = {};
+            const startOfMonth = new Date(Date.UTC(year, month, 1));
+            const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
 
             // 1. Filtra clientes em Onboarding e pelo ISM/Time
             let onboardingClients = clients.filter(c => normalizeText(c.Fase) === 'onboarding');
@@ -2771,76 +2773,76 @@
 
             // 2. Filtra atividades apenas para esses clientes
             const onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
-            const concludedInPeriod = onboardingActivities.filter(a => a.ConcluidaEm?.getMonth() === month && a.ConcluidaEm?.getFullYear() === year);
+            const concludedInPeriod = onboardingActivities.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
 
-            // 3. OKR: Go-Live e NPS (Resultados)
-            const goLiveActivities = concludedInPeriod.filter(a => normalizeText(a.Atividade).includes('go live'));
-            okrs.goLiveActivities = goLiveActivities;
-            const clientsWithGoLive = [...new Set(goLiveActivities.map(a => a.ClienteCompleto))];
+            // 3. OKR: Go-Live (Realizados e Previstos) e NPS
+            const goLiveActivitiesConcluded = concludedInPeriod.filter(a => normalizeText(a.Atividade).includes('go live'));
+
+            const goLiveActivitiesPredicted = onboardingActivities.filter(a =>
+                normalizeText(a.Atividade).includes('go live') &&
+                !a.ConcluidaEm &&
+                a.PrevisaoConclusao >= startOfMonth &&
+                a.PrevisaoConclusao <= endOfMonth
+            );
+
+            okrs.goLiveActivitiesConcluded = goLiveActivitiesConcluded;
+            okrs.goLiveActivitiesPredicted = goLiveActivitiesPredicted;
+
+            const clientsWithGoLive = [...new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto))];
             const clientsWithGoLiveAndNPSData = onboardingClients.filter(c => clientsWithGoLive.includes((c.Cliente || '').trim().toLowerCase()));
             okrs.clientsWithGoLive = clientsWithGoLiveAndNPSData;
             okrs.npsResponded = clientsWithGoLiveAndNPSData.filter(c => c.NPSOnboarding && String(c.NPSOnboarding).trim() !== '');
 
-            // 4. OKR: Clientes com valor > 50k (Resultados)
+            // 4. OKR: Clientes com valor > 50k
             okrs.highValueClients = onboardingClients.filter(c => c.ValorNaoFaturado > 50000);
 
             // 5. OKR ATUALIZADO: Tempo Médio de Onboarding (Concluído)
-            const completedOnboardingDurations = [];
-            const clientPlaybookDates = new Map();
-            const onboardingPlaybookNames = ['onboarding lantek', 'onboarding elétrica', 'onboarding altium', 'onboarding solidworks', 'onboarding usinagem', 'onboarding hp', 'onboarding alphacam', 'onboarding mkf', 'onboarding formlabs', 'tech journey'];
+            const completedOnboardings = [];
+            const clientsWithCompletedGoLive = new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto));
 
-            onboardingActivities.forEach(a => {
-                if (onboardingPlaybookNames.includes(normalizeText(a.Playbook))) {
-                    const clientKey = a.ClienteCompleto;
-                    if (!clientPlaybookDates.has(clientKey)) {
-                        clientPlaybookDates.set(clientKey, { starts: [], ends: [] });
-                    }
-                    if(a.CriadoEm) clientPlaybookDates.get(clientKey).starts.push(a.CriadoEm);
-                    if(a.ConcluidaEm) clientPlaybookDates.get(clientKey).ends.push(a.ConcluidaEm);
-                }
-            });
+            clientsWithCompletedGoLive.forEach(clientKey => {
+                 const goLiveDate = goLiveActivitiesConcluded
+                    .filter(a => a.ClienteCompleto === clientKey)
+                    .map(a => a.ConcluidaEm)
+                    .sort((a,b) => b - a)[0]; // Pega a data de Go Live mais recente
 
-            clientPlaybookDates.forEach((dates, client) => {
-                if (dates.starts.length > 0 && dates.ends.length > 0) {
-                     const minDate = new Date(Math.min.apply(null, dates.starts));
-                     const maxDate = new Date(Math.max.apply(null, dates.ends));
-                     const duration = Math.floor((maxDate - minDate) / (1000 * 60 * 60 * 24));
-                     completedOnboardingDurations.push(duration);
+                const playbookStartDate = clientOnboardingStartDate.get(clientKey);
+
+                if (goLiveDate && playbookStartDate) {
+                    const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
+                     completedOnboardings.push({
+                        client: clientKey,
+                        duration: duration
+                    });
                 }
             });
             
-            okrs.averageCompletedOnboardingTime = completedOnboardingDurations.length > 0 
-                ? Math.round(completedOnboardingDurations.reduce((a, b) => a + b, 0) / completedOnboardingDurations.length) 
+            okrs.completedOnboardingsList = completedOnboardings;
+            const durations = completedOnboardings.map(item => item.duration);
+            okrs.averageCompletedOnboardingTime = durations.length > 0
+                ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
                 : 0;
-            okrs.completedOnboardingsCount = completedOnboardingDurations.length;
 
-
-            // 6. OKR: Análise de Onboardings em Aberto (Top 5, Média, >120 dias)
+            // 6. OKR: Análise de Onboardings em Aberto (Top 5, >120 dias)
             const today = new Date();
-            let totalOpenDays = 0;
-            const openClientsWithDuration = onboardingClients.map(client => {
-                const clientKey = (client.Cliente || '').trim().toLowerCase();
-                const startDate = clientOnboardingStartDate.get(clientKey);
-                if (startDate) {
-                    const duration = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                    totalOpenDays += duration;
-                    return { ...client,
-                        onboardingDuration: duration
-                    };
-                }
-                return { ...client,
-                    onboardingDuration: null
-                };
-            }).filter(c => c.onboardingDuration !== null);
-            
+            const openClientsWithDuration = onboardingClients
+                .filter(client => !clientsWithCompletedGoLive.has((client.Cliente || '').trim().toLowerCase()))
+                .map(client => {
+                    const clientKey = (client.Cliente || '').trim().toLowerCase();
+                    const startDate = clientOnboardingStartDate.get(clientKey);
+                    if (startDate) {
+                        const duration = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                        return { ...client, onboardingDuration: duration };
+                    }
+                    return { ...client, onboardingDuration: null };
+                }).filter(c => c.onboardingDuration !== null);
+
             openClientsWithDuration.sort((a, b) => b.onboardingDuration - a.onboardingDuration);
             
             okrs.top5LongestOnboardings = openClientsWithDuration.slice(0, 5);
-            okrs.averageOpenOnboardingTime = openClientsWithDuration.length > 0 ? Math.round(totalOpenDays / openClientsWithDuration.length) : 0;
             okrs.clientsOver120Days = openClientsWithDuration.filter(c => c.onboardingDuration > 120);
 
-
-            // 7. OKRs de Processo (Previsto vs. Realizado)
+            // 7. OKRs de Processo (SLA Welcome e Kickoff)
             const processTargets = {
                 welcome: { name: 'contato de welcome', sla: 3 }, // SLA em dias
                 kickoff: { name: 'call/reunião kickoff', sla: 7 }, // SLA em dias
@@ -2851,26 +2853,27 @@
             };
 
             Object.entries(processTargets).forEach(([key, config]) => {
-                const previstoList = onboardingActivities.filter(a =>
+                const allInPeriod = onboardingActivities.filter(a =>
                     normalizeText(a.Atividade) === config.name &&
-                    a.PrevisaoConclusao?.getMonth() === month &&
-                    a.PrevisaoConclusao?.getFullYear() === year
+                    ((a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth) ||
+                     (a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth))
                 );
-                const realizadoList = onboardingActivities.filter(a =>
-                    normalizeText(a.Atividade) === config.name &&
-                    a.ConcluidaEm?.getMonth() === month &&
-                    a.ConcluidaEm?.getFullYear() === year
-                );
+
+                const previstoList = allInPeriod.filter(a => a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth);
+                const realizadoList = allInPeriod.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
+                
                 okrs[`${key}Previsto`] = previstoList;
                 okrs[`${key}Realizado`] = realizadoList;
 
                 if (config.sla) {
                     okrs[`${key}SLAOk`] = realizadoList.filter(a => {
-                        if (a.CriadoEm && a.ConcluidaEm) {
-                            const diffDays = (a.ConcluidaEm - a.CriadoEm) / (1000 * 60 * 60 * 24);
+                        const dueDate = a.PrevisaoConclusao;
+                        const completedDate = a.ConcluidaEm;
+                        if (dueDate && completedDate) {
+                            const diffDays = (completedDate - dueDate) / (1000 * 60 * 60 * 24);
                             return diffDays <= config.sla;
                         }
-                        return false;
+                        return false; // Não conta se não tiver as duas datas
                     });
                 }
             });
@@ -2909,7 +2912,7 @@
             };
             
             // NOVO CARD: TOP 5 CLIENTES COM MAIS TEMPO EM ONBOARDING
-            const createTop5OnboardingCard = (top5List, averageTime, overdueList) => {
+            const createTop5OnboardingCard = (top5List, overdueList) => {
                 const listHtml = top5List.length > 0 
                     ? top5List.map(item => `<li><span class="client-name" title="${item.Cliente}">${item.Cliente}</span> <span class="duration">${item.onboardingDuration} dias</span></li>`).join('')
                     : '<li>Nenhum cliente em onboarding para exibir.</li>';
@@ -2919,15 +2922,11 @@
                 return `
                 <div class="card">
                     <h3>Análise de Onboardings em Aberto</h3>
-                     <div class="card-content">
-                        <div class="metric">
-                            <span class="metric-label">Tempo Médio da Carteira (Aberto):</span>
-                            <span class="metric-value" style="font-size: 2rem; color: var(--primary-color);">${averageTime} dias</span>
+                        <div class="card-content">
+                            <h4 style="margin: 0 0 5px 0; font-weight: 600; color: var(--text-light-color);">Top 5 - Maior Tempo em Onboarding:</h4>
+                            <ol class="onboarding-top5-list">${listHtml}</ol>
+                            ${overdueList.length > 0 ? `<button class="view-overdue-btn" data-metric-id="onb-over-120-days" data-metric-title="Clientes em Onboarding > 120 dias"><i class="fas fa-eye"></i> Ver ${overdueList.length} Clientes > 120 dias</button>` : ''}
                         </div>
-                        <h4 style="margin: 20px 0 5px 0; font-weight: 600; color: var(--text-light-color);">Top 5 - Maior Tempo em Onboarding:</h4>
-                        <ol class="onboarding-top5-list">${listHtml}</ol>
-                        ${overdueList.length > 0 ? `<button class="view-overdue-btn" data-metric-id="onb-over-120-days" data-metric-title="Clientes em Onboarding > 120 dias"><i class="fas fa-eye"></i> Ver ${overdueList.length} Clientes > 120 dias</button>` : ''}
-                    </div>
                 </div>
                 `;
             };
@@ -2962,23 +2961,24 @@
             const outcomesGrid = document.getElementById('onboarding-outcomes-grid');
             const npsTotal = onboardingDataStore.clientsWithGoLive.length;
             const npsRespondedCount = onboardingDataStore.npsResponded.length;
+            const goLivesTotal = onboardingDataStore.goLiveActivitiesConcluded.length + onboardingDataStore.goLiveActivitiesPredicted.length;
 
             outcomesGrid.innerHTML = `
-                ${createOnboardingMetricCard('Go-Lives Realizados', 'Clientes que concluíram o onboarding no mês.', onboardingDataStore.goLiveActivities.length, '', 'fa-rocket', 'onb-go-live-activities', onboardingDataStore.goLiveActivities)}
+                ${createOnboardingMetricCard('Go-Lives Realizados e Previstos', 'Total de Go-Lives concluídos e previstos para o mês.', goLivesTotal, `<strong>${onboardingDataStore.goLiveActivitiesConcluded.length}</strong> realizados, <strong>${onboardingDataStore.goLiveActivitiesPredicted.length}</strong> previstos.`, 'fa-rocket', 'onb-go-live-combined', [...onboardingDataStore.goLiveActivitiesConcluded, ...onboardingDataStore.goLiveActivitiesPredicted])}
                 ${createOnboardingMetricCard('NPS Pós Go-Live', 'Taxa de resposta dos clientes que tiveram Go-Live.', `${npsRespondedCount}/${npsTotal}`, `responderam`, 'fa-star-half-alt', 'onb-nps-responded', onboardingDataStore.npsResponded)}
-                ${createOnboardingMetricCard('Tempo Médio de Onboarding (Concluído)', 'Duração média de playbooks de onboarding finalizados.', `${onboardingDataStore.averageCompletedOnboardingTime} dias`, `para ${onboardingDataStore.completedOnboardingsCount} onboardings concluídos`, 'fa-check-circle')}
-                ${createTop5OnboardingCard(onboardingDataStore.top5LongestOnboardings, onboardingDataStore.averageOpenOnboardingTime, onboardingDataStore.clientsOver120Days)}
+                ${createOnboardingMetricCard('Tempo Médio de Onboarding (Concluído)', 'Duração média (Playbook vs Go-Live).', `${onboardingDataStore.averageCompletedOnboardingTime} dias`, `para ${onboardingDataStore.completedOnboardingsList.length} onboardings concluídos`, 'fa-check-circle', 'onb-completed-list', onboardingDataStore.completedOnboardingsList)}
+                ${createTop5OnboardingCard(onboardingDataStore.top5LongestOnboardings, onboardingDataStore.clientsOver120Days)}
                 ${createOnboardingMetricCard('Clientes Onboarding > R$50 mil', 'Clientes com alto valor não faturado em onboarding.', onboardingDataStore.highValueClients.length, 'clientes', 'fa-dollar-sign', 'onb-high-value', onboardingDataStore.highValueClients)}
             `;
 
             const processGrid = document.getElementById('onboarding-process-grid');
             processGrid.innerHTML = `
-                ${createOnboardingProcessCard('Contato de Welcome', `Meta SLA: concluído em até 3 dias. (${((onboardingDataStore.welcomeSLAOk?.length || 0) / (onboardingDataStore.welcomeRealizado?.length || 1) * 100).toFixed(0)}% no SLA)`, (onboardingDataStore.welcomePrevisto || []).length, (onboardingDataStore.welcomeRealizado || []).length, 'fa-handshake', 'welcome')}
-                ${createOnboardingProcessCard('Reunião Kickoff', `Meta SLA: concluída em até 7 dias. (${((onboardingDataStore.kickoffSLAOk?.length || 0) / (onboardingDataStore.kickoffRealizado?.length || 1) * 100).toFixed(0)}% no SLA)`, (onboardingDataStore.kickoffPrevisto || []).length, (onboardingDataStore.kickoffRealizado || []).length, 'fa-users', 'kickoff')}
-                ${createOnboardingProcessCard('Planejamento Finalizado', 'Avalia a conclusão da etapa de planejamento.', (onboardingDataStore.planejamentoPrevisto || []).length, (onboardingDataStore.planejamentoRealizado || []).length, 'fa-clipboard-check', 'planejamento')}
-                ${createOnboardingProcessCard('Mapear Contatos', 'Avalia a conclusão da etapa de mapeamento de stakeholders.', (onboardingDataStore.mapearContatosPrevisto || []).length, (onboardingDataStore.mapearContatosRealizado || []).length, 'fa-address-book', 'mapearContatos')}
-                ${createOnboardingProcessCard('Reunião de Go-Live', 'Avalia a realização da reunião que oficializa o Go-Live.', (onboardingDataStore.goLiveMeetingPrevisto || []).length, (onboardingDataStore.goLiveMeetingRealizado || []).length, 'fa-calendar-check', 'goLiveMeeting')}
-                ${createOnboardingProcessCard('Acompanhamentos', 'Avalia a execução dos status reports planejados.', (onboardingDataStore.acompanhamentoPrevisto || []).length, (onboardingDataStore.acompanhamentoRealizado || []).length, 'fa-sync-alt', 'acompanhamento')}
+                ${createOnboardingProcessCard('SLA: Contato de Welcome', `Meta: concluído em até 3 dias após a previsão. (${((onboardingDataStore.welcomeSLAOk?.length || 0) / (onboardingDataStore.welcomeRealizado?.length || 1) * 100).toFixed(0)}% no SLA)`, (onboardingDataStore.welcomePrevisto || []).length, (onboardingDataStore.welcomeRealizado || []).length, 'fa-handshake', 'welcome')}
+                ${createOnboardingProcessCard('SLA: Reunião Kickoff', `Meta: concluída em até 7 dias após a previsão. (${((onboardingDataStore.kickoffSLAOk?.length || 0) / (onboardingDataStore.kickoffRealizado?.length || 1) * 100).toFixed(0)}% no SLA)`, (onboardingDataStore.kickoffPrevisto || []).length, (onboardingDataStore.kickoffRealizado || []).length, 'fa-users', 'kickoff')}
+                ${createOnboardingProcessCard('Prazo: Planejamento Finalizado', 'Avalia a conclusão da etapa de planejamento.', (onboardingDataStore.planejamentoPrevisto || []).length, (onboardingDataStore.planejamentoRealizado || []).length, 'fa-clipboard-check', 'planejamento')}
+                ${createOnboardingProcessCard('Prazo: Mapear Contatos', 'Avalia a conclusão da etapa de mapeamento de stakeholders.', (onboardingDataStore.mapearContatosPrevisto || []).length, (onboardingDataStore.mapearContatosRealizado || []).length, 'fa-address-book', 'mapearContatos')}
+                ${createOnboardingProcessCard('Prazo: Reunião de GO LIVE', 'Avalia a realização da reunião que oficializa o Go-Live.', (onboardingDataStore.goLiveMeetingPrevisto || []).length, (onboardingDataStore.goLiveMeetingRealizado || []).length, 'fa-calendar-check', 'goLiveMeeting')}
+                ${createOnboardingProcessCard('Prazo: Acompanhamento', 'Avalia a execução dos status reports planejados.', (onboardingDataStore.acompanhamentoPrevisto || []).length, (onboardingDataStore.acompanhamentoRealizado || []).length, 'fa-sync-alt', 'acompanhamento')}
             `;
 
             document.querySelectorAll('#onboarding-view .card[data-metric-id], #onboarding-view button[data-metric-id]').forEach(el => {
@@ -2988,7 +2988,13 @@
                     const title = el.dataset.metricTitle;
                     const data = onboardingDataStore[metricId];
                     if (data && data.length > 0) {
-                        showDataInModal(data, title);
+                        // Se for a lista de concluídos, formata para a tabela
+                        if(metricId === 'onb-completed-list') {
+                            const formattedData = data.map(item => ({ 'Cliente': item.client, 'Duração (dias)': item.duration }));
+                            showDataInModal(formattedData, title);
+                        } else {
+                            showDataInModal(data, title);
+                        }
                     }
                 });
             });
@@ -3001,7 +3007,6 @@
          */
 
         let chartInstances = {};
-
         function customLegendClickHandler(e, legendItem, legend) {
             const chart = legend.chart;
             const index = legendItem.index;
@@ -3208,7 +3213,7 @@
                     <div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião">
                         <span class="metric-label">📞 Ligação/Reunião (CS):</span>
                         <span class="metric-value">
-                            ${(dataStore['contato-ligacao'] || []).length} 
+                            ${(dataStore['contato-ligacao'] || []).length} 
                             <span class="sub-metric" title="${(dataStore['ligacoes-classificadas'] || []).length} destes contatos foram classificados como 'Engajado' ou 'Desengajado'">
                                 (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacoes-classificadas'] || []).length})
                             </span>
