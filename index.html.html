@@ -580,12 +580,12 @@
 
         /* Ícones para os novos cards de Onboarding */
         .card h3:contains("Tempo Médio de Onboarding (Concluído)")::before { content: '\f2f2'; }
-        .card h3:contains("Maiores Tempos em Onboarding (Aberto)")::before { content: '\f00e'; }
+        .card h3:contains("Análise de Onboardings em Aberto")::before { content: '\f00e'; }
         .card h3:contains("Clientes Onboarding > R$50 mil")::before { content: '\f51e'; }
         .card h3:contains("NPS Pós Go-Live")::before { content: '\f59d'; }
         .card h3:contains("SLA: Contato de Welcome")::before { content: '\f0a1'; }
         .card h3:contains("SLA: Reunião Kickoff")::before { content: '\f680'; }
-        .card h3:contains("Go-Lives do Mês")::before { content: '\f135'; }
+        .card h3:contains("Go-Lives Realizados")::before { content: '\f135'; }
         .card h3:contains("Prazo: Planejamento Finalizado")::before { content: '\f55b'; }
         .card h3:contains("Prazo: Reunião de GO LIVE")::before { content: '\f274'; }
         .card h3:contains("Prazo: Mapear Contatos")::before { content: '\f0c0'; }
@@ -1316,7 +1316,7 @@
                     <div id="period-view" style="display: none;">
                     </div>
                 </div>
-<div id="onboarding-view" class="tab-content">
+                <div id="onboarding-view" class="tab-content">
                     <div id="onboarding-dashboard" style="display: none;">
                         <section class="onboarding-controls">
                             <div class="control-group">
@@ -1517,6 +1517,7 @@
         isManager: false
     };
 
+    // Função para decodificar o token JWT recebido do Google
     function parseJwt(token) {
         try {
             return JSON.parse(atob(token.split('.')[1]));
@@ -1525,79 +1526,119 @@
         }
     }
 
+    // Função chamada pelo Google após um login bem-sucedido
     function handleCredentialResponse(response) {
         const decodedToken = parseJwt(response.credential);
 
         if (decodedToken) {
+            // Salva o token no cache do navegador para manter a sessão
             localStorage.setItem('googleUserToken', response.credential);
+
             currentUser.email = decodedToken.email;
             currentUser.name = decodedToken.name;
+
+            // Definição de acesso de gestor
             const managerEmails = ['lorhanska@gmail.com', 'elianeokr@gmail.com', 'juliarail@gmail.com', 'jadecristianettirp@gmail.com'];
             currentUser.isManager = managerEmails.includes(currentUser.email);
+
+            // Esconde a tela de login e exibe o dashboard
             document.getElementById('login-container').style.display = 'none';
             document.getElementById('dashboard-wrapper').style.display = 'block';
+
+            // Inicia o dashboard principal após o login
             initializeDashboard();
         } else {
             alert("Falha no login. Não foi possível verificar suas credenciais. Tente novamente.");
-            localStorage.removeItem('googleUserToken');
+            localStorage.removeItem('googleUserToken'); // Limpa token inválido
         }
     }
 
+    // Função para fazer logout
     function logout() {
+        // Limpa o token do cache do navegador
         localStorage.removeItem('googleUserToken');
+        // Desabilita o login automático do Google na próxima visita
         google.accounts.id.disableAutoSelect();
+        // Recarrega a página para voltar à tela de login
         location.reload();
     }
 
+    // Função que verifica o estado do login assim que a página carrega
     (function checkLoginState() {
         const userToken = localStorage.getItem('googleUserToken');
         if (userToken) {
             const decodedToken = parseJwt(userToken);
+
+            // Verifica se o token não está expirado
             if (decodedToken && (decodedToken.exp * 1000 > Date.now())) {
+                // Se o token for válido, loga o usuário automaticamente
                 handleCredentialResponse({
                     credential: userToken
                 });
             } else {
+                // Se o token expirou, remove do cache
                 localStorage.removeItem('googleUserToken');
             }
         }
     })();
 
+    // O Dashboard só inicializa após o login
     async function initializeDashboard() {
-        const APP_VERSION = '1.3.1'; // Versão atualizada com as novas correções
+        // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
+        // IMPORTANTE: Mude este número a cada nova publicação (ex: '1.3.0')
+        const APP_VERSION = '1.3.0';
+
         const storedVersion = localStorage.getItem('appVersion');
 
         if (storedVersion !== APP_VERSION) {
             console.warn(`Versão da aplicação desatualizada detectada (Cache: ${storedVersion} | Atual: ${APP_VERSION}). Forçando limpeza completa.`);
+
+            // Guarda o token do usuário para tentar relogar após a limpeza
             const userToken = localStorage.getItem('googleUserToken');
-            await forceClearAllData(false);
-            localStorage.setItem('appVersion', APP_VERSION);
+
+            await forceClearAllData(false); // Limpa tudo, sem alerta/reload
+
+            localStorage.setItem('appVersion', APP_VERSION); // Define a nova versão
+
+            // Recoloca o token para tentar o login automático
             if (userToken) {
                 localStorage.setItem('googleUserToken', userToken);
             }
-            window.location.reload();
-            return;
+
+            window.location.reload(); // Recarrega a página com o cache limpo
+            return; // Impede que o resto do script seja executado com dados antigos
         }
 
+        // --- Exibe o marcador de versão ---
         const versionMarker = document.getElementById('app-version-marker');
         if (versionMarker) {
             versionMarker.textContent = `Versão: ${APP_VERSION}`;
         }
+        // --- Fim do novo código ---
 
+        // --- NOVO: Exibe o card de usuário e configura o botão de logout ---
         const userInfoCard = document.getElementById('user-info-card');
         const userInfoText = document.getElementById('user-info-text');
         const logoutButton = document.getElementById('logout-button');
 
         if (currentUser.name) {
+            // Adiciona um ícone e o nome do usuário ao card
             userInfoText.innerHTML = `<i class="fas fa-user-check" style="margin-right: 8px; color: var(--secondary-color);"></i> ${currentUser.name}`;
+
+            // ADICIONADO: Verifica se o usuário é gestor e insere a etiqueta
             if (currentUser.isManager) {
                 userInfoCard.insertAdjacentHTML('beforeend', '<span class="admin-badge">Login ADM</span>');
             }
+
             userInfoCard.style.display = 'flex';
         }
-        logoutButton.addEventListener('click', logout);
 
+        logoutButton.addEventListener('click', logout);
+        // --- FIM DA NOVA LÓDICA DE USUÁRIO ---
+
+        // O código do dashboard agora é executado dentro desta função
         const themeToggle = document.getElementById('theme-toggle');
+
         const applyTheme = (isLight) => {
             if (isLight) {
                 document.body.classList.add('light-theme');
@@ -1607,8 +1648,10 @@
                 localStorage.setItem('theme', 'dark');
             }
         };
+
         themeToggle.addEventListener('change', () => {
             applyTheme(themeToggle.checked);
+            // Redesenha os gráficos com as cores do novo tema
             if (dataStore['contatos-por-negocio']) {
                 renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio']);
             }
@@ -1616,6 +1659,7 @@
                 renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial']);
             }
         });
+
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'light') {
             themeToggle.checked = true;
@@ -1624,7 +1668,6 @@
             themeToggle.checked = false;
             applyTheme(false);
         }
-
         const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const getQuarter = (date) => Math.floor(date.getMonth() / 3);
         const formatDate = (date) => {
@@ -1638,55 +1681,91 @@
         const parseDate = (dateInput) => {
             if (!dateInput) return null;
             if (dateInput instanceof Date) return dateInput;
+
             const dateStr = String(dateInput).trim();
+
+            // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
             let parts = dateStr.split(/[-/]/);
             if (parts.length === 3 && parts[0].length === 4) {
-                const [year, month, day] = parts.map(p => parseInt(p, 10));
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                const day = parseInt(parts[2], 10);
                 if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
                     const date = new Date(Date.UTC(year, month - 1, day));
-                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) return date;
+                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                        return date;
+                    }
                 }
             }
+
+            // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
             parts = dateStr.split(/[-/]/);
             if (parts.length === 3 && parts[2].length === 4) {
-                const [day, month, year] = parts.map(p => parseInt(p, 10));
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                const year = parseInt(parts[2], 10);
                 if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
                     const date = new Date(Date.UTC(year, month - 1, day));
-                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) return date;
+                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                        return date;
+                    }
                 }
             }
+
             return null;
         };
 
-        const fileAtividadesInput = document.getElementById('file-atividades'), fileClientesInput = document.getElementById('file-clientes');
-        const selectCS = document.getElementById('select-cs'), selectSegmento = document.getElementById('select-segmento');
-        const selectMonth = document.getElementById('select-month'), selectYear = document.getElementById('select-year');
+        // --- Seletores de Elementos ---
+        const fileAtividadesInput = document.getElementById('file-atividades'),
+            fileClientesInput = document.getElementById('file-clientes');
+        const selectCS = document.getElementById('select-cs'),
+            selectSegmento = document.getElementById('select-segmento');
+        const selectMonth = document.getElementById('select-month'),
+            selectYear = document.getElementById('select-year');
         const selectPeriod = document.getElementById('select-period');
         const onboardingToggle = document.getElementById('include-onboarding-toggle');
-        const statusMessage = document.getElementById('status-message'), dashboard = document.getElementById('dashboard');
+        const statusMessage = document.getElementById('status-message'),
+            dashboard = document.getElementById('dashboard');
         const periodView = document.getElementById('period-view');
-        const okrGrid = document.getElementById('okr-grid-container'), generalGrid = document.getElementById('general-indicators-grid');
-        const playbookGrid = document.getElementById('playbooks-grid'), okrTitleHeader = document.getElementById('okr-title-header');
+        const okrGrid = document.getElementById('okr-grid-container'),
+            generalGrid = document.getElementById('general-indicators-grid');
+        const playbookGrid = document.getElementById('playbooks-grid'),
+            okrTitleHeader = document.getElementById('okr-title-header');
         const tabsContainer = document.querySelector('.tabs');
-        const detailsModal = document.getElementById('details-modal'), settingsModal = document.getElementById('settings-modal'), client360Modal = document.getElementById('client-360-modal');
+        const detailsModal = document.getElementById('details-modal'),
+            settingsModal = document.getElementById('settings-modal'),
+            client360Modal = document.getElementById('client-360-modal');
         const anotacaoModal = document.getElementById('anotacao-modal');
+
+        // --- Seletores da Nova Seção de Onboarding ---
         const onboardingDashboard = document.getElementById('onboarding-dashboard');
         const selectOnboardingTeam = document.getElementById('select-onboarding-team');
         const selectISM = document.getElementById('select-ism');
+        // Os grids foram renomeados e simplificados no HTML
         const onboardingOutcomesGrid = document.getElementById('onboarding-outcomes-grid');
         const onboardingProcessGrid = document.getElementById('onboarding-process-grid');
 
-        let rawActivities = [], rawClients = [];
-        let dataStore = {}, onboardingDataStore = {};
+        let rawActivities = [],
+            rawClients = [];
+        let dataStore = {};
+        let onboardingDataStore = {}; // Armazenará os dados dos OKRs de Onboarding
         let appGoals = {};
         let csToSquadMap = new Map();
         let clientOnboardingStartDate = new Map();
 
-        const defaultGoals = { sensescore: 85, labs: 10, coverage: 40, qbr: 5, successplan: 5, engagement: 50 };
+        const defaultGoals = {
+            sensescore: 85,
+            labs: 10,
+            coverage: 40,
+            qbr: 5,
+            successplan: 5,
+            engagement: 50
+        };
 
         const loadGoals = () => {
             const savedGoals = localStorage.getItem('dashboardOKRsGoals');
-            appGoals = savedGoals ? JSON.parse(savedGoals) : { ...defaultGoals };
+            appGoals = savedGoals ? JSON.parse(savedGoals) : { ...defaultGoals
+            };
             Object.keys(appGoals).forEach(key => {
                 const input = document.getElementById(`goal-${key}`);
                 if (input) input.value = appGoals[key];
@@ -1707,12 +1786,14 @@
         };
 
         const readFile = (file) => new Promise((resolve, reject) => {
+
             const excelSerialToDateObject = (serial) => {
                 const correctedSerial = serial + 1;
                 const excelTimestamp = (correctedSerial - 25569) * 86400 * 1000;
                 const timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
                 return new Date(excelTimestamp + timezoneOffset);
             }
+
             const transpilePipeToCommaCSV = (pipeText) => {
                 let inQuotes = false;
                 let newCsvText = '';
@@ -1723,21 +1804,34 @@
                 }
                 return newCsvText;
             };
+
             const reader = new FileReader();
+
             reader.onload = (event) => {
                 try {
                     const data = event.target.result;
                     const fileName = file.name.toLowerCase();
                     let workbook;
+
                     if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                        workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                        workbook = XLSX.read(data, {
+                            type: 'array',
+                            cellDates: true
+                        });
                     } else {
                         const standardCsvText = transpilePipeToCommaCSV(data);
-                        workbook = XLSX.read(standardCsvText, { type: 'string' });
+                        workbook = XLSX.read(standardCsvText, {
+                            type: 'string'
+                        });
                     }
+
                     const sheetName = workbook.SheetNames[0];
-                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+                        defval: ""
+                    });
+
                     const dateColumns = ["Criado em", "Previsão de conclusão", "Concluída em"];
+
                     jsonData.forEach(row => {
                         dateColumns.forEach(colName => {
                             if (row[colName] && typeof row[colName] === 'number') {
@@ -1745,12 +1839,18 @@
                             }
                         });
                     });
+
                     resolve(jsonData);
+
                 } catch (e) {
                     reject(new Error("Não foi possível processar o arquivo. Verifique se não está corrompido."));
                 }
             };
-            reader.onerror = (error) => reject(new Error("Ocorreu um erro ao ler o arquivo."));
+
+            reader.onerror = (error) => {
+                reject(new Error("Ocorreu um erro de hardware ou permissão ao tentar ler o arquivo."));
+            };
+
             if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
                 reader.readAsArrayBuffer(file);
             } else {
@@ -1760,44 +1860,95 @@
 
         const buildCsToSquadMap = () => {
             const allCSs = [...new Set(rawClients.map(c => c.CS).filter(Boolean))];
+
             allCSs.forEach(csName => {
                 const clientsOfCS = rawClients.filter(c => c.CS === csName);
-                if (!clientsOfCS.some(c => c['Squad CS'])) return;
+
+                if (!clientsOfCS.some(c => c['Squad CS'])) {
+                    return;
+                }
+
                 const squadCounts = clientsOfCS.reduce((acc, client) => {
                     const squad = client['Squad CS'];
-                    if (squad) acc[squad] = (acc[squad] || 0) + 1;
+                    if (squad) {
+                        acc[squad] = (acc[squad] || 0) + 1;
+                    }
                     return acc;
                 }, {});
-                let majoritySquad = Object.keys(squadCounts).reduce((a, b) => squadCounts[a] > squadCounts[b] ? a : b, '');
-                if (majoritySquad) csToSquadMap.set(csName, majoritySquad);
+
+                let majoritySquad = '';
+                let maxCount = 0;
+                for (const squad in squadCounts) {
+                    if (squadCounts[squad] > maxCount) {
+                        maxCount = squadCounts[squad];
+                        majoritySquad = squad;
+                    }
+                }
+
+                if (majoritySquad) {
+                    csToSquadMap.set(csName, majoritySquad);
+                }
             });
         };
 
         const processInitialData = () => {
             statusMessage.textContent = 'Processando dados...';
+
             const clienteMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), cli]));
-            const onboardingPlaybooks = ['onboarding lantek', 'onboarding elétrica', 'onboarding altium', 'onboarding solidworks', 'onboarding usinagem', 'onboarding hp', 'onboarding alphacam', 'onboarding mkf', 'onboarding formlabs', 'tech journey'];
+
+            // Lista de playbooks de onboarding para cálculo do tempo
+            const onboardingPlaybooks = [
+                'onboarding lantek', 'onboarding elétrica', 'onboarding altium',
+                'onboarding solidworks', 'onboarding usinagem', 'onboarding hp',
+                'onboarding alphacam', 'onboarding mkf', 'onboarding formlabs', 'tech journey'
+            ];
 
             rawActivities = rawActivities.map(ativ => {
                 const clienteKey = (ativ.Cliente || '').trim().toLowerCase();
                 const clienteInfo = clienteMap.get(clienteKey) || {};
+
                 const criadoEmDate = parseDate(ativ['Criado em']);
-                if (onboardingPlaybooks.includes(normalizeText(ativ.Playbook)) && criadoEmDate) {
+
+                // Lógica para calcular a data de início do onboarding do cliente
+                const playbookNormalized = normalizeText(ativ.Playbook);
+                if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
                     const existingStartDate = clientOnboardingStartDate.get(clienteKey);
                     if (!existingStartDate || criadoEmDate < existingStartDate) {
                         clientOnboardingStartDate.set(clienteKey, criadoEmDate);
                     }
                 }
+
                 return {
-                    ...ativ, ClienteCompleto: clienteKey, Segmento: clienteInfo.Segmento, CS: clienteInfo.CS, Squad: clienteInfo['Squad CS'], Fase: clienteInfo.Fase, ISM: clienteInfo.ISM, Negocio: clienteInfo['Negócio'], Comercial: clienteInfo['Comercial'], CriadoEm: criadoEmDate, PrevisaoConclusao: parseDate(ativ['Previsão de conclusão']), ConcluidaEm: parseDate(ativ['Concluída em']), NPSOnboarding: clienteInfo['NPS onboarding'], ValorNaoFaturado: parseFloat(String(clienteInfo['Valor total não faturado'] || '0').replace(/[^0-9,-]+/g, "").replace(",", "."))
+                    ...ativ,
+                    ClienteCompleto: clienteKey,
+                    Segmento: clienteInfo.Segmento,
+                    CS: clienteInfo.CS,
+                    Squad: clienteInfo['Squad CS'],
+                    Fase: clienteInfo.Fase,
+                    ISM: clienteInfo.ISM,
+                    Negocio: clienteInfo['Negócio'],
+                    Comercial: clienteInfo['Comercial'],
+                    CriadoEm: criadoEmDate,
+                    PrevisaoConclusao: parseDate(ativ['Previsão de conclusão']),
+                    ConcluidaEm: parseDate(ativ['Concluída em']),
+                    // Campos adicionais para os novos OKRs
+                    NPSOnboarding: clienteInfo['NPS onboarding'],
+                    ValorNaoFaturado: parseFloat(String(clienteInfo['Valor total não faturado'] || '0').replace(/[^0-9,-]+/g, "").replace(",", "."))
                 };
             });
 
-            if (currentUser.isManager) buildCsToSquadMap();
+            if (currentUser.isManager) {
+                buildCsToSquadMap();
+            }
+
             populateFilters();
+
             if (!currentUser.isManager) {
                 const selectedCS = selectCS.value;
-                if (selectedCS) autoSelectSegment(rawClients.filter(client => client.CS?.trim() === selectedCS));
+                if (selectedCS) {
+                    const clientsOfLoggedInUser = rawClients.filter(client => client.CS?.trim() === selectedCS);
+                    autoSelectSegment(clientsOfLoggedInUser);
+                }
             }
 
             renderDataTables();
@@ -1806,13 +1957,20 @@
             onboardingDashboard.style.display = 'block';
             tabsContainer.style.display = 'flex';
             const selectSquad = document.getElementById('select-squad');
-            [selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, selectPeriod, selectOnboardingTeam, selectISM].forEach(el => el.disabled = false);
-            if (!currentUser.isManager) selectCS.disabled = true;
+            [selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, selectPeriod].forEach(el => el.disabled = false);
+
+            if (!currentUser.isManager) {
+                selectCS.disabled = true;
+            }
+
+            [selectOnboardingTeam, selectISM].forEach(el => el.disabled = false);
+
             updateDashboard();
             renderOverdueView();
         };
 
         let atividadesFile, clientesFile;
+        
         const attemptProcess = () => {
             if (atividadesFile && clientesFile) {
                 statusMessage.textContent = 'Lendo arquivos...';
@@ -1820,16 +1978,19 @@
                     .then(([atividadesJson, clientesJson]) => {
                         rawActivities = atividadesJson;
                         rawClients = clientesJson;
-                        statusMessage.textContent = 'Arquivos lidos. Processando...';
-                        setTimeout(() => processInitialData(), 50);
+                        statusMessage.textContent = 'Arquivos lidos. Processando dados... Isso pode levar alguns instantes.';
+                        setTimeout(() => {
+                            processInitialData();
+                        }, 50);
                     })
                     .catch(err => {
-                        statusMessage.textContent = 'Erro ao ler os arquivos.';
+                        statusMessage.textContent = 'Erro ao ler. Verifique os arquivos e o console (F12) para mais detalhes.';
                         console.error(err);
                     });
             }
         };
 
+        // Função de processamento SEM cache
         fileAtividadesInput.addEventListener('change', (e) => {
             atividadesFile = e.target.files[0];
             attemptProcess();
@@ -1839,239 +2000,199 @@
             attemptProcess();
         });
 
+        // A função loadDataFromCache e o botão clear-cache-button foram removidos, pois a funcionalidade de cache foi desativada.
+        
         const updateIsmFilter = () => {
             const teamView = selectOnboardingTeam.value;
-            let relevantClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
+            const onboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
+
+            let relevantClients = [];
             if (teamView === 'syneco') {
-                relevantClients = relevantClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
+                relevantClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
             } else if (teamView === 'outros') {
-                relevantClients = relevantClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
+                relevantClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
+            } else {
+                relevantClients = onboardingClients;
             }
+
             const ismSet = new Set(relevantClients.map(c => c.ISM).filter(Boolean));
             selectISM.innerHTML = '<option value="Todos">Todos os ISMs</option>';
             [...ismSet].sort().forEach(ism => {
                 const option = document.createElement('option');
-                option.value = ism; option.textContent = ism;
+                option.value = ism;
+                option.textContent = ism;
                 selectISM.appendChild(option);
             });
         };
 
         const populateFilters = () => {
+            // Adicionado .trim() para remover espaços em branco do nome do CS
             const csSet = new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean));
+
             const selectSquad = document.getElementById('select-squad');
             selectCS.innerHTML = '';
+
             if (currentUser.isManager) {
                 selectCS.innerHTML += '<option value="Todos">Todos os CS</option>';
             }
+
             const sortedCS = [...csSet].sort();
             sortedCS.forEach(cs => {
                 const option = document.createElement('option');
-                option.value = cs; option.textContent = cs;
+                option.value = cs;
+                option.textContent = cs;
                 selectCS.appendChild(option);
             });
 
             if (!currentUser.isManager) {
-                let foundCS = manualEmailToCsMap[currentUser.email];
-                if (!foundCS) {
+                let foundCS = null;
+
+                // 1. PRIMEIRO: Tenta encontrar no mapa manual (maior prioridade)
+                if (manualEmailToCsMap[currentUser.email]) {
+                    foundCS = manualEmailToCsMap[currentUser.email];
+                    console.log(`CS encontrado via mapa manual: ${foundCS}`);
+                }
+                // 2. SEGUNDO: Se não estiver no mapa, tenta a detecção automática
+                else {
                     const emailIdentifier = normalizeText(currentUser.email.split('@')[0]);
-                    foundCS = sortedCS.find(csName => normalizeText(csName).split(' ').some(part => part.length > 2 && emailIdentifier.includes(part)));
+                    for (const csName of sortedCS) {
+                        const csNameParts = normalizeText(csName).split(' ');
+                        for (const part of csNameParts) {
+                            if (part.length > 2 && emailIdentifier.includes(part)) {
+                                foundCS = csName;
+                                break;
+                            }
+                        }
+                        if (foundCS) {
+                            break;
+                        }
+                    }
                 }
-                if (foundCS) {
+
+                // 3. APLICA O RESULTADO
+                if (foundCS && sortedCS.includes(foundCS)) {
                     selectCS.value = foundCS;
-                    console.log(`CS selecionado: ${foundCS}`);
+                    if (!manualEmailToCsMap[currentUser.email]) {
+                        console.log(`CS auto-selecionado via e-mail: ${foundCS} para o usuário ${currentUser.name}`);
+                    }
                 } else {
-                    console.warn(`Nenhum CS correspondente encontrado para ${currentUser.email}.`);
+                    console.warn(`Nenhum CS correspondente encontrado para o e-mail ${currentUser.email}. Verifique o cadastro manual se necessário.`);
                 }
+
                 selectCS.disabled = true;
             }
 
+            // O restante da função continua igual
             if (currentUser.isManager) {
                 const squadSet = new Set(rawClients.map(d => d['Squad CS']).filter(Boolean));
                 selectSquad.innerHTML = '<option value="Todos">Todos os Squads</option>';
-                [...squadSet].sort().forEach(squad => {
+                const sortedSquads = [...squadSet].sort();
+                sortedSquads.forEach(squad => {
                     const option = document.createElement('option');
-                    option.value = squad; option.textContent = squad;
+                    option.value = squad;
+                    option.textContent = squad;
                     selectSquad.appendChild(option);
                 });
             }
 
             updateIsmFilter();
+
             const segmentosPredefinidos = ["SMB CAD", "SMB Multiprodutos", "MID/Enterprise"];
-            selectSegmento.innerHTML = segmentosPredefinidos.map(seg => `<option value="${seg}">${seg}</option>`).join('');
+            selectSegmento.innerHTML = '';
+            segmentosPredefinidos.forEach(seg => {
+                const option = document.createElement('option');
+                option.value = seg;
+                option.textContent = seg;
+                selectSegmento.appendChild(option);
+            });
+
             const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
             selectMonth.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+
             const allDates = [...rawActivities.map(a => a.PrevisaoConclusao), ...rawActivities.map(a => a.ConcluidaEm)];
             const years = [...new Set(allDates.map(d => d?.getFullYear()).filter(Boolean))].sort((a, b) => b - a);
             selectYear.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+
             const today = new Date();
             selectMonth.value = today.getMonth();
-            selectYear.value = years.includes(today.getFullYear()) ? today.getFullYear() : years[0];
+            if (years.includes(today.getFullYear())) {
+                selectYear.value = today.getFullYear();
+            } else if (years.length > 0) {
+                selectYear.value = years[0];
+            }
         };
 
         const autoSelectSegment = (clients) => {
             if (!clients || clients.length === 0) return;
-            let midEnterpriseCount = 0, smbCount = 0;
+            let midEnterpriseCount = 0,
+                smbCount = 0;
             clients.forEach(c => {
                 const segmento = normalizeText(c.Segmento || '');
                 if (segmento === 'mid-market' || segmento === 'enterprise') midEnterpriseCount++;
                 else if (segmento.includes('smb')) smbCount++;
             });
+
             if (midEnterpriseCount > smbCount) {
                 selectSegmento.value = 'MID/Enterprise';
             } else {
                 const smbClients = clients.filter(c => normalizeText(c.Segmento || '').includes('smb'));
-                let smbCadCount = smbClients.filter(c => (c.Cliente || '').trim().toLowerCase().endsWith('solidworks') || (c.Cliente || '').trim().toLowerCase().endsWith('solidworks electrical')).length;
-                selectSegmento.value = smbCadCount > (smbClients.length / 2) ? 'SMB CAD' : 'SMB Multiprodutos';
+                let smbCadCount = 0,
+                    smbMultiCount = 0;
+                smbClients.forEach(c => {
+                    const clientName = (c.Cliente || '').trim().toLowerCase();
+                    if (clientName.endsWith('solidworks') || clientName.endsWith('solidworks electrical')) smbCadCount++;
+                    else smbMultiCount++;
+                });
+                selectSegmento.value = smbCadCount > smbMultiCount ? 'SMB CAD' : 'SMB Multiprodutos';
             }
         };
 
         const calculateOverdueMetrics = (activities, selectedCS) => {
-            const metrics = { overdueActivities: {} };
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            const csActivities = selectedCS === 'Todos' ? activities : activities.filter(a => (a['Responsável'] || '').trim() === selectedCS);
-            const overdue = csActivities.filter(a => !a.ConcluidaEm && a.PrevisaoConclusao && a.PrevisaoConclusao < today);
-            const playbookDefs = {
-                'plano': { p: 'plano de acao', a: 'analise do cenario do cliente' }, 'adocao': { p: null, a: ["revisao da adocao - sponsor (mid/enterprise)", "revisao da adocao - ku (mid/enterprise)", "revisao da adocao - ku (smb)"] }, 'reunioes-qbr': { p: null, a: "ligacao de sensibilizacao com o sponsor" }, 'planos-sucesso': { p: null, a: "plano de sucesso desenvolvido" }, 'followup': { p: 'pos fechamento de loop cs', a: 'follow-up 1' }, 'discovery': { p: 'discovery potencial', a: 'contato com o cliente' }, 'engajamento-smb': { p: 'contato consolidado', a: 'contato com o cliente' }, 'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
+            const metrics = {
+                overdueActivities: {}
             };
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const csActivities = selectedCS === 'Todos' ?
+                activities :
+                activities.filter(a => (a['Responsável'] || '').trim() === selectedCS);
+
+            const overdue = csActivities.filter(a => {
+                const dueDate = a.PrevisaoConclusao;
+                return !a.ConcluidaEm && dueDate && dueDate < today;
+            });
+
+            const playbookDefs = {
+                'plano': { p: 'plano de acao', a: 'analise do cenario do cliente' },
+                'adocao': { p: null, a: ["revisao da adocao - sponsor (mid/enterprise)", "revisao da adocao - ku (mid/enterprise)", "revisao da adocao - ku (smb)"] },
+                'reunioes-qbr': { p: null, a: "ligacao de sensibilizacao com o sponsor" },
+                'planos-sucesso': { p: null, a: "plano de sucesso desenvolvido" },
+                'followup': { p: 'pos fechamento de loop cs', a: 'follow-up 1' },
+                'discovery': { p: 'discovery potencial', a: 'contato com o cliente' },
+                'engajamento-smb': { p: 'contato consolidado', a: 'contato com o cliente' },
+                'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
+            };
+
             for (const [key, def] of Object.entries(playbookDefs)) {
                 let filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+
                 if (key === 'plano') {
-                    filterFn = (item) => (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) || normalizeText(item.Atividade).startsWith('alerta suporte');
+                    filterFn = (item) => {
+                        const atividadeNormalizada = normalizeText(item.Atividade);
+                        const playbookNormalizado = normalizeText(item.Playbook);
+                        const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
+                        const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
+                        return isPlanoOriginal || isAlertaSuporte;
+                    };
                 }
+
                 metrics.overdueActivities[key] = overdue.filter(filterFn);
             }
+
             return metrics;
         };
 
-        const renderOverdueView = () => {
-            if (rawActivities.length === 0) return;
-            const selectedCS = selectCS.value;
-            const overdueGrid = document.getElementById('overdue-grid-container');
-            const overdueMetrics = calculateOverdueMetrics(rawActivities, selectedCS);
-            let html = '';
-            const playbookTitles = { 'plano': 'Planos de Ação', 'adocao': 'Atividades de Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery', 'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso', 'engajamento-smb': 'Engajamento (Contato Consolidado)', 'baixo-engajamento-mid': 'Baixo Engajamento (MID/ENT)' };
-            let totalOverdue = 0;
-            const metricDataMap = {};
-            for (const key in playbookTitles) {
-                const activities = overdueMetrics.overdueActivities[key] || [];
-                totalOverdue += activities.length;
-                if (activities.length > 0) {
-                    const metricId = `overdue-${key}`;
-                    metricDataMap[metricId] = activities;
-                    html += `<div class="card"><h3>${playbookTitles[key]}</h3><div class="card-content"><div class="metric overdue-metric" style="border-top: none; padding-top: 0; margin-top: 0;" data-metric-id="${metricId}" data-metric-title="Atrasadas: ${playbookTitles[key]}"><span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Total Atrasado:</span><span class="metric-value danger" style="font-size: 2rem;">${activities.length}</span></div></div></div>`;
-                }
-            }
-            if (totalOverdue === 0) {
-                overdueGrid.innerHTML = `<div class="loader" style="color: var(--secondary-color); border-color: var(--secondary-color);"><i class="fas fa-check-circle" style="margin-right: 10px;"></i>Nenhuma atividade atrasada para o filtro selecionado!</div>`;
-            } else {
-                overdueGrid.innerHTML = html;
-                document.querySelectorAll('#overdue-grid-container .metric').forEach(el => {
-                    el.addEventListener('click', () => {
-                        const metricId = el.dataset.metricId;
-                        const title = el.dataset.metricTitle;
-                        const data = metricDataMap[metricId];
-                        if (data && data.length > 0) showDataInModal(data, title);
-                        else alert("Não há dados detalhados para esta métrica.");
-                    });
-                });
-            }
-        };
-
-        const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS, includeOnboarding) => {
-            const metrics = {};
-            const startOfPeriod = new Date(Date.UTC(year, month, 1));
-            const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
-            const isPredictedForPeriod = (activity) => activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year && (!activity.ConcluidaEm || activity.ConcluidaEm >= startOfPeriod);
-            const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
-            const clientOwnerMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), { cs: cli.CS, fase: normalizeText(cli.Fase || '') }]));
-            const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
-            const allConcludedActivitiesInPortfolio = rawActivities.filter(isConcludedInPeriod).filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto));
-            let csRealizedActivities = [];
-            let onboardingRealizedActivities = [];
-            if (selectedCS === 'Todos') {
-                allConcludedActivitiesInPortfolio.forEach(activity => { (clientOwnerMap.get(activity.ClienteCompleto)?.fase === 'onboarding' ? onboardingRealizedActivities : csRealizedActivities).push(activity); });
-            } else {
-                allConcludedActivitiesInPortfolio.forEach(activity => {
-                    const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-                    if ((clientInfo?.fase === 'onboarding' && (activity['Responsável'] || '').trim() === selectedCS) || (clientInfo?.fase !== 'onboarding' && (activity['Responsável'] || '').trim() === selectedCS)) {
-                        csRealizedActivities.push(activity);
-                    } else if (clientInfo?.fase === 'onboarding') {
-                        onboardingRealizedActivities.push(activity);
-                    }
-                });
-            }
-            const combinedRealizedActivities = [...csRealizedActivities, ...onboardingRealizedActivities];
-            const playbookDefs = {
-                'plano': { p: 'plano de acao', a: 'analise do cenario do cliente' }, 'adocao': { p: null, a: ["revisao da adocao - sponsor (mid/enterprise)", "revisao da adocao - ku (mid/enterprise)", "revisao da adocao - ku (smb)"] }, 'reunioes-qbr': { p: null, a: "ligacao de sensibilizacao com o sponsor" }, 'planos-sucesso': { p: null, a: "plano de sucesso desenvolvido" }, 'followup': { p: 'pos fechamento de loop cs', a: 'follow-up 1' }, 'discovery': { p: 'discovery potencial', a: 'contato com o cliente' }, 'engajamento-smb': { p: 'contato consolidado', a: 'contato com o cliente' }, 'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
-            };
-            for (const [key, def] of Object.entries(playbookDefs)) {
-                let filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
-                if (key === 'plano') {
-                    filterFn = (item) => (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) || normalizeText(item.Atividade).startsWith('alerta suporte');
-                }
-                const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
-                metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
-                metrics[`${key}-realizado`] = totalRealizadoList.filter(a => !isOverdue(a));
-            }
-            const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
-            const isCountableContact = (a) => !normalizeText(a.Atividade || '').includes('regra') && (validContactKeywords.some(type => normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']).includes(type)) || normalizeText(a.Atividade || '').startsWith('whatsapp octadesk'));
-            const csContactActivities = csRealizedActivities.filter(isCountableContact);
-            const onboardingContactActivities = onboardingRealizedActivities.filter(isCountableContact);
-            const contactsForCoverage = includeOnboarding ? [...csContactActivities, ...onboardingContactActivities] : [...csContactActivities];
-            metrics['cob-carteira'] = Array.from(new Map(contactsForCoverage.map(activity => [activity.ClienteCompleto, activity])).values());
-            const prioritizedCsContacts = new Map();
-            csContactActivities.forEach(activity => {
-                const clientKey = activity.ClienteCompleto; if (!clientKey) return;
-                const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || activity['Tipo']);
-                let currentCategory = '';
-                if (['ligacao', 'reuniao', 'call sponsor'].some(k => activityType.includes(k))) currentCategory = 'call';
-                else if (['e-mail', 'whatsapp'].some(k => activityType.includes(k))) currentCategory = 'email';
-                if (currentCategory === 'call' || (currentCategory === 'email' && prioritizedCsContacts.get(clientKey)?.category !== 'call')) {
-                    prioritizedCsContacts.set(clientKey, { activity, category: currentCategory });
-                }
-            });
-            const finalCsContactList = Array.from(prioritizedCsContacts.values());
-            metrics['contato-ligacao'] = finalCsContactList.filter(item => item.category === 'call').map(item => item.activity);
-            metrics['contato-email'] = finalCsContactList.filter(item => item.category === 'email').map(item => item.activity);
-            metrics['onboarding-contacts-display'] = Array.from(new Map(onboardingContactActivities.map(activity => [activity.ClienteCompleto, activity])).values());
-            const classifiedCallsAndMeetings = (metrics['contato-ligacao'] || []).filter(a => ['engajado', 'desengajado'].includes(normalizeText(a['Categoria'])));
-            metrics['ligacoes-classificadas'] = classifiedCallsAndMeetings;
-            metrics['ligacoes-engajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'engajado');
-            metrics['ligacoes-desengajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'desengajado');
-            metrics['total-clientes-unicos-cs'] = clientsForPeriod.length;
-            metrics['total-clientes'] = clientsForPeriod;
-            const senseScores = clientsForPeriod.map(c => parseFloat(c['Sense Score'])).filter(s => !isNaN(s) && s !== null);
-            metrics['sensescore-avg'] = senseScores.length > 0 ? senseScores.reduce((a, b) => a + b, 0) / senseScores.length : 0;
-            let activitiesByCS_previstos = rawActivities.filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto)).filter(activity => {
-                const clientInfo = clientOwnerMap.get(activity.ClienteCompleto); return !clientInfo ? false : (selectedCS === 'Todos' ? true : clientInfo.cs === selectedCS);
-            });
-            if (!includeOnboarding) activitiesByCS_previstos = activitiesByCS_previstos.filter(activity => clientOwnerMap.get(activity.ClienteCompleto)?.fase !== 'onboarding');
-            for (const [key, def] of Object.entries(playbookDefs)) {
-                let filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
-                if (key === 'plano') filterFn = (item) => (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) || normalizeText(item.Atividade).startsWith('alerta suporte');
-                metrics[`${key}-previsto`] = activitiesByCS_previstos.filter(filterFn).filter(isPredictedForPeriod);
-            }
-            const smbConcluidoList = [...(metrics['engajamento-smb-realizado'] || []), ...(metrics['engajamento-smb-atrasado-concluido'] || [])];
-            const uniqueSmbContacts = new Map();
-            smbConcluidoList.forEach(a => { const status = normalizeText(a['Categoria']); if (status === 'engajado' || status === 'desengajado') { uniqueSmbContacts.set(a.ClienteCompleto, { activity: a, status }); } });
-            const finalSmbList = Array.from(uniqueSmbContacts.values());
-            metrics['engajamento-smb-engajado'] = finalSmbList.filter(item => item.status === 'engajado').map(item => item.activity);
-            metrics['engajamento-smb-desengajado'] = finalSmbList.filter(item => item.status === 'desengajado').map(item => item.activity);
-            const clientesContatadosComDados = (metrics['cob-carteira'] || []).map(a => ({ ...a, ...rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto) }));
-            metrics['modelo-negocio-preenchido'] = clientesContatadosComDados.filter(item => item['Modelo de negócio'] && item['Modelo de negócio'] !== 'Vazio');
-            metrics['modelo-negocio-faltante'] = clientesContatadosComDados.filter(item => !item['Modelo de negócio'] || item['Modelo de negócio'] === 'Vazio');
-            metrics['cliente-potencial-preenchido'] = clientesContatadosComDados.filter(item => item['Potencial'] && item['Potencial'] !== 'Vazio');
-            metrics['cliente-potencial-faltante'] = clientesContatadosComDados.filter(item => !item['Potencial'] || item['Potencial'] === 'Vazio');
-            const selectedQuarter = Math.floor(month / 3);
-            const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getMonth() / 3) === selectedQuarter && item.ConcluidaEm.getFullYear() === year;
-            const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
-            metrics['total-labs-eligible'] = clients.length;
-            metrics['ska-labs-realizado-list'] = [...new Map(rawActivities.filter(isConcludedInQuarter).filter(a => normalizeText(a.Atividade).includes('participou do ska labs')).filter(a => eligibleClientSet.has(a.ClienteCompleto)).map(a => [a.ClienteCompleto, a])).values()];
-            metrics['contatos-por-negocio'] = (metrics['cob-carteira'] || []).reduce((acc, a) => { const n = a.Negocio || 'Não Definido'; acc[n] = (acc[n] || 0) + 1; return acc; }, {});
-            metrics['contatos-por-comercial'] = (metrics['cob-carteira'] || []).reduce((acc, a) => { const c = a.Comercial || 'Não Definido'; acc[c] = (acc[c] || 0) + 1; return acc; }, {});
-            return metrics;
-        };
-        
         const renderOverdueView = () => {
             if (rawActivities.length === 0) return;
 
