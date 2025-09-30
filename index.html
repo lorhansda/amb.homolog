@@ -1289,12 +1289,16 @@ if (savedTheme === 'light') {
 }
 const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const getQuarter = (date) => Math.floor(date.getMonth() / 3);
+// VERSÃO CORRIGIDA USANDO UTC
 const formatDate = (date) => {
-if (!(date instanceof Date) || isNaN(date)) return '';
-const day = String(date.getDate()).padStart(2, '0');
-const month = String(date.getMonth() + 1).padStart(2, '0');
-const year = date.getFullYear();
-return `${day}/${month}/${year}`;
+    if (!(date instanceof Date) || isNaN(date)) return '';
+    // Usa getUTCDate() em vez de getDate()
+    const day = String(date.getUTCDate()).padStart(2, '0'); 
+    // Usa getUTCMonth() em vez de getMonth()
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
+    // Usa getUTCFullYear() em vez de getFullYear()
+    const year = date.getUTCFullYear(); 
+    return `${day}/${month}/${year}`;
 };
 
 const parseDate = (dateInput) => {
@@ -1376,13 +1380,16 @@ updateDashboard();
 
 const readFile = (file) => new Promise((resolve, reject) => {
 
+// Localize esta função no seu código
 const excelSerialToDateObject = (serial) => {
     // Converte o número serial do Excel para um timestamp (milissegundos) em UTC.
-    // O número 25569 representa a diferença de dias entre o início do Excel (1900) e o do Unix (1970).
     const excelTimestamp = (serial - 25569) * 86400 * 1000;
-
-    // Retorna um objeto de data baseado diretamente no timestamp UTC, sem ajustes de fuso horário.
-    return new Date(excelTimestamp);
+    const date = new Date(excelTimestamp);
+    
+    // IMPORTANTE: Adiciona o offset do fuso horário para neutralizar a conversão do navegador
+    // e garantir que a data represente o início do dia em UTC.
+    const timezoneOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() + timezoneOffset);
 }
 
 const transpilePipeToCommaCSV = (pipeText) => {
