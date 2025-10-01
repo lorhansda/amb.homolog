@@ -341,19 +341,21 @@ border-radius: 5px;
 }
 
 .group-content {
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-gap: 25px;
+    display: flex;     /* MUDANÇA: de 'grid' para 'flex' */
+    flex-wrap: wrap; /* Permite que os cards quebrem para a linha de baixo */
+    gap: 25px;
+    align-items: stretch; /* Garante que todos os cards na mesma linha estiquem */
 }
 
 .card {
-background-color: var(--card-bg-color);
-border-radius: var(--border-radius-lg);
-padding: 25px; border: 1px solid var(--border-color);
-transition: transform 0.3s ease, box-shadow 0.3s ease;
-display: flex; flex-direction: column;
-box-shadow: 0 4px 15px var(--shadow-color);
-animation: fadeIn 0.5s ease-out backwards;
+    background-color: var(--card-bg-color);
+    border-radius: var(--border-radius-lg);
+    padding: 25px; border: 1px solid var(--border-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex; flex-direction: column;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    animation: fadeIn 0.5s ease-out backwards;
+    flex: 1 1 340px; /* ADICIONADO: Controla o tamanho e a responsividade do card */
 }
 .card:hover {
 transform: translateY(-8px);
