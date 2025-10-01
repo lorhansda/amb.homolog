@@ -3138,84 +3138,70 @@
         }
 
         const renderOKRs = () => {
-            const selectedSegmento = selectSegmento.value;
-            okrTitleHeader.textContent = `OKRs do Segmento: ${selectedSegmento}`;
+            const selectedSegmento = selectSegmento.value;
+            okrTitleHeader.textContent = `OKRs do Segmento: ${selectedSegmento}`;
 
-            const totalClientesUnicosCS = dataStore['total-clientes-unicos-cs'] || 0;
-            const clientesContatadosCount = dataStore['cob-carteira']?.length || 0;
-            const cobCarteiraPerc = totalClientesUnicosCS > 0 ? (clientesContatadosCount / totalClientesUnicosCS) * 100 : 0;
-            const sensescore_avg = dataStore['sensescore-avg'] || 0;
+            const totalClientesUnicosCS = dataStore['total-clientes-unicos-cs'] || 0;
+            const clientesContatadosCount = dataStore['cob-carteira']?.length || 0;
+            const cobCarteiraPerc = totalClientesUnicosCS > 0 ? (clientesContatadosCount / totalClientesUnicosCS) * 100 : 0;
+            const sensescore_avg = dataStore['sensescore-avg'] || 0;
 
-            const totalClientesUnicosCS_comp = dataStore['total-clientes-unicos-cs_comp'] || 0;
-            const cobCarteiraPerc_comp = totalClientesUnicosCS_comp > 0 ? ((dataStore['cob-carteira_comp']?.length || 0) / totalClientesUnicosCS_comp) * 100 : null;
-            const sensescore_comp = dataStore['sensescore-avg_comp'] !== undefined ? dataStore['sensescore-avg_comp'] : null;
+            const totalClientesUnicosCS_comp = dataStore['total-clientes-unicos-cs_comp'] || 0;
+            const cobCarteiraPerc_comp = totalClientesUnicosCS_comp > 0 ? ((dataStore['cob-carteira_comp']?.length || 0) / totalClientesUnicosCS_comp) * 100 : null;
+            const sensescore_comp = dataStore['sensescore-avg_comp'] !== undefined ? dataStore['sensescore-avg_comp'] : null;
 
-            const totalLabsBase = dataStore['total-labs-eligible'] || 0;
-            const labsRealizadoCount = dataStore['ska-labs-realizado-list']?.length || 0;
-            const labsRealizadoPerc = totalLabsBase > 0 ? (labsRealizadoCount / totalLabsBase) * 100 : 0;
-            const totalLabsBaseComp = dataStore['total-labs-eligible_comp'] || 0;
-            const labsRealizadoPerc_comp = totalLabsBaseComp > 0 ? ((dataStore['ska-labs-realizado-list_comp']?.length || 0) / totalLabsBaseComp) * 100 : null;
+            const totalLabsBase = dataStore['total-labs-eligible'] || 0;
+            const labsRealizadoCount = dataStore['ska-labs-realizado-list']?.length || 0;
+            const labsRealizadoPerc = totalLabsBase > 0 ? (labsRealizadoCount / totalLabsBase) * 100 : 0;
+            const totalLabsBaseComp = dataStore['total-labs-eligible_comp'] || 0;
+            const labsRealizadoPerc_comp = totalLabsBaseComp > 0 ? ((dataStore['ska-labs-realizado-list_comp']?.length || 0) / totalLabsBaseComp) * 100 : null;
 
-            const metaCobertura = appGoals.coverage / 100;
-            const clientesParaAtingirMeta = Math.max(0, Math.ceil(totalClientesUnicosCS * metaCobertura));
-            const clientesFaltantes = Math.max(0, clientesParaAtingirMeta - clientesContatadosCount);
+            const metaCobertura = appGoals.coverage / 100;
+            const clientesParaAtingirMeta = Math.max(0, Math.ceil(totalClientesUnicosCS * metaCobertura));
+            const clientesFaltantes = Math.max(0, clientesParaAtingirMeta - clientesContatadosCount);
 
-            let classificacaoHtml = '';
-            const totalCalls = (dataStore['contato-ligacao'] || []).length;
-            const totalClassified = (dataStore['ligacoes-classificadas'] || []).length;
-            const totalEngaged = (dataStore['ligacoes-engajadas'] || []).length;
-            const totalDisengaged = (dataStore['ligacoes-desengajadas'] || []).length;
+            let classificacaoHtml = '';
+            const totalCalls = (dataStore['contato-ligacao'] || []).length;
+            const totalClassified = (dataStore['ligacoes-classificadas'] || []).length;
+            const totalEngaged = (dataStore['ligacoes-engajadas'] || []).length;
+            const totalDisengaged = (dataStore['ligacoes-desengajadas'] || []).length;
 
-            const percClassified = totalCalls > 0 ? (totalClassified / totalCalls) * 100 : 0;
-            const percEngaged = totalClassified > 0 ? (totalEngaged / totalClassified) * 100 : 0;
-            const percDisengaged = totalClassified > 0 ? (totalDisengaged / totalClassified) * 100 : 0;
+            const percClassified = totalCalls > 0 ? (totalClassified / totalCalls) * 100 : 0;
+            const percEngaged = totalClassified > 0 ? (totalEngaged / totalClassified) * 100 : 0;
+            const percDisengaged = totalClassified > 0 ? (totalDisengaged / totalClassified) * 100 : 0;
 
-            classificacaoHtml = `
-            <div style="border-top: 1px dashed var(--border-color); margin-top: 15px; padding-top: 10px;">
-                <div class="metric" data-metric-id="ligacoes-classificadas" data-metric-title="Ligações/Reuniões Classificadas">
-                    <span class="metric-label" title="${totalClassified} de ${totalCalls} ligações foram classificadas">
-                        <i class="fas fa-check-circle" style="margin-right: 6px;"></i> % Ligações Classificadas:
-                    </span>
-                    <span class="metric-value">${percClassified.toFixed(1)}%</span>
-                </div>
-                <div class="metric" data-metric-id="ligacoes-engajadas" data-metric-title="Ligações/Reuniões Engajadas">
-                    <span class="metric-label" style="padding-left: 20px;">Engajadas:</span>
-                    <span class="metric-value success">${totalEngaged} <span class="sub-metric">(${percEngaged.toFixed(1)}%)</span></span>
-                </div>
-                    <div class="metric" data-metric-id="ligacoes-desengajadas" data-metric-title="Ligações/Reuniões Desengajadas">
-                    <span class="metric-label" style="padding-left: 20px;">Desengajadas:</span>
-                    <span class="metric-value danger">${totalDisengaged} <span class="sub-metric">(${percDisengaged.toFixed(1)}%)</span></span>
-                </div>
-            </div>
-            `;
-            const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento, classificacaoHtml);
-            const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
-            const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
+            classificacaoHtml = `
+            <div style="border-top: 1px dashed var(--border-color); margin-top: 15px; padding-top: 10px;">
+                <div class="metric" data-metric-id="ligacoes-classificadas" data-metric-title="Ligações/Reuniões Classificadas">
+                    <span class="metric-label" title="${totalClassified} de ${totalCalls} ligações foram classificadas">
+                        <i class="fas fa-check-circle" style="margin-right: 6px;"></i> % Ligações Classificadas:
+                    </span>
+                    <span class="metric-value">${percClassified.toFixed(1)}%</span>
+                </div>
+                <div class="metric" data-metric-id="ligacoes-engajadas" data-metric-title="Ligações/Reuniões Engajadas">
+                    <span class="metric-label" style="padding-left: 20px;">Engajadas:</span>
+                    <span class="metric-value success">${totalEngaged} <span class="sub-metric">(${percEngaged.toFixed(1)}%)</span></span>
+                </div>
+                    <div class="metric" data-metric-id="ligacoes-desengajadas" data-metric-title="Ligações/Reuniões Desengajadas">
+                    <span class="metric-label" style="padding-left: 20px;">Desengajadas:</span>
+                    <span class="metric-value danger">${totalDisengaged} <span class="sub-metric">(${percDisengaged.toFixed(1)}%)</span></span>
+                </div>
+            </div>
+            `;
+            const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento, classificacaoHtml);
+            const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
+            const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
 
-            const followupCard = createPrevistoRealizadoCard('Follow-Up Pós Loop', (dataStore['followup-previsto'] || []).length, (dataStore['followup-realizado'] || []).length, 'followup', null, (dataStore['followup-atrasado-concluido'] || []).length);
-            const discoveryCard = createPrevistoRealizadoCard('Discovery Potencial', (dataStore['discovery-previsto'] || []).length, (dataStore['discovery-realizado'] || []).length, 'discovery', null, (dataStore['discovery-atrasado-concluido'] || []).length);
+            const followupCard = createPrevistoRealizadoCard('Follow-Up Pós Loop', (dataStore['followup-previsto'] || []).length, (dataStore['followup-realizado'] || []).length, 'followup', null, (dataStore['followup-atrasado-concluido'] || []).length);
+            const discoveryCard = createPrevistoRealizadoCard('Discovery Potencial', (dataStore['discovery-previsto'] || []).length, (dataStore['discovery-realizado'] || []).length, 'discovery', null, (dataStore['discovery-atrasado-concluido'] || []).length);
 
-            let onboardingMetricHtml = '';
-            const includeOnboarding = onboardingToggle.checked;
-            const onboardingContacts = dataStore['onboarding-contacts-display'] || [];
-            if (includeOnboarding && onboardingContacts.length > 0) {
-                onboardingMetricHtml = `
-                    <div class="metric" data-metric-id="onboarding-contacts-display" data-metric-title="Contatos de Onboarding">
-                        <span class="metric-label"><i class="fas fa-user-plus" style="margin-right: 6px; color: var(--primary-color);"></i>Contatos Onboarding:</span>
-                        <span class="metric-value">${onboardingContacts.length}</span>
-                    </div>
-                `;
-            }
-
-            // --- INÍCIO DA ALTERAÇÃO 1 ---
-            // 1. Calcula o total de contatos para o cálculo do percentual
-        
+            // --- LÓGICA DO CARD DE CONTATOS (CORRIGIDA E UNIFICADA) ---
+            const includeOnboarding = onboardingToggle.checked;
             const contatosLigacao = (dataStore['contato-ligacao'] || []).length;
             const contatosEmail = (dataStore['contato-email'] || []).length;
             const contatosOnboarding = includeOnboarding ? (dataStore['onboarding-contacts-display'] || []).length : 0;
             const totalContatosNoCard = contatosLigacao + contatosEmail + contatosOnboarding;
   
-            // 2. Função auxiliar para gerar o texto da porcentagem
             const getPercentageText = (count) => {
                 if (totalContatosNoCard === 0) return '';
                 const percentage = (count / totalContatosNoCard) * 100;
@@ -3249,162 +3235,160 @@
                     ${onboardingMetricHtml}
                 </div>
             </div>`;
-// --- FIM DA SEÇÃO CORRIGIDA ---
-// --- FIM DA ALTERAÇÃO 1 ---
 
-            generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
+            generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
 
-            const businessCommercialGrid = document.getElementById('business-commercial-grid');
-            businessCommercialGrid.innerHTML = `
-            <div id="negocio-chart-container"></div>
-            <div id="comercial-chart-container"></div>
-            `;
-            renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio'] || {});
-            renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial'] || {});
+            const businessCommercialGrid = document.getElementById('business-commercial-grid');
+            businessCommercialGrid.innerHTML = `
+            <div id="negocio-chart-container"></div>
+            <div id="comercial-chart-container"></div>
+            `;
+            renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio'] || {});
+            renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial'] || {});
 
-            playbookGrid.innerHTML = `
-            ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
-            ${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length)}
-            ${followupCard}
-            ${(selectedSegmento !== 'MID/Enterprise') ? discoveryCard : ''}
-            `;
+            playbookGrid.innerHTML = `
+            ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
+            ${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length)}
+            ${followupCard}
+            ${(selectedSegmento !== 'MID/Enterprise') ? discoveryCard : ''}
+            `;
 
-            let okrHtml = '';
-            if (selectedSegmento === 'MID/Enterprise') {
-                okrHtml = `
-                    ${createPrevistoRealizadoCard('Reuniões de QBR', (dataStore['reunioes-qbr-previsto'] || []).length, (dataStore['reunioes-qbr-realizado'] || []).length, 'reunioes-qbr', appGoals.qbr, (dataStore['reunioes-qbr-atrasado-concluido'] || []).length)}
-                    ${createPrevistoRealizadoCard('Planos de Sucesso', (dataStore['planos-sucesso-previsto'] || []).length, (dataStore['planos-sucesso-realizado'] || []).length, 'planos-sucesso', appGoals.successplan, (dataStore['planos-sucesso-atrasado-concluido'] || []).length)}
-                    ${createPrevistoRealizadoCard('Baixo Engajamento (MID/ENT)', (dataStore['baixo-engajamento-mid-previsto'] || []).length, (dataStore['baixo-engajamento-mid-realizado'] || []).length, 'baixo-engajamento-mid', null, (dataStore['baixo-engajamento-mid-atrasado-concluido'] || []).length)}
-                    ${labsCard}`;
-            } else {
-                const previstos = dataStore['engajamento-smb-previsto'] || [];
-                const realizadosNoPrazo = dataStore['engajamento-smb-realizado'] || [];
-                const realizadosAtrasado = dataStore['engajamento-smb-atrasado-concluido'] || [];
-                const totalRealizado = realizadosNoPrazo.length + realizadosAtrasado.length;
+            let okrHtml = '';
+            if (selectedSegmento === 'MID/Enterprise') {
+                okrHtml = `
+                    ${createPrevistoRealizadoCard('Reuniões de QBR', (dataStore['reunioes-qbr-previsto'] || []).length, (dataStore['reunioes-qbr-realizado'] || []).length, 'reunioes-qbr', appGoals.qbr, (dataStore['reunioes-qbr-atrasado-concluido'] || []).length)}
+                    ${createPrevistoRealizadoCard('Planos de Sucesso', (dataStore['planos-sucesso-previsto'] || []).length, (dataStore['planos-sucesso-realizado'] || []).length, 'planos-sucesso', appGoals.successplan, (dataStore['planos-sucesso-atrasado-concluido'] || []).length)}
+                    ${createPrevistoRealizadoCard('Baixo Engajamento (MID/ENT)', (dataStore['baixo-engajamento-mid-previsto'] || []).length, (dataStore['baixo-engajamento-mid-realizado'] || []).length, 'baixo-engajamento-mid', null, (dataStore['baixo-engajamento-mid-atrasado-concluido'] || []).length)}
+                    ${labsCard}`;
+            } else {
+                const previstos = dataStore['engajamento-smb-previsto'] || [];
+                const realizadosNoPrazo = dataStore['engajamento-smb-realizado'] || [];
+                const realizadosAtrasado = dataStore['engajamento-smb-atrasado-concluido'] || [];
+                const totalRealizado = realizadosNoPrazo.length + realizadosAtrasado.length;
 
-                const totalRealizadoList = [...realizadosNoPrazo, ...realizadosAtrasado];
-                dataStore['engajamento-smb-realizado-total'] = totalRealizadoList;
+                const totalRealizadoList = [...realizadosNoPrazo, ...realizadosAtrasado];
+                dataStore['engajamento-smb-realizado-total'] = totalRealizadoList;
 
-                const engajados = dataStore['engajamento-smb-engajado'] || [];
-                const desengajados = dataStore['engajamento-smb-desengajado'] || [];
-                const performancePerc = totalRealizado > 0 ? (engajados.length / totalRealizado) * 100 : 0;
-                const realizadoVsPrevistoPerc = previstos.length > 0 ? (totalRealizado / previstos.length) * 100 : 0;
+                const engajados = dataStore['engajamento-smb-engajado'] || [];
+                const desengajados = dataStore['engajamento-smb-desengajado'] || [];
+                const performancePerc = totalRealizado > 0 ? (engajados.length / totalRealizado) * 100 : 0;
+                const realizadoVsPrevistoPerc = previstos.length > 0 ? (totalRealizado / previstos.length) * 100 : 0;
 
-                const cardEngajamento = `
-            <div class="card">
-                <h3>Engajamento (Contato Consolidado)</h3>
-                <div class="card-content">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                        <div>
-                            <div class="metric" data-metric-id="engajamento-smb-previsto" data-metric-title="Contatos Previstos (SMB)">
-                                <span class="metric-label">Previsto:</span>
-                                <span class="metric-value">${previstos.length}</span>
-                            </div>
-                            <div class="metric" data-metric-id="engajamento-smb-realizado-total" data-metric-title="Total Realizado (SMB)">
-                                <span class="metric-label">Realizado:</span>
-                                <span class="metric-value">${totalRealizado}</span>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="metric" data-metric-id="engajamento-smb-engajado" data-metric-title="Total Engajado (SMB)">
-                                <span class="metric-label">Total engajado:</span>
-                                <span class="metric-value success">${engajados.length}</span>
-                            </div>
-                            <div class="metric" data-metric-id="engajamento-smb-desengajado" data-metric-title="Total Desengajado (SMB)">
-                                <span class="metric-label">Total desengajado:</span>
-                                <span class="metric-value danger">${desengajados.length}</span>
-                            </div>
-                        </div>
-                    </div>
+                const cardEngajamento = `
+            <div class="card">
+                <h3>Engajamento (Contato Consolidado)</h3>
+                <div class="card-content">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div>
+                            <div class="metric" data-metric-id="engajamento-smb-previsto" data-metric-title="Contatos Previstos (SMB)">
+                                <span class="metric-label">Previsto:</span>
+                                <span class="metric-value">${previstos.length}</span>
+                            </div>
+                            <div class="metric" data-metric-id="engajamento-smb-realizado-total" data-metric-title="Total Realizado (SMB)">
+                                <span class="metric-label">Realizado:</span>
+                                <span class="metric-value">${totalRealizado}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="metric" data-metric-id="engajamento-smb-engajado" data-metric-title="Total Engajado (SMB)">
+                                <span class="metric-label">Total engajado:</span>
+                                <span class="metric-value success">${engajados.length}</span>
+                            </div>
+                            <div class="metric" data-metric-id="engajamento-smb-desengajado" data-metric-title="Total Desengajado (SMB)">
+                                <span class="metric-label">Total desengajado:</span>
+                                <span class="metric-value danger">${desengajados.length}</span>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div class="metric" style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
-                        <span class="metric-label">Porcentagem de engajamento:</span>
-                        <span class="metric-value" style="color: ${performancePerc >= appGoals.engagement ? 'var(--secondary-color)' : 'var(--danger-color)'};">
-                            ${performancePerc.toFixed(1)}%
-                            <span class="sub-metric">(Meta: ${appGoals.engagement}%)</span>
-                        </span>
-                    </div>
-                </div>
+                    <div class="metric" style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+                        <span class="metric-label">Porcentagem de engajamento:</span>
+                        <span class="metric-value" style="color: ${performancePerc >= appGoals.engagement ? 'var(--secondary-color)' : 'var(--danger-color)'};">
+                            ${performancePerc.toFixed(1)}%
+                            <span class="sub-metric">(Meta: ${appGoals.engagement}%)</span>
+                        </span>
+                    </div>
+                </div>
 
-                <div class="progress-bar-container" title="Realizado vs. Previsto: ${realizadoVsPrevistoPerc.toFixed(0)}% (Meta: 100%)">
-                    <div class="progress-bar">
-                        <div class="progress-bar-fill" style="width: ${Math.min(realizadoVsPrevistoPerc, 100)}%;"></div>
-                    </div>
-                    <span class="progress-percentage">${realizadoVsPrevistoPerc.toFixed(0)}%</span>
-                </div>
-            </div>`;
-                okrHtml += cardEngajamento;
+                <div class="progress-bar-container" title="Realizado vs. Previsto: ${realizadoVsPrevistoPerc.toFixed(0)}% (Meta: 100%)">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" style="width: ${Math.min(realizadoVsPrevistoPerc, 100)}%;"></div>
+                    </div>
+                    <span class="progress-percentage">${realizadoVsPrevistoPerc.toFixed(0)}%</span>
+                </div>
+            </div>`;
+                okrHtml += cardEngajamento;
 
-                const clientesContatadosBase = dataStore['cob-carteira'] || [];
-                if (selectedSegmento === 'SMB CAD') {
-                    const preenchidosModelo = dataStore['modelo-negocio-preenchido'] || [];
-                    const faltantesModelo = dataStore['modelo-negocio-faltante'] || [];
-                    const totalAvaliadoModelo = preenchidosModelo.length + faltantesModelo.length;
-                    const percModelo = totalAvaliadoModelo > 0 ? (preenchidosModelo.length / totalAvaliadoModelo) * 100 : 0;
+                const clientesContatadosBase = dataStore['cob-carteira'] || [];
+                if (selectedSegmento === 'SMB CAD') {
+                    const preenchidosModelo = dataStore['modelo-negocio-preenchido'] || [];
+                    const faltantesModelo = dataStore['modelo-negocio-faltante'] || [];
+                    const totalAvaliadoModelo = preenchidosModelo.length + faltantesModelo.length;
+                    const percModelo = totalAvaliadoModelo > 0 ? (preenchidosModelo.length / totalAvaliadoModelo) * 100 : 0;
 
-                    const cardModeloNegocio = `
-                    <div class="card">
-                        <h3>Adoção do Modelo de Negócio</h3>
-                        <div class="card-content">
-                            <div class="metric" data-metric-id="modelo-negocio-preenchido" data-metric-title="Clientes com Modelo Preenchido">
-                                <span class="metric-label">Preenchido:</span>
-                                <span class="metric-value success">${preenchidosModelo.length}</span>
-                            </div>
-                            <div class="metric overdue-metric" style="border-top: none; margin-top: 0; padding-top: 0;" data-metric-id="modelo-negocio-faltante" data-metric-title="Clientes com Modelo Faltante">
-                                <span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Faltante:</span>
-                                <span class="metric-value">${faltantesModelo.length}</span>
-                            </div>
-                        </div>
-                        <div class="progress-bar-container" title="${percModelo.toFixed(1)}% de ${totalAvaliadoModelo} clientes contatados possuem modelo de negócio definido">
-                            <div class="progress-bar">
-                                <div class="progress-bar-fill" style="width: ${percModelo.toFixed(1)}%;"></div>
-                            </div>
-                            <span class="progress-percentage">${percModelo.toFixed(1)}%</span>
-                        </div>
-                    </div>`;
-                    okrHtml += cardModeloNegocio;
-                }
-                if (selectedSegmento === 'SMB CAD' || selectedSegmento === 'SMB Multiprodutos') {
-                    const preenchidosPotencial = dataStore['cliente-potencial-preenchido'] || [];
-                    const faltantesPotencial = dataStore['cliente-potencial-faltante'] || [];
-                    const totalAvaliadoPotencial = preenchidosPotencial.length + faltantesPotencial.length;
-                    const percPotencial = totalAvaliadoPotencial > 0 ? (preenchidosPotencial.length / totalAvaliadoPotencial) * 100 : 0;
+                    const cardModeloNegocio = `
+                    <div class="card">
+                        <h3>Adoção do Modelo de Negócio</h3>
+                        <div class="card-content">
+                            <div class="metric" data-metric-id="modelo-negocio-preenchido" data-metric-title="Clientes com Modelo Preenchido">
+                                <span class="metric-label">Preenchido:</span>
+                                <span class="metric-value success">${preenchidosModelo.length}</span>
+                            </div>
+                            <div class="metric overdue-metric" style="border-top: none; margin-top: 0; padding-top: 0;" data-metric-id="modelo-negocio-faltante" data-metric-title="Clientes com Modelo Faltante">
+                                <span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Faltante:</span>
+                                <span class="metric-value">${faltantesModelo.length}</span>
+                            </div>
+                        </div>
+                        <div class="progress-bar-container" title="${percModelo.toFixed(1)}% de ${totalAvaliadoModelo} clientes contatados possuem modelo de negócio definido">
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" style="width: ${percModelo.toFixed(1)}%;"></div>
+                            </div>
+                            <span class="progress-percentage">${percModelo.toFixed(1)}%</span>
+                        </div>
+                    </div>`;
+                    okrHtml += cardModeloNegocio;
+                }
+                if (selectedSegmento === 'SMB CAD' || selectedSegmento === 'SMB Multiprodutos') {
+                    const preenchidosPotencial = dataStore['cliente-potencial-preenchido'] || [];
+                    const faltantesPotencial = dataStore['cliente-potencial-faltante'] || [];
+                    const totalAvaliadoPotencial = preenchidosPotencial.length + faltantesPotencial.length;
+                    const percPotencial = totalAvaliadoPotencial > 0 ? (preenchidosPotencial.length / totalAvaliadoPotencial) * 100 : 0;
 
-                    const cardClientePotencial = `
-                    <div class="card">
-                        <h3>Mapeamento de Cliente Potencial</h3>
-                        <div class="card-content">
-                            <div class="metric" data-metric-id="cliente-potencial-preenchido" data-metric-title="Clientes com Potencial Mapeado">
-                                <span class="metric-label">Mapeado:</span>
-                                <span class="metric-value success">${preenchidosPotencial.length}</span>
-                            </div>
-                            <div class="metric overdue-metric" style="border-top: none; margin-top: 0; padding-top: 0;" data-metric-id="cliente-potencial-faltante" data-metric-title="Clientes com Potencial Faltante">
-                                <span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Faltante:</span>
-                                <span class="metric-value">${faltantesPotencial.length}</span>
-                            </div>
-                        </div>
-                        <div class="progress-bar-container" title="${percPotencial.toFixed(1)}% de ${totalAvaliadoPotencial} clientes contatados possuem potencial mapeado">
-                            <div class="progress-bar">
-                                <div class="progress-bar-fill" style="width: ${percPotencial.toFixed(1)}%;"></div>
-                            </div>
-                            <span class="progress-percentage">${percPotencial.toFixed(1)}%</span>
-                        </div>
-                    </div>`;
-                    okrHtml += cardClientePotencial;
-                }
-                okrHtml += labsCard;
-            }
-            okrGrid.innerHTML = okrHtml;
-        };
+                    const cardClientePotencial = `
+                    <div class="card">
+                        <h3>Mapeamento de Cliente Potencial</h3>
+                        <div class="card-content">
+                            <div class="metric" data-metric-id="cliente-potencial-preenchido" data-metric-title="Clientes com Potencial Mapeado">
+                                <span class="metric-label">Mapeado:</span>
+                                <span class="metric-value success">${preenchidosPotencial.length}</span>
+                            </div>
+                            <div class="metric overdue-metric" style="border-top: none; margin-top: 0; padding-top: 0;" data-metric-id="cliente-potencial-faltante" data-metric-title="Clientes com Potencial Faltante">
+                                <span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Faltante:</span>
+                                <span class="metric-value">${faltantesPotencial.length}</span>
+                            </div>
+                        </div>
+                        <div class="progress-bar-container" title="${percPotencial.toFixed(1)}% de ${totalAvaliadoPotencial} clientes contatados possuem potencial mapeado">
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" style="width: ${percPotencial.toFixed(1)}%;"></div>
+                            </div>
+                            <span class="progress-percentage">${percPotencial.toFixed(1)}%</span>
+                        </div>
+                    </div>`;
+                    okrHtml += cardClientePotencial;
+                }
+                okrHtml += labsCard;
+            }
+            okrGrid.innerHTML = okrHtml;
+        };
 
-        const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '', additionalHtml = '') => {
-            const percentage = goal > 0 ? (value / goal) * 100 : 0;
-            let valueText;
-            let labelText = `Meta: ${goal}${unit}`;
-            let clientesFaltantesHtml = '';
-            let distribuicaoContatosHtml = '';
+        const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '', additionalHtml = '') => {
+            const percentage = goal > 0 ? (value / goal) * 100 : 0;
+            let valueText;
+            let labelText = `Meta: ${goal}${unit}`;
+            let clientesFaltantesHtml = '';
+            let distribuicaoContatosHtml = '';
 
-            // --- INÍCIO DA ALTERAÇÃO 2 ---
+            // --- INÍCIO DA ALTERAÇÃO 2 ---
             if (clientesFaltantes !== null) {
                 // 1. Calcula o número TOTAL de clientes que precisam ser contatados para atingir a meta.
                 const totalParaMeta = Math.ceil((dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100));
@@ -3446,621 +3430,621 @@
             }
 // --- FIM DA ALTERAÇÃO 2 ---
 
-            if (currentValue !== null) {
-                if (goalValue !== null) {
-                    valueText = `${currentValue} de ${goalValue} <span class="sub-metric">(${value.toFixed(1)}%)</span>`;
-                } else {
-                    valueText = `${currentValue}${unit}`;
-                }
-            } else {
-                valueText = `${unit === '%' ? value.toFixed(1) : Number(value).toFixed(0)}${unit}`;
-            }
-
-            let trendHtml = '';
-            if (comparisonValue !== null && isFinite(comparisonValue)) {
-                const trend = value - comparisonValue;
-                const trendClass = trend > 0.1 ? 'trend-positive' : (trend < -0.1 ? 'trend-negative' : 'trend-neutral');
-                const trendIcon = trend > 0.1 ? '▲' : (trend < -0.1 ? '▼' : '▬');
-                let trendText;
-                if (unit === '%') {
-                    trendText = `${trend.toFixed(1)}pp`;
-                } else {
-                    const percChange = comparisonValue > 0 ? ((trend / comparisonValue) * 100) : (trend > 0 ? 100 : 0);
-                    trendText = `${percChange.toFixed(0)}%`;
-                }
-                trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
-            }
-
-            const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
-            return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}${additionalHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
-        };
-
-        const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
-            const totalRealizado = realizadoNoPrazo + overdueCount;
-            const percentage = previsto > 0 ? (realizadoNoPrazo / previsto) * 100 : 0;
-            let metaHtml = '';
-            if (goal !== null && currentUser.isManager) metaHtml = `<div class="metric"><span class="metric-label">Meta Mensal:</span><span class="metric-value">${goal}</span></div>`;
-            let overdueHtml = '';
-            if (overdueCount > 0) {
-                overdueHtml = `
-                    <div class="metric overdue-metric" data-metric-id="${metricIdPrefix}-atrasado-concluido" data-metric-title="${title} (Concluídas com Atraso)" title="${overdueCount} atividades concluídas estavam previstas para meses anteriores">
-                        <span class="metric-label"><i class="fas fa-history"></i>Concluídas (Atraso):</span>
-                        <span class="metric-value">${overdueCount}</span>
-                    </div>
-                `;
-            }
-            const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricIdPrefix}" data-metric-title="${title}" data-metric-type="playbook" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
-            return `
-                <div class="card">
-                    <h3>${title}${trendButtonHtml}</h3>
-                    <div class="card-content">
-                        <div class="metric" data-metric-id="${metricIdPrefix}-realizado" data-metric-title="${title} (Realizado no Prazo)">
-                            <span class="metric-label">Realizado (Prazo):</span>
-                            <span class="metric-value success">${realizadoNoPrazo}</span>
-                        </div>
-                        ${overdueHtml}
-                        <div class="metric" data-metric-id="${metricIdPrefix}-previsto" data-metric-title="${title} (Previsto)">
-                            <span class="metric-label">Previsto:</span>
-                            <span class="metric-value">${previsto}</span>
-                        </div>
-                        ${metaHtml}
-                    </div>
-                    <div class="progress-bar-container" title="Progresso de atividades previstas para o mês. Realizado (Prazo): ${realizadoNoPrazo}. Total Realizado (com atrasos): ${totalRealizado}.">
-                        <div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div>
-                        <span class="progress-percentage">${percentage.toFixed(0)}%</span>
-                    </div>
-                </div>`;
-        };
-
-        const createSimpleCard = (title, id1, label1, value1, id2, label2, value2) => {
-            let metric2Html = '';
-            if (id2) {
-                metric2Html = `<div class="metric" data-metric-id="${id2}" data-metric-title="${label2}"><span class="metric-label">${label2}:</span><span class="metric-value">${value2}</span></div>`;
-            }
-            return `<div class="card"><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${label1}"><span class="metric-label">${label1}:</span><span class="metric-value">${value1}</span></div>${metric2Html}</div></div>`;
-        };
-
-        const createHtmlTable = (data) => {
-            if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Nenhum dado para exibir.</p>';
-            const allHeaders = Object.keys(data[0]);
-            const headers = allHeaders.filter(h => normalizeText(h) !== 'anotacoes');
-            const headerHtml = `<thead><tr>${headers.map(h => `<th><span>${h}</span></th>`).join('')}</tr></thead>`;
-            const bodyHtml = `<tbody>${data.map(row => `<tr>${headers.map(h => {
-                const cellValue = row[h];
-                let displayValue = '';
-                if (cellValue instanceof Date) {
-                    displayValue = formatDate(cellValue);
-                } else if (cellValue !== null && cellValue !== undefined) {
-                    displayValue = cellValue;
-                }
-                
-                if (normalizeText(h) === 'cliente') {
-                    const anotacaoContent = (row['Anotações'] || '').replace(/"/g, '&quot;');
-                    return `<td><span class="client-activity-trigger" data-anotacao="${anotacaoContent}">${displayValue}</span></td>`;
-                }
-                return `<td>${displayValue}</td>`;
-            }).join('')}</tr>`).join('')}</tbody>`;
-            return `<table class="data-table">${headerHtml}${bodyHtml}</table>`;
-        };
-
-        const renderPaginatedTable = (tableId, paginationId, fullData, rowsPerPage = 100) => {
-            const tableContainer = document.getElementById(tableId);
-            const paginationContainer = document.getElementById(paginationId);
-            if (!tableContainer) return;
-            let currentPage = 1;
-            const totalPages = Math.ceil(fullData.length / rowsPerPage);
-            const renderPage = () => {
-                const start = (currentPage - 1) * rowsPerPage;
-                const end = start + rowsPerPage;
-                const pageData = fullData.slice(start, end);
-                tableContainer.innerHTML = createHtmlTable(pageData);
-                paginationContainer.innerHTML = `<button id="${paginationId}-prev" ${currentPage === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${currentPage} de ${totalPages || 1}</span><button id="${paginationId}-next" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
-                document.getElementById(`${paginationId}-prev`).addEventListener('click', () => {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        renderPage();
-                    }
-                });
-                document.getElementById(`${paginationId}-next`).addEventListener('click', () => {
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        renderPage();
-                    }
-                });
-            };
-            renderPage();
-        };
-
-        const renderDataTables = () => {
-            renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
-            renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
-        };
-
-        const showModal = (modalElement) => {
-            modalElement.style.display = 'block';
-        };
-
-        const closeModal = (modalElement) => {
-            const searchInput = modalElement.querySelector('#modal-search-input');
-            if (searchInput) {
-                searchInput.value = '';
-            }
-            modalElement.style.display = 'none';
-        };
-
-        function showDataInModal(data, title) {
-            if (!data || data.length === 0) {
-                alert(`Não há dados para exibir para "${title}".`);
-                return;
-            }
-
-            detailsModal.querySelector('#modal-title').textContent = title;
-            const modalBody = detailsModal.querySelector('#modal-body');
-            const searchInput = detailsModal.querySelector('#modal-search-input');
-
-            const renderTable = (tableData) => {
-                modalBody.innerHTML = createHtmlTable(tableData);
-            };
-
-            searchInput.value = '';
-            searchInput.oninput = () => {
-                const searchTerm = normalizeText(searchInput.value);
-                if (!searchTerm) {
-                    renderTable(data);
-                    return;
-                }
-                const filteredData = data.filter(row =>
-                    Object.values(row).some(value =>
-                        normalizeText(String(value)).includes(searchTerm)
-                    )
-                );
-                renderTable(filteredData);
-            };
-
-            renderTable(data);
-            showModal(detailsModal);
-        }
-
-        const showDetailsModal = (metricId, title) => {
-            const data = dataStore[metricId] || onboardingDataStore[metricId];
-            showDataInModal(data, title);
-        };
-
-        function showAnotacaoModal(anotacaoText) {
-            const modalBody = anotacaoModal.querySelector('#anotacao-modal-body');
-            modalBody.textContent = anotacaoText || 'Nenhuma anotação fornecida para esta atividade.';
-            showModal(anotacaoModal);
-        }
-
-        const showClient360Modal = (clientName) => {
-            const clientData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === clientName.toLowerCase());
-            if (!clientData) return;
-
-            document.getElementById('client-360-name').textContent = clientData.Cliente;
-            const infoContainer = document.getElementById('client-360-info');
-            infoContainer.innerHTML = `
-                <div class="client-info-item"><span class="client-info-label">CS Responsável</span><span class="client-info-value">${clientData.CS || 'N/A'}</span></div>
-                <div class="client-info-item"><span class="client-info-label">ISM Responsável</span><span class="client-info-value">${clientData.ISM || 'N/A'}</span></div>
-                <div class="client-info-item"><span class="client-info-label">Segmento</span><span class="client-info-value">${clientData.Segmento || 'N/A'}</span></div>
-                <div class="client-info-item"><span class="client-info-label">Sense Score</span><span class="client-info-value">${clientData['Sense Score'] || 'N/A'}</span></div>
-                <div class="client-info-item"><span class="client-info-label">Fase</span><span class="client-info-value">${clientData.Fase || 'N/A'}</span></div>
-            `;
-
-            const clientActivities = rawActivities
-                .filter(a => a.ClienteCompleto === clientName.toLowerCase())
-                .sort((a, b) => (b.ConcluidaEm || new Date(0)) - (a.ConcluidaEm || new Date(0)));
-
-            document.querySelector('#client-360-activities .data-table-container').innerHTML = createHtmlTable(clientActivities);
-            showModal(client360Modal);
-        };
-
-        let trendChartInstance = null;
-
-        const showTrendChart = async (metricId, title, type) => {
-            const trendModal = document.getElementById('trend-chart-modal');
-            document.getElementById('trend-chart-title').textContent = `Tendência: ${title}`;
-
-            const canvas = document.getElementById('trend-chart-canvas');
-            const ctx = canvas.getContext('2d');
-            if (trendChartInstance) {
-                trendChartInstance.destroy();
-            }
-
-            showModal(trendModal);
-            document.getElementById('trend-chart-container').innerHTML = '<div class="loader">Calculando histórico...</div>';
-
-            const labels = [];
-            const dataPoints = [];
-
-            const selectedYearVal = parseInt(selectYear.value, 10);
-            const selectedMonthVal = parseInt(selectMonth.value, 10);
-            const baseDate = new Date(selectedYearVal, selectedMonthVal, 1);
-
-            const selectedCS = selectCS.value;
-            const filteredClients = (selectedCS === 'Todos') ? rawClients : rawClients.filter(d => d.CS?.trim() === selectedCS);
-
-            for (let i = 5; i >= 0; i--) {
-                const date = new Date(baseDate);
-                date.setMonth(baseDate.getMonth() - i);
-                const month = date.getMonth();
-                const year = date.getFullYear();
-
-                labels.push(`${date.toLocaleString('default', { month: 'short' })}/${String(year).slice(2)}`);
-
-                const periodMetrics = calculateMetricsForPeriod(month, year, rawActivities, filteredClients, selectedCS, onboardingToggle.checked);
-
-                let value = 0;
-                if (type === 'okr') {
-                    switch (metricId) {
-                        case 'cob-carteira':
-                            const totalClients = periodMetrics['total-clientes-unicos-cs'] || 0;
-                            const contacted = periodMetrics['cob-carteira']?.length || 0;
-                            value = totalClients > 0 ? (contacted / totalClients) * 100 : 0;
-                            break;
-                        case 'sensescore-avg':
-                            value = periodMetrics['sensescore-avg'] || 0;
-                            break;
-                    }
-                } else if (type === 'playbook') {
-                    const realizado = (periodMetrics[`${metricId}-realizado`] || []).length;
-                    const atrasado = (periodMetrics[`${metricId}-atrasado-concluido`] || []).length;
-                    value = realizado + atrasado;
-                }
-                dataPoints.push(value.toFixed(2));
-
-                await new Promise(resolve => setTimeout(resolve, 10));
-            }
-
-            document.getElementById('trend-chart-container').innerHTML = '';
-            document.getElementById('trend-chart-container').appendChild(canvas);
-
-            trendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: title,
-                        data: dataPoints,
-                        fill: true,
-                        borderColor: '#007BFF',
-                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
-                        pointBackgroundColor: '#007BFF',
-                        tension: 0.3,
-                        pointRadius: 5,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true } },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        };
-
-        const selectSquad = document.getElementById('select-squad');
-        const squadCsListDiv = document.getElementById('squad-cs-list');
-
-        [selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, document.getElementById('select-comparison'), selectPeriod, selectOnboardingTeam, selectISM].forEach(el => {
-            el.addEventListener('change', (event) => {
-                const targetId = event.target.id;
-
-                if (currentUser.isManager) {
-                    if (targetId === 'select-squad') {
-                        const selectedSquadValue = selectSquad.value;
-                        if (selectedSquadValue !== 'Todos') {
-                            if (selectCS.value !== 'Todos') selectCS.value = 'Todos';
-                            selectCS.disabled = true;
-
-                            const csInSquad = [];
-                            for (const [cs, squad] of csToSquadMap.entries()) {
-                                if (squad === selectedSquadValue) {
-                                    csInSquad.push(cs);
-                                }
-                            }
-                            squadCsListDiv.textContent = `CSs no Squad: ${csInSquad.sort().join(', ')}`;
-
-                        } else {
-                            selectCS.disabled = false;
-                            squadCsListDiv.textContent = '';
-                        }
-                    }
-
-                    if (targetId === 'select-cs' && selectCS.value !== 'Todos') {
-                        if (selectSquad.value !== 'Todos') selectSquad.value = 'Todos';
-                        squadCsListDiv.textContent = '';
-                    }
-                }
-
-                if (targetId === 'select-cs' && selectCS.value !== 'Todos') {
-                    const selectedCSValue = selectCS.value;
-                    const includeOnboarding = onboardingToggle.checked;
-                    let clientsForSegmentCheck = includeOnboarding ? rawClients : rawClients.filter(cli => normalizeText(cli.Fase) !== 'onboarding');
-                    const filteredClients = clientsForSegmentCheck.filter(d => d.CS?.trim() === selectedCSValue);
-                    autoSelectSegment(filteredClients);
-                }
-
-                if (targetId === 'select-onboarding-team') {
-                    updateIsmFilter();
-                }
-
-                updateDashboard();
-                renderOverdueView();
-            });
-        });
-
-        tabsContainer.addEventListener('click', (e) => {
-            if (e.target.matches('.tab-button')) {
-                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                e.target.classList.add('active');
-                document.getElementById(e.target.dataset.tab).classList.add('active');
-
-                if (e.target.dataset.tab === 'overdue-view') {
-                    renderOverdueView();
-                }
-                if (e.target.dataset.tab === 'data-view') {
-                    renderDataTables();
-                } else if (e.target.dataset.tab === 'onboarding-view') {
-                    renderNewOnboardingView();
-                }
-            }
-        });
-
-        document.body.addEventListener('click', (e) => {
-            const metricElement = e.target.closest('[data-metric-id]');
-            if (metricElement) {
-                showDetailsModal(metricElement.dataset.metricId, metricElement.dataset.metricTitle);
-            }
-            const activityTrigger = e.target.closest('span.client-activity-trigger');
-            if (activityTrigger) {
-                const anotacao = activityTrigger.dataset.anotacao;
-                showAnotacaoModal(anotacao);
-            }
-            const trendButton = e.target.closest('.trend-chart-button');
-            if (trendButton) {
-                e.preventDefault();
-                const {
-                    metricId,
-                    metricTitle,
-                    metricType
-                } = trendButton.dataset;
-                showTrendChart(metricId, metricTitle, metricType);
-            }
-        });
-
-        document.getElementById('divergence-marker').addEventListener('click', () => {
-            showDetailsModal('divergent-activities', 'Atividades para Clientes Fora da Carteira');
-        });
-
-        document.getElementById('settings-button').addEventListener('click', () => {
-            loadGoals();
-            showModal(settingsModal);
-        });
-        document.getElementById('save-settings-button').addEventListener('click', saveGoals);
-
-        const generateExportData = () => {
-            const selectedCS = selectCS.options[selectCS.selectedIndex].text;
-            const selectedMonth = selectMonth.options[selectMonth.selectedIndex].text;
-            const selectedYear = selectYear.value;
-            const selectedSegmento = selectSegmento.value;
-
-            const formatValue = (value, unit = '') => {
-                if (typeof value !== 'number') return value;
-                return `${value.toFixed(2)}${unit}`;
-            };
-
-            const dataToExport = [{ Categoria: 'Filtro', Indicador: 'Mês de Referência', Valor: `${selectedMonth}/${selectedYear}`, Meta: '' },
-                { Categoria: 'Filtro', Indicador: 'CS Responsável', Valor: selectedCS, Meta: '' },
-                { Categoria: 'Filtro', Indicador: 'Segmento Analisado', Valor: selectedSegmento, Meta: '' },
-                { Categoria: 'Geral', Indicador: 'Total de Clientes na Carteira', Valor: (dataStore['total-clientes'] || []).length, Meta: '' },
-                { Categoria: 'Geral', Indicador: 'Clientes Contatados', Valor: (dataStore['cob-carteira'] || []).length, Meta: '' },
-                { Categoria: 'Geral', Indicador: 'Média Sense Score', Valor: formatValue(dataStore['sensescore-avg'], ' pts'), Meta: appGoals.sensescore },
-                { Categoria: 'OKRs', Indicador: 'Cobertura de Carteira (%)', Valor: formatValue((dataStore['cob-carteira']?.length || 0) * 100 / ((dataStore['total-clientes-unicos-cs'] || 1) === 0 ? 1 : dataStore['total-clientes-unicos-cs'])), Meta: appGoals.coverage },
-                { Categoria: 'OKRs', Indicador: 'Participação SKA LABS (Trimestre) (%)', Valor: formatValue(((dataStore['ska-labs-realizado-list']?.length || 0) * 100) / ((dataStore['total-labs-eligible'] || 1) === 0 ? 1 : dataStore['total-labs-eligible'])), Meta: appGoals.labs }, ];
-
-            const playbooks = {
-                'plano': 'Plano de Ação', 'adocao': 'Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery', 'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso', 'baixo-engajamento-mid': 'Baixo Engajamento (MID/ENT)'
-            };
-
-            for (const [key, title] of Object.entries(playbooks)) {
-                dataToExport.push({ Categoria: 'Playbooks', Indicador: `${title} (Previsto)`, Valor: (dataStore[`${key}-previsto`] || []).length, Meta: '' });
-                dataToExport.push({ Categoria: 'Playbooks', Indicador: `${title} (Realizado no Prazo)`, Valor: (dataStore[`${key}-realizado`] || []).length, Meta: '' });
-                dataToExport.push({ Categoria: 'Playbooks', Indicador: `${title} (Realizado com Atraso)`, Valor: (dataStore[`${key}-atrasado-concluido`] || []).length, Meta: '' });
-            }
-
-            return dataToExport;
-        };
-
-        const exportDataToCSV = (data) => {
-            if (!data || data.length === 0) return;
-            const headers = Object.keys(data[0]);
-            const csvRows = [headers.join(',')];
-
-            for (const row of data) {
-                const values = headers.map(header => {
-                    const val = row[header] === null || row[header] === undefined ? '' : row[header];
-                    const escaped = ('' + val).replace(/"/g, '""');
-                    return `"${escaped}"`;
-                });
-                csvRows.push(values.join(','));
-            }
-
-            const csvString = csvRows.join('\n');
-            const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            const fileName = `resumo_okrs_${selectMonth.value}_${selectYear.value}.csv`;
-
-            link.setAttribute('href', url);
-            link.setAttribute('download', fileName);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
-
-        const generateAndDownloadHtmlReport = (csName, reportData, goals) => {
-            const selectedMonth = selectMonth.options[selectMonth.selectedIndex].text;
-            const selectedYear = selectYear.value;
-            const selectedSegmento = selectSegmento.value;
-            const includeOnboarding = onboardingToggle.checked;
-
-            const indicadoresGeraisHtml = `<h2><i class="fas fa-chart-bar"></i> Indicadores Gerais</h2><table><thead><tr><th>Indicador</th><th>Valor</th><th>Meta</th></tr></thead><tbody><tr><td>Total de Clientes na Carteira</td><td>${(reportData['total-clientes'] || []).length}</td><td>N/A</td></tr><tr><td>Clientes Únicos Contatados</td><td>${(reportData['cob-carteira'] || []).length}</td><td>N/A</td></tr><tr><td>Cobertura de Carteira</td><td>${((reportData['cob-carteira']?.length || 0) * 100 / (reportData['total-clientes-unicos-cs'] || 1)).toFixed(1)}%</td><td>${goals.coverage}%</td></tr><tr><td>Média Sense Score</td><td>${(reportData['sensescore-avg'] || 0).toFixed(1)} pts</td><td>${goals.sensescore} pts</td></tr><tr><td>Participação SKA LABS (Trimestre)</td><td>${(((reportData['ska-labs-realizado-list']?.length || 0) * 100) / (reportData['total-labs-eligible'] || 1)).toFixed(1)}%</td><td>${goals.labs}%</td></tr></tbody></table>`;
-            const tiposDeContatoHtml = `<h2><i class="fas fa-headset"></i> Tipos de Contato (Mês)</h2><table><thead><tr><th>Tipo de Contato</th><th>Quantidade</th></tr></thead><tbody><tr><td>📞 Ligação/Reunião (CS)</td><td>${(reportData['contato-ligacao'] || []).length}</td></tr><tr><td style="padding-left: 30px;">↳ com 'Contato Consolidado' Concluído</td><td>${reportData['ligacao-com-consolidado'] || 0}</td></tr><tr><td>✉️ E-mail/Whatsapp (CS)</td><td>${(reportData['contato-email'] || []).length}</td></tr>${includeOnboarding ? `<tr><td>🚀 Contatos de Onboarding</td><td>${(reportData['onboarding-contacts-display'] || []).length}</td></tr>` : ''}</tbody></table>`;
-            const playbooksData = [];
-            const playbookDefs = {
-                'plano': 'Plano de Ação', 'adocao': 'Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery', 'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso'
-            };
-            for (const [key, title] of Object.entries(playbookDefs)) {
-                const previsto = (reportData[`${key}-previsto`] || []).length;
-                const realizadoPrazo = (reportData[`${key}-realizado`] || []).length;
-                const realizadoAtraso = (reportData[`${key}-atrasado-concluido`] || []).length;
-                const totalRealizado = realizadoPrazo + realizadoAtraso;
-                const atingimento = previsto > 0 ? ((totalRealizado / previsto) * 100).toFixed(1) + '%' : 'N/A';
-                playbooksData.push(`<tr><td>${title}</td><td>${previsto}</td><td>${realizadoPrazo}</td><td>${realizadoAtraso}</td><td class="total-col">${totalRealizado}</td><td class="atingimento-col ${atingimento !== 'N/A' && parseFloat(atingimento) >= 100 ? 'success' : ''}">${atingimento}</td></tr>`);
-            }
-            const playbooksHtml = `<h2><i class="fas fa-book-open"></i> Resumo dos Playbooks</h2><table><thead><tr><th>Playbook</th><th>Previsto</th><th>Realizado (Prazo)</th><th>Realizado (Atraso)</th><th>Total Realizado</th><th>Atingimento</th></tr></thead><tbody>${playbooksData.join('')}</tbody></table>`;
-            let segmentoHtml = '';
-            if (selectedSegmento.includes('SMB')) {
-                const totalRealizado = (reportData['engajamento-smb-realizado'] || []).length + (reportData['engajamento-smb-atrasado-concluido'] || []).length;
-                const engajados = (reportData['engajamento-smb-engajado'] || []).length;
-                const performance = totalRealizado > 0 ? (engajados / totalRealizado * 100).toFixed(1) : '0.0';
-                segmentoHtml += `<h2><i class="fas fa-tasks"></i> OKR: Engajamento (Contato Consolidado)</h2><table><thead><tr><th>Métrica de Engajamento</th><th>Valor</th></tr></thead><tbody><tr><td>Total de Contatos Realizados</td><td>${totalRealizado}</td></tr><tr><td>Total de Clientes Engajados</td><td class="success">${engajados}</td></tr><tr><td>Total de Clientes Desengajados</td><td class="danger">${(reportData['engajamento-smb-desengajado'] || []).length}</td></tr><tr><td class="total-col">Performance de Engajamento</td><td class="total-col ${performance >= goals.engagement ? 'success' : ''}">${performance}% (Meta: ${goals.engagement}%)</td></tr></tbody></table>`;
-            }
-            if (selectedSegmento === 'MID/Enterprise') {
-                const previsto = (reportData['baixo-engajamento-mid-previsto'] || []).length;
-                const realizadoPrazo = (reportData['baixo-engajamento-mid-realizado'] || []).length;
-                const realizadoAtraso = (reportData['baixo-engajamento-mid-atrasado-concluido'] || []).length;
-                segmentoHtml += `<h2><i class="fas fa-chart-line-down"></i> Playbook: Baixo Engajamento (MID/ENT)</h2><table><thead><tr><th>Métrica</th><th>Valor</th></tr></thead><tbody><tr><td>Previsto</td><td>${previsto}</td></tr><tr><td>Total Realizado</td><td>${realizadoPrazo + realizadoAtraso}</td></tr></tbody></table>`;
-            }
-
-            const htmlString = `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Relatório OKRs - ${csName} - ${selectedMonth} ${selectedYear}</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><style>body{font-family:'Inter',sans-serif;background-color:#f4f7fc;color:#2c3e50;margin:0;padding:25px}@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');.container{max-width:1200px;margin:auto;background-color:#fff;padding:30px 40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08)}h1{color:#007BFF;border-bottom:2px solid #e3e8f0;padding-bottom:10px;font-size:2rem}h2{color:#1a2238;margin-top:40px;border-bottom:1px solid #e3e8f0;padding-bottom:8px;font-size:1.4rem;display:flex;align-items:center;gap:10px}.header-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;background-color:#f8f9fa;padding:20px;border-radius:8px;margin:25px 0}.info-item{display:flex;flex-direction:column}.info-item span:first-child{font-weight:600;color:#57606a;font-size:.9rem;margin-bottom:4px}.info-item span:last-child{font-weight:700;font-size:1.1rem}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #dee2e6;padding:12px 15px;text-align:left;font-size:.95rem}th{background-color:#007BFF;color:#fff;font-weight:600}tbody tr:nth-child(even){background-color:#f8f9fa}tbody tr:hover{background-color:#e9ecef}.total-col{font-weight:700;background-color:#e9ecef}.success{color:#28a745;font-weight:700}.danger{color:#dc3545;font-weight:700}</style></head><body><div class="container"><h1>Relatório de Performance de OKRs</h1><div class="header-info"><div class="info-item"><span><i class="fas fa-calendar-alt"></i> Mês/Ano</span><span>${selectedMonth}/${selectedYear}</span></div><div class="info-item"><span><i class="fas fa-user-tie"></i> CS Responsável</span><span>${csName}</span></div><div class="info-item"><span><i class="fas fa-chart-pie"></i> Segmento</span><span>${selectedSegmento}</span></div></div>${indicadoresGeraisHtml}${tiposDeContatoHtml}${playbooksHtml}${segmentoHtml}</div></body></html>`;
-            const blob = new Blob([htmlString], { type: 'text/html' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            const fileName = `relatorio_okrs_${csName.replace(/\s/g, '_')}_${selectedMonth.replace(/\s/g, '')}_${selectedYear}.html`;
-
-            link.setAttribute('href', url);
-            link.setAttribute('download', fileName);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
-
-        document.getElementById('export-csv-button').addEventListener('click', () => {
-            if (!rawActivities.length || !rawClients.length) {
-                alert('Por favor, carregue as planilhas antes de exportar.');
-                return;
-            }
-            const data = generateExportData();
-            exportDataToCSV(data);
-        });
-
-        document.getElementById('export-html-button').addEventListener('click', () => {
-            if (!rawActivities.length || !rawClients.length) {
-                alert('Por favor, carregue as planilhas antes de exportar.');
-                return;
-            }
-            generateAndDownloadHtmlReport(selectCS.options[selectCS.selectedIndex].text, dataStore, appGoals);
-        });
-
-        document.querySelectorAll('.modal .close-button').forEach(btn => btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal'))));
-        window.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                closeModal(e.target);
-            }
-        });
-
-        loadGoals();
-
-        // --- LÓGICA PARA EXPORTAÇÃO EM LOTE ---
-        const bulkExportButton = document.getElementById('bulk-export-button');
-        const bulkExportModal = document.getElementById('bulk-export-modal');
-        const csSelectionList = document.getElementById('cs-selection-list');
-        const generateBulkReportsButton = document.getElementById('generate-bulk-reports-button');
-
-        bulkExportButton.addEventListener('click', () => {
-            if (rawClients.length === 0) {
-                alert('Por favor, carregue as planilhas primeiro.');
-                return;
-            }
-
-            const csSet = new Set(rawClients.map(d => d.CS).filter(Boolean));
-            csSelectionList.innerHTML = '';
-            [...csSet].sort().forEach(cs => {
-                csSelectionList.innerHTML += `
-                    <div class="cs-item">
-                        <label>
-                            <input type="checkbox" class="cs-checkbox" value="${cs}" checked>
-                            ${cs}
-                        </label>
-                    </div>
-                `;
-            });
-
-            showModal(bulkExportModal);
-        });
-
-        generateBulkReportsButton.addEventListener('click', async () => {
-            const selectedCSs = Array.from(document.querySelectorAll('.cs-checkbox:checked')).map(cb => cb.value);
-
-            if (selectedCSs.length === 0) {
-                alert('Por favor, selecione pelo menos um CS.');
-                return;
-            }
-
-            generateBulkReportsButton.disabled = true;
-            generateBulkReportsButton.textContent = 'Gerando...';
-
-            const mesSelecionado = parseInt(selectMonth.value, 10);
-            const anoSelecionado = parseInt(selectYear.value, 10);
-            const includeOnboarding = onboardingToggle.checked;
-
-            for (const cs of selectedCSs) {
-                console.log(`Gerando relatório para: ${cs}`);
-                const filteredClients = rawClients.filter(d => d.CS?.trim() === cs);
-                const reportData = calculateMetricsForPeriod(mesSelecionado, anoSelecionado, rawActivities, filteredClients, cs, includeOnboarding);
-                generateAndDownloadHtmlReport(cs, reportData, appGoals);
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            generateBulkReportsButton.disabled = false;
-            generateBulkReportsButton.innerHTML = '<i class="fas fa-download" style="margin-right:10px;"></i>Gerar Relatórios Selecionados';
-            closeModal(bulkExportModal);
-            alert(`${selectedCSs.length} relatórios foram gerados!`);
-        });
-
-        bulkExportModal.querySelector('.close-button').addEventListener('click', () => closeModal(bulkExportModal));
-
-        // --- CONTROLE DE ACESSO VISUAL ---
-        if (!currentUser.isManager) {
-            document.getElementById('settings-button').style.display = 'none';
-            document.getElementById('bulk-export-button').style.display = 'none';
-            document.getElementById('squad-filter-group').style.display = 'none';
-            document.getElementById('squad-cs-list').style.display = 'none';
-            const csLabel = document.querySelector('[for="select-cs"]');
-            if (csLabel) {
-                csLabel.style.pointerEvents = 'none';
-                csLabel.style.opacity = '0.6';
-            }
-        }
-    }
+            if (currentValue !== null) {
+                if (goalValue !== null) {
+                    valueText = `${currentValue} de ${goalValue} <span class="sub-metric">(${value.toFixed(1)}%)</span>`;
+                } else {
+                    valueText = `${currentValue}${unit}`;
+                }
+            } else {
+                valueText = `${unit === '%' ? value.toFixed(1) : Number(value).toFixed(0)}${unit}`;
+            }
+
+            let trendHtml = '';
+            if (comparisonValue !== null && isFinite(comparisonValue)) {
+                const trend = value - comparisonValue;
+                const trendClass = trend > 0.1 ? 'trend-positive' : (trend < -0.1 ? 'trend-negative' : 'trend-neutral');
+                const trendIcon = trend > 0.1 ? '▲' : (trend < -0.1 ? '▼' : '▬');
+                let trendText;
+                if (unit === '%') {
+                    trendText = `${trend.toFixed(1)}pp`;
+                } else {
+                    const percChange = comparisonValue > 0 ? ((trend / comparisonValue) * 100) : (trend > 0 ? 100 : 0);
+                    trendText = `${percChange.toFixed(0)}%`;
+                }
+                trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
+            }
+
+            const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
+            return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}${additionalHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
+        };
+
+        const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
+            const totalRealizado = realizadoNoPrazo + overdueCount;
+            const percentage = previsto > 0 ? (realizadoNoPrazo / previsto) * 100 : 0;
+            let metaHtml = '';
+            if (goal !== null && currentUser.isManager) metaHtml = `<div class="metric"><span class="metric-label">Meta Mensal:</span><span class="metric-value">${goal}</span></div>`;
+            let overdueHtml = '';
+            if (overdueCount > 0) {
+                overdueHtml = `
+                    <div class="metric overdue-metric" data-metric-id="${metricIdPrefix}-atrasado-concluido" data-metric-title="${title} (Concluídas com Atraso)" title="${overdueCount} atividades concluídas estavam previstas para meses anteriores">
+                        <span class="metric-label"><i class="fas fa-history"></i>Concluídas (Atraso):</span>
+                        <span class="metric-value">${overdueCount}</span>
+                    </div>
+                `;
+            }
+            const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricIdPrefix}" data-metric-title="${title}" data-metric-type="playbook" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
+            return `
+                <div class="card">
+                    <h3>${title}${trendButtonHtml}</h3>
+                    <div class="card-content">
+                        <div class="metric" data-metric-id="${metricIdPrefix}-realizado" data-metric-title="${title} (Realizado no Prazo)">
+                            <span class="metric-label">Realizado (Prazo):</span>
+                            <span class="metric-value success">${realizadoNoPrazo}</span>
+                        </div>
+                        ${overdueHtml}
+                        <div class="metric" data-metric-id="${metricIdPrefix}-previsto" data-metric-title="${title} (Previsto)">
+                            <span class="metric-label">Previsto:</span>
+                            <span class="metric-value">${previsto}</span>
+                        </div>
+                        ${metaHtml}
+                    </div>
+                    <div class="progress-bar-container" title="Progresso de atividades previstas para o mês. Realizado (Prazo): ${realizadoNoPrazo}. Total Realizado (com atrasos): ${totalRealizado}.">
+                        <div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div>
+                        <span class="progress-percentage">${percentage.toFixed(0)}%</span>
+                    </div>
+                </div>`;
+        };
+
+        const createSimpleCard = (title, id1, label1, value1, id2, label2, value2) => {
+            let metric2Html = '';
+            if (id2) {
+                metric2Html = `<div class="metric" data-metric-id="${id2}" data-metric-title="${label2}"><span class="metric-label">${label2}:</span><span class="metric-value">${value2}</span></div>`;
+            }
+            return `<div class="card"><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${label1}"><span class="metric-label">${label1}:</span><span class="metric-value">${value1}</span></div>${metric2Html}</div></div>`;
+        };
+
+        const createHtmlTable = (data) => {
+            if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Nenhum dado para exibir.</p>';
+            const allHeaders = Object.keys(data[0]);
+            const headers = allHeaders.filter(h => normalizeText(h) !== 'anotacoes');
+            const headerHtml = `<thead><tr>${headers.map(h => `<th><span>${h}</span></th>`).join('')}</tr></thead>`;
+            const bodyHtml = `<tbody>${data.map(row => `<tr>${headers.map(h => {
+                const cellValue = row[h];
+                let displayValue = '';
+                if (cellValue instanceof Date) {
+                    displayValue = formatDate(cellValue);
+                } else if (cellValue !== null && cellValue !== undefined) {
+                    displayValue = cellValue;
+                }
+                
+                if (normalizeText(h) === 'cliente') {
+                    const anotacaoContent = (row['Anotações'] || '').replace(/"/g, '&quot;');
+                    return `<td><span class="client-activity-trigger" data-anotacao="${anotacaoContent}">${displayValue}</span></td>`;
+                }
+                return `<td>${displayValue}</td>`;
+            }).join('')}</tr>`).join('')}</tbody>`;
+            return `<table class="data-table">${headerHtml}${bodyHtml}</table>`;
+        };
+
+        const renderPaginatedTable = (tableId, paginationId, fullData, rowsPerPage = 100) => {
+            const tableContainer = document.getElementById(tableId);
+            const paginationContainer = document.getElementById(paginationId);
+            if (!tableContainer) return;
+            let currentPage = 1;
+            const totalPages = Math.ceil(fullData.length / rowsPerPage);
+            const renderPage = () => {
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const pageData = fullData.slice(start, end);
+                tableContainer.innerHTML = createHtmlTable(pageData);
+                paginationContainer.innerHTML = `<button id="${paginationId}-prev" ${currentPage === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${currentPage} de ${totalPages || 1}</span><button id="${paginationId}-next" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
+                document.getElementById(`${paginationId}-prev`).addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderPage();
+                    }
+                });
+                document.getElementById(`${paginationId}-next`).addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderPage();
+                    }
+                });
+            };
+            renderPage();
+        };
+
+        const renderDataTables = () => {
+            renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
+            renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
+        };
+
+        const showModal = (modalElement) => {
+            modalElement.style.display = 'block';
+        };
+
+        const closeModal = (modalElement) => {
+            const searchInput = modalElement.querySelector('#modal-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            modalElement.style.display = 'none';
+        };
+
+        function showDataInModal(data, title) {
+            if (!data || data.length === 0) {
+                alert(`Não há dados para exibir para "${title}".`);
+                return;
+            }
+
+            detailsModal.querySelector('#modal-title').textContent = title;
+            const modalBody = detailsModal.querySelector('#modal-body');
+            const searchInput = detailsModal.querySelector('#modal-search-input');
+
+            const renderTable = (tableData) => {
+                modalBody.innerHTML = createHtmlTable(tableData);
+            };
+
+            searchInput.value = '';
+            searchInput.oninput = () => {
+                const searchTerm = normalizeText(searchInput.value);
+                if (!searchTerm) {
+                    renderTable(data);
+                    return;
+                }
+                const filteredData = data.filter(row =>
+                    Object.values(row).some(value =>
+                        normalizeText(String(value)).includes(searchTerm)
+                    )
+                );
+                renderTable(filteredData);
+            };
+
+            renderTable(data);
+            showModal(detailsModal);
+        }
+
+        const showDetailsModal = (metricId, title) => {
+            const data = dataStore[metricId] || onboardingDataStore[metricId];
+            showDataInModal(data, title);
+        };
+
+        function showAnotacaoModal(anotacaoText) {
+            const modalBody = anotacaoModal.querySelector('#anotacao-modal-body');
+            modalBody.textContent = anotacaoText || 'Nenhuma anotação fornecida para esta atividade.';
+            showModal(anotacaoModal);
+        }
+
+        const showClient360Modal = (clientName) => {
+            const clientData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === clientName.toLowerCase());
+            if (!clientData) return;
+
+            document.getElementById('client-360-name').textContent = clientData.Cliente;
+            const infoContainer = document.getElementById('client-360-info');
+            infoContainer.innerHTML = `
+                <div class="client-info-item"><span class="client-info-label">CS Responsável</span><span class="client-info-value">${clientData.CS || 'N/A'}</span></div>
+                <div class="client-info-item"><span class="client-info-label">ISM Responsável</span><span class="client-info-value">${clientData.ISM || 'N/A'}</span></div>
+                <div class="client-info-item"><span class="client-info-label">Segmento</span><span class="client-info-value">${clientData.Segmento || 'N/A'}</span></div>
+                <div class="client-info-item"><span class="client-info-label">Sense Score</span><span class="client-info-value">${clientData['Sense Score'] || 'N/A'}</span></div>
+                <div class="client-info-item"><span class="client-info-label">Fase</span><span class="client-info-value">${clientData.Fase || 'N/A'}</span></div>
+            `;
+
+            const clientActivities = rawActivities
+                .filter(a => a.ClienteCompleto === clientName.toLowerCase())
+                .sort((a, b) => (b.ConcluidaEm || new Date(0)) - (a.ConcluidaEm || new Date(0)));
+
+            document.querySelector('#client-360-activities .data-table-container').innerHTML = createHtmlTable(clientActivities);
+            showModal(client360Modal);
+        };
+
+        let trendChartInstance = null;
+
+        const showTrendChart = async (metricId, title, type) => {
+            const trendModal = document.getElementById('trend-chart-modal');
+            document.getElementById('trend-chart-title').textContent = `Tendência: ${title}`;
+
+            const canvas = document.getElementById('trend-chart-canvas');
+            const ctx = canvas.getContext('2d');
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+            }
+
+            showModal(trendModal);
+            document.getElementById('trend-chart-container').innerHTML = '<div class="loader">Calculando histórico...</div>';
+
+            const labels = [];
+            const dataPoints = [];
+
+            const selectedYearVal = parseInt(selectYear.value, 10);
+            const selectedMonthVal = parseInt(selectMonth.value, 10);
+            const baseDate = new Date(selectedYearVal, selectedMonthVal, 1);
+
+            const selectedCS = selectCS.value;
+            const filteredClients = (selectedCS === 'Todos') ? rawClients : rawClients.filter(d => d.CS?.trim() === selectedCS);
+
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date(baseDate);
+                date.setMonth(baseDate.getMonth() - i);
+                const month = date.getMonth();
+                const year = date.getFullYear();
+
+                labels.push(`${date.toLocaleString('default', { month: 'short' })}/${String(year).slice(2)}`);
+
+                const periodMetrics = calculateMetricsForPeriod(month, year, rawActivities, filteredClients, selectedCS, onboardingToggle.checked);
+
+                let value = 0;
+                if (type === 'okr') {
+                    switch (metricId) {
+                        case 'cob-carteira':
+                            const totalClients = periodMetrics['total-clientes-unicos-cs'] || 0;
+                            const contacted = periodMetrics['cob-carteira']?.length || 0;
+                            value = totalClients > 0 ? (contacted / totalClients) * 100 : 0;
+                            break;
+                        case 'sensescore-avg':
+                            value = periodMetrics['sensescore-avg'] || 0;
+                            break;
+                    }
+                } else if (type === 'playbook') {
+                    const realizado = (periodMetrics[`${metricId}-realizado`] || []).length;
+                    const atrasado = (periodMetrics[`${metricId}-atrasado-concluido`] || []).length;
+                    value = realizado + atrasado;
+                }
+                dataPoints.push(value.toFixed(2));
+
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            document.getElementById('trend-chart-container').innerHTML = '';
+            document.getElementById('trend-chart-container').appendChild(canvas);
+
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: dataPoints,
+                        fill: true,
+                        borderColor: '#007BFF',
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        pointBackgroundColor: '#007BFF',
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        };
+
+        const selectSquad = document.getElementById('select-squad');
+        const squadCsListDiv = document.getElementById('squad-cs-list');
+
+        [selectCS, selectSquad, selectSegmento, selectMonth, selectYear, onboardingToggle, document.getElementById('select-comparison'), selectPeriod, selectOnboardingTeam, selectISM].forEach(el => {
+            el.addEventListener('change', (event) => {
+                const targetId = event.target.id;
+
+                if (currentUser.isManager) {
+                    if (targetId === 'select-squad') {
+                        const selectedSquadValue = selectSquad.value;
+                        if (selectedSquadValue !== 'Todos') {
+                            if (selectCS.value !== 'Todos') selectCS.value = 'Todos';
+                            selectCS.disabled = true;
+
+                            const csInSquad = [];
+                            for (const [cs, squad] of csToSquadMap.entries()) {
+                                if (squad === selectedSquadValue) {
+                                    csInSquad.push(cs);
+                                }
+                            }
+                            squadCsListDiv.textContent = `CSs no Squad: ${csInSquad.sort().join(', ')}`;
+
+                        } else {
+                            selectCS.disabled = false;
+                            squadCsListDiv.textContent = '';
+                        }
+                    }
+
+                    if (targetId === 'select-cs' && selectCS.value !== 'Todos') {
+                        if (selectSquad.value !== 'Todos') selectSquad.value = 'Todos';
+                        squadCsListDiv.textContent = '';
+                    }
+                }
+
+                if (targetId === 'select-cs' && selectCS.value !== 'Todos') {
+                    const selectedCSValue = selectCS.value;
+                    const includeOnboarding = onboardingToggle.checked;
+                    let clientsForSegmentCheck = includeOnboarding ? rawClients : rawClients.filter(cli => normalizeText(cli.Fase) !== 'onboarding');
+                    const filteredClients = clientsForSegmentCheck.filter(d => d.CS?.trim() === selectedCSValue);
+                    autoSelectSegment(filteredClients);
+                }
+
+                if (targetId === 'select-onboarding-team') {
+                    updateIsmFilter();
+                }
+
+                updateDashboard();
+                renderOverdueView();
+            });
+        });
+
+        tabsContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.tab-button')) {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                e.target.classList.add('active');
+                document.getElementById(e.target.dataset.tab).classList.add('active');
+
+                if (e.target.dataset.tab === 'overdue-view') {
+                    renderOverdueView();
+                }
+                if (e.target.dataset.tab === 'data-view') {
+                    renderDataTables();
+                } else if (e.target.dataset.tab === 'onboarding-view') {
+                    renderNewOnboardingView();
+                }
+            }
+        });
+
+        document.body.addEventListener('click', (e) => {
+            const metricElement = e.target.closest('[data-metric-id]');
+            if (metricElement) {
+                showDetailsModal(metricElement.dataset.metricId, metricElement.dataset.metricTitle);
+            }
+            const activityTrigger = e.target.closest('span.client-activity-trigger');
+            if (activityTrigger) {
+                const anotacao = activityTrigger.dataset.anotacao;
+                showAnotacaoModal(anotacao);
+            }
+            const trendButton = e.target.closest('.trend-chart-button');
+            if (trendButton) {
+                e.preventDefault();
+                const {
+                    metricId,
+                    metricTitle,
+                    metricType
+                } = trendButton.dataset;
+                showTrendChart(metricId, metricTitle, metricType);
+            }
+        });
+
+        document.getElementById('divergence-marker').addEventListener('click', () => {
+            showDetailsModal('divergent-activities', 'Atividades para Clientes Fora da Carteira');
+        });
+
+        document.getElementById('settings-button').addEventListener('click', () => {
+            loadGoals();
+            showModal(settingsModal);
+        });
+        document.getElementById('save-settings-button').addEventListener('click', saveGoals);
+
+        const generateExportData = () => {
+            const selectedCS = selectCS.options[selectCS.selectedIndex].text;
+            const selectedMonth = selectMonth.options[selectMonth.selectedIndex].text;
+            const selectedYear = selectYear.value;
+            const selectedSegmento = selectSegmento.value;
+
+            const formatValue = (value, unit = '') => {
+                if (typeof value !== 'number') return value;
+                return `${value.toFixed(2)}${unit}`;
+            };
+
+            const dataToExport = [{ Categoria: 'Filtro', Indicador: 'Mês de Referência', Valor: `${selectedMonth}/${selectedYear}`, Meta: '' },
+                { Categoria: 'Filtro', Indicador: 'CS Responsável', Valor: selectedCS, Meta: '' },
+                { Categoria: 'Filtro', Indicador: 'Segmento Analisado', Valor: selectedSegmento, Meta: '' },
+                { Categoria: 'Geral', Indicador: 'Total de Clientes na Carteira', Valor: (dataStore['total-clientes'] || []).length, Meta: '' },
+                { Categoria: 'Geral', Indicador: 'Clientes Contatados', Valor: (dataStore['cob-carteira'] || []).length, Meta: '' },
+                { Categoria: 'Geral', Indicador: 'Média Sense Score', Valor: formatValue(dataStore['sensescore-avg'], ' pts'), Meta: appGoals.sensescore },
+                { Categoria: 'OKRs', Indicador: 'Cobertura de Carteira (%)', Valor: formatValue((dataStore['cob-carteira']?.length || 0) * 100 / ((dataStore['total-clientes-unicos-cs'] || 1) === 0 ? 1 : dataStore['total-clientes-unicos-cs'])), Meta: appGoals.coverage },
+                { Categoria: 'OKRs', Indicador: 'Participação SKA LABS (Trimestre) (%)', Valor: formatValue(((dataStore['ska-labs-realizado-list']?.length || 0) * 100) / ((dataStore['total-labs-eligible'] || 1) === 0 ? 1 : dataStore['total-labs-eligible'])), Meta: appGoals.labs }, ];
+
+            const playbooks = {
+                'plano': 'Plano de Ação', 'adocao': 'Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery', 'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso', 'baixo-engajamento-mid': 'Baixo Engajamento (MID/ENT)'
+            };
+
+            for (const [key, title] of Object.entries(playbooks)) {
+                dataToExport.push({ Categoria: 'Playbooks', Indicador: `${title} (Previsto)`, Valor: (dataStore[`${key}-previsto`] || []).length, Meta: '' });
+                dataToExport.push({ Categoria: 'Playbooks', Indicador: `${title} (Realizado no Prazo)`, Valor: (dataStore[`${key}-realizado`] || []).length, Meta: '' });
+                dataToExport.push({ Categoria: 'Playbooks', Indicador: `${title} (Realizado com Atraso)`, Valor: (dataStore[`${key}-atrasado-concluido`] || []).length, Meta: '' });
+            }
+
+            return dataToExport;
+        };
+
+        const exportDataToCSV = (data) => {
+            if (!data || data.length === 0) return;
+            const headers = Object.keys(data[0]);
+            const csvRows = [headers.join(',')];
+
+            for (const row of data) {
+                const values = headers.map(header => {
+                    const val = row[header] === null || row[header] === undefined ? '' : row[header];
+                    const escaped = ('' + val).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(','));
+            }
+
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            const fileName = `resumo_okrs_${selectMonth.value}_${selectYear.value}.csv`;
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        const generateAndDownloadHtmlReport = (csName, reportData, goals) => {
+            const selectedMonth = selectMonth.options[selectMonth.selectedIndex].text;
+            const selectedYear = selectYear.value;
+            const selectedSegmento = selectSegmento.value;
+            const includeOnboarding = onboardingToggle.checked;
+
+            const indicadoresGeraisHtml = `<h2><i class="fas fa-chart-bar"></i> Indicadores Gerais</h2><table><thead><tr><th>Indicador</th><th>Valor</th><th>Meta</th></tr></thead><tbody><tr><td>Total de Clientes na Carteira</td><td>${(reportData['total-clientes'] || []).length}</td><td>N/A</td></tr><tr><td>Clientes Únicos Contatados</td><td>${(reportData['cob-carteira'] || []).length}</td><td>N/A</td></tr><tr><td>Cobertura de Carteira</td><td>${((reportData['cob-carteira']?.length || 0) * 100 / (reportData['total-clientes-unicos-cs'] || 1)).toFixed(1)}%</td><td>${goals.coverage}%</td></tr><tr><td>Média Sense Score</td><td>${(reportData['sensescore-avg'] || 0).toFixed(1)} pts</td><td>${goals.sensescore} pts</td></tr><tr><td>Participação SKA LABS (Trimestre)</td><td>${(((reportData['ska-labs-realizado-list']?.length || 0) * 100) / (reportData['total-labs-eligible'] || 1)).toFixed(1)}%</td><td>${goals.labs}%</td></tr></tbody></table>`;
+            const tiposDeContatoHtml = `<h2><i class="fas fa-headset"></i> Tipos de Contato (Mês)</h2><table><thead><tr><th>Tipo de Contato</th><th>Quantidade</th></tr></thead><tbody><tr><td>📞 Ligação/Reunião (CS)</td><td>${(reportData['contato-ligacao'] || []).length}</td></tr><tr><td style="padding-left: 30px;">↳ com 'Contato Consolidado' Concluído</td><td>${reportData['ligacao-com-consolidado'] || 0}</td></tr><tr><td>✉️ E-mail/Whatsapp (CS)</td><td>${(reportData['contato-email'] || []).length}</td></tr>${includeOnboarding ? `<tr><td>🚀 Contatos de Onboarding</td><td>${(reportData['onboarding-contacts-display'] || []).length}</td></tr>` : ''}</tbody></table>`;
+            const playbooksData = [];
+            const playbookDefs = {
+                'plano': 'Plano de Ação', 'adocao': 'Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery', 'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso'
+            };
+            for (const [key, title] of Object.entries(playbookDefs)) {
+                const previsto = (reportData[`${key}-previsto`] || []).length;
+                const realizadoPrazo = (reportData[`${key}-realizado`] || []).length;
+                const realizadoAtraso = (reportData[`${key}-atrasado-concluido`] || []).length;
+                const totalRealizado = realizadoPrazo + realizadoAtraso;
+                const atingimento = previsto > 0 ? ((totalRealizado / previsto) * 100).toFixed(1) + '%' : 'N/A';
+                playbooksData.push(`<tr><td>${title}</td><td>${previsto}</td><td>${realizadoPrazo}</td><td>${realizadoAtraso}</td><td class="total-col">${totalRealizado}</td><td class="atingimento-col ${atingimento !== 'N/A' && parseFloat(atingimento) >= 100 ? 'success' : ''}">${atingimento}</td></tr>`);
+            }
+            const playbooksHtml = `<h2><i class="fas fa-book-open"></i> Resumo dos Playbooks</h2><table><thead><tr><th>Playbook</th><th>Previsto</th><th>Realizado (Prazo)</th><th>Realizado (Atraso)</th><th>Total Realizado</th><th>Atingimento</th></tr></thead><tbody>${playbooksData.join('')}</tbody></table>`;
+            let segmentoHtml = '';
+            if (selectedSegmento.includes('SMB')) {
+                const totalRealizado = (reportData['engajamento-smb-realizado'] || []).length + (reportData['engajamento-smb-atrasado-concluido'] || []).length;
+                const engajados = (reportData['engajamento-smb-engajado'] || []).length;
+                const performance = totalRealizado > 0 ? (engajados / totalRealizado * 100).toFixed(1) : '0.0';
+                segmentoHtml += `<h2><i class="fas fa-tasks"></i> OKR: Engajamento (Contato Consolidado)</h2><table><thead><tr><th>Métrica de Engajamento</th><th>Valor</th></tr></thead><tbody><tr><td>Total de Contatos Realizados</td><td>${totalRealizado}</td></tr><tr><td>Total de Clientes Engajados</td><td class="success">${engajados}</td></tr><tr><td>Total de Clientes Desengajados</td><td class="danger">${(reportData['engajamento-smb-desengajado'] || []).length}</td></tr><tr><td class="total-col">Performance de Engajamento</td><td class="total-col ${performance >= goals.engagement ? 'success' : ''}">${performance}% (Meta: ${goals.engagement}%)</td></tr></tbody></table>`;
+            }
+            if (selectedSegmento === 'MID/Enterprise') {
+                const previsto = (reportData['baixo-engajamento-mid-previsto'] || []).length;
+                const realizadoPrazo = (reportData['baixo-engajamento-mid-realizado'] || []).length;
+                const realizadoAtraso = (reportData['baixo-engajamento-mid-atrasado-concluido'] || []).length;
+                segmentoHtml += `<h2><i class="fas fa-chart-line-down"></i> Playbook: Baixo Engajamento (MID/ENT)</h2><table><thead><tr><th>Métrica</th><th>Valor</th></tr></thead><tbody><tr><td>Previsto</td><td>${previsto}</td></tr><tr><td>Total Realizado</td><td>${realizadoPrazo + realizadoAtraso}</td></tr></tbody></table>`;
+            }
+
+            const htmlString = `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Relatório OKRs - ${csName} - ${selectedMonth} ${selectedYear}</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><style>body{font-family:'Inter',sans-serif;background-color:#f4f7fc;color:#2c3e50;margin:0;padding:25px}@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');.container{max-width:1200px;margin:auto;background-color:#fff;padding:30px 40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08)}h1{color:#007BFF;border-bottom:2px solid #e3e8f0;padding-bottom:10px;font-size:2rem}h2{color:#1a2238;margin-top:40px;border-bottom:1px solid #e3e8f0;padding-bottom:8px;font-size:1.4rem;display:flex;align-items:center;gap:10px}.header-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;background-color:#f8f9fa;padding:20px;border-radius:8px;margin:25px 0}.info-item{display:flex;flex-direction:column}.info-item span:first-child{font-weight:600;color:#57606a;font-size:.9rem;margin-bottom:4px}.info-item span:last-child{font-weight:700;font-size:1.1rem}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #dee2e6;padding:12px 15px;text-align:left;font-size:.95rem}th{background-color:#007BFF;color:#fff;font-weight:600}tbody tr:nth-child(even){background-color:#f8f9fa}tbody tr:hover{background-color:#e9ecef}.total-col{font-weight:700;background-color:#e9ecef}.success{color:#28a745;font-weight:700}.danger{color:#dc3545;font-weight:700}</style></head><body><div class="container"><h1>Relatório de Performance de OKRs</h1><div class="header-info"><div class="info-item"><span><i class="fas fa-calendar-alt"></i> Mês/Ano</span><span>${selectedMonth}/${selectedYear}</span></div><div class="info-item"><span><i class="fas fa-user-tie"></i> CS Responsável</span><span>${csName}</span></div><div class="info-item"><span><i class="fas fa-chart-pie"></i> Segmento</span><span>${selectedSegmento}</span></div></div>${indicadoresGeraisHtml}${tiposDeContatoHtml}${playbooksHtml}${segmentoHtml}</div></body></html>`;
+            const blob = new Blob([htmlString], { type: 'text/html' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            const fileName = `relatorio_okrs_${csName.replace(/\s/g, '_')}_${selectedMonth.replace(/\s/g, '')}_${selectedYear}.html`;
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        document.getElementById('export-csv-button').addEventListener('click', () => {
+            if (!rawActivities.length || !rawClients.length) {
+                alert('Por favor, carregue as planilhas antes de exportar.');
+                return;
+            }
+            const data = generateExportData();
+            exportDataToCSV(data);
+        });
+
+        document.getElementById('export-html-button').addEventListener('click', () => {
+            if (!rawActivities.length || !rawClients.length) {
+                alert('Por favor, carregue as planilhas antes de exportar.');
+                return;
+            }
+            generateAndDownloadHtmlReport(selectCS.options[selectCS.selectedIndex].text, dataStore, appGoals);
+        });
+
+        document.querySelectorAll('.modal .close-button').forEach(btn => btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal'))));
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target);
+            }
+        });
+
+        loadGoals();
+
+        // --- LÓGICA PARA EXPORTAÇÃO EM LOTE ---
+        const bulkExportButton = document.getElementById('bulk-export-button');
+        const bulkExportModal = document.getElementById('bulk-export-modal');
+        const csSelectionList = document.getElementById('cs-selection-list');
+        const generateBulkReportsButton = document.getElementById('generate-bulk-reports-button');
+
+        bulkExportButton.addEventListener('click', () => {
+            if (rawClients.length === 0) {
+                alert('Por favor, carregue as planilhas primeiro.');
+                return;
+            }
+
+            const csSet = new Set(rawClients.map(d => d.CS).filter(Boolean));
+            csSelectionList.innerHTML = '';
+            [...csSet].sort().forEach(cs => {
+                csSelectionList.innerHTML += `
+                    <div class="cs-item">
+                        <label>
+                            <input type="checkbox" class="cs-checkbox" value="${cs}" checked>
+                            ${cs}
+                        </label>
+                    </div>
+                `;
+            });
+
+            showModal(bulkExportModal);
+        });
+
+        generateBulkReportsButton.addEventListener('click', async () => {
+            const selectedCSs = Array.from(document.querySelectorAll('.cs-checkbox:checked')).map(cb => cb.value);
+
+            if (selectedCSs.length === 0) {
+                alert('Por favor, selecione pelo menos um CS.');
+                return;
+            }
+
+            generateBulkReportsButton.disabled = true;
+            generateBulkReportsButton.textContent = 'Gerando...';
+
+            const mesSelecionado = parseInt(selectMonth.value, 10);
+            const anoSelecionado = parseInt(selectYear.value, 10);
+            const includeOnboarding = onboardingToggle.checked;
+
+            for (const cs of selectedCSs) {
+                console.log(`Gerando relatório para: ${cs}`);
+                const filteredClients = rawClients.filter(d => d.CS?.trim() === cs);
+                const reportData = calculateMetricsForPeriod(mesSelecionado, anoSelecionado, rawActivities, filteredClients, cs, includeOnboarding);
+                generateAndDownloadHtmlReport(cs, reportData, appGoals);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            generateBulkReportsButton.disabled = false;
+            generateBulkReportsButton.innerHTML = '<i class="fas fa-download" style="margin-right:10px;"></i>Gerar Relatórios Selecionados';
+            closeModal(bulkExportModal);
+            alert(`${selectedCSs.length} relatórios foram gerados!`);
+        });
+
+        bulkExportModal.querySelector('.close-button').addEventListener('click', () => closeModal(bulkExportModal));
+
+        // --- CONTROLE DE ACESSO VISUAL ---
+        if (!currentUser.isManager) {
+            document.getElementById('settings-button').style.display = 'none';
+            document.getElementById('bulk-export-button').style.display = 'none';
+            document.getElementById('squad-filter-group').style.display = 'none';
+            document.getElementById('squad-cs-list').style.display = 'none';
+            const csLabel = document.querySelector('[for="select-cs"]');
+            if (csLabel) {
+                csLabel.style.pointerEvents = 'none';
+                csLabel.style.opacity = '0.6';
+            }
+        }
+    }
 </script>
 <script type="text/javascript">
-    var Tawk_API = Tawk_API || {},
-        Tawk_LoadStart = new Date();
-    (function() {
-        var s1 = document.createElement("script"),
-            s0 = document.getElementsByTagName("script")[0];
-        s1.async = true;
-        s1.src = 'https://embed.tawk.to/6862f529ad6c8f190c6f8c38/1iv18rasf';
-        s1.charset = 'UTF-8';
-        s1.setAttribute('crossorigin', '*');
-        s0.parentNode.insertBefore(s1, s0);
-    })();
+    var Tawk_API = Tawk_API || {},
+        Tawk_LoadStart = new Date();
+    (function() {
+        var s1 = document.createElement("script"),
+            s0 = document.getElementsByTagName("script")[0];
+        s1.async = true;
+        s1.src = 'https://embed.tawk.to/6862f529ad6c8f190c6f8c38/1iv18rasf';
+        s1.charset = 'UTF-8';
+        s1.setAttribute('crossorigin', '*');
+        s0.parentNode.insertBefore(s1, s0);
+    })();
 </script>
 
 </body>
