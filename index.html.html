@@ -3207,25 +3207,48 @@
                 `;
             }
 
-            const cardTiposDeContato = `
-            <div class="card">
-                <h3>Tipos de Contato (Mês)</h3>
-                <div class="card-content">
-                    <div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião">
-                        <span class="metric-label">📞 Ligação/Reunião (CS):</span>
-                        <span class="metric-value">
-                            ${(dataStore['contato-ligacao'] || []).length} 
-                            <span class="sub-metric" title="${(dataStore['ligacoes-classificadas'] || []).length} destes contatos foram classificados como 'Engajado' ou 'Desengajado'">
-                                (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacoes-classificadas'] || []).length})
-                            </span>
-                            </span>
-                    </div>
-                    <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
-                        <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${(dataStore['contato-email'] || []).length}</span>
-                    </div>
-                    ${onboardingMetricHtml}
-                </div>
-            </div>`;
+            // --- INÍCIO DA ALTERAÇÃO 1 ---
+            // 1. Calcula o total de contatos para o cálculo do percentual
+            const contatosLigacao = (dataStore['contato-ligacao'] || []).length;
+            const contatosEmail = (dataStore['contato-email'] || []).length;
+            const contatosOnboarding = includeOnboarding ? (dataStore['onboarding-contacts-display'] || []).length : 0;
+            const totalContatosNoCard = contatosLigacao + contatosEmail + contatosOnboarding;
+
+            // 2. Funções para gerar o HTML com a porcentagem
+            const getPercentageText = (count) => {
+                if (totalContatosNoCard === 0) return '';
+                const percentage = (count / totalContatosNoCard) * 100;
+                return `<span class="sub-metric">(${percentage.toFixed(1)}%)</span>`;
+            };
+
+            let onboardingMetricHtml = '';
+            if (includeOnboarding && contatosOnboarding > 0) {
+                onboardingMetricHtml = `
+                    <div class="metric" data-metric-id="onboarding-contacts-display" data-metric-title="Contatos de Onboarding">
+                        <span class="metric-label"><i class="fas fa-user-plus" style="margin-right: 6px; color: var(--primary-color);"></i>Contatos Onboarding:</span>
+                        <span class="metric-value">${contatosOnboarding} ${getPercentageText(contatosOnboarding)}</span>
+                    </div>
+                `;
+            }
+
+            const cardTiposDeContato = `
+            <div class="card">
+                <h3>Tipos de Contato (Mês)</h3>
+                <div class="card-content">
+                    <div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião">
+                        <span class="metric-label">📞 Ligação/Reunião (CS):</span>
+                        <span class="metric-value">
+                            ${contatosLigacao} ${getPercentageText(contatosLigacao)}
+                        </span>
+                    </div>
+                    <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
+                        <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span>
+                        <span class="metric-value">${contatosEmail} ${getPercentageText(contatosEmail)}</span>
+                    </div>
+                    ${onboardingMetricHtml}
+                </div>
+            </div>`;
+// --- FIM DA ALTERAÇÃO 1 ---
 
             generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
 
@@ -3379,31 +3402,47 @@
             let clientesFaltantesHtml = '';
             let distribuicaoContatosHtml = '';
 
-            if (clientesFaltantes !== null && clientesFaltantes > 0) {
-                const totalParaMeta = (dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100);
-                clientesFaltantesHtml = `
-                <div class="metric overdue-metric">
-                    <span class="metric-label"><i class="fas fa-bullseye" style="color: var(--primary-color);"></i>Para a Meta:</span>
-                    <span class="metric-value" style="font-size: 1.2rem;">${Math.ceil(totalParaMeta)} clientes (${clientesFaltantes} faltantes)</span>
-                </div>
-                `;
-                let ligacaoPerc = 0.65;
-                if (selectedSegmento === 'MID/Enterprise') {
-                    ligacaoPerc = 0.75;
-                }
-                const contatosLigacaoNecessarios = Math.ceil(clientesFaltantes * ligacaoPerc);
-                const contatosEmailNecessarios = clientesFaltantes - contatosLigacaoNecessarios;
-                distribuicaoContatosHtml = `
-                <div class="metric" style="font-size: 0.9rem; padding-top: 5px; padding-bottom: 0px;">
-                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Faltante (Ligação/Reunião):</span>
-                    <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosLigacaoNecessarios}</span>
-                </div>
-                <div class="metric" style="font-size: 0.9rem; padding-top: 5px;">
-                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Faltante (E-mail/Whats):</span>
-                    <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosEmailNecessarios}</span>
-                </div>
-                `;
-            }
+            // --- INÍCIO DA ALTERAÇÃO 2 ---
+            if (clientesFaltantes !== null) {
+                // 1. Calcula o número TOTAL de clientes que precisam ser contatados para atingir a meta.
+                const totalParaMeta = Math.ceil((dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100));
+               
+                clientesFaltantesHtml = `
+                <div class="metric overdue-metric">
+                    <span class="metric-label"><i class="fas fa-bullseye" style="color: var(--primary-color);"></i>Meta de Contato:</span>
+                    <span class="metric-value" style="font-size: 1.2rem;">${totalParaMeta} clientes (${clientesFaltantes} faltantes)</span>
+                </div>
+                `;
+               
+                // 2. Define a proporção de contatos por tipo e calcula a META para cada um.
+                let ligacaoPerc = 0.65;
+                if (selectedSegmento === 'MID/Enterprise') {
+                    ligacaoPerc = 0.75;
+                }
+                const metaContatosLigacao = Math.ceil(totalParaMeta * ligacaoPerc);
+                const metaContatosEmail = totalParaMeta - metaContatosLigacao;
+
+                // 3. Conta quantos contatos de cada tipo já foram REALIZADOS.
+                const realizadosLigacao = (dataStore['contato-ligacao'] || []).length;
+                const realizadosEmail = (dataStore['contato-email'] || []).length;
+
+                // 4. Calcula os FALTANTES para cada tipo, garantindo que não seja um número negativo.
+                const faltantesLigacao = Math.max(0, metaContatosLigacao - realizadosLigacao);
+                const faltantesEmail = Math.max(0, metaContatosEmail - realizadosEmail);
+
+                // 5. Monta o HTML para exibir os valores.
+                distribuicaoContatosHtml = `
+                <div class="metric" style="font-size: 0.9rem; padding-top: 5px; padding-bottom: 0px;" title="Meta: ${metaContatosLigacao} / Realizado: ${realizadosLigacao}">
+                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Faltante (Ligação/Reunião):</span>
+                    <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${faltantesLigacao}</span>
+                </div>
+                <div class="metric" style="font-size: 0.9rem; padding-top: 5px;" title="Meta: ${metaContatosEmail} / Realizado: ${realizadosEmail}">
+                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Faltante (E-mail/Whats):</span>
+                    <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${faltantesEmail}</span>
+                </div>
+                `;
+            }
+// --- FIM DA ALTERAÇÃO 2 ---
 
             if (currentValue !== null) {
                 if (goalValue !== null) {
