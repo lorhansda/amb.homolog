@@ -3209,22 +3209,7 @@
 
             // --- INÍCIO DA ALTERAÇÃO 1 ---
             // 1. Calcula o total de contatos para o cálculo do percentual
-            const contatosLigacao = (dataStore['contato-ligacao'] || []).length;
-            const contatosEmail = (dataStore['contato-email'] || []).length;
-            const contatosOnboarding = includeOnboarding ? (dataStore['onboarding-contacts-display'] || []).length : 0;
-            const totalContatosNoCard = contatosLigacao + contatosEmail + contatosOnboarding;
-
-            // 2. Funções para gerar o HTML com a porcentagem
-            const getPercentageText = (count) => {
-                if (totalContatosNoCard === 0) return '';
-                const percentage = (count / totalContatosNoCard) * 100;
-                return `<span class="sub-metric">(${percentage.toFixed(1)}%)</span>`;
-            };
-
-           // --- INÍCIO DA SEÇÃO CORRIGIDA (SUBSTITUA O BLOCO ANTIGO POR ESTE) ---
-            const includeOnboarding = onboardingToggle.checked;
-            
-            // 1. Calcula o total de contatos para o cálculo do percentual
+        
             const contatosLigacao = (dataStore['contato-ligacao'] || []).length;
             const contatosEmail = (dataStore['contato-email'] || []).length;
             const contatosOnboarding = includeOnboarding ? (dataStore['onboarding-contacts-display'] || []).length : 0;
