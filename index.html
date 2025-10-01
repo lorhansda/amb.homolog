@@ -3221,6 +3221,22 @@
                 return `<span class="sub-metric">(${percentage.toFixed(1)}%)</span>`;
             };
 
+           // --- INÍCIO DA SEÇÃO CORRIGIDA (SUBSTITUA O BLOCO ANTIGO POR ESTE) ---
+            const includeOnboarding = onboardingToggle.checked;
+            
+            // 1. Calcula o total de contatos para o cálculo do percentual
+            const contatosLigacao = (dataStore['contato-ligacao'] || []).length;
+            const contatosEmail = (dataStore['contato-email'] || []).length;
+            const contatosOnboarding = includeOnboarding ? (dataStore['onboarding-contacts-display'] || []).length : 0;
+            const totalContatosNoCard = contatosLigacao + contatosEmail + contatosOnboarding;
+  
+            // 2. Função auxiliar para gerar o texto da porcentagem
+            const getPercentageText = (count) => {
+                if (totalContatosNoCard === 0) return '';
+                const percentage = (count / totalContatosNoCard) * 100;
+                return `<span class="sub-metric">(${percentage.toFixed(1)}%)</span>`;
+            };
+  
             let onboardingMetricHtml = '';
             if (includeOnboarding && contatosOnboarding > 0) {
                 onboardingMetricHtml = `
@@ -3230,7 +3246,7 @@
                     </div>
                 `;
             }
-
+  
             const cardTiposDeContato = `
             <div class="card">
                 <h3>Tipos de Contato (Mês)</h3>
@@ -3248,6 +3264,7 @@
                     ${onboardingMetricHtml}
                 </div>
             </div>`;
+// --- FIM DA SEÇÃO CORRIGIDA ---
 // --- FIM DA ALTERAÇÃO 1 ---
 
             generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
