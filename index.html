@@ -2874,61 +2874,53 @@ const renderOKRs = () => {
 };
 
 // Localize esta função (createOkrCard) e substitua-a por completo.
+// Localize esta função e substitua-a por completo.
 const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '', clientesParaAtingirMeta = 0) => {
     const percentage = goal > 0 ? (value / goal) * 100 : 0;
     let valueText;
     let labelText = `Meta: ${goal}${unit}`;
     
-    let clientesFaltantesHtml = '';
-    let distribuicaoContatosHtml = '';
-
-    // INÍCIO DA ALTERAÇÃO 2: Nova lógica para cálculo de contatos faltantes por tipo
+    // INÍCIO DA ALTERAÇÃO: Bloco de HTML para os faltantes foi reestruturado para ser mais compacto
+    let additionalInfoHtml = '';
     if (clientesFaltantes !== null && clientesFaltantes > 0 && metricId === 'cob-carteira') {
-        clientesFaltantesHtml = `
-            <div class="metric overdue-metric">
-                <span class="metric-label"><i class="fas fa-users" style="margin-right: 6px;"></i>Contatos Faltantes (Geral):</span>
-                <span class="metric-value" style="font-size: 1.4rem;">${clientesFaltantes}</span>
-            </div>
-        `;
-
-        // Define o percentual de ligações esperado com base no segmento
         let ligacaoPerc = 0.65;
         if (selectedSegmento === 'MID/Enterprise') {
             ligacaoPerc = 0.75;
         }
         
-        // Calcula o TOTAL de cada tipo de contato necessário para atingir a META
         const totalLigacoesMeta = Math.ceil(clientesParaAtingirMeta * ligacaoPerc);
         const totalEmailsMeta = clientesParaAtingirMeta - totalLigacoesMeta;
 
-        // Pega quantos contatos de cada tipo já foram realizados no período
         const ligacoesRealizadas = (dataStore['contato-ligacao'] || []).length;
         const emailsRealizados = (dataStore['contato-email'] || []).length;
 
-        // Calcula o que FALTA para cada tipo, garantindo que não seja negativo
         const contatosLigacaoFaltantes = Math.max(0, totalLigacoesMeta - ligacoesRealizadas);
         const contatosEmailFaltantes = Math.max(0, totalEmailsMeta - emailsRealizados);
 
-        distribuicaoContatosHtml = `
-            <div class="metric" style="font-size: 0.9rem; padding-top: 10px; border-top: 1px dashed var(--border-color); margin-top: 10px;">
-                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Faltam (Ligação/Reunião):</span>
-                <span class="metric-value" style="font-size: 1.2rem; color: var(--primary-color);">${contatosLigacaoFaltantes}</span>
-            </div>
-            <div class="metric" style="font-size: 0.9rem; padding-top: 5px;">
-                <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Faltam (E-mail/Whats):</span>
-                <span class="metric-value" style="font-size: 1.2rem; color: var(--primary-color);">${contatosEmailFaltantes}</span>
-            </div>
-        `;
-    } else if (clientesFaltantes !== null && clientesFaltantes > 0) { // Lógica antiga para outros cards se necessário
-        const totalParaMeta = (dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100);
-        clientesFaltantesHtml = `
-            <div class="metric overdue-metric">
-                <span class="metric-label"><i class="fas fa-bullseye" style="color: var(--primary-color);"></i>Para a Meta:</span>
-                <span class="metric-value" style="font-size: 1.2rem;">${Math.ceil(totalParaMeta)} clientes (${clientesFaltantes} faltantes)</span>
-            </div>
-        `;
-    }
-    // FIM DA ALTERAÇÃO 2
+        // Este novo bloco HTML usa menos espaço vertical
+        additionalInfoHtml = `
+            <div class="overdue-metric" style="
+                border-top: 1px dashed var(--border-color);
+                margin-top: 12px;
+                padding-top: 12px;
+                font-size: 0.95rem;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-users" style="margin-right: 8px;"></i>Contatos Faltantes (Geral):</span>
+                    <span style="font-weight: 700; font-size: 1.2rem;" class="metric-value danger">${clientesFaltantes}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; padding-left: 15px;">
+                    <span class="metric-label" style="font-weight: 400;"><i class="fas fa-phone-alt" style="margin-right: 8px; opacity: 0.8;"></i>&hookrightarrow; Ligação/Reunião:</span>
+                    <span style="font-weight: 600; font-size: 1.1rem; color: var(--primary-color);">${contatosLigacaoFaltantes}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 15px;">
+                    <span class="metric-label" style="font-weight: 400;"><i class="fas fa-envelope-open-text" style="margin-right: 8px; opacity: 0.8;"></i>&hookrightarrow; E-mail/Whats:</span>
+                    <span style="font-weight: 600; font-size: 1.1rem; color: var(--primary-color);">${contatosEmailFaltantes}</span>
+                </div>
+            </div>
+        `;
+    }
+    // FIM DA ALTERAÇÃO
 
     if (currentValue !== null) {
         if (goalValue !== null) {
@@ -2959,7 +2951,9 @@ const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = n
     
     const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
 
-    return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
+    // INÍCIO DA ALTERAÇÃO: O return agora usa a nova variável 'additionalInfoHtml'
+    return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${additionalInfoHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
+    // FIM DA ALTERAÇÃO
 };
 
 const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
