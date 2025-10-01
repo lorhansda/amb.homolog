@@ -340,13 +340,14 @@ margin-right: 15px;
 border-radius: 5px;
 }
 
+/* VERSÃO ORIGINAL */
 .group-content {
-    display: flex;     /* MUDANÇA: de 'grid' para 'flex' */
-    flex-wrap: wrap; /* Permite que os cards quebrem para a linha de baixo */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: 25px;
-    align-items: stretch; /* Garante que todos os cards na mesma linha estiquem */
 }
 
+/* VERSÃO ORIGINAL */
 .card {
     background-color: var(--card-bg-color);
     border-radius: var(--border-radius-lg);
@@ -355,7 +356,6 @@ border-radius: 5px;
     display: flex; flex-direction: column;
     box-shadow: 0 4px 15px var(--shadow-color);
     animation: fadeIn 0.5s ease-out backwards;
-    flex: 1 1 340px; /* ADICIONADO: Controla o tamanho e a responsividade do card */
 }
 .card:hover {
 transform: translateY(-8px);
@@ -2878,125 +2878,133 @@ const renderOKRs = () => {
 // Localize esta função (createOkrCard) e substitua-a por completo.
 // Localize esta função e substitua-a por completo.
 const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '', clientesParaAtingirMeta = 0) => {
-    const percentage = goal > 0 ? (value / goal) * 100 : 0;
-    let valueText;
-    let labelText = `Meta: ${goal}${unit}`;
-    
-    // INÍCIO DA ALTERAÇÃO: Bloco de HTML para os faltantes foi reestruturado para ser mais compacto
-    let additionalInfoHtml = '';
-    if (clientesFaltantes !== null && clientesFaltantes > 0 && metricId === 'cob-carteira') {
-        let ligacaoPerc = 0.65;
-        if (selectedSegmento === 'MID/Enterprise') {
-            ligacaoPerc = 0.75;
-        }
-        
-        const totalLigacoesMeta = Math.ceil(clientesParaAtingirMeta * ligacaoPerc);
-        const totalEmailsMeta = clientesParaAtingirMeta - totalLigacoesMeta;
+    const percentage = goal > 0 ? (value / goal) * 100 : 0;
+    let valueText;
+    let labelText = `Meta: ${goal}${unit}`;
 
-        const ligacoesRealizadas = (dataStore['contato-ligacao'] || []).length;
-        const emailsRealizados = (dataStore['contato-email'] || []).length;
+    let additionalInfoHtml = '';
+    // A lógica para os "faltantes" agora sempre cria os elementos, mas os oculta se não forem necessários.
+    // Isso padroniza a altura do card de Cobertura.
+    if (metricId === 'cob-carteira') {
+        const hasFaltantes = clientesFaltantes !== null && clientesFaltantes > 0;
+        let contatosLigacaoFaltantes = 0;
+        let contatosEmailFaltantes = 0;
 
-        const contatosLigacaoFaltantes = Math.max(0, totalLigacoesMeta - ligacoesRealizadas);
-        const contatosEmailFaltantes = Math.max(0, totalEmailsMeta - emailsRealizados);
+        if (hasFaltantes) {
+            let ligacaoPerc = 0.65;
+            if (selectedSegmento === 'MID/Enterprise') {
+                ligacaoPerc = 0.75;
+            }
+            const totalLigacoesMeta = Math.ceil(clientesParaAtingirMeta * ligacaoPerc);
+            const totalEmailsMeta = clientesParaAtingirMeta - totalLigacoesMeta;
+            const ligacoesRealizadas = (dataStore['contato-ligacao'] || []).length;
+            const emailsRealizados = (dataStore['contato-email'] || []).length;
+            contatosLigacaoFaltantes = Math.max(0, totalLigacoesMeta - ligacoesRealizadas);
+            contatosEmailFaltantes = Math.max(0, totalEmailsMeta - emailsRealizados);
+        }
 
-        // Este novo bloco HTML usa menos espaço vertical
-        additionalInfoHtml = `
-            <div class="overdue-metric" style="
-                border-top: 1px dashed var(--border-color);
-                margin-top: 12px;
-                padding-top: 12px;
-                font-size: 0.95rem;
-            ">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-users" style="margin-right: 8px;"></i>Contatos Faltantes (Geral):</span>
-                    <span style="font-weight: 700; font-size: 1.2rem;" class="metric-value danger">${clientesFaltantes}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; padding-left: 15px;">
-                    <span class="metric-label" style="font-weight: 400;"><i class="fas fa-phone-alt" style="margin-right: 8px; opacity: 0.8;"></i>&hookrightarrow; Ligação/Reunião:</span>
-                    <span style="font-weight: 600; font-size: 1.1rem; color: var(--primary-color);">${contatosLigacaoFaltantes}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 15px;">
-                    <span class="metric-label" style="font-weight: 400;"><i class="fas fa-envelope-open-text" style="margin-right: 8px; opacity: 0.8;"></i>&hookrightarrow; E-mail/Whats:</span>
-                    <span style="font-weight: 600; font-size: 1.1rem; color: var(--primary-color);">${contatosEmailFaltantes}</span>
+        // Os elementos são sempre renderizados, mas ficam invisíveis se não houver dados.
+        // A propriedade 'visibility: hidden' mantém o espaço ocupado pelo elemento.
+        additionalInfoHtml = `
+            <div style="visibility: ${hasFaltantes ? 'visible' : 'hidden'};">
+                <div class="overdue-metric" style="padding-top: 12px; margin-top: 12px; font-size: 0.95rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span class="metric-label" style="font-weight: 500;"><i class="fas fa-users" style="margin-right: 8px;"></i>Faltantes (Geral):</span>
+                        <span style="font-weight: 700; font-size: 1.2rem;" class="metric-value danger">${clientesFaltantes || 0}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; padding-left: 15px;">
+                        <span class="metric-label" style="font-weight: 400;"><i class="fas fa-phone-alt" style="margin-right: 8px; opacity: 0.8;"></i>&hookrightarrow; Ligação/Reunião:</span>
+                        <span style="font-weight: 600; font-size: 1.1rem; color: var(--primary-color);">${contatosLigacaoFaltantes}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 15px;">
+                        <span class="metric-label" style="font-weight: 400;"><i class="fas fa-envelope-open-text" style="margin-right: 8px; opacity: 0.8;"></i>&hookrightarrow; E-mail/Whats:</span>
+                        <span style="font-weight: 600; font-size: 1.1rem; color: var(--primary-color);">${contatosEmailFaltantes}</span>
+                    </div>
                 </div>
             </div>
         `;
-    }
-    // FIM DA ALTERAÇÃO
+    }
 
-    if (currentValue !== null) {
-        if (goalValue !== null) {
-            valueText = `${currentValue} de ${goalValue} <span class="sub-metric">(${value.toFixed(1)}%)</span>`;
-        } else {
-            valueText = `${currentValue}${unit}`;
-        }
-    } else {
-        valueText = `${unit === '%' ? value.toFixed(1) : Number(value).toFixed(0)}${unit}`;
-    }
+    if (currentValue !== null) {
+        if (goalValue !== null) {
+            valueText = `${currentValue} de ${goalValue} <span class="sub-metric">(${value.toFixed(1)}%)</span>`;
+        } else {
+            valueText = `${currentValue}${unit}`;
+        }
+    } else {
+        valueText = `${unit === '%' ? value.toFixed(1) : Number(value).toFixed(0)}${unit}`;
+    }
 
-    let trendHtml = '';
-    if (comparisonValue !== null && isFinite(comparisonValue)) {
-        const trend = value - comparisonValue;
-        const trendClass = trend > 0.1 ? 'trend-positive' : (trend < -0.1 ? 'trend-negative' : 'trend-neutral');
-        const trendIcon = trend > 0.1 ? '▲' : (trend < -0.1 ? '▼' : '▬');
+    let trendHtml = '';
+    if (comparisonValue !== null && isFinite(comparisonValue)) {
+        const trend = value - comparisonValue;
+        const trendClass = trend > 0.1 ? 'trend-positive' : (trend < -0.1 ? 'trend-negative' : 'trend-neutral');
+        const trendIcon = trend > 0.1 ? '▲' : (trend < -0.1 ? '▼' : '▬');
+        let trendText;
+        if (unit === '%') {
+            trendText = `${trend.toFixed(1)}pp`;
+        } else {
+            const percChange = comparisonValue > 0 ? ((trend / comparisonValue) * 100) : (trend > 0 ? 100 : 0);
+            trendText = `${percChange.toFixed(0)}%`;
+        }
+        trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
+    }
 
-        let trendText;
-        if(unit === '%') {
-            trendText = `${trend.toFixed(1)}pp`;
-        } else {
-            const percChange = comparisonValue > 0 ? ((trend / comparisonValue) * 100) : (trend > 0 ? 100 : 0);
-            trendText = `${percChange.toFixed(0)}%`;
-        }
+    const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
 
-        trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
-    }
-    
-    const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
-
-    // INÍCIO DA ALTERAÇÃO: O return agora usa a nova variável 'additionalInfoHtml'
-    return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${additionalInfoHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
-    // FIM DA ALTERAÇÃO
+    return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${additionalInfoHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
 };
 
 const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
-const totalRealizado = realizadoNoPrazo + overdueCount;
-const percentage = previsto > 0 ? (realizadoNoPrazo / previsto) * 100 : 0;
+    const totalRealizado = realizadoNoPrazo + overdueCount;
+    const percentage = previsto > 0 ? (realizadoNoPrazo / previsto) * 100 : 0;
 
-let metaHtml = '';
-if(goal !== null && currentUser.isManager) metaHtml = `<div class="metric"><span class="metric-label">Meta Mensal:</span><span class="metric-value">${goal}</span></div>`;
+    // Condição para mostrar a meta
+    const showMeta = goal !== null && currentUser.isManager;
+    // A linha da Meta sempre existe no HTML, mas fica invisível para ocupar espaço
+    let metaHtml = `
+        <div class="metric" style="padding: 12px 8px; visibility: ${showMeta ? 'visible' : 'hidden'};">
+            <span class="metric-label">Meta Mensal:</span>
+            <span class="metric-value">${goal || '&nbsp;'}</span>
+        </div>
+    `;
 
-let overdueHtml = '';
-if (overdueCount > 0) {
-overdueHtml = `
-                                            <div class="metric overdue-metric" data-metric-id="${metricIdPrefix}-atrasado-concluido" data-metric-title="${title} (Concluídas com Atraso)" title="${overdueCount} atividades concluídas estavam previstas para meses anteriores">
-                                                <span class="metric-label"><i class="fas fa-history"></i>Concluídas (Atraso):</span>
-                                                <span class="metric-value">${overdueCount}</span>
-                                            </div>
-                                        `;
-}
+    // A linha de Atraso sempre existe no HTML, mas fica invisível para ocupar espaço
+    const hasOverdue = overdueCount > 0;
+    const overdueHtml = `
+        <div 
+            class="metric ${hasOverdue ? 'overdue-metric' : ''}" 
+            style="visibility: ${hasOverdue ? 'visible' : 'hidden'};"
+            ${hasOverdue ? `data-metric-id="${metricIdPrefix}-atrasado-concluido"` : ''}
+            ${hasOverdue ? `data-metric-title="${title} (Concluídas com Atraso)"` : ''}
+        >
+            <span class="metric-label"><i class="fas fa-history"></i>Concluídas (Atraso):</span>
+            <span class="metric-value">${overdueCount}</span>
+        </div>
+    `;
 
-const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricIdPrefix}" data-metric-title="${title}" data-metric-type="playbook" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
+    const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricIdPrefix}" data-metric-title="${title}" data-metric-type="playbook" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
 
-return `
-                                <div class="card">
-                                    <h3>${title}${trendButtonHtml}</h3>
-                                    <div class="card-content">
-                                        <div class="metric" data-metric-id="${metricIdPrefix}-realizado" data-metric-title="${title} (Realizado no Prazo)">
-                                            <span class="metric-label">Realizado (Prazo):</span>
-                                            <span class="metric-value success">${realizadoNoPrazo}</span>
-                                        </div>
-                                        ${overdueHtml}
-                                        <div class="metric" data-metric-id="${metricIdPrefix}-previsto" data-metric-title="${title} (Previsto)">
-                                            <span class="metric-label">Previsto:</span>
-                                            <span class="metric-value">${previsto}</span>
-                                        </div>
-                                        ${metaHtml}
-                                    </div>
-                                    <div class="progress-bar-container" title="Progresso de atividades previstas para o mês. Realizado (Prazo): ${realizadoNoPrazo}. Total Realizado (com atrasos): ${totalRealizado}.">
-                                        <div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div>
-                                        <span class="progress-percentage">${percentage.toFixed(0)}%</span>
-                                    </div>
-                                </div>`;
+    return `
+        <div class="card">
+            <h3>${title}${trendButtonHtml}</h3>
+            <div class="card-content">
+                <div class="metric" data-metric-id="${metricIdPrefix}-realizado" data-metric-title="${title} (Realizado no Prazo)">
+                    <span class="metric-label">Realizado (Prazo):</span>
+                    <span class="metric-value success">${realizadoNoPrazo}</span>
+                </div>
+                ${overdueHtml}
+                <div class="metric" data-metric-id="${metricIdPrefix}-previsto" data-metric-title="${title} (Previsto)">
+                    <span class="metric-label">Previsto:</span>
+                    <span class="metric-value">${previsto}</span>
+                </div>
+                ${metaHtml}
+            </div>
+            <div class="progress-bar-container" title="Progresso de atividades previstas para o mês. Realizado (Prazo): ${realizadoNoPrazo}. Total Realizado (com atrasos): ${totalRealizado}.">
+                <div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div>
+                <span class="progress-percentage">${percentage.toFixed(0)}%</span>
+            </div>
+        </div>`;
 };
 
 const createSimpleCard = (title, id1, label1, value1, id2, label2, value2) => {
