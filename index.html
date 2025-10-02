@@ -1196,43 +1196,55 @@
         .sub-metric-label i {
             margin-right: 4px;
         }
-/* --- LAYOUT FINAL BASEADO NO DESENHO --- */
+/* --- BLOCO ÚNICO E DEFINITIVO PARA O LAYOUT DOS CARDS --- */
 
-/* 1. Regra geral para os containers de grupo */
-.group-content {
+/* 1. Layout: Indicadores Gerais da Carteira */
+#general-indicators-grid {
     display: grid;
     gap: 25px;
-    align-items: stretch;
-}
-
-/* 2. Layout: Indicadores Gerais da Carteira */
-#general-indicators-grid {
     grid-template-columns: repeat(3, 1fr);
     grid-template-areas:
         "coverage coverage coverage"
-        "card1 card2 card3";
+        "card1    card2     card3";
 }
+
 #coverage-card-item { grid-area: coverage; }
 #general-indicator-1 { grid-area: card1; }
 #general-indicator-2 { grid-area: card2; }
 #general-indicator-3 { grid-area: card3; }
 
 
-/* 3. Layout: Visão por Negócio (2 colunas) */
+/* 2. Layout: Visão por Negócio e Comercial (2 colunas) */
 #business-commercial-grid {
+    display: grid;
+    gap: 25px;
     grid-template-columns: repeat(2, 1fr);
 }
 
-/* 4. Layout: Demais seções (3 colunas) */
-#playbooks-grid,
-#okr-grid-container,
-#onboarding-outcomes-grid,
-#onboarding-process-grid,
-#overdue-grid-container {
+/* 3. Layout: Acompanhamento de Playbooks (3 colunas) */
+#playbooks-grid {
+    display: grid;
+    gap: 25px;
     grid-template-columns: repeat(3, 1fr);
 }
 
-/* 5. Responsividade para telas menores */
+/* 4. Layout: OKRs do Segmento (3 colunas) */
+#okr-grid-container {
+    display: grid;
+    gap: 25px;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* 5. Layout Padrão para as outras abas (Onboarding, Atrasadas) */
+#onboarding-outcomes-grid,
+#onboarding-process-grid,
+#overdue-grid-container {
+    display: grid;
+    gap: 25px;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+}
+
+/* 6. Responsividade para Telas Menores */
 @media (max-width: 900px) {
     #general-indicators-grid,
     #business-commercial-grid,
@@ -1241,17 +1253,18 @@
     #onboarding-outcomes-grid,
     #onboarding-process-grid,
     #overdue-grid-container {
-        grid-template-columns: 1fr; /* Tudo vira uma coluna só */
-        grid-template-areas: unset !important; /* Desativa o layout especial */
+        grid-template-columns: 1fr; /* Força 1 coluna */
+        grid-template-areas: unset;  /* Desativa o layout especial */
     }
 
     #coverage-card-item,
     #general-indicator-1,
     #general-indicator-2,
     #general-indicator-3 {
-        grid-area: unset !important; /* Reseta o posicionamento */
+        grid-area: unset;
     }
 }
+
     </style>
 </head>
 
