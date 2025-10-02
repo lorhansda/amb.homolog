@@ -1198,25 +1198,28 @@
 
 /* 1. Define que TODO .group-content é um grid flexível por padrão */
 /* Substitua o bloco .group-content existente por este (colocar no final do seu <style> para garantir prioridade) */
+/* Garante grid responsiva em todos os blocos */
 .group-content {
     display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 25px;
-    /* menor min-width para evitar que a grid vire 1 coluna em telas médias */
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    align-items: start;           /* mantém cards alinhados ao topo da grade */
-    grid-auto-rows: minmax(0, auto);
-    grid-auto-flow: dense;
+    align-items: start; /* alinha os cards pelo topo */
     width: 100%;
     box-sizing: border-box;
 }
 
-/* Garante que cada card respeite a coluna e não cause overflow por conteúdo longo */
+/* Ajuste direto nos cards */
 .group-content > .card {
-    width: 100%;
-    min-width: 0;     /* evita que conteúdos longos “empurrem” a coluna */
-    align-self: start;
+    width: 100%;        /* ocupa toda a coluna */
+    min-width: 0;       /* impede que conteúdo force expansão */
+    height: 100%;       /* mantém altura estável */
+    align-self: start;  /* sempre gruda no topo */
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
+
 #playbooks-grid {
     /* adapta o min-width específico para playbooks */
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
