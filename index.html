@@ -470,7 +470,6 @@
         }
 
         .group-content {
-    
     gap: 25px;
    
 }
@@ -1197,41 +1196,59 @@
         .sub-metric-label i {
             margin-right: 4px;
         }
-/* --- LAYOUT FINAL BASEADO NO DESENHO (layout.png) --- */
+/* --- AJUSTE PRECISO PARA O LAYOUT DE INDICADORES GERAIS DA CARTEIRA --- */
 
-/* 1. Regra geral para os containers de grupo */
-.group-content {
-    display: grid; /* Todos os grupos usarão Grid */
-    gap: 25px;
-    align-items: stretch; /* Garante que cards na mesma linha tenham a mesma altura */
-}
-
-/* 2. Layout para a seção "Indicadores Gerais da Carteira" */
+/* 1. Container principal dos Indicadores Gerais */
 #general-indicators-grid {
-    grid-template-columns: repeat(3, 1fr); /* Define uma base de 3 colunas */
+    display: grid; /* Ativa o Grid para este grupo */
+    gap: 25px; /* Mantém o espaçamento entre os itens */
+    /* Define o layout: uma linha para o card "Cobertura" e uma linha para os 3 cards menores */
+    grid-template-areas:
+        "coverage-card coverage-card coverage-card" /* Linha superior para Cobertura de Carteira */
+        "small-card-1 small-card-2 small-card-3";  /* Linha inferior para os 3 cards menores */
+    grid-template-columns: repeat(3, 1fr); /* 3 colunas de largura igual */
 }
 
-/* Faz o primeiro card ("Cobertura") ocupar toda a largura da linha */
-#general-indicators-grid .card:first-child {
-    grid-column: 1 / -1; 
+/* 2. Posicionamento do card "Cobertura de Carteira" */
+/* IMPORTANTE: Este card precisa ter o ID 'coverage-card-item' no seu HTML */
+#coverage-card-item {
+    grid-area: coverage-card; /* Atribui este item à área definida acima */
 }
 
-/* 3. Layout para a seção "Visão por Negócio" (2 colunas) */
+/* 3. Posicionamento dos outros cards dos Indicadores Gerais (Carteira Vencida, Ticket Médio, Quantidade) */
+/* IMPORTANTE: Estes cards precisam ter IDs específicos como 'general-indicator-1', 'general-indicator-2', 'general-indicator-3' */
+#general-indicator-1 {
+    grid-area: small-card-1;
+}
+
+#general-indicator-2 {
+    grid-area: small-card-2;
+}
+
+#general-indicator-3 {
+    grid-area: small-card-3;
+}
+
+/* 4. Layout para a seção "Visão por Negócio" (2 colunas) */
 #business-commercial-grid {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
 }
 
-/* 4. Layout padrão para as demais seções (3 colunas) */
+/* 5. Layout padrão para as demais seções (3 colunas) */
 /* Aplica-se a Playbooks, OKRs, Onboarding e Atrasadas para manter a consistência */
 #playbooks-grid,
 #okr-grid-container,
 #onboarding-outcomes-grid,
 #onboarding-process-grid,
 #overdue-grid-container {
+    display: grid;
     grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
 }
 
-/* 5. Responsividade para telas menores (celulares e tablets na vertical) */
+/* 6. Responsividade para telas menores (celulares e tablets na vertical) */
 @media (max-width: 900px) {
     #general-indicators-grid,
     #business-commercial-grid,
@@ -1240,8 +1257,16 @@
     #onboarding-outcomes-grid,
     #onboarding-process-grid,
     #overdue-grid-container {
-        /* Força todos os grids a terem apenas 1 coluna em telas estreitas */
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* Força todos os grids a terem apenas 1 coluna */
+        grid-template-areas: unset; /* Remove áreas nomeadas para simplificar em mobile */
+    }
+
+    /* Em mobile, cards retornam ao fluxo normal, sem posicionamento de grid-area */
+    #coverage-card-item,
+    #general-indicator-1,
+    #general-indicator-2,
+    #general-indicator-3 {
+        grid-area: unset;
     }
 }
     </style>
@@ -3262,55 +3287,46 @@
                 </div>
             </div>
             `;
-            const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento, classificacaoHtml);
-            const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
-            const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
+            // ===== INÍCIO DO NOVO BLOCO =====
 
-            const followupCard = createPrevistoRealizadoCard('Follow-Up Pós Loop', (dataStore['followup-previsto'] || []).length, (dataStore['followup-realizado'] || []).length, 'followup', null, (dataStore['followup-atrasado-concluido'] || []).length);
-            const discoveryCard = createPrevistoRealizadoCard('Discovery Potencial', (dataStore['discovery-previsto'] || []).length, (dataStore['discovery-realizado'] || []).length, 'discovery', null, (dataStore['discovery-atrasado-concluido'] || []).length);
+    // Adicionamos os IDs aqui
+    const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento, classificacaoHtml, 'coverage-card-item');
+    const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp, null, null, null, null, 'general-indicator-2');
+    
+    const followupCard = createPrevistoRealizadoCard('Follow-Up Pós Loop', (dataStore['followup-previsto'] || []).length, (dataStore['followup-realizado'] || []).length, 'followup', null, (dataStore['followup-atrasado-concluido'] || []).length);
+    const discoveryCard = createPrevistoRealizadoCard('Discovery Potencial', (dataStore['discovery-previsto'] || []).length, (dataStore['discovery-realizado'] || []).length, 'discovery', null, (dataStore['discovery-atrasado-concluido'] || []).length);
+    
+    const includeOnboarding = onboardingToggle.checked;
+    const contatosLigacao = (dataStore['contato-ligacao'] || []).length;
+    const contatosEmail = (dataStore['contato-email'] || []).length;
+    const contatosOnboarding = includeOnboarding ? (dataStore['onboarding-contacts-display'] || []).length : 0;
+    const totalContatosNoCard = contatosLigacao + contatosEmail + contatosOnboarding;
+    
+    const getPercentageText = (count) => {
+        if (totalContatosNoCard === 0) return '';
+        const percentage = (count / totalContatosNoCard) * 100;
+        return `<span class="sub-metric">(${percentage.toFixed(1)}%)</span>`;
+    };
+    
+    let onboardingMetricHtml = '';
+    if (includeOnboarding && contatosOnboarding > 0) {
+        onboardingMetricHtml = `<div class="metric" data-metric-id="onboarding-contacts-display" data-metric-title="Contatos de Onboarding"><span class="metric-label"><i class="fas fa-user-plus" style="margin-right: 6px; color: var(--primary-color);"></i>Contatos Onboarding:</span><span class="metric-value">${contatosOnboarding} ${getPercentageText(contatosOnboarding)}</span></div>`;
+    }
+    
+    // Adicionamos o ID aqui
+    const cardTiposDeContato = `<div class="card" id="general-indicator-3"><h3>Tipos de Contato (Mês)</h3><div class="card-content"><div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião"><span class="metric-label">📞 Ligação/Reunião (CS):</span><span class="metric-value">${contatosLigacao} ${getPercentageText(contatosLigacao)}</span></div><div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp"><span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${contatosEmail} ${getPercentageText(contatosEmail)}</span></div>${onboardingMetricHtml}</div></div>`;
+    
+    // Adicionamos o ID aqui e reorganizamos a ordem dos cards para bater com o CSS
+    generalGrid.innerHTML = `
+        ${cardCobertura} 
+        ${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount, 'general-indicator-1')} 
+        ${senseScoreCard} 
+        ${cardTiposDeContato}
+    `;
 
-            // --- LÓGICA DO CARD DE CONTATOS (CORRIGIDA E UNIFICADA) ---
-            const includeOnboarding = onboardingToggle.checked;
-            const contatosLigacao = (dataStore['contato-ligacao'] || []).length;
-            const contatosEmail = (dataStore['contato-email'] || []).length;
-            const contatosOnboarding = includeOnboarding ? (dataStore['onboarding-contacts-display'] || []).length : 0;
-            const totalContatosNoCard = contatosLigacao + contatosEmail + contatosOnboarding;
-  
-            const getPercentageText = (count) => {
-                if (totalContatosNoCard === 0) return '';
-                const percentage = (count / totalContatosNoCard) * 100;
-                return `<span class="sub-metric">(${percentage.toFixed(1)}%)</span>`;
-            };
-  
-            let onboardingMetricHtml = '';
-            if (includeOnboarding && contatosOnboarding > 0) {
-                onboardingMetricHtml = `
-                    <div class="metric" data-metric-id="onboarding-contacts-display" data-metric-title="Contatos de Onboarding">
-                        <span class="metric-label"><i class="fas fa-user-plus" style="margin-right: 6px; color: var(--primary-color);"></i>Contatos Onboarding:</span>
-                        <span class="metric-value">${contatosOnboarding} ${getPercentageText(contatosOnboarding)}</span>
-                    </div>
-                `;
-            }
-  
-            const cardTiposDeContato = `
-            <div class="card">
-                <h3>Tipos de Contato (Mês)</h3>
-                <div class="card-content">
-                    <div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião">
-                        <span class="metric-label">📞 Ligação/Reunião (CS):</span>
-                        <span class="metric-value">
-                            ${contatosLigacao} ${getPercentageText(contatosLigacao)}
-                        </span>
-                    </div>
-                    <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
-                        <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span>
-                        <span class="metric-value">${contatosEmail} ${getPercentageText(contatosEmail)}</span>
-                    </div>
-                    ${onboardingMetricHtml}
-                </div>
-            </div>`;
+    // ===== FIM DO NOVO BLOCO =====
 
-            generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
+            generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount, 'general-indicator-1')} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
 
             const businessCommercialGrid = document.getElementById('business-commercial-grid');
             businessCommercialGrid.innerHTML = `
@@ -3455,86 +3471,60 @@
             okrGrid.innerHTML = okrHtml;
         };
 
-        const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '', additionalHtml = '') => {
-            const percentage = goal > 0 ? (value / goal) * 100 : 0;
-            let valueText;
-            let labelText = `Meta: ${goal}${unit}`;
-            let clientesFaltantesHtml = '';
-            let distribuicaoContatosHtml = '';
+        const createOkrCard = (title, value, goal, unit = '', metricId, currentValue = null, goalValue = null, comparisonValue = null, clientesFaltantes = null, selectedSegmento = '', additionalHtml = '', cardId = null) => {
+        const percentage = goal > 0 ? (value / goal) * 100 : 0;
+        let valueText;
+        let labelText = `Meta: ${goal}${unit}`;
+        let clientesFaltantesHtml = '';
+        let distribuicaoContatosHtml = '';
 
-            // --- INÍCIO DA ALTERAÇÃO 2 ---
-            if (clientesFaltantes !== null) {
-                // 1. Calcula o número TOTAL de clientes que precisam ser contatados para atingir a meta.
-                const totalParaMeta = Math.ceil((dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100));
-               
-                clientesFaltantesHtml = `
-                <div class="metric overdue-metric">
-                    <span class="metric-label"><i class="fas fa-bullseye" style="color: var(--primary-color);"></i>Meta de Contato:</span>
-                    <span class="metric-value" style="font-size: 1.2rem;">${totalParaMeta} clientes (${clientesFaltantes} faltantes)</span>
-                </div>
-                `;
-               
-                // 2. Define a proporção de contatos por tipo e calcula a META para cada um.
-                let ligacaoPerc = 0.65;
-                if (selectedSegmento === 'MID/Enterprise') {
-                    ligacaoPerc = 0.75;
-                }
-                const metaContatosLigacao = Math.ceil(totalParaMeta * ligacaoPerc);
-                const metaContatosEmail = totalParaMeta - metaContatosLigacao;
+        if (clientesFaltantes !== null) {
+            const totalParaMeta = Math.ceil((dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100));
+            clientesFaltantesHtml = `<div class="metric overdue-metric"><span class="metric-label"><i class="fas fa-bullseye" style="color: var(--primary-color);"></i>Meta de Contato:</span><span class="metric-value" style="font-size: 1.2rem;">${totalParaMeta} clientes (${clientesFaltantes} faltantes)</span></div>`;
+            
+            let ligacaoPerc = 0.65;
+            if (selectedSegmento === 'MID/Enterprise') {
+                ligacaoPerc = 0.75;
+            }
+            const metaContatosLigacao = Math.ceil(totalParaMeta * ligacaoPerc);
+            const metaContatosEmail = totalParaMeta - metaContatosLigacao;
+            const realizadosLigacao = (dataStore['contato-ligacao'] || []).length;
+            const realizadosEmail = (dataStore['contato-email'] || []).length;
+            const faltantesLigacao = Math.max(0, metaContatosLigacao - realizadosLigacao);
+            const faltantesEmail = Math.max(0, metaContatosEmail - realizadosEmail);
 
-                // 3. Conta quantos contatos de cada tipo já foram REALIZADOS.
-                const realizadosLigacao = (dataStore['contato-ligacao'] || []).length;
-                const realizadosEmail = (dataStore['contato-email'] || []).length;
+            distribuicaoContatosHtml = `<div class="sub-metric-group"><div class="sub-metric-item" title="Meta: ${metaContatosLigacao} / Realizado: ${realizadosLigacao}"><span class="sub-metric-label"><i class="fas fa-phone-alt"></i>Faltam Ligações</span><span class="sub-metric-value">${faltantesLigacao}</span></div><div class="sub-metric-item" title="Meta: ${metaContatosEmail} / Realizado: ${realizadosEmail}"><span class="sub-metric-label"><i class="fas fa-envelope"></i>Faltam E-mails</span><span class="sub-metric-value">${faltantesEmail}</span></div></div>`;
+        }
 
-                // 4. Calcula os FALTANTES para cada tipo, garantindo que não seja um número negativo.
-                const faltantesLigacao = Math.max(0, metaContatosLigacao - realizadosLigacao);
-                const faltantesEmail = Math.max(0, metaContatosEmail - realizadosEmail);
+        if (currentValue !== null) {
+            if (goalValue !== null) {
+                valueText = `${currentValue} de ${goalValue} <span class="sub-metric">(${value.toFixed(1)}%)</span>`;
+            } else {
+                valueText = `${currentValue}${unit}`;
+            }
+        } else {
+            valueText = `${unit === '%' ? value.toFixed(1) : Number(value).toFixed(0)}${unit}`;
+        }
 
-                // 5. Monta o HTML para exibir os valores.
-                // 5. Monta o HTML para exibir os valores de forma compacta.
-                distribuicaoContatosHtml = `
-                <div class="sub-metric-group">
-                    <div class="sub-metric-item" title="Meta: ${metaContatosLigacao} / Realizado: ${realizadosLigacao}">
-                        <span class="sub-metric-label"><i class="fas fa-phone-alt"></i>Faltam Ligações</span>
-                        <span class="sub-metric-value">${faltantesLigacao}</span>
-                    </div>
-                    <div class="sub-metric-item" title="Meta: ${metaContatosEmail} / Realizado: ${realizadosEmail}">
-                        <span class="sub-metric-label"><i class="fas fa-envelope"></i>Faltam E-mails</span>
-                        <span class="sub-metric-value">${faltantesEmail}</span>
-                    </div>
-                </div>
-                `;
-            }
-// --- FIM DA ALTERAÇÃO 2 ---
+        let trendHtml = '';
+        if (comparisonValue !== null && isFinite(comparisonValue)) {
+            const trend = value - comparisonValue;
+            const trendClass = trend > 0.1 ? 'trend-positive' : (trend < -0.1 ? 'trend-negative' : 'trend-neutral');
+            const trendIcon = trend > 0.1 ? '▲' : (trend < -0.1 ? '▼' : '▬');
+            let trendText;
+            if (unit === '%') {
+                trendText = `${trend.toFixed(1)}pp`;
+            } else {
+                const percChange = comparisonValue > 0 ? ((trend / comparisonValue) * 100) : (trend > 0 ? 100 : 0);
+                trendText = `${percChange.toFixed(0)}%`;
+            }
+            trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
+        }
 
-            if (currentValue !== null) {
-                if (goalValue !== null) {
-                    valueText = `${currentValue} de ${goalValue} <span class="sub-metric">(${value.toFixed(1)}%)</span>`;
-                } else {
-                    valueText = `${currentValue}${unit}`;
-                }
-            } else {
-                valueText = `${unit === '%' ? value.toFixed(1) : Number(value).toFixed(0)}${unit}`;
-            }
-
-            let trendHtml = '';
-            if (comparisonValue !== null && isFinite(comparisonValue)) {
-                const trend = value - comparisonValue;
-                const trendClass = trend > 0.1 ? 'trend-positive' : (trend < -0.1 ? 'trend-negative' : 'trend-neutral');
-                const trendIcon = trend > 0.1 ? '▲' : (trend < -0.1 ? '▼' : '▬');
-                let trendText;
-                if (unit === '%') {
-                    trendText = `${trend.toFixed(1)}pp`;
-                } else {
-                    const percChange = comparisonValue > 0 ? ((trend / comparisonValue) * 100) : (trend > 0 ? 100 : 0);
-                    trendText = `${percChange.toFixed(0)}%`;
-                }
-                trendHtml = `<span class="trend-indicator ${trendClass}" title="Comparado com ${comparisonValue.toFixed(1)}${unit} no período anterior">${trendIcon} ${trendText}</span>`;
-            }
-
-            const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
-            return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}${additionalHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
-        };
+        const trendButtonHtml = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr" title="Ver Gráfico de Tendência"><i class="fas fa-chart-line"></i></button>` : '';
+        // A MUDANÇA ESTÁ AQUI: Adicionamos o 'id' ao div principal.
+        return `<div class="card" ${cardId ? `id="${cardId}"` : ''}><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}${additionalHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
+    };
 
         const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
             const totalRealizado = realizadoNoPrazo + overdueCount;
@@ -3573,13 +3563,14 @@
                 </div>`;
         };
 
-        const createSimpleCard = (title, id1, label1, value1, id2, label2, value2) => {
-            let metric2Html = '';
-            if (id2) {
-                metric2Html = `<div class="metric" data-metric-id="${id2}" data-metric-title="${label2}"><span class="metric-label">${label2}:</span><span class="metric-value">${value2}</span></div>`;
-            }
-            return `<div class="card"><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${label1}"><span class="metric-label">${label1}:</span><span class="metric-value">${value1}</span></div>${metric2Html}</div></div>`;
-        };
+        const createSimpleCard = (title, id1, label1, value1, id2, label2, value2, cardId = null) => {
+        let metric2Html = '';
+        if (id2) {
+            metric2Html = `<div class="metric" data-metric-id="${id2}" data-metric-title="${label2}"><span class="metric-label">${label2}:</span><span class="metric-value">${value2}</span></div>`;
+        }
+        // A MUDANÇA ESTÁ AQUI: Adicionamos o 'id' ao div principal.
+        return `<div class="card" ${cardId ? `id="${cardId}"` : ''}><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${label1}"><span class="metric-label">${label1}:</span><span class="metric-value">${value1}</span></div>${metric2Html}</div></div>`;
+    };
 
         const createHtmlTable = (data) => {
             if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Nenhum dado para exibir.</p>';
