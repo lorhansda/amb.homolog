@@ -1198,73 +1198,31 @@
         }
 /* --- BLOCO ÚNICO E DEFINITIVO PARA O LAYOUT DOS CARDS --- */
 
-/* 1. Layout: Indicadores Gerais da Carteira */
-#general-indicators-grid {
+/* 1. Define que TODO .group-content é um grid flexível por padrão */
+.group-content {
     display: grid;
     gap: 25px;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-areas:
-        "coverage coverage coverage"
-        "card1    card2     card3";
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
 }
 
+/* 2. Layout ESPECIAL para Indicadores Gerais */
+#general-indicators-grid {
+    /* O layout de grid já foi herdado de .group-content */
+    grid-template-columns: repeat(3, 1fr); /* Mantém 3 colunas fixas aqui */
+    grid-template-areas:
+        "coverage coverage coverage"
+        "card1    card2       card3";
+}
 #coverage-card-item { grid-area: coverage; }
 #general-indicator-1 { grid-area: card1; }
 #general-indicator-2 { grid-area: card2; }
 #general-indicator-3 { grid-area: card3; }
 
 
-/* 2. Layout: Visão por Negócio e Comercial (2 colunas) */
+/* 3. Layout ESPECIAL para Visão por Negócio e Comercial */
 #business-commercial-grid {
-    display: grid;
-    gap: 25px;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr); /* Mantém 2 colunas fixas aqui */
 }
-
-/* 3. Layout: Acompanhamento de Playbooks (FLEXÍVEL) */
-#playbooks-grid {
-    display: grid;
-    gap: 25px;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-}
-
-/* 4. Layout: OKRs do Segmento (FLEXÍVEL) */
-#okr-grid-container {
-    display: grid;
-    gap: 25px;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-}
-
-/* 5. Layout Padrão para as outras abas (Onboarding, Atrasadas) */
-#onboarding-outcomes-grid,
-#onboarding-process-grid,
-#overdue-grid-container {
-    display: grid;
-    gap: 25px;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-}
-
-/* 6. Responsividade para Telas Menores */
-@media (max-width: 900px) {
-    #general-indicators-grid,
-    #business-commercial-grid,
-    #playbooks-grid,
-    #okr-grid-container,
-    #onboarding-outcomes-grid,
-    #onboarding-process-grid,
-    #overdue-grid-container {
-        grid-template-columns: 1fr; /* Força 1 coluna */
-        grid-template-areas: unset;  /* Desativa o layout especial */
-    }
-
-    #coverage-card-item,
-    #general-indicator-1,
-    #general-indicator-2,
-    #general-indicator-3 {
-        grid-area: unset;
-    }
-}
-
     </style>
 </head>
 
