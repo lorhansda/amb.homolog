@@ -1197,49 +1197,32 @@
         .sub-metric-label i {
             margin-right: 4px;
         }
-/* --- NOVOS AJUSTES DE LAYOUT --- */
+/* --- LAYOUT FINAL BASEADO NO DESENHO (layout.png) --- */
 
-/* 1. Faz o card de Cobertura ocupar 100% da largura no grupo de indicadores gerais */
-#general-indicators-grid .card:first-child {
-    flex-basis: 100%;
-}
-
-/* 2. Força o grupo de "Visão por Negócio" a ter sempre 2 colunas, ocupando o espaço todo */
-#business-commercial-grid {
-    display: grid; /* Usamos grid aqui para um controle mais explícito */
-    grid-template-columns: repeat(2, 1fr); /* Cria duas colunas de largura igual */
-    gap: 25px;
-}
-
-/* Garante que os cards filhos do grid se comportem bem (opcional, mas bom ter) */
-#business-commercial-grid > .card {
-    flex-basis: auto; /* Reseta o flex-basis para não conflitar com o grid */
-}
-/* --- AJUSTE DE LAYOUT CONFORME IMAGEM (layout.png) --- */
-
-/* Regra geral para garantir que os cards se estiquem e preencham a altura da célula do grid */
+/* 1. Regra geral para os containers de grupo */
 .group-content {
-    display: grid;
+    display: grid; /* Todos os grupos usarão Grid */
     gap: 25px;
-    align-items: stretch; /* Garante que todos os cards na mesma linha tenham a mesma altura */
+    align-items: stretch; /* Garante que cards na mesma linha tenham a mesma altura */
 }
 
-/* 1. Layout para a seção "Indicadores Gerais" */
+/* 2. Layout para a seção "Indicadores Gerais da Carteira" */
 #general-indicators-grid {
     grid-template-columns: repeat(3, 1fr); /* Define uma base de 3 colunas */
 }
 
+/* Faz o primeiro card ("Cobertura") ocupar toda a largura da linha */
 #general-indicators-grid .card:first-child {
-    grid-column: 1 / -1; /* Faz o 1º card (Cobertura) ocupar as 3 colunas */
+    grid-column: 1 / -1; 
 }
 
-/* 2. Layout para a seção "Visão por Negócio" (2 colunas) */
+/* 3. Layout para a seção "Visão por Negócio" (2 colunas) */
 #business-commercial-grid {
     grid-template-columns: repeat(2, 1fr);
 }
 
-/* 3. Layout PADRÃO para as demais seções (3 colunas) */
-/* Aplica-se a Playbooks, OKRs e as abas de Onboarding/Atrasadas para consistência */
+/* 4. Layout padrão para as demais seções (3 colunas) */
+/* Aplica-se a Playbooks, OKRs, Onboarding e Atrasadas para manter a consistência */
 #playbooks-grid,
 #okr-grid-container,
 #onboarding-outcomes-grid,
@@ -1248,7 +1231,7 @@
     grid-template-columns: repeat(3, 1fr);
 }
 
-/* 4. RESPONSIVIDADE: Garante que o layout se ajuste em telas menores */
+/* 5. Responsividade para telas menores (celulares e tablets na vertical) */
 @media (max-width: 900px) {
     #general-indicators-grid,
     #business-commercial-grid,
