@@ -486,7 +486,7 @@
     flex-direction: column;
     box-shadow: 0 4px 15px var(--shadow-color);
     animation: fadeIn 0.5s ease-out backwards;
-    flex: 1 1 340px; /* Adicione esta linha */
+    flex: 1 1 450px; /* Adicione esta linha */
 }
 
         .card:hover {
@@ -1199,6 +1199,24 @@
         .sub-metric-label i {
             margin-right: 4px;
         }
+/* --- NOVOS AJUSTES DE LAYOUT --- */
+
+/* 1. Faz o card de Cobertura ocupar 100% da largura no grupo de indicadores gerais */
+#general-indicators-grid .card:first-child {
+    flex-basis: 100%;
+}
+
+/* 2. Força o grupo de "Visão por Negócio" a ter sempre 2 colunas, ocupando o espaço todo */
+#business-commercial-grid {
+    display: grid; /* Usamos grid aqui para um controle mais explícito */
+    grid-template-columns: repeat(2, 1fr); /* Cria duas colunas de largura igual */
+    gap: 25px;
+}
+
+/* Garante que os cards filhos do grid se comportem bem (opcional, mas bom ter) */
+#business-commercial-grid > .card {
+    flex-basis: auto; /* Reseta o flex-basis para não conflitar com o grid */
+}
     </style>
 </head>
 
