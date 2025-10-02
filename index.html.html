@@ -3283,12 +3283,17 @@
         renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial'] || {});
 
         // LÓGICA RESTAURADA: Esta parte tinha sido apagada
-        playbookGrid.innerHTML = `
-            ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
-            ${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length)}
-            ${followupCard}
-            ${(selectedSegmento !== 'MID/Enterprise') ? discoveryCard : ''}
-        `;
+const playbookCards = [
+    createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length),
+    createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length),
+    followupCard
+];
+
+if (selectedSegmento !== 'MID/Enterprise') {
+    playbookCards.push(discoveryCard);
+}
+
+playbookGrid.innerHTML = playbookCards.join('');
 
         let okrHtml = '';
         if (selectedSegmento === 'MID/Enterprise') {
