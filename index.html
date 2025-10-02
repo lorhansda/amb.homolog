@@ -1221,18 +1221,18 @@
     grid-template-columns: repeat(2, 1fr);
 }
 
-/* 3. Layout: Acompanhamento de Playbooks (3 colunas) */
+/* 3. Layout: Acompanhamento de Playbooks (FLEXÍVEL) */
 #playbooks-grid {
     display: grid;
     gap: 25px;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
 }
 
-/* 4. Layout: OKRs do Segmento (3 colunas) */
+/* 4. Layout: OKRs do Segmento (FLEXÍVEL) */
 #okr-grid-container {
     display: grid;
     gap: 25px;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
 }
 
 /* 5. Layout Padrão para as outras abas (Onboarding, Atrasadas) */
