@@ -1197,11 +1197,32 @@
 /* --- BLOCO ÚNICO E DEFINITIVO PARA O LAYOUT DOS CARDS --- */
 
 /* 1. Define que TODO .group-content é um grid flexível por padrão */
+/* Substitua o bloco .group-content existente por este (colocar no final do seu <style> para garantir prioridade) */
 .group-content {
-    display: grid;
+    display: grid !important;
     gap: 25px;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    /* menor min-width para evitar que a grid vire 1 coluna em telas médias */
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    align-items: start;           /* mantém cards alinhados ao topo da grade */
+    grid-auto-rows: minmax(0, auto);
+    grid-auto-flow: dense;
+    width: 100%;
+    box-sizing: border-box;
 }
+
+/* Garante que cada card respeite a coluna e não cause overflow por conteúdo longo */
+.group-content > .card {
+    width: 100%;
+    min-width: 0;     /* evita que conteúdos longos “empurrem” a coluna */
+    align-self: start;
+    box-sizing: border-box;
+}
+#playbooks-grid {
+    /* adapta o min-width específico para playbooks */
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    align-items: start;
+}
+
 
 /* 2. Layout ESPECIAL para Indicadores Gerais */
 #general-indicators-grid {
