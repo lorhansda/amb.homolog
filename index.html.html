@@ -1670,12 +1670,13 @@
             applyTheme(false);
         }
         const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        const getQuarter = (date) => Math.floor(date.getMonth() / 3);
+        const getQuarter = (date) => Math.floor(date.getUTCMonth() / 3);
         const formatDate = (date) => {
             if (!(date instanceof Date) || isNaN(date)) return '';
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
+            // Usa os métodos getUTC... para extrair os componentes da data em UTC
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = date.getUTCFullYear();
             return `${day}/${month}/${year}`;
         };
 
@@ -1789,10 +1790,10 @@
         const readFile = (file) => new Promise((resolve, reject) => {
 
             const excelSerialToDateObject = (serial) => {
-                const correctedSerial = serial + 1;
-                const excelTimestamp = (correctedSerial - 25569) * 86400 * 1000;
-                const timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
-                return new Date(excelTimestamp + timezoneOffset);
+                // 25569 é o número de dias entre a "época" do Excel (1900) e a época do Unix (1970).
+                const excelTimestamp = (serial - 25569) * 86400 * 1000;
+                // Cria o objeto Date. O valor interno será o timestamp UTC correto.
+                return new Date(excelTimestamp);
             }
 
             const transpilePipeToCommaCSV = (pipeText) => {
@@ -2477,7 +2478,7 @@
             );
 
             const selectedQuarter = Math.floor(month / 3);
-            const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getMonth() / 3) === selectedQuarter && item.ConcluidaEm.getFullYear() === year;
+            const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getUTCMonth() / 3) === selectedQuarter && item.ConcluidaEm.getUTCFullYear() === year;
             const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
             metrics['total-labs-eligible'] = clients.length;
