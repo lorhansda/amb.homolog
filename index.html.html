@@ -1215,56 +1215,51 @@
 #business-commercial-grid > .card {
     flex-basis: auto; /* Reseta o flex-basis para não conflitar com o grid */
 }
-/* --- REESTRUTURAÇÃO COMPLETA DO LAYOUT DO DASHBOARD --- */
+/* --- AJUSTE DE LAYOUT CONFORME IMAGEM (layout.png) --- */
 
-/* 1. LAYOUT PRINCIPAL: KPIs no topo (4 colunas) */
+/* Regra geral para garantir que os cards se estiquem e preencham a altura da célula do grid */
+.group-content {
+    display: grid;
+    gap: 25px;
+    align-items: stretch; /* Garante que todos os cards na mesma linha tenham a mesma altura */
+}
+
+/* 1. Layout para a seção "Indicadores Gerais" */
 #general-indicators-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(3, 1fr); /* Define uma base de 3 colunas */
 }
 
-/* Estilo especial para os cards de KPI para parecerem mais leves e focados no número */
-#general-indicators-grid .card {
-    text-align: center;
-    padding: 20px 15px;
-    justify-content: space-between;
-}
-#general-indicators-grid .card h3 {
-    font-size: 1.05rem; /* Título menor e mais sutil */
-    min-height: 42px; /* Garante que títulos com 2 linhas não quebrem o layout */
-    margin-bottom: 15px;
-    align-items: center;
-    justify-content: center;
-    border-bottom: none; /* Remove a linha para um visual mais limpo */
-    padding-bottom: 0;
-}
-#general-indicators-grid .card .metric-value {
-    font-size: 2.8rem; /* Valor bem grande e centralizado */
-    margin: auto 0; /* Centraliza verticalmente o valor */
-}
-#general-indicators-grid .card .metric-label {
-    font-size: 0.9rem;
-}
-#general-indicators-grid .card .sub-metric-group {
-    margin-top: auto; /* Empurra o grupo de sub-métricas para baixo */
+#general-indicators-grid .card:first-child {
+    grid-column: 1 / -1; /* Faz o 1º card (Cobertura) ocupar as 3 colunas */
 }
 
-/* 2. LAYOUT DOS GRÁFICOS (2 colunas largas) */
+/* 2. Layout para a seção "Visão por Negócio" (2 colunas) */
 #business-commercial-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
 }
 
-/* 3. LAYOUT PADRÃO PARA AS DEMAIS SEÇÕES (3 colunas responsivas) */
-/* Aplica-se a Playbooks, OKRs, Onboarding e Atrasadas para consistência */
+/* 3. Layout PADRÃO para as demais seções (3 colunas) */
+/* Aplica-se a Playbooks, OKRs e as abas de Onboarding/Atrasadas para consistência */
 #playbooks-grid,
 #okr-grid-container,
 #onboarding-outcomes-grid,
 #onboarding-process-grid,
 #overdue-grid-container {
-    display: grid;
-    /* Um tamanho base maior para garantir no máximo 3 colunas na maioria das telas */
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* 4. RESPONSIVIDADE: Garante que o layout se ajuste em telas menores */
+@media (max-width: 900px) {
+    #general-indicators-grid,
+    #business-commercial-grid,
+    #playbooks-grid,
+    #okr-grid-container,
+    #onboarding-outcomes-grid,
+    #onboarding-process-grid,
+    #overdue-grid-container {
+        /* Força todos os grids a terem apenas 1 coluna em telas estreitas */
+        grid-template-columns: 1fr;
+    }
 }
     </style>
 </head>
