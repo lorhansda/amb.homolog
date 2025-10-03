@@ -469,20 +469,7 @@
             border-radius: 5px;
         }
 
-
-        .card {
-    background-color: var(--card-bg-color);
-    border-radius: var(--border-radius-lg);
-    padding: 25px;
-    border: 1px solid var(--border-color);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 4px 15px var(--shadow-color);
-    animation: fadeIn 0.5s ease-out backwards;
-
   
-}
 
         .card:hover {
             transform: translateY(-8px);
@@ -1194,39 +1181,7 @@
         .sub-metric-label i {
             margin-right: 4px;
         }
-/* --- BLOCO ÚNICO E DEFINITIVO PARA O LAYOUT DOS CARDS --- */
 
-/* 1. Regra principal para TODOS os containers de cards */
-.group-content {
-    display: grid;
-    gap: 25px;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Um valor menor de minmax para mais flexibilidade */
-}
-
-/* 2. Layout ESPECIAL para os grids com regras específicas (opcional, mas bom para organização) */
-#general-indicators-grid {
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Mantém o tamanho original aqui se preferir */
-}
-
-#business-commercial-grid,
-#playbooks-grid,
-#okr-grid-container {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-}
-
-</style> 
-</head>
-/* Ajuste direto nos cards */
-.group-content > .card {
-    width: 100%;        /* ocupa toda a coluna */
-    min-width: 0;       /* impede que conteúdo force expansão */
-    height: 100%;       /* mantém altura estável */
-    align-self: start;  /* sempre gruda no topo */
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
 
 #playbooks-grid {
     /* adapta o min-width específico para playbooks */
@@ -1253,7 +1208,30 @@
 #business-commercial-grid {
     grid-template-columns: repeat(2, 1fr); /* Mantém 2 colunas fixas aqui */
 }
-   
+
+.group-content {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    align-items: start; /* alinha os cards pelo topo */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ajuste direto nos cards */
+.group-content > .card {
+    width: 100%;        /* ocupa toda a coluna */
+    min-width: 0;       /* impede que conteúdo force expansão */
+    height: 100%;       /* mantém altura estável */
+    align-self: start;  /* sempre gruda no topo */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+    </style>
+</head>
 
 <body>
     <div id="app-version-marker"></div>
@@ -3297,7 +3275,7 @@
         }
         
         // CORREÇÃO: Adicionando o ID aqui
-        const cardTiposDeContato = `<div class="card" id="general-indicator-3"><h3>Tipos de Contato (Mês)</h3><div class="card-content"><div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião"><span class="metric-label">📞 Ligação/Reunião (CS):</span><span class="metric-value">${contatosLigacao} ${getPercentageText(contatosLigacao)}</span></div><div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp"><span class="metric-label"✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${contatosEmail} ${getPercentageText(contatosEmail)}</span></div>${onboardingMetricHtml}</div></div>`;
+        const cardTiposDeContato = `<div class="card" id="general-indicator-3"><h3>Tipos de Contato (Mês)</h3><div class="card-content"><div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião"><span class="metric-label">📞 Ligação/Reunião (CS):</span><span class="metric-value">${contatosLigacao} ${getPercentageText(contatosLigacao)}</span></div><div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp"><span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${contatosEmail} ${getPercentageText(contatosEmail)}</span></div>${onboardingMetricHtml}</div></div>`;
         
         // CORREÇÃO: Renderizando na ordem correta para o CSS funcionar
         generalGrid.innerHTML = `
