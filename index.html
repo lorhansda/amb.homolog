@@ -3209,7 +3209,7 @@
                     <span class="metric-label" style="padding-left: 20px;">Engajadas:</span>
                     <span class="metric-value success">${totalEngaged} <span class="sub-metric">(${percEngaged.toFixed(1)}%)</span></span>
                 </div>
-                    <div class="metric" data-metric-id="ligacoes-desengajadas" data-metric-title="Ligações/Reuniões Desengajadas">
+                <div class="metric" data-metric-id="ligacoes-desengajadas" data-metric-title="Ligações/Reuniões Desengajadas">
                     <span class="metric-label" style="padding-left: 20px;">Desengajadas:</span>
                     <span class="metric-value danger">${totalDisengaged} <span class="sub-metric">(${percDisengaged.toFixed(1)}%)</span></span>
                 </div>
@@ -3218,23 +3218,23 @@
             const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, selectedSegmento, classificacaoHtml);
             const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
             const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
-
+  
             const followupCard = createPrevistoRealizadoCard('Follow-Up Pós Loop', (dataStore['followup-previsto'] || []).length, (dataStore['followup-realizado'] || []).length, 'followup', null, (dataStore['followup-atrasado-concluido'] || []).length);
             const discoveryCard = createPrevistoRealizadoCard('Discovery Potencial', (dataStore['discovery-previsto'] || []).length, (dataStore['discovery-realizado'] || []).length, 'discovery', null, (dataStore['discovery-atrasado-concluido'] || []).length);
-
-            // --- LÓGICA DO CARD DE CONTATOS (CORRIGIDA E UNIFICADA) ---
+  
+            // --- LÓGICA DO CARD DE CONTATOS (UNIFICADA) ---
             const includeOnboarding = onboardingToggle.checked;
             const contatosLigacao = (dataStore['contato-ligacao'] || []).length;
             const contatosEmail = (dataStore['contato-email'] || []).length;
             const contatosOnboarding = includeOnboarding ? (dataStore['onboarding-contacts-display'] || []).length : 0;
             const totalContatosNoCard = contatosLigacao + contatosEmail + contatosOnboarding;
-  
+  
             const getPercentageText = (count) => {
                 if (totalContatosNoCard === 0) return '';
                 const percentage = (count / totalContatosNoCard) * 100;
                 return `<span class="sub-metric">(${percentage.toFixed(1)}%)</span>`;
             };
-  
+  
             let onboardingMetricHtml = '';
             if (includeOnboarding && contatosOnboarding > 0) {
                 onboardingMetricHtml = `
@@ -3244,7 +3244,7 @@
                     </div>
                 `;
             }
-  
+  
             const cardTiposDeContato = `
             <div class="card">
                 <h3>Tipos de Contato (Mês)</h3>
@@ -3262,40 +3262,38 @@
                     ${onboardingMetricHtml}
                 </div>
             </div>`;
-
-            generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
-
-            const businessCommercialGrid = document.getElementById('business-commercial-grid');
-            businessCommercialGrid.innerHTML = `
-            <div id="negocio-chart-container"></div>
-            <div id="comercial-chart-container"></div>
+  
+            // --- MONTAGEM FINAL DAS GRADES ---
+            // Linha 1
+            generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard}`;
+  
+            // Linha 2
+            document.getElementById('business-and-playbooks-grid').innerHTML = `
+                ${cardTiposDeContato}
+                <div id="negocio-chart-container"></div>
+                <div id="comercial-chart-container"></div>
             `;
             renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio'] || {});
             renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial'] || {});
-
-            playbookGrid.innerHTML = `
-            ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
-            ${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length)}
-            ${followupCard}
-            ${(selectedSegmento !== 'MID/Enterprise') ? discoveryCard : ''}
-            `;
-
+  
+            // Linha 3 (OKRs)
             let okrHtml = '';
             if (selectedSegmento === 'MID/Enterprise') {
                 okrHtml = `
                     ${createPrevistoRealizadoCard('Reuniões de QBR', (dataStore['reunioes-qbr-previsto'] || []).length, (dataStore['reunioes-qbr-realizado'] || []).length, 'reunioes-qbr', appGoals.qbr, (dataStore['reunioes-qbr-atrasado-concluido'] || []).length)}
                     ${createPrevistoRealizadoCard('Planos de Sucesso', (dataStore['planos-sucesso-previsto'] || []).length, (dataStore['planos-sucesso-realizado'] || []).length, 'planos-sucesso', appGoals.successplan, (dataStore['planos-sucesso-atrasado-concluido'] || []).length)}
                     ${createPrevistoRealizadoCard('Baixo Engajamento (MID/ENT)', (dataStore['baixo-engajamento-mid-previsto'] || []).length, (dataStore['baixo-engajamento-mid-realizado'] || []).length, 'baixo-engajamento-mid', null, (dataStore['baixo-engajamento-mid-atrasado-concluido'] || []).length)}
-                    ${labsCard}`;
+                    ${labsCard}
+                `;
             } else {
                 const previstos = dataStore['engajamento-smb-previsto'] || [];
                 const realizadosNoPrazo = dataStore['engajamento-smb-realizado'] || [];
                 const realizadosAtrasado = dataStore['engajamento-smb-atrasado-concluido'] || [];
                 const totalRealizado = realizadosNoPrazo.length + realizadosAtrasado.length;
-
+  
                 const totalRealizadoList = [...realizadosNoPrazo, ...realizadosAtrasado];
                 dataStore['engajamento-smb-realizado-total'] = totalRealizadoList;
-
+  
                 const engajados = dataStore['engajamento-smb-engajado'] || [];
                 const desengajados = dataStore['engajamento-smb-desengajado'] || [];
                 const performancePerc = totalRealizado > 0 ? (engajados.length / totalRealizado) * 100 : 0;
