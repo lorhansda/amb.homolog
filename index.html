@@ -2359,7 +2359,7 @@
             csContactActivities.forEach(activity => {
                 const clientKey = activity.ClienteCompleto;
                 if (!clientKey) return;
-                const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || a['Tipo']);
+                const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || activity['Tipo']);
                 let currentCategory = '';
                 if (callKeywords.some(k => activityType.includes(k))) currentCategory = 'call';
                 else if (emailKeywords.some(k => activityType.includes(k))) currentCategory = 'email';
