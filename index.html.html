@@ -1196,41 +1196,16 @@
         }
 /* --- BLOCO ÚNICO E DEFINITIVO PARA O LAYOUT DOS CARDS --- */
 
-/* 1. Define que TODO .group-content é um grid flexível por padrão */
-/* Substitua o bloco .group-content existente por este (colocar no final do seu <style> para garantir prioridade) */
-/* Garante grid responsiva em todos os blocos */
+/* 1. Regra principal e única para todos os contêineres de cards */
 .group-content {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    display: grid;
     gap: 25px;
-    align-items: start; /* alinha os cards pelo topo */
-    width: 100%;
-    box-sizing: border-box;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
 }
 
-/* Ajuste direto nos cards */
-.group-content > .card {
-    width: 100%;        /* ocupa toda a coluna */
-    min-width: 0;       /* impede que conteúdo force expansão */
-    height: 100%;       /* mantém altura estável */
-    align-self: start;  /* sempre gruda no topo */
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-#playbooks-grid {
-    /* adapta o min-width específico para playbooks */
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    align-items: start;
-}
-
-
-/* 2. Layout ESPECIAL para Indicadores Gerais */
+/* 2. Layout ESPECIAL para Indicadores Gerais (mantido como estava) */
 #general-indicators-grid {
-    /* O layout de grid já foi herdado de .group-content */
-    grid-template-columns: repeat(3, 1fr); /* Mantém 3 colunas fixas aqui */
+    grid-template-columns: repeat(3, 1fr); 
     grid-template-areas:
         "coverage coverage coverage"
         "card1    card2       card3";
@@ -1241,9 +1216,9 @@
 #general-indicator-3 { grid-area: card3; }
 
 
-/* 3. Layout ESPECIAL para Visão por Negócio e Comercial */
+/* 3. Layout ESPECIAL para Visão por Negócio e Comercial (mantido como estava) */
 #business-commercial-grid {
-    grid-template-columns: repeat(2, 1fr); /* Mantém 2 colunas fixas aqui */
+    grid-template-columns: repeat(2, 1fr);
 }
     </style>
 </head>
