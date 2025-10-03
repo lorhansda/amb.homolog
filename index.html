@@ -1672,15 +1672,12 @@
         const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const getQuarter = (date) => Math.floor(date.getMonth() / 3);
         const formatDate = (date) => {
-    if (!date) return '';
-    // Garante que a data seja um objeto Date
-    const d = (date instanceof Date) ? date : new Date(date);
-    // Usa métodos UTC para evitar problemas de fuso horário
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const year = d.getUTCFullYear();
-    return `${day}/${month}/${year}`;
-};
+            if (!(date instanceof Date) || isNaN(date)) return '';
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = date.getUTCFullYear();
+            return `${day}/${month}/${year}`;
+        };
 
         const parseDate = (dateInput) => {
             if (!dateInput) return null;
@@ -1792,14 +1789,9 @@
         const readFile = (file) => new Promise((resolve, reject) => {
 
             const excelSerialToDateObject = (serial) => {
-    // Excel considera 1 como 1900-01-01, mas o JS começa em 1970-01-01
-    // Corrige o bug do Excel que considera 1900 como ano bissexto
-    const utc_days = Math.floor(serial - 25569);
-    const utc_value = utc_days * 86400; // segundos
-    const date_info = new Date(utc_value * 1000);
-    // Ajusta para UTC, ignorando o fuso do navegador
-    return new Date(Date.UTC(date_info.getUTCFullYear(), date_info.getUTCMonth(), date_info.getUTCDate()));
-};
+                const excelTimestamp = (serial - 25569) * 86400 * 1000;
+                return new Date(excelTimestamp);
+            }
             }
 
             const transpilePipeToCommaCSV = (pipeText) => {
