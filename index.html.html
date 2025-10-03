@@ -652,7 +652,7 @@
         .metric-value {
             font-weight: 700;
             color: var(--text-color);
-            font-size: 1.5rem;
+            font-size: 1.6rem;
         }
 
         .metric-value.success {
@@ -1170,33 +1170,6 @@
             z-index: 1001;
             opacity: 0.8;
         }
-        /* NOVO: CSS para o grupo de métricas compactas (seção 'Faltantes') */
-        .sub-metric-group {
-            display: flex;
-            justify-content: space-around;
-            gap: 15px;
-            border-top: 1px dashed var(--border-color);
-            margin-top: 15px;
-            padding-top: 12px;
-        }
-        .sub-metric-item {
-            text-align: center;
-        }
-        .sub-metric-item .sub-metric-label {
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-light-color);
-            display: block;
-            margin-bottom: 2px;
-        }
-        .sub-metric-item .sub-metric-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        .sub-metric-label i {
-            margin-right: 4px;
-        }
     </style>
 </head>
 
@@ -3444,17 +3417,14 @@
                 const faltantesEmail = Math.max(0, metaContatosEmail - realizadosEmail);
 
                 // 5. Monta o HTML para exibir os valores.
-                // 5. Monta o HTML para exibir os valores de forma compacta.
                 distribuicaoContatosHtml = `
-                <div class="sub-metric-group">
-                    <div class="sub-metric-item" title="Meta: ${metaContatosLigacao} / Realizado: ${realizadosLigacao}">
-                        <span class="sub-metric-label"><i class="fas fa-phone-alt"></i>Faltam Ligações</span>
-                        <span class="sub-metric-value">${faltantesLigacao}</span>
-                    </div>
-                    <div class="sub-metric-item" title="Meta: ${metaContatosEmail} / Realizado: ${realizadosEmail}">
-                        <span class="sub-metric-label"><i class="fas fa-envelope"></i>Faltam E-mails</span>
-                        <span class="sub-metric-value">${faltantesEmail}</span>
-                    </div>
+                <div class="metric" style="font-size: 0.9rem; padding-top: 5px; padding-bottom: 0px;" title="Meta: ${metaContatosLigacao} / Realizado: ${realizadosLigacao}">
+                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Faltante (Ligação/Reunião):</span>
+                    <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${faltantesLigacao}</span>
+                </div>
+                <div class="metric" style="font-size: 0.9rem; padding-top: 5px;" title="Meta: ${metaContatosEmail} / Realizado: ${realizadosEmail}">
+                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Faltante (E-mail/Whats):</span>
+                    <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${faltantesEmail}</span>
                 </div>
                 `;
             }
