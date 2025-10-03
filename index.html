@@ -1672,71 +1672,72 @@
         const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const getQuarter = (date) => Math.floor(date.getMonth() / 3);
         const formatDate = (date) => {
-            if (!(date instanceof Date) || isNaN(date)) return '';
-            const day = String(date.getUTCDate()).padStart(2, '0');
-            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-            const year = date.getUTCFullYear();
-            return `${day}/${month}/${year}`;
-        };
+            if (!(date instanceof Date) || isNaN(date)) return '';
+            // CORREÇÃO JÁ APLICADA AQUI:
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = date.getUTCFullYear();
+            return `${day}/${month}/${year}`;
+        };
 
-        const parseDate = (dateInput) => {
-            if (!dateInput) return null;
-            if (dateInput instanceof Date) return dateInput;
+        const parseDate = (dateInput) => {
+            if (!dateInput) return null;
+            if (dateInput instanceof Date) return dateInput;
 
-            const dateStr = String(dateInput).trim();
+            const dateStr = String(dateInput).trim();
 
-            // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
-            let parts = dateStr.split(/[-/]/);
-            if (parts.length === 3 && parts[0].length === 4) {
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10);
-                const day = parseInt(parts[2], 10);
-                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                    const date = new Date(Date.UTC(year, month - 1, day));
-                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-                        return date;
-                    }
-                }
-            }
+            // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
+            let parts = dateStr.split(/[-/]/);
+            if (parts.length === 3 && parts[0].length === 4) {
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                const day = parseInt(parts[2], 10);
+                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                    const date = new Date(Date.UTC(year, month - 1, day));
+                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                        return date;
+                    }
+                }
+            }
 
-            // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
-            parts = dateStr.split(/[-/]/);
-            if (parts.length === 3 && parts[2].length === 4) {
-                const day = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10);
-                const year = parseInt(parts[2], 10);
-                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                    const date = new Date(Date.UTC(year, month - 1, day));
-                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-                        return date;
-                    }
-                }
-            }
+            // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
+            parts = dateStr.split(/[-/]/);
+            if (parts.length === 3 && parts[2].length === 4) {
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                const year = parseInt(parts[2], 10);
+                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                    const date = new Date(Date.UTC(year, month - 1, day));
+                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                        return date;
+                    }
+                }
+            }
 
-            return null;
-        };
+            return null;
+        };
 
-        // --- Seletores de Elementos ---
-        const fileAtividadesInput = document.getElementById('file-atividades'),
-            fileClientesInput = document.getElementById('file-clientes');
-        const selectCS = document.getElementById('select-cs'),
-            selectSegmento = document.getElementById('select-segmento');
-        const selectMonth = document.getElementById('select-month'),
-            selectYear = document.getElementById('select-year');
-        const selectPeriod = document.getElementById('select-period');
-        const onboardingToggle = document.getElementById('include-onboarding-toggle');
-        const statusMessage = document.getElementById('status-message'),
-            dashboard = document.getElementById('dashboard');
-        const periodView = document.getElementById('period-view');
-        const okrGrid = document.getElementById('okr-grid-container'),
-            generalGrid = document.getElementById('general-indicators-grid');
-        const playbookGrid = document.getElementById('playbooks-grid'),
-            okrTitleHeader = document.getElementById('okr-title-header');
-        const tabsContainer = document.querySelector('.tabs');
-        const detailsModal = document.getElementById('details-modal'),
-            settingsModal = document.getElementById('settings-modal'),
-            client360Modal = document.getElementById('client-360-modal');
-        const anotacaoModal = document.getElementById('anotacao-modal');
+        // --- Seletores de Elementos ---
+        const fileAtividadesInput = document.getElementById('file-atividades'),
+            fileClientesInput = document.getElementById('file-clientes');
+        const selectCS = document.getElementById('select-cs'),
+            selectSegmento = document.getElementById('select-segmento');
+        const selectMonth = document.getElementById('select-month'),
+            selectYear = document.getElementById('select-year');
+        const selectPeriod = document.getElementById('select-period');
+        const onboardingToggle = document.getElementById('include-onboarding-toggle');
+        const statusMessage = document.getElementById('status-message'),
+            dashboard = document.getElementById('dashboard');
+        const periodView = document.getElementById('period-view');
+        const okrGrid = document.getElementById('okr-grid-container'),
+            generalGrid = document.getElementById('general-indicators-grid');
+        const playbookGrid = document.getElementById('playbooks-grid'),
+            okrTitleHeader = document.getElementById('okr-title-header');
+        const tabsContainer = document.querySelector('.tabs');
+        const detailsModal = document.getElementById('details-modal'),
+            settingsModal = document.getElementById('settings-modal'),
+            client360Modal = document.getElementById('client-360-modal');
+        const anotacaoModal = document.getElementById('anotacao-modal');
 
         // --- Seletores da Nova Seção de Onboarding ---
         const onboardingDashboard = document.getElementById('onboarding-dashboard');
@@ -1792,7 +1793,6 @@
                 const excelTimestamp = (serial - 25569) * 86400 * 1000;
                 return new Date(excelTimestamp);
             }
-            }
 
             const transpilePipeToCommaCSV = (pipeText) => {
                 let inQuotes = false;
