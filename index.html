@@ -1799,74 +1799,78 @@
 
         const readFile = (file) => new Promise((resolve, reject) => {
 
-            const excelSerialToDateObject = (serial) => {
-                const excelTimestamp = (serial - 25569) * 86400 * 1000;
-                return new Date(excelTimestamp);
-            }
+    // Função "mágica" do seu código antigo que resolve o problema
+    const excelSerialToDateObject = (serial) => {
+        const excelTimestamp = (serial - 25569) * 86400 * 1000;
+        const date = new Date(excelTimestamp);
+        const timezoneOffset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() + timezoneOffset);
+    }
 
-            const transpilePipeToCommaCSV = (pipeText) => {
-                let inQuotes = false;
-                let newCsvText = '';
-                for (let i = 0; i < pipeText.length; i++) {
-                    const char = pipeText[i];
-                    if (char === '"') inQuotes = !inQuotes;
-                    newCsvText += (char === '|' && !inQuotes) ? ',' : char;
-                }
-                return newCsvText;
-            };
+    const transpilePipeToCommaCSV = (pipeText) => {
+        let inQuotes = false;
+        let newCsvText = '';
+        for (let i = 0; i < pipeText.length; i++) {
+            const char = pipeText[i];
+            if (char === '"') inQuotes = !inQuotes;
+            newCsvText += (char === '|' && !inQuotes) ? ',' : char;
+        }
+        return newCsvText;
+    };
 
-            const reader = new FileReader();
+    const reader = new FileReader();
 
-            reader.onload = (event) => {
-                try {
-                    const data = event.target.result;
-                    const fileName = file.name.toLowerCase();
-                    let workbook;
+    reader.onload = (event) => {
+        try {
+            const data = event.target.result;
+            const fileName = file.name.toLowerCase();
+            let workbook;
 
-                    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                        workbook = XLSX.read(data, {
-                            type: 'array',
-                            cellDates: true
-                        });
-                    } else {
-                        const standardCsvText = transpilePipeToCommaCSV(data);
-                        workbook = XLSX.read(standardCsvText, {
-                            type: 'string'
-                        });
-                    }
-
-                    const sheetName = workbook.SheetNames[0];
-                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-                        defval: ""
-                    });
-
-                    const dateColumns = ["Criado em", "Previsão de conclusão", "Concluída em"];
-
-                    jsonData.forEach(row => {
-                        dateColumns.forEach(colName => {
-                            if (row[colName] && typeof row[colName] === 'number') {
-                                row[colName] = excelSerialToDateObject(row[colName]);
-                            }
-                        });
-                    });
-
-                    resolve(jsonData);
-
-                } catch (e) {
-                    reject(new Error("Não foi possível processar o arquivo. Verifique se não está corrompido."));
-                }
-            };
-
-            reader.onerror = (error) => {
-                reject(new Error("Ocorreu um erro de hardware ou permissão ao tentar ler o arquivo."));
-            };
-
-            if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
-                reader.readAsArrayBuffer(file);
+            // Aqui usamos cellDates: false (ou removemos a opção) para garantir
+            // que a nossa função `excelSerialToDateObject` seja usada.
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                workbook = XLSX.read(data, { type: 'array' });
             } else {
-                reader.readAsText(file, 'UTF-8');
+                const standardCsvText = transpilePipeToCommaCSV(data);
+                workbook = XLSX.read(standardCsvText, { type: 'string' });
             }
-        });
+
+            const sheetName = workbook.SheetNames[0];
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
+
+            const dateColumns = ["Criado em", "Previsão de conclusão", "Concluída em"];
+
+            // Este loop agora usa a função correta para todas as colunas de data
+            jsonData.forEach(row => {
+                dateColumns.forEach(colName => {
+                    if (row[colName]) {
+                        if (typeof row[colName] === 'number') {
+                            row[colName] = excelSerialToDateObject(row[colName]);
+                        } else if (typeof row[colName] === 'string') {
+                            // Se for texto, usa a função parseDate que já ajustamos
+                            row[colName] = parseDate(row[colName]); 
+                        }
+                    }
+                });
+            });
+
+            resolve(jsonData);
+
+        } catch (e) {
+            reject(new Error("Não foi possível processar o arquivo. Verifique se não está corrompido."));
+        }
+    };
+
+    reader.onerror = (error) => {
+        reject(new Error("Ocorreu um erro de hardware ou permissão ao tentar ler o arquivo."));
+    };
+
+    if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+        reader.readAsArrayBuffer(file);
+    } else {
+        reader.readAsText(file, 'UTF-8');
+    }
+});
 
         const buildCsToSquadMap = () => {
             const allCSs = [...new Set(rawClients.map(c => c.CS).filter(Boolean))];
@@ -2270,7 +2274,8 @@ const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()
 
             const startOfPeriod = new Date(Date.UTC(year, month, 1));
 
-            const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
+            // DEVE ESTAR ASSIM (sem UTC):
+const isConcludedInPeriod = (item) => item.ConcluidaEm?.getMonth() === month && item.ConcluidaEm?.getFullYear() === year;
 
             const isPredictedForPeriod = (activity) => {
                 const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
