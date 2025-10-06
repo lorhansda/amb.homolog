@@ -1683,44 +1683,42 @@
         const parseDate = (dateInput) => {
     if (!dateInput) return null;
 
-    // --- INÍCIO DA CORREÇÃO ---
+    // 1. Se for um objeto Date (do XLSX), neutraliza o fuso horário
     if (dateInput instanceof Date && !isNaN(dateInput)) {
-        // Se for um objeto Date (vindo do XLSX), extraia seus componentes
-        // e crie um novo objeto Date em UTC para ignorar o fuso horário.
         const year = dateInput.getFullYear();
-        const month = dateInput.getMonth(); // getMonth() já retorna 0-11
+        const month = dateInput.getMonth();
         const day = dateInput.getDate();
         return new Date(Date.UTC(year, month, day));
     }
-    // --- FIM DA CORREÇÃO ---
 
-    if (dateInput instanceof Date) return dateInput; // Mantém como fallback, caso a data seja inválida
-
+    // 2. Se for um texto (string), primeiro remove qualquer informação de horário
     const dateStr = String(dateInput).trim();
+    const dateOnlyStr = dateStr.split(' ')[0]; // <-- PONTO CHAVE DA CORREÇÃO
 
+    // 3. Tenta analisar o texto que contém apenas a data
     // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
-    let parts = dateStr.split(/[-/]/);
+    let parts = dateOnlyStr.split(/[-/]/);
     if (parts.length === 3 && parts[0].length === 4) {
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10);
         const day = parseInt(parts[2], 10);
         if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
             const date = new Date(Date.UTC(year, month - 1, day));
-            if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+             if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
                 return date;
             }
         }
     }
 
     // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
-    parts = dateStr.split(/[-/]/);
+    parts = dateOnlyStr.split(/[-/]/);
     if (parts.length === 3 && parts[2].length === 4) {
         const day = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10);
         const year = parseInt(parts[2], 10);
         if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
             const date = new Date(Date.UTC(year, month - 1, day));
-            if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+             if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
                 return date;
             }
         }
@@ -2488,6 +2486,7 @@ const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()
             );
 
             const selectedQuarter = Math.floor(month / 3);
+// Deve estar assim (com getUTCMonth e getUTCFullYear)
 const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getUTCMonth() / 3) === selectedQuarter && item.ConcluidaEm.getUTCFullYear() === year;
             const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
@@ -2710,7 +2709,8 @@ const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.Concl
                 }
 
                 const activitiesByCS = (selectedCS === 'Todos') ? rawActivities : rawActivities.filter(a => (a['Responsável'] || '').trim() === selectedCS);
-                const concludedInPeriodActivities = activitiesByCS.filter(a => a.ConcluidaEm?.getUTCMonth() === mesSelecionado && a.ConcluidaEm?.getUTCFullYear() === anoSelecionado);
+                // Deve estar assim (com getUTCMonth e getUTCFullYear)
+const concludedInPeriodActivities = activitiesByCS.filter(a => a.ConcluidaEm?.getUTCMonth() === mesSelecionado && a.ConcluidaEm?.getUTCFullYear() === anoSelecionado);
                 const divergentActivities = concludedInPeriodActivities.filter(a => {
                     return a.CS && a.CS.trim() !== selectedCS && selectedCS !== 'Todos';
                 });
