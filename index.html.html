@@ -2488,7 +2488,7 @@ const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()
             );
 
             const selectedQuarter = Math.floor(month / 3);
-            const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getMonth() / 3) === selectedQuarter && item.ConcluidaEm.getFullYear() === year;
+const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getUTCMonth() / 3) === selectedQuarter && item.ConcluidaEm.getUTCFullYear() === year;
             const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
             metrics['total-labs-eligible'] = clients.length;
