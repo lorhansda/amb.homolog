@@ -1681,41 +1681,53 @@
         };
 
         const parseDate = (dateInput) => {
-            if (!dateInput) return null;
-            if (dateInput instanceof Date) return dateInput;
+    if (!dateInput) return null;
 
-            const dateStr = String(dateInput).trim();
+    // --- INÍCIO DA CORREÇÃO ---
+    if (dateInput instanceof Date && !isNaN(dateInput)) {
+        // Se for um objeto Date (vindo do XLSX), extraia seus componentes
+        // e crie um novo objeto Date em UTC para ignorar o fuso horário.
+        const year = dateInput.getFullYear();
+        const month = dateInput.getMonth(); // getMonth() já retorna 0-11
+        const day = dateInput.getDate();
+        return new Date(Date.UTC(year, month, day));
+    }
+    // --- FIM DA CORREÇÃO ---
 
-            // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
-            let parts = dateStr.split(/[-/]/);
-            if (parts.length === 3 && parts[0].length === 4) {
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10);
-                const day = parseInt(parts[2], 10);
-                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                    const date = new Date(Date.UTC(year, month - 1, day));
-                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-                        return date;
-                    }
-                }
-            }
+    if (dateInput instanceof Date) return dateInput; // Mantém como fallback, caso a data seja inválida
 
-            // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
-            parts = dateStr.split(/[-/]/);
-            if (parts.length === 3 && parts[2].length === 4) {
-                const day = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10);
-                const year = parseInt(parts[2], 10);
-                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                    const date = new Date(Date.UTC(year, month - 1, day));
-                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-                        return date;
-                    }
-                }
-            }
+    const dateStr = String(dateInput).trim();
 
-            return null;
-        };
+    // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
+    let parts = dateStr.split(/[-/]/);
+    if (parts.length === 3 && parts[0].length === 4) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const day = parseInt(parts[2], 10);
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            const date = new Date(Date.UTC(year, month - 1, day));
+            if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                return date;
+            }
+        }
+    }
+
+    // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
+    parts = dateStr.split(/[-/]/);
+    if (parts.length === 3 && parts[2].length === 4) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            const date = new Date(Date.UTC(year, month - 1, day));
+            if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                return date;
+            }
+        }
+    }
+
+    return null;
+};
 
         // --- Seletores de Elementos ---
         const fileAtividadesInput = document.getElementById('file-atividades'),
