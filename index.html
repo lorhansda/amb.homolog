@@ -3219,25 +3219,38 @@ const concludedInPeriodActivities = activitiesByCS.filter(a => a.ConcluidaEm?.ge
                 `;
             }
 
-            const cardTiposDeContato = `
-            <div class="card">
-                <h3>Tipos de Contato (Mês)</h3>
-                <div class="card-content">
-                    <div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião">
-                        <span class="metric-label">📞 Ligação/Reunião (CS):</span>
-                        <span class="metric-value">
-                            ${(dataStore['contato-ligacao'] || []).length} 
-                            <span class="sub-metric" title="${(dataStore['ligacoes-classificadas'] || []).length} destes contatos foram classificados como 'Engajado' ou 'Desengajado'">
-                                (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacoes-classificadas'] || []).length})
-                            </span>
-                            </span>
-                    </div>
-                    <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
-                        <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${(dataStore['contato-email'] || []).length}</span>
-                    </div>
-                    ${onboardingMetricHtml}
-                </div>
-            </div>`;
+            // ▼▼▼ COLE ESTE NOVO BLOCO NO LUGAR ▼▼▼
+
+// 1. CALCULAR TOTAIS E PERCENTUAIS
+const totalLigacoes = (dataStore['contato-ligacao'] || []).length;
+const totalEmails = (dataStore['contato-email'] || []).length;
+const totalCsContacts = totalLigacoes + totalEmails;
+
+const percLigacao = totalCsContacts > 0 ? ((totalLigacoes / totalCsContacts) * 100).toFixed(0) : 0;
+const percEmail = totalCsContacts > 0 ? ((totalEmails / totalCsContacts) * 100).toFixed(0) : 0;
+
+// 2. GERAR O HTML DO CARD COM OS NOVOS VALORES
+const cardTiposDeContato = `
+<div class="card">
+    <h3>Tipos de Contato (Mês)</h3>
+    <div class="card-content">
+        <div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião">
+            <span class="metric-label">📞 Ligação/Reunião (CS):</span>
+            <span class="metric-value">
+                ${totalLigacoes} <span class="sub-metric">(${percLigacao}%)</span>
+                <span class="sub-metric" title="${(dataStore['ligacoes-classificadas'] || []).length} destes contatos foram classificados como 'Engajado' ou 'Desengajado'">
+                    (<i class="fas fa-check-double" style="color: var(--secondary-color);"></i> ${(dataStore['ligacoes-classificadas'] || []).length})
+                </span>
+            </span>
+        </div>
+        <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
+            <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span>
+            <span class="metric-value">${totalEmails} <span class="sub-metric">(${percEmail}%)</span></span>
+        </div>
+        ${onboardingMetricHtml}
+    </div>
+</div>`;
+// ▲▲▲ COLE ESTE NOVO BLOCO NO LUGAR ▲▲▲
 
             generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
 
