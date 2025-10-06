@@ -2335,54 +2335,74 @@
                 metrics[`${key}-realizado`] = totalRealizadoList.filter(a => !isOverdue(a));
             }
 
-            const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
-            const isCountableContact = (a) => {
-                const activityType = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
-                const activityName = normalizeText(a.Atividade || '');
-                return !activityName.includes('regra') && (validContactKeywords.some(type => activityType.includes(type)) || activityName.startsWith('whatsapp octadesk'));
-            };
+            // --- INÍCIO DA LÓGICA DE CONTATOS COM PRIORIZAÇÃO ---
 
-            const csContactActivities = csRealizedActivities.filter(isCountableContact);
-            const onboardingContactActivities = onboardingRealizedActivities.filter(isCountableContact);
+// 1. Define as palavras-chave para cada categoria de contato.
+const callKeywords = ['ligacao', 'reuniao', 'call'];
+const emailKeywords = ['e-mail', 'whatsapp'];
 
-            let contactsForCoverage = [...csContactActivities];
-            if (includeOnboarding) {
-                contactsForCoverage = [...contactsForCoverage, ...onboardingContactActivities];
-            }
-            const uniqueClientContactsMap = new Map();
-            contactsForCoverage.forEach(activity => uniqueClientContactsMap.set(activity.ClienteCompleto, activity));
-            metrics['cob-carteira'] = Array.from(uniqueClientContactsMap.values());
+// 2. Define uma função para verificar se uma atividade é um contato válido.
+const isCountableContact = (a) => {
+    const activityType = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
+    const activityName = normalizeText(a.Atividade || '');
+    // Retorna true se for um tipo de contato válido E não for uma atividade de 'regra'
+    return !activityName.includes('regra') && (
+        callKeywords.some(k => activityType.includes(k)) ||
+        emailKeywords.some(k => activityType.includes(k))
+    );
+};
 
-            const callKeywords = ['ligacao', 'reuniao', 'call sponsor'];
-            const emailKeywords = ['e-mail', 'whatsapp'];
-            const prioritizedCsContacts = new Map();
-            csContactActivities.forEach(activity => {
-                const clientKey = activity.ClienteCompleto;
-                if (!clientKey) return;
-                const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || activity['Tipo']);
-                let currentCategory = '';
-                if (callKeywords.some(k => activityType.includes(k))) currentCategory = 'call';
-                else if (emailKeywords.some(k => activityType.includes(k))) currentCategory = 'email';
-                if (currentCategory === 'call') prioritizedCsContacts.set(clientKey, {
-                    activity,
-                    category: 'call'
-                });
-                else if (currentCategory === 'email' && (!prioritizedCsContacts.has(clientKey) || prioritizedCsContacts.get(clientKey).category !== 'call')) prioritizedCsContacts.set(clientKey, {
-                    activity,
-                    category: 'email'
-                });
-            });
-            const finalCsContactList = Array.from(prioritizedCsContacts.values());
-            metrics['contato-ligacao'] = finalCsContactList.filter(item => item.category === 'call').map(item => item.activity);
-            metrics['contato-email'] = finalCsContactList.filter(item => item.category === 'email').map(item => item.activity);
+// 3. Filtra apenas os contatos válidos realizados pelo CS no período.
+const csContactActivities = csRealizedActivities.filter(isCountableContact);
 
-            const prioritizedOnboardingContacts = new Map();
-            onboardingContactActivities.forEach(activity => {
-                const clientKey = activity.ClienteCompleto;
-                if (!clientKey) return;
-                prioritizedOnboardingContacts.set(clientKey, activity);
-            });
-            metrics['onboarding-contacts-display'] = Array.from(prioritizedOnboardingContacts.values());
+// 4. Cria um mapa para garantir que cada cliente seja contado apenas uma vez, com prioridade.
+// A chave do mapa é o nome do cliente, e o valor é o contato de maior prioridade.
+const prioritizedClientContacts = new Map();
+
+csContactActivities.forEach(activity => {
+    const clientKey = activity.ClienteCompleto;
+    if (!clientKey) return; // Pula atividades sem cliente associado
+
+    const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || activity['Tipo']);
+
+    // Define a categoria do contato atual: 'call' ou 'email'.
+    let currentCategory = '';
+    if (callKeywords.some(k => activityType.includes(k))) {
+        currentCategory = 'call';
+    } else if (emailKeywords.some(k => activityType.includes(k))) {
+        currentCategory = 'email';
+    }
+
+    // REGRA DE PRIORIDADE:
+    // Se a categoria for 'call', ela sempre substitui qualquer contato anterior para aquele cliente.
+    if (currentCategory === 'call') {
+        prioritizedClientContacts.set(clientKey, { activity, category: 'call' });
+    }
+    // Se for 'email', só é adicionada se o cliente ainda não tiver um contato de 'call' registrado.
+    else if (currentCategory === 'email' && (!prioritizedClientContacts.has(clientKey) || prioritizedClientContacts.get(clientKey).category !== 'call')) {
+        prioritizedClientContacts.set(clientKey, { activity, category: 'email' });
+    }
+});
+
+// 5. Converte o mapa de contatos únicos de volta para uma lista.
+const finalContactList = Array.from(prioritizedClientContacts.values());
+
+// 6. Separa a lista final nas duas métricas que os cards irão usar.
+metrics['contato-ligacao'] = finalContactList.filter(item => item.category === 'call').map(item => item.activity);
+metrics['contato-email'] = finalContactList.filter(item => item.category === 'email').map(item => item.activity);
+
+// 7. A métrica de "Cobertura de Carteira" usa a soma de ambos os tipos de contato únicos.
+metrics['cob-carteira'] = [...metrics['contato-ligacao'], ...metrics['contato-email']];
+
+// 8. Lógica para contatos de Onboarding (permanece separada e contando 1 por cliente)
+const onboardingContactActivities = onboardingRealizedActivities.filter(isCountableContact);
+const uniqueOnboardingContacts = new Map();
+ onboardingContactActivities.forEach(activity => {
+    uniqueOnboardingContacts.set(activity.ClienteCompleto, activity);
+});
+metrics['onboarding-contacts-display'] = Array.from(uniqueOnboardingContacts.values());
+
+// --- FIM DA LÓGICA DE CONTATOS ---
 
             // --- INÍCIO DAS NOVAS MÉTRICAS DE CLASSIFICAÇÃO ---
             const allCallsAndMeetings = metrics['contato-ligacao'] || [];
