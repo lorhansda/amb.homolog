@@ -1455,6 +1455,8 @@
 
         </div> </div> <script>
     // --- SCRIPT DE LIMPEZA FORÇADA E CONTROLE DE VERSÃO ---
+    <script>
+    // --- SCRIPT DE LIMPEZA FORÇADA E CONTROLE DE VERSÃO ---
     document.addEventListener('DOMContentLoaded', () => {
         const clearButton = document.getElementById('force-clear-button');
 
@@ -1672,72 +1674,72 @@
         const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const getQuarter = (date) => Math.floor(date.getMonth() / 3);
         const formatDate = (date) => {
-            if (!(date instanceof Date) || isNaN(date)) return '';
-            // CORREÇÃO JÁ APLICADA AQUI:
-            const day = String(date.getUTCDate()).padStart(2, '0');
-            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-            const year = date.getUTCFullYear();
-            return `${day}/${month}/${year}`;
-        };
+            if (!(date instanceof Date) || isNaN(date)) return '';
+            // CORREÇÃO JÁ APLICADA AQUI:
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = date.getUTCFullYear();
+            return `${day}/${month}/${year}`;
+        };
 
-        const parseDate = (dateInput) => {
-            if (!dateInput) return null;
-            if (dateInput instanceof Date) return dateInput;
+        const parseDate = (dateInput) => {
+            if (!dateInput) return null;
+            if (dateInput instanceof Date) return dateInput;
 
-            const dateStr = String(dateInput).trim();
+            const dateStr = String(dateInput).trim();
 
-            // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
-            let parts = dateStr.split(/[-/]/);
-            if (parts.length === 3 && parts[0].length === 4) {
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10);
-                const day = parseInt(parts[2], 10);
-                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                    const date = new Date(Date.UTC(year, month - 1, day));
-                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-                        return date;
-                    }
-                }
-            }
+            // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
+            let parts = dateStr.split(/[-/]/);
+            if (parts.length === 3 && parts[0].length === 4) {
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                const day = parseInt(parts[2], 10);
+                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                    const date = new Date(Date.UTC(year, month - 1, day));
+                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                        return date;
+                    }
+                }
+            }
 
-            // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
-            parts = dateStr.split(/[-/]/);
-            if (parts.length === 3 && parts[2].length === 4) {
-                const day = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10);
-                const year = parseInt(parts[2], 10);
-                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                    const date = new Date(Date.UTC(year, month - 1, day));
-                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-                        return date;
-                    }
-                }
-            }
+            // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
+            parts = dateStr.split(/[-/]/);
+            if (parts.length === 3 && parts[2].length === 4) {
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                const year = parseInt(parts[2], 10);
+                if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                    const date = new Date(Date.UTC(year, month - 1, day));
+                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                        return date;
+                    }
+                }
+            }
 
-            return null;
-        };
+            return null;
+        };
 
-        // --- Seletores de Elementos ---
-        const fileAtividadesInput = document.getElementById('file-atividades'),
-            fileClientesInput = document.getElementById('file-clientes');
-        const selectCS = document.getElementById('select-cs'),
-            selectSegmento = document.getElementById('select-segmento');
-        const selectMonth = document.getElementById('select-month'),
-            selectYear = document.getElementById('select-year');
-        const selectPeriod = document.getElementById('select-period');
-        const onboardingToggle = document.getElementById('include-onboarding-toggle');
-        const statusMessage = document.getElementById('status-message'),
-            dashboard = document.getElementById('dashboard');
-        const periodView = document.getElementById('period-view');
-        const okrGrid = document.getElementById('okr-grid-container'),
-            generalGrid = document.getElementById('general-indicators-grid');
-        const playbookGrid = document.getElementById('playbooks-grid'),
-            okrTitleHeader = document.getElementById('okr-title-header');
-        const tabsContainer = document.querySelector('.tabs');
-        const detailsModal = document.getElementById('details-modal'),
-            settingsModal = document.getElementById('settings-modal'),
-            client360Modal = document.getElementById('client-360-modal');
-        const anotacaoModal = document.getElementById('anotacao-modal');
+        // --- Seletores de Elementos ---
+        const fileAtividadesInput = document.getElementById('file-atividades'),
+            fileClientesInput = document.getElementById('file-clientes');
+        const selectCS = document.getElementById('select-cs'),
+            selectSegmento = document.getElementById('select-segmento');
+        const selectMonth = document.getElementById('select-month'),
+            selectYear = document.getElementById('select-year');
+        const selectPeriod = document.getElementById('select-period');
+        const onboardingToggle = document.getElementById('include-onboarding-toggle');
+        const statusMessage = document.getElementById('status-message'),
+            dashboard = document.getElementById('dashboard');
+        const periodView = document.getElementById('period-view');
+        const okrGrid = document.getElementById('okr-grid-container'),
+            generalGrid = document.getElementById('general-indicators-grid');
+        const playbookGrid = document.getElementById('playbooks-grid'),
+            okrTitleHeader = document.getElementById('okr-title-header');
+        const tabsContainer = document.querySelector('.tabs');
+        const detailsModal = document.getElementById('details-modal'),
+            settingsModal = document.getElementById('settings-modal'),
+            client360Modal = document.getElementById('client-360-modal');
+        const anotacaoModal = document.getElementById('anotacao-modal');
 
         // --- Seletores da Nova Seção de Onboarding ---
         const onboardingDashboard = document.getElementById('onboarding-dashboard');
@@ -1970,7 +1972,7 @@
         };
 
         let atividadesFile, clientesFile;
-        
+
         const attemptProcess = () => {
             if (atividadesFile && clientesFile) {
                 statusMessage.textContent = 'Lendo arquivos...';
@@ -2335,74 +2337,73 @@
                 metrics[`${key}-realizado`] = totalRealizadoList.filter(a => !isOverdue(a));
             }
 
-            // --- INÍCIO DA LÓGICA DE CONTATOS COM PRIORIZAÇÃO ---
+            // ####################################################################
+            // ########## INÍCIO DO BLOCO DE CÓDIGO CORRIGIDO #####################
+            // ####################################################################
+            
+            // 1. Define as palavras-chave para cada categoria de contato.
+            const callKeywords = ['ligacao', 'reuniao', 'call', 'call sponsor'];
+            const emailKeywords = ['e-mail', 'whatsapp'];
 
-// 1. Define as palavras-chave para cada categoria de contato.
-const callKeywords = ['ligacao', 'reuniao', 'call'];
-const emailKeywords = ['e-mail', 'whatsapp'];
+            // 2. Define uma função para verificar se uma atividade é um contato válido.
+            const isCountableContact = (a) => {
+                const activityType = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
+                const activityName = normalizeText(a.Atividade || '');
+                // Retorna true se for um tipo de contato válido E não for uma atividade de 'regra'
+                return !activityName.includes('regra') && (
+                    callKeywords.some(k => activityType.includes(k)) ||
+                    emailKeywords.some(k => activityType.includes(k)) ||
+                    activityName.startsWith('whatsapp octadesk')
+                );
+            };
 
-// 2. Define uma função para verificar se uma atividade é um contato válido.
-const isCountableContact = (a) => {
-    const activityType = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
-    const activityName = normalizeText(a.Atividade || '');
-    // Retorna true se for um tipo de contato válido E não for uma atividade de 'regra'
-    return !activityName.includes('regra') && (
-        callKeywords.some(k => activityType.includes(k)) ||
-        emailKeywords.some(k => activityType.includes(k))
-    );
-};
+            // 3. Filtra apenas os contatos válidos realizados pelo CS no período.
+            const csContactActivities = csRealizedActivities.filter(isCountableContact);
 
-// 3. Filtra apenas os contatos válidos realizados pelo CS no período.
-const csContactActivities = csRealizedActivities.filter(isCountableContact);
+            // 4. Cria um mapa para garantir que cada cliente seja contado apenas uma vez, com prioridade.
+            const prioritizedClientContacts = new Map();
 
-// 4. Cria um mapa para garantir que cada cliente seja contado apenas uma vez, com prioridade.
-// A chave do mapa é o nome do cliente, e o valor é o contato de maior prioridade.
-const prioritizedClientContacts = new Map();
+            csContactActivities.forEach(activity => {
+                const clientKey = activity.ClienteCompleto;
+                if (!clientKey) return; // Pula atividades sem cliente associado
 
-csContactActivities.forEach(activity => {
-    const clientKey = activity.ClienteCompleto;
-    if (!clientKey) return; // Pula atividades sem cliente associado
+                const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || activity['Tipo']);
 
-    const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || activity['Tipo']);
+                let currentCategory = '';
+                if (callKeywords.some(k => activityType.includes(k))) {
+                    currentCategory = 'call';
+                } else if (emailKeywords.some(k => activityType.includes(k)) || normalizeText(activity.Atividade || '').startsWith('whatsapp octadesk')) {
+                    currentCategory = 'email';
+                }
 
-    // Define a categoria do contato atual: 'call' ou 'email'.
-    let currentCategory = '';
-    if (callKeywords.some(k => activityType.includes(k))) {
-        currentCategory = 'call';
-    } else if (emailKeywords.some(k => activityType.includes(k))) {
-        currentCategory = 'email';
-    }
+                if (currentCategory === 'call') {
+                    prioritizedClientContacts.set(clientKey, { activity, category: 'call' });
+                } else if (currentCategory === 'email' && (!prioritizedClientContacts.has(clientKey) || prioritizedClientContacts.get(clientKey).category !== 'call')) {
+                    prioritizedClientContacts.set(clientKey, { activity, category: 'email' });
+                }
+            });
 
-    // REGRA DE PRIORIDADE:
-    // Se a categoria for 'call', ela sempre substitui qualquer contato anterior para aquele cliente.
-    if (currentCategory === 'call') {
-        prioritizedClientContacts.set(clientKey, { activity, category: 'call' });
-    }
-    // Se for 'email', só é adicionada se o cliente ainda não tiver um contato de 'call' registrado.
-    else if (currentCategory === 'email' && (!prioritizedClientContacts.has(clientKey) || prioritizedClientContacts.get(clientKey).category !== 'call')) {
-        prioritizedClientContacts.set(clientKey, { activity, category: 'email' });
-    }
-});
+            // 5. Converte o mapa de contatos únicos de volta para uma lista.
+            const finalContactList = Array.from(prioritizedClientContacts.values());
 
-// 5. Converte o mapa de contatos únicos de volta para uma lista.
-const finalContactList = Array.from(prioritizedClientContacts.values());
+            // 6. Separa a lista final nas duas métricas que os cards irão usar.
+            metrics['contato-ligacao'] = finalContactList.filter(item => item.category === 'call').map(item => item.activity);
+            metrics['contato-email'] = finalContactList.filter(item => item.category === 'email').map(item => item.activity);
+            
+            // 7. A métrica de "Cobertura de Carteira" usa a soma de ambos os tipos de contato únicos.
+            metrics['cob-carteira'] = [...metrics['contato-ligacao'], ...metrics['contato-email']];
 
-// 6. Separa a lista final nas duas métricas que os cards irão usar.
-metrics['contato-ligacao'] = finalContactList.filter(item => item.category === 'call').map(item => item.activity);
-metrics['contato-email'] = finalContactList.filter(item => item.category === 'email').map(item => item.activity);
+            // 8. Lógica para contatos de Onboarding (permanece separada e contando 1 por cliente)
+            const onboardingContactActivities = onboardingRealizedActivities.filter(isCountableContact);
+            const uniqueOnboardingContacts = new Map();
+            onboardingContactActivities.forEach(activity => {
+                uniqueOnboardingContacts.set(activity.ClienteCompleto, activity);
+            });
+            metrics['onboarding-contacts-display'] = Array.from(uniqueOnboardingContacts.values());
 
-// 7. A métrica de "Cobertura de Carteira" usa a soma de ambos os tipos de contato únicos.
-metrics['cob-carteira'] = [...metrics['contato-ligacao'], ...metrics['contato-email']];
-
-// 8. Lógica para contatos de Onboarding (permanece separada e contando 1 por cliente)
-const onboardingContactActivities = onboardingRealizedActivities.filter(isCountableContact);
-const uniqueOnboardingContacts = new Map();
- onboardingContactActivities.forEach(activity => {
-    uniqueOnboardingContacts.set(activity.ClienteCompleto, activity);
-});
-metrics['onboarding-contacts-display'] = Array.from(uniqueOnboardingContacts.values());
-
-// --- FIM DA LÓGICA DE CONTATOS ---
+            // ####################################################################
+            // ########## FIM DO BLOCO DE CÓDIGO CORRIGIDO ########################
+            // ####################################################################
 
             // --- INÍCIO DAS NOVAS MÉTRICAS DE CLASSIFICAÇÃO ---
             const allCallsAndMeetings = metrics['contato-ligacao'] || [];
@@ -2820,7 +2821,7 @@ metrics['onboarding-contacts-display'] = Array.from(uniqueOnboardingContacts.val
             const clientsWithCompletedGoLive = new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto));
 
             clientsWithCompletedGoLive.forEach(clientKey => {
-                 const goLiveDate = goLiveActivitiesConcluded
+                const goLiveDate = goLiveActivitiesConcluded
                     .filter(a => a.ClienteCompleto === clientKey)
                     .map(a => a.ConcluidaEm)
                     .sort((a,b) => b - a)[0]; // Pega a data de Go Live mais recente
@@ -2829,7 +2830,7 @@ metrics['onboarding-contacts-display'] = Array.from(uniqueOnboardingContacts.val
 
                 if (goLiveDate && playbookStartDate) {
                     const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
-                     completedOnboardings.push({
+                    completedOnboardings.push({
                         client: clientKey,
                         duration: duration
                     });
