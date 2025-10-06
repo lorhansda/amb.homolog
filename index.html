@@ -2444,7 +2444,7 @@
                 metrics[`${key}-previsto`] = activitiesByCS_previstos.filter(filterFn).filter(isPredictedForPeriod);
             }
 
-            const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
+        
             const uniqueSmbContacts = new Map();
             smbConcluidoList.forEach(a => {
                 const status = normalizeText(a['Categoria']);
