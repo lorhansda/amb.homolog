@@ -1683,45 +1683,36 @@
         const parseDate = (dateInput) => {
     if (!dateInput) return null;
 
-    // 1. Se for um objeto Date (do XLSX), neutraliza o fuso horário
+    // Se já for um objeto Date, apenas retorna (já foi tratado pela readFile)
     if (dateInput instanceof Date && !isNaN(dateInput)) {
-        const year = dateInput.getFullYear();
-        const month = dateInput.getMonth();
-        const day = dateInput.getDate();
-        return new Date(Date.UTC(year, month, day));
+        return dateInput;
     }
 
-    // 2. Se for um texto (string), primeiro remove qualquer informação de horário
+    // Se for texto, remove a hora e processa
     const dateStr = String(dateInput).trim();
-    const dateOnlyStr = dateStr.split(' ')[0]; // <-- PONTO CHAVE DA CORREÇÃO
+    const dateOnlyStr = dateStr.split(' ')[0]; // Remove a parte da hora
 
-    // 3. Tenta analisar o texto que contém apenas a data
-    // Tenta formato AAAA-MM-DD ou AAAA/MM/DD
-    let parts = dateOnlyStr.split(/[-/]/);
-    if (parts.length === 3 && parts[0].length === 4) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10);
-        const day = parseInt(parts[2], 10);
-        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-            const date = new Date(Date.UTC(year, month - 1, day));
-             if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-                return date;
-            }
-        }
-    }
+    let parts;
 
-    // Tenta formato DD-MM-AAAA ou DD/MM/AAAA
+    // Tenta formato DD/MM/AAAA ou DD-MM-AAAA
     parts = dateOnlyStr.split(/[-/]/);
     if (parts.length === 3 && parts[2].length === 4) {
         const day = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10);
         const year = parseInt(parts[2], 10);
-        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-            const date = new Date(Date.UTC(year, month - 1, day));
-             if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-                return date;
-            }
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            return new Date(Date.UTC(year, month - 1, day));
         }
+    }
+
+    // Tenta formato AAAA-MM-DD
+    if (parts.length === 3 && parts[0].length === 4) {
+         const year = parseInt(parts[0], 10);
+         const month = parseInt(parts[1], 10);
+         const day = parseInt(parts[2], 10);
+         if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            return new Date(Date.UTC(year, month - 1, day));
+         }
     }
 
     return null;
@@ -1799,7 +1790,7 @@
 
         const readFile = (file) => new Promise((resolve, reject) => {
 
-    // Função "mágica" do seu código antigo que resolve o problema
+    // Esta função neutraliza o fuso horário do navegador, garantindo que a data seja a correta.
     const excelSerialToDateObject = (serial) => {
         const excelTimestamp = (serial - 25569) * 86400 * 1000;
         const date = new Date(excelTimestamp);
@@ -1826,8 +1817,7 @@
             const fileName = file.name.toLowerCase();
             let workbook;
 
-            // Aqui usamos cellDates: false (ou removemos a opção) para garantir
-            // que a nossa função `excelSerialToDateObject` seja usada.
+            // Alterado para não usar cellDates:true, forçando nossa função a ser usada.
             if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
                 workbook = XLSX.read(data, { type: 'array' });
             } else {
@@ -1840,15 +1830,16 @@
 
             const dateColumns = ["Criado em", "Previsão de conclusão", "Concluída em"];
 
-            // Este loop agora usa a função correta para todas as colunas de data
             jsonData.forEach(row => {
                 dateColumns.forEach(colName => {
                     if (row[colName]) {
+                        // Se a data vier como número (serial do Excel), usamos a função de correção.
                         if (typeof row[colName] === 'number') {
                             row[colName] = excelSerialToDateObject(row[colName]);
-                        } else if (typeof row[colName] === 'string') {
-                            // Se for texto, usa a função parseDate que já ajustamos
-                            row[colName] = parseDate(row[colName]); 
+                        }
+                        // Se vier como texto (ex: CSV), usamos a função parseDate.
+                        else {
+                            row[colName] = parseDate(row[colName]);
                         }
                     }
                 });
@@ -1857,7 +1848,8 @@
             resolve(jsonData);
 
         } catch (e) {
-            reject(new Error("Não foi possível processar o arquivo. Verifique se não está corrompido."));
+            console.error("Erro detalhado no processamento do arquivo:", e);
+            reject(new Error("Não foi possível processar o arquivo. Verifique o formato e se não está corrompido."));
         }
     };
 
@@ -2275,10 +2267,10 @@ const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()
             const startOfPeriod = new Date(Date.UTC(year, month, 1));
 
             // DEVE ESTAR ASSIM (sem UTC):
-const isConcludedInPeriod = (item) => item.ConcluidaEm?.getMonth() === month && item.ConcluidaEm?.getFullYear() === year;
+const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
 
-            const isPredictedForPeriod = (activity) => {
-                const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
+const isPredictedForPeriod = (activity) => {
+    const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
                 const notCompletedBeforePeriod = !activity.ConcluidaEm || activity.ConcluidaEm >= startOfPeriod;
                 return isDueInPeriod && notCompletedBeforePeriod;
             };
@@ -2296,26 +2288,31 @@ const isConcludedInPeriod = (item) => item.ConcluidaEm?.getMonth() === month && 
                 .filter(isConcludedInPeriod)
                 .filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto));
 
-            let csRealizedActivities = [];
-            let onboardingRealizedActivities = [];
+            // ▼▼▼ COLE ESTE NOVO BLOCO NO LUGAR ▼▼▼
 
-            if (selectedCS === 'Todos') {
-                allConcludedActivitiesInPortfolio.forEach(activity => {
-                    const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-                    if (clientInfo?.fase === 'onboarding') onboardingRealizedActivities.push(activity);
-                    else csRealizedActivities.push(activity);
-                });
-            } else {
-                allConcludedActivitiesInPortfolio.forEach(activity => {
-                    const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-                    const activityOwner = (activity['Responsável'] || '').trim();
-                    const isClientOnboarding = clientInfo?.fase === 'onboarding';
+let csRealizedActivities = [];
+let onboardingRealizedActivities = [];
 
-                    if (isClientOnboarding && activityOwner === selectedCS) csRealizedActivities.push(activity);
-                    else if (isClientOnboarding) onboardingRealizedActivities.push(activity);
-                    else if (activityOwner === selectedCS) csRealizedActivities.push(activity);
-                });
-            }
+allConcludedActivitiesInPortfolio.forEach(activity => {
+    const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
+    const isClientOnboarding = clientInfo?.fase === 'onboarding';
+
+    // REGRA CORRIGIDA:
+    // Se o cliente NÃO está em onboarding...
+    if (!isClientOnboarding) {
+        const activityOwner = (activity['Responsável'] || '').trim();
+        // ...a atividade conta para o CS, seja na visão "Todos" ou na visão de um CS específico.
+        if (selectedCS === 'Todos' || activityOwner === selectedCS) {
+            csRealizedActivities.push(activity);
+        }
+    }
+    // Se o cliente ESTÁ em onboarding, a atividade sempre vai para a contagem separada de onboarding.
+    else {
+        onboardingRealizedActivities.push(activity);
+    }
+});
+
+// ▲▲▲ COLE ESTE NOVO BLOCO NO LUGAR ▲▲▲
 
             const combinedRealizedActivities = [...csRealizedActivities, ...onboardingRealizedActivities];
 
