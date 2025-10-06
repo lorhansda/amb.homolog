@@ -3404,31 +3404,55 @@ const cardTiposDeContato = `
             let clientesFaltantesHtml = '';
             let distribuicaoContatosHtml = '';
 
-            if (clientesFaltantes !== null && clientesFaltantes > 0) {
-                const totalParaMeta = (dataStore['total-clientes-unicos-cs'] || 0) * (goal / 100);
-                clientesFaltantesHtml = `
-                <div class="metric overdue-metric">
-                    <span class="metric-label"><i class="fas fa-bullseye" style="color: var(--primary-color);"></i>Para a Meta:</span>
-                    <span class="metric-value" style="font-size: 1.2rem;">${Math.ceil(totalParaMeta)} clientes (${clientesFaltantes} faltantes)</span>
-                </div>
-                `;
-                let ligacaoPerc = 0.65;
-                if (selectedSegmento === 'MID/Enterprise') {
-                    ligacaoPerc = 0.75;
-                }
-                const contatosLigacaoNecessarios = Math.ceil(clientesFaltantes * ligacaoPerc);
-                const contatosEmailNecessarios = clientesFaltantes - contatosLigacaoNecessarios;
-                distribuicaoContatosHtml = `
-                <div class="metric" style="font-size: 0.9rem; padding-top: 5px; padding-bottom: 0px;">
-                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Faltante (Ligação/Reunião):</span>
-                    <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosLigacaoNecessarios}</span>
-                </div>
-                <div class="metric" style="font-size: 0.9rem; padding-top: 5px;">
-                    <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Faltante (E-mail/Whats):</span>
-                    <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${contatosEmailNecessarios}</span>
-                </div>
-                `;
-            }
+            // ▼▼▼ COLE ESTE NOVO TRECHO NO LUGAR ▼▼▼
+
+if (clientesFaltantes !== null && clientesFaltantes > 0) {
+    const totalClientesUnicosCS = dataStore['total-clientes-unicos-cs'] || 0;
+    const metaCobertura = appGoals.coverage / 100;
+    const clientesParaAtingirMeta = Math.ceil(totalClientesUnicosCS * metaCobertura);
+
+    clientesFaltantesHtml = `
+    <div class="metric overdue-metric">
+        <span class="metric-label"><i class="fas fa-bullseye" style="color: var(--primary-color);"></i>Para a Meta:</span>
+        <span class="metric-value" style="font-size: 1.2rem;">${clientesParaAtingirMeta} clientes (${clientesFaltantes} faltantes)</span>
+    </div>
+    `;
+
+    // --- INÍCIO DA NOVA LÓGICA DINÂMICA ---
+    let ligacaoPerc = 0.65;
+    if (selectedSegmento === 'MID/Enterprise') {
+        ligacaoPerc = 0.75;
+    }
+
+    // 1. Calcula o NÚMERO OBJETIVO de cada tipo de contato para atingir a meta
+    const targetLigacoes = Math.ceil(clientesParaAtingirMeta * ligacaoPerc);
+    const targetEmails = clientesParaAtingirMeta - targetLigacoes;
+
+    // 2. Pega o que JÁ FOI FEITO no mês
+    const realizadoLigacoes = (dataStore['contato-ligacao'] || []).length;
+    const realizadoEmails = (dataStore['contato-email'] || []).length;
+
+    // 3. Calcula o que FALTA (Objetivo - Realizado), garantindo que não seja negativo
+    const faltanteLigacoes = Math.max(0, targetLigacoes - realizadoLigacoes);
+    const faltanteEmails = Math.max(0, targetEmails - realizadoEmails);
+
+    // 4. Monta o HTML apenas se ainda faltar algum contato
+    if (faltanteLigacoes > 0 || faltanteEmails > 0) {
+        distribuicaoContatosHtml = `
+        <div class="metric" style="font-size: 0.9rem; padding-top: 5px; padding-bottom: 0px;">
+            <span class="metric-label" style="font-weight: 500;"><i class="fas fa-phone-alt" style="margin-right: 6px;"></i>Faltante (Ligação/Reunião):</span>
+            <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${faltanteLigacoes}</span>
+        </div>
+        <div class="metric" style="font-size: 0.9rem; padding-top: 5px;">
+            <span class="metric-label" style="font-weight: 500;"><i class="fas fa-envelope-open-text" style="margin-right: 6px;"></i>Faltante (E-mail/Whats):</span>
+            <span class="metric-value" style="font-size: 1.1rem; color: var(--primary-color);">${faltanteEmails}</span>
+        </div>
+        `;
+    }
+    // --- FIM DA NOVA LÓGICA DINÂMICA ---
+}
+
+// ▲▲▲ COLE ESTE NOVO TRECHO NO LUGAR ▲▲▲
 
             if (currentValue !== null) {
                 if (goalValue !== null) {
