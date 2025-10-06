@@ -2387,7 +2387,6 @@
             // *** CORREÇÃO #1: LÓGICA REINSERIDA AQUI ***
             // Calcula a interseção entre ligações e o playbook 'Contato Consolidado'
             const ligacaoClientSet = new Set(metrics['contato-ligacao'].map(a => a.ClienteCompleto));
-            const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
             const intersectionList = smbConcluidoList.filter(a => ligacaoClientSet.has(a.ClienteCompleto));
             metrics['ligacao-com-consolidado'] = new Set(intersectionList.map(a => a.ClienteCompleto)).size;
             // *** FIM DA CORREÇÃO #1 ***
@@ -2444,7 +2443,7 @@
                 metrics[`${key}-previsto`] = activitiesByCS_previstos.filter(filterFn).filter(isPredictedForPeriod);
             }
 
-        
+            const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
             const uniqueSmbContacts = new Map();
             smbConcluidoList.forEach(a => {
                 const status = normalizeText(a['Categoria']);
