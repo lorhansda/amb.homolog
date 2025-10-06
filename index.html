@@ -2163,8 +2163,8 @@
             const metrics = {
                 overdueActivities: {}
             };
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const now = new Date();
+const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
             const csActivities = selectedCS === 'Todos' ?
                 activities :
@@ -2710,7 +2710,7 @@
                 }
 
                 const activitiesByCS = (selectedCS === 'Todos') ? rawActivities : rawActivities.filter(a => (a['Responsável'] || '').trim() === selectedCS);
-                const concludedInPeriodActivities = activitiesByCS.filter(a => a.ConcluidaEm?.getMonth() === mesSelecionado && a.ConcluidaEm?.getFullYear() === anoSelecionado);
+                const concludedInPeriodActivities = activitiesByCS.filter(a => a.ConcluidaEm?.getUTCMonth() === mesSelecionado && a.ConcluidaEm?.getUTCFullYear() === anoSelecionado);
                 const divergentActivities = concludedInPeriodActivities.filter(a => {
                     return a.CS && a.CS.trim() !== selectedCS && selectedCS !== 'Todos';
                 });
