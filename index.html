@@ -449,34 +449,36 @@
         // --- LÓGICA DO TEMA ---
         const themeToggle = document.getElementById('theme-toggle');
         const applyTheme = (isLight) => {
-            if (isLight) {
-                document.body.classList.add('light-theme');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.body.classList.remove('light-theme');
-                localStorage.setItem('theme', 'dark');
-            }
-        };
+    if (isLight) {
+        document.body.classList.add('light-theme'); // <-- Ponto crucial
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.body.classList.remove('light-theme'); // <-- Ponto crucial
+        localStorage.setItem('theme', 'dark');
+    }
+    console.log("Tema aplicado. Classes do body:", document.body.classList); // Adicione este log
+};
 
         themeToggle.addEventListener('change', () => {
-            applyTheme(themeToggle.checked);
-            // Redesenha os gráficos com as cores do novo tema
-            if (dataStore['contatos-por-negocio']) {
-                renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio']);
-            }
-            if (dataStore['contatos-por-comercial']) {
-                renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial']);
-            }
-        });
+    console.log("Toggle mudou. Checked:", themeToggle.checked); // Adicione este log
+    applyTheme(themeToggle.checked);
+    // Redesenha os gráficos (se necessário)
+    if (dataStore['contatos-por-negocio']) { // Verifique se dataStore existe antes de usar
+         renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio']);
+    }
+    if (dataStore['contatos-por-comercial']) { // Verifique se dataStore existe antes de usar
+         renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial']);
+    }
+});
 
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light') {
-            themeToggle.checked = true;
-            applyTheme(true);
-        } else {
-            themeToggle.checked = false;
-            applyTheme(false);
-        }
+if (savedTheme === 'light') {
+    themeToggle.checked = true;
+    applyTheme(true); // Garanta que está chamando applyTheme aqui
+} else {
+    themeToggle.checked = false;
+    applyTheme(false); // E aqui também
+}
 
         // --- SELETORES DE ELEMENTOS ---
         const fileAtividadesInput = document.getElementById('file-atividades'),
@@ -2199,5 +2201,6 @@
 </script>
 
 </body>
+
 
 </html>
