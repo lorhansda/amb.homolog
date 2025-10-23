@@ -174,6 +174,14 @@ const calculateOverdueMetrics = (activities, selectedCS) => {
         }
         metrics.overdueActivities[key] = overdue.filter(filterFn);
     }
+    const clientesPorNegocio = {};
+    clientsForPeriod.forEach(client => { // 'clientsForPeriod' é a lista já filtrada de clientes
+        const negocio = client['Negócio'] || 'Não Definido'; // Pega o campo 'Negócio' do cliente
+        if (negocio) { // Garante que não é nulo ou vazio
+            clientesPorNegocio[negocio] = (clientesPorNegocio[negocio] || 0) + 1; // Incrementa a contagem para esse negócio
+        }
+    });
+    metrics['clientes-por-negocio'] = clientesPorNegocio; // Adiciona o resultado ao objeto 'metrics'
     return metrics;
 };
 
@@ -748,4 +756,5 @@ self.onmessage = (e) => {
             }
         });
     }
+
 };
