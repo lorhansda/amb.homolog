@@ -96,7 +96,7 @@ const processInitialData = () => {
         'onboarding solidworks', 'onboarding usinagem', 'onboarding hp',
         'onboarding alphacam', 'onboarding mkf', 'onboarding formlabs', 'tech journey'
     ];
-    
+
     clientOnboardingStartDate.clear(); // Limpa o mapa
 
     // Esta função agora MODIFICA o `rawActivities` global do worker
@@ -174,16 +174,9 @@ const calculateOverdueMetrics = (activities, selectedCS) => {
         }
         metrics.overdueActivities[key] = overdue.filter(filterFn);
     }
-    const clientesPorNegocio = {};
-clientsForPeriod.forEach(client => { // Agora clientsForPeriod existe neste escopo
-    const negocio = client['Negócio'] || 'Não Definido';
-    if (negocio) {
-        clientesPorNegocio[negocio] = (clientesPorNegocio[negocio] || 0) + 1;
-    }
-});
-metrics['clientes-por-negocio'] = clientesPorNegocio;
-// FIM DO BLOCO COLADO
+    // !! REMOVIDO O BLOCO INCORRETO DAQUI !!
     return metrics;
+};
 
 const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS, includeOnboarding, goals) => {
     const metrics = {};
@@ -202,6 +195,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         fase: normalizeText(cli.Fase || '')
     }]));
 
+    // ESTA É A DEFINIÇÃO CORRETA DE clientsForPeriod
     const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
 
     const allConcludedActivitiesInPortfolio = rawActivities
@@ -308,7 +302,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['ligacoes-desengajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'desengajado');
 
     metrics['total-clientes-unicos-cs'] = clientsForPeriod.length;
-    metrics['total-clientes'] = clientsForPeriod;
+    metrics['total-clientes'] = clientsForPeriod; // Guarda a lista filtrada para usar no gráfico de clientes
     const senseScores = clientsForPeriod.map(c => parseFloat(c['Sense Score'])).filter(s => !isNaN(s) && s !== null);
     metrics['sensescore-avg'] = senseScores.length > 0 ? senseScores.reduce((acc, val) => acc + val, 0) / senseScores.length : 0;
 
@@ -360,6 +354,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const clientesContatados = metrics['cob-carteira'] || [];
     const clientesContatadosComDados = clientesContatados.map(atividade => {
+        // CORREÇÃO: Usar 'clients' (todos os clientes do filtro) em vez de 'clientsForPeriod' para buscar dados
         const clienteData = clients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
         return { ...atividade,
             'Modelo de negócio': clienteData ? (clienteData['Modelo de negócio'] || 'Vazio') : 'Não encontrado',
@@ -373,13 +368,14 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const selectedQuarter = Math.floor(month / 3);
     const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getUTCMonth() / 3) === selectedQuarter && item.ConcluidaEm.getUTCFullYear() === year;
+    // CORREÇÃO: Usar 'clients' (todos os clientes do filtro) para a base do cálculo de LABS
     const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
-    metrics['total-labs-eligible'] = clients.length;
+    metrics['total-labs-eligible'] = clients.length; // Usar o total de clientes do filtro
     metrics['ska-labs-realizado-list'] = [...new Map(
         rawActivities
         .filter(isConcludedInQuarter)
         .filter(a => normalizeText(a.Atividade).includes('participou do ska labs'))
-        .filter(a => eligibleClientSet.has(a.ClienteCompleto))
+        .filter(a => eligibleClientSet.has(a.ClienteCompleto)) // Verifica se o cliente está na carteira filtrada
         .map(a => [a.ClienteCompleto, a])
     ).values()];
 
@@ -393,14 +389,15 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     });
     metrics['contatos-por-negocio'] = contatosPorNegocio;
     metrics['contatos-por-comercial'] = contatosPorComercial;
-    
+
     // --- Novos cálculos de distribuição (para o card de cobertura) ---
     const metaCobertura = (goals.coverage || 40) / 100;
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(metrics['total-clientes-unicos-cs'] * metaCobertura));
     metrics['clientes-faltantes-meta-cobertura'] = Math.max(0, clientesParaAtingirMeta - clientesContatados.length);
 
     let ligacaoPerc = 0.65; // Padrão SMB
-    if (normalizeText(clients[0]?.Segmento || '').includes('mid') || normalizeText(clients[0]?.Segmento || '').includes('enterprise')) {
+    // CORREÇÃO: Usar 'clients' (todos os clientes do filtro) para determinar o segmento predominante
+    if (clients.length > 0 && (normalizeText(clients[0].Segmento || '').includes('mid') || normalizeText(clients[0].Segmento || '').includes('enterprise'))) {
         ligacaoPerc = 0.75;
     }
     const targetLigacoes = Math.ceil(clientesParaAtingirMeta * ligacaoPerc);
@@ -409,6 +406,17 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     const realizadoEmails = (metrics['contato-email'] || []).length;
     metrics['dist-faltante-ligacao'] = Math.max(0, targetLigacoes - realizadoLigacoes);
     metrics['dist-faltante-email'] = Math.max(0, targetEmails - realizadoEmails);
+
+    // --- CÁLCULO CORRIGIDO: Distribuição de Clientes por Negócio ---
+    // Está no lugar certo agora!
+    const clientesPorNegocio = {};
+    clientsForPeriod.forEach(client => { // Usa clientsForPeriod que existe aqui
+        const negocio = client['Negócio'] || 'Não Definido';
+        if (negocio) {
+            clientesPorNegocio[negocio] = (clientesPorNegocio[negocio] || 0) + 1;
+        }
+    });
+    metrics['clientes-por-negocio'] = clientesPorNegocio;
 
     return metrics;
 };
@@ -445,7 +453,7 @@ const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClie
         const clientesContatadosCount = monthlyMetrics['cob-carteira']?.length || 0;
         const cobCarteiraPerc = totalClientsUnicosCS > 0 ? (clientesContatadosCount / totalClientsUnicosCS) * 100 : 0;
         periodMetrics.monthlyCoverages.push(cobCarteiraPerc);
-        (monthlyMetrics['total-clientes'] || []).forEach(client => periodMetrics.totalClientsInPeriod.add(client.Cliente));
+        (monthlyMetrics['total-clientes'] || []).forEach(client => periodMetrics.totalClientsInPeriod.add(client.Cliente)); // Use client.Cliente here
         playbookKeys.forEach(key => {
             periodMetrics.playbookTotals[key].previsto += (monthlyMetrics[`${key}-previsto`] || []).length;
             const realizadoNoPrazo = (monthlyMetrics[`${key}-realizado`] || []).length;
@@ -583,10 +591,10 @@ self.onmessage = (e) => {
             rawClients = payload.rawClients;
             currentUser = payload.currentUser;
             manualEmailToCsMap = payload.manualEmailToCsMap;
-            
+
             // 2. Processa e junta os dados
             processInitialData(); // Modifica rawActivities
-            
+
             // 3. Constrói o mapa de Squads
             buildCsToSquadMap();
 
@@ -611,7 +619,7 @@ self.onmessage = (e) => {
                 }
             });
         }
-        
+
         else if (type === 'CALCULATE_MONTHLY') {
             // 1. Filtra clientes baseado nos filtros de CS/Squad
             let filteredClients = rawClients;
@@ -630,7 +638,7 @@ self.onmessage = (e) => {
 
             // 2. Calcula métricas do mês atual
             const dataStore = calculateMetricsForPeriod(payload.month, payload.year, rawActivities, filteredClients, csForCalc, payload.includeOnboarding, payload.goals);
-            
+
             // 3. Calcula métricas de comparação (se necessário)
             if (payload.comparison !== 'none') {
                 let compMes = payload.month, compAno = payload.year;
@@ -641,7 +649,7 @@ self.onmessage = (e) => {
                     compAno--;
                 }
                 const comparisonMetrics = calculateMetricsForPeriod(compMes, compAno, rawActivities, filteredClients, csForCalc, payload.includeOnboarding, payload.goals);
-                
+
                 // Adiciona dados de comparação ao dataStore
                 dataStore['cob-carteira_comp_perc'] = (comparisonMetrics['cob-carteira']?.length || 0) * 100 / (comparisonMetrics['total-clientes-unicos-cs'] || 1);
                 dataStore['sensescore-avg_comp'] = comparisonMetrics['sensescore-avg'];
@@ -650,10 +658,10 @@ self.onmessage = (e) => {
 
             // 4. Calcula OKRs de Onboarding
             const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, rawClients, payload.teamView, payload.selectedISM);
-            
+
             // 5. Calcula Atividades Atrasadas
             const overdueMetrics = calculateOverdueMetrics(rawActivities, payload.selectedCS);
-            
+
             // 6. Calcula Divergência
             const concludedInPeriodActivities = rawActivities.filter(a => a.ConcluidaEm?.getUTCMonth() === payload.month && a.ConcluidaEm?.getUTCFullYear() === payload.year);
             const divergentActivities = concludedInPeriodActivities.filter(a => {
@@ -674,7 +682,7 @@ self.onmessage = (e) => {
                 }
             });
         }
-        
+
         else if (type === 'CALCULATE_PERIOD') {
             const dateRange = getPeriodDateRange(payload.period, payload.year);
             if (dateRange) {
@@ -688,14 +696,14 @@ self.onmessage = (e) => {
                 });
             }
         }
-        
+
         else if (type === 'CALCULATE_TREND') {
             const { metricId, title, type, baseMonth, baseYear, selectedCS, selectedSquad, includeOnboarding, segmento } = payload;
-            
+
             const labels = [];
             const dataPoints = [];
             const baseDate = new Date(baseYear, baseMonth, 1);
-            
+
             // Filtra clientes UMA VEZ
             let filteredClients = rawClients;
             let csForCalc = selectedCS;
@@ -739,7 +747,7 @@ self.onmessage = (e) => {
                 }
                 dataPoints.push(value.toFixed(2));
             }
-            
+
             postMessage({
                 type: 'TREND_DATA_COMPLETE',
                 payload: { labels, dataPoints, title }
@@ -756,7 +764,4 @@ self.onmessage = (e) => {
             }
         });
     }
-
 };
-
-
