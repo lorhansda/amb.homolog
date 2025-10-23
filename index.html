@@ -460,16 +460,19 @@
 };
 
         themeToggle.addEventListener('change', () => {
-    console.log("Toggle mudou. Checked:", themeToggle.checked); // Adicione este log
-    applyTheme(themeToggle.checked);
-    // Redesenha os gráficos (se necessário)
-    if (dataStore['contatos-por-negocio']) { // Verifique se dataStore existe antes de usar
-         renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio']);
-    }
-    if (dataStore['contatos-por-comercial']) { // Verifique se dataStore existe antes de usar
-         renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial']);
-    }
-});
+        applyTheme(themeToggle.checked);
+        // Redesenha os gráficos com as cores do novo tema
+        if (dataStore['contatos-por-negocio']) {
+             renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio']);
+        }
+        if (dataStore['contatos-por-comercial']) {
+             renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial']);
+        }
+        // ADICIONE ESTA CONDIÇÃO E CHAMADA
+        if (dataStore['clientes-por-negocio']) {
+             renderDoughnutChart('clientes-negocio-chart-container', 'clientesNegocioChart', 'Clientes por Negócio', dataStore['clientes-por-negocio']);
+        }
+    });
 
         const savedTheme = localStorage.getItem('theme');
 if (savedTheme === 'light') {
@@ -1274,27 +1277,43 @@ if (savedTheme === 'light') {
                         }
                     },
                     cutout: '60%',
-                    onClick: (event, elements) => {
-                        if (elements.length > 0) {
-                            const chart = event.chart;
-                            if (!chart) return;
-                            const elementIndex = elements[0].index;
-                            const label = chart.data.labels[elementIndex];
-                            const allContactedClients = dataStore['cob-carteira'] || [];
-                            let filteredData = [];
-                            let modalTitle = '';
-                            if (canvasId === 'negocioChart') {
-                                modalTitle = `Clientes Contatados | Negócio: ${label}`;
-                                filteredData = allContactedClients.filter(client => (client.Negocio || 'Não Definido') === label);
-                            } else if (canvasId === 'comercialChart') {
-                                modalTitle = `Clientes Contatados | Comercial: ${label}`;
-                                filteredData = allContactedClients.filter(client => (client.Comercial || 'Não Definido') === label);
-                            }
-                            if (filteredData.length > 0) {
-                                showDataInModal(filteredData, modalTitle);
-                            }
-                        }
-                    },
+                    // Dentro da função renderDoughnutChart, na opção onClick:...
+
+ onClick: (event, elements) => {
+     if (elements.length > 0) {
+         const chart = event.chart;
+         if (!chart) return;
+         const elementIndex = elements[0].index;
+         const label = chart.data.labels[elementIndex];
+         const allContactedClients = dataStore['cob-carteira'] || []; // Contatos
+         let filteredData = [];
+         let modalTitle = '';
+
+         if (canvasId === 'negocioChart') { // Contatos por Negócio
+             modalTitle = `Clientes Contatados | Negócio: ${label}`;
+             filteredData = allContactedClients.filter(client => (client.Negocio || 'Não Definido') === label);
+         } else if (canvasId === 'comercialChart') { // Contatos por Comercial
+             modalTitle = `Clientes Contatados | Comercial: ${label}`;
+             filteredData = allContactedClients.filter(client => (client.Comercial || 'Não Definido') === label);
+         } else if (canvasId === 'clientesNegocioChart') { // NOVO CASO: Clientes por Negócio
+             modalTitle = `Clientes da Carteira | Negócio: ${label}`;
+             // Pega a lista de clientes filtrada que o worker calculou (dataStore['total-clientes'])
+             const currentFilteredClients = dataStore['total-clientes'] || [];
+             filteredData = currentFilteredClients.filter(client => (client['Negócio'] || 'Não Definido') === label);
+             // Simplifica os dados para mostrar no modal (opcional)
+             filteredData = filteredData.map(c => ({
+                Cliente: c.Cliente,
+                CS: c.CS,
+                Segmento: c.Segmento,
+                'Sense Score': c['Sense Score'] // Adiciona Sense Score se relevante
+             }));
+         }
+
+         if (filteredData.length > 0) {
+             showDataInModal(filteredData, modalTitle);
+         }
+     }
+ }, // Fim do onClick
                     onHover: (event, chartElement) => {
                         event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
                     }
@@ -1419,12 +1438,16 @@ if (savedTheme === 'light') {
             generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
 
             const businessCommercialGrid = document.getElementById('business-commercial-grid');
-            businessCommercialGrid.innerHTML = `
-            <div id="negocio-chart-container"></div>
-            <div id="comercial-chart-container"></div>
-            `;
+    businessCommercialGrid.innerHTML = `
+        <div id="negocio-chart-container"></div>      <div id="comercial-chart-container"></div>     <div id="clientes-negocio-chart-container"></div> `;
             renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio'] || {});
             renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial'] || {});
+            renderDoughnutChart(
+        'clientes-negocio-chart-container',  // ID do container que você criou
+        'clientesNegocioChart',              // ID único para o canvas do novo gráfico
+        'Clientes por Negócio',              // Título do novo gráfico
+        dataStore['clientes-por-negocio'] || {} // Dados calculados pelo worker
+    );
 
             playbookGrid.innerHTML = `
             ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
@@ -2204,3 +2227,4 @@ if (savedTheme === 'light') {
 
 
 </html>
+
