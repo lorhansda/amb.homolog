@@ -1262,19 +1262,21 @@ if (savedTheme === 'light') {
                             onClick: customLegendClickHandler
                         },
                         tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) { label += ': '; }
-                                    if (context.parsed !== null) {
-                                        const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
-                                        const percentage = total > 0 ? (context.raw / total * 100).toFixed(1) : 0;
-                                        label += `${context.raw} contatos (${percentage}%)`;
-                                    }
-                                    return label;
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed !== null) {
+                                    const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
+                                    const percentage = total > 0 ? (context.raw / total * 100).toFixed(1) : 0;
+                                    // CONDIÇÃO ADICIONADA AQUI:
+                                    const unitLabel = context.chart.canvas.id === 'clientesNegocioChart' ? 'clientes' : 'contatos';
+                                    label += `${context.raw} ${unitLabel} (${percentage}%)`; // <-- Usa unitLabel
                                 }
+                                return label;
                             }
                         }
+                    }
                     },
                     cutout: '60%',
                     // Dentro da função renderDoughnutChart, na opção onClick:...
@@ -2227,4 +2229,5 @@ if (savedTheme === 'light') {
 
 
 </html>
+
 
