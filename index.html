@@ -1255,29 +1255,50 @@ if (savedTheme === 'light') {
                     }]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom', labels: { color: legendColor, padding: 15, boxWidth: 12, font: { size: legendFontSize } },
-                            onClick: customLegendClickHandler
-                        },
-                        tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) { label += ': '; }
-                                if (context.parsed !== null) {
-                                    const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
-                                    const percentage = total > 0 ? (context.raw / total * 100).toFixed(1) : 0;
-                                    // CONDIÇÃO ADICIONADA AQUI:
-                                    const unitLabel = context.chart.canvas.id === 'clientesNegocioChart' ? 'clientes' : 'contatos';
-                                    label += `${context.raw} ${unitLabel} (${percentage}%)`; // <-- Usa unitLabel
-                                }
-                                return label;
-                            }
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'bottom',
+            labels: { color: legendColor, padding: 15, boxWidth: 12, font: { size: legendFontSize } },
+            onClick: customLegendClickHandler
+        },
+        // SUBSTITUA TODA ESTA SEÇÃO 'tooltip':
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    let baseLabel = context.label || '';
+                    let finalLabel = baseLabel ? baseLabel + ': ' : ''; // Inicia com "Segmento: "
+
+                    if (context.parsed !== null) {
+                        const count = context.raw; // Contagem da fatia atual (contatos ou clientes)
+                        const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
+                        const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
+                        const canvasId = context.chart.canvas.id; // Pega o ID do gráfico atual
+
+                        // Lógica específica para o gráfico "Contatos por Negócio"
+                        if (canvasId === 'negocioChart') {
+                            const segmentLabel = context.label || '';
+                            // Busca a contagem TOTAL de clientes para este segmento no dataStore
+                            // dataStore['clientes-por-negocio'] foi calculado pelo worker
+                            const totalClientCountForSegment = dataStore['clientes-por-negocio'] ? (dataStore['clientes-por-negocio'][segmentLabel] || 0) : 0;
+
+                            finalLabel += `${count} contatos de ${totalClientCountForSegment} clientes (${percentage}%)`;
+                        }
+                        // Lógica para o gráfico "Clientes por Negócio"
+                        else if (canvasId === 'clientesNegocioChart') {
+                            finalLabel += `${count} clientes (${percentage}%)`;
+                        }
+                        // Lógica padrão para outros gráficos (ex: Comercial)
+                        else {
+                            finalLabel += `${count} contatos (${percentage}%)`;
                         }
                     }
-                    },
+                    return finalLabel; // Retorna a legenda formatada
+                }
+            }
+        } // FIM DA SEÇÃO 'tooltip' ATUALIZADA
+    },
                     cutout: '60%',
                     // Dentro da função renderDoughnutChart, na opção onClick:...
 
@@ -2229,5 +2250,6 @@ if (savedTheme === 'light') {
 
 
 </html>
+
 
 
