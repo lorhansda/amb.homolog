@@ -184,7 +184,6 @@ clientsForPeriod.forEach(client => { // Agora clientsForPeriod existe neste esco
 metrics['clientes-por-negocio'] = clientesPorNegocio;
 // FIM DO BLOCO COLADO
     return metrics;
-};
 
 const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS, includeOnboarding, goals) => {
     const metrics = {};
@@ -759,4 +758,5 @@ self.onmessage = (e) => {
     }
 
 };
+
 
