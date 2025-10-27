@@ -472,111 +472,196 @@ const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClie
     return periodMetrics;
 };
 
-const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, selectedISM) => {
-    const okrs = {};
-    const startOfMonth = new Date(Date.UTC(year, month, 1));
-    const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
+const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, selectedISM, processedClientsMap /* Adicionado processedClientsMap */) => { // Objeto para armazenar os resultados const okrs = {}; // Datas de início e fim do mês para filtros const startOfMonth = new Date(Date.UTC(year, month, 1)); const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)); const today = new Date(); // Para cálculo de duração de abertos
 
-    let onboardingClients = clients.filter(c => normalizeText(c.Fase) === 'onboarding');
-    if (teamView === 'syneco') {
-        onboardingClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
-    } else if (teamView === 'outros') {
-        onboardingClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
-    }
-    if (selectedISM !== 'Todos') {
-        onboardingClients = onboardingClients.filter(c => c.ISM === selectedISM);
-    }
-    okrs.filteredClients = onboardingClients;
-    const onboardingClientNames = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
+// --- 1. FILTRAGEM INICIAL POR FASE, TIME VIEW E ISM ---
+let onboardingClientsInPhase = clients.filter(c => normalizeText(c.Fase) === 'onboarding');
 
-    const onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
-    const concludedInPeriod = onboardingActivities.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
+// Filtra por Time View (Syneco/Outros/Geral)
+let clientsForTeamView = [];
+if (teamView === 'syneco') {
+    clientsForTeamView = onboardingClientsInPhase.filter(c => normalizeText(c.Cliente).includes('syneco'));
+} else if (teamView === 'outros') {
+    clientsForTeamView = onboardingClientsInPhase.filter(c => !normalizeText(c.Cliente).includes('syneco'));
+} else { // 'geral' ou se não especificado
+    clientsForTeamView = [...onboardingClientsInPhase];
+}
 
-    const goLiveActivitiesConcluded = concludedInPeriod.filter(a => normalizeText(a.Atividade).includes('go live'));
-    const goLiveActivitiesPredicted = onboardingActivities.filter(a =>
-        normalizeText(a.Atividade).includes('go live') &&
-        !a.ConcluidaEm &&
-        a.PrevisaoConclusao >= startOfMonth &&
-        a.PrevisaoConclusao <= endOfMonth
-    );
-    okrs.goLiveActivitiesConcluded = goLiveActivitiesConcluded;
-    okrs.goLiveActivitiesPredicted = goLiveActivitiesPredicted;
+// Filtra por ISM selecionado (se não for 'Todos')
+let filteredOnboardingClients = [];
+if (selectedISM && selectedISM !== 'Todos') {
+    filteredOnboardingClients = clientsForTeamView.filter(c => c.ISM === selectedISM);
+} else {
+    filteredOnboardingClients = [...clientsForTeamView]; // Usa todos do Time View
+}
+// Guarda a lista final de clientes filtrados (pode ser útil)
+okrs.filteredClients = filteredOnboardingClients;
+const filteredOnboardingClientNames = new Set(filteredOnboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
-    const clientsWithGoLive = [...new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto))];
-    const clientsWithGoLiveAndNPSData = onboardingClients.filter(c => clientsWithGoLive.includes((c.Cliente || '').trim().toLowerCase()));
-    okrs.clientsWithGoLive = clientsWithGoLiveAndNPSData;
-    okrs.npsResponded = clientsWithGoLiveAndNPSData.filter(c => c.NPSOnboarding && String(c.NPSOnboarding).trim() !== '');
-    okrs.highValueClients = onboardingClients.filter(c => c.ValorNaoFaturado > 50000);
+// Filtra as atividades APENAS para os clientes selecionados
+const filteredOnboardingActivities = activities.filter(a => filteredOnboardingClientNames.has(a.ClienteCompleto));
+// Filtra atividades concluídas DENTRO do mês selecionado
+const concludedInPeriod = filteredOnboardingActivities.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
 
-    const completedOnboardings = [];
-    const clientsWithCompletedGoLive = new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto));
-    clientsWithCompletedGoLive.forEach(clientKey => {
-        const goLiveDate = goLiveActivitiesConcluded
-            .filter(a => a.ClienteCompleto === clientKey)
-            .map(a => a.ConcluidaEm)
-            .sort((a,b) => b - a)[0];
-        const playbookStartDate = clientOnboardingStartDate.get(clientKey);
-        if (goLiveDate && playbookStartDate) {
-            const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
-            completedOnboardings.push({ client: clientKey, duration: duration });
+// --- 2. GO LIVE (TÍTULO EXATO) ---
+const goLiveTitleNorm = 'call/reuniao de go live'; // Título exato normalizado
+
+const goLiveActivitiesConcluded = concludedInPeriod.filter(a => {
+    const tituloNorm = normalizeText(a['Título'] || a['Nome'] || ''); // Adapte coluna se necessário
+    return tituloNorm === goLiveTitleNorm;
+});
+
+const goLiveActivitiesPredicted = filteredOnboardingActivities.filter(a => {
+    const tituloNorm = normalizeText(a['Título'] || a['Nome'] || '');
+    return tituloNorm === goLiveTitleNorm &&
+           !a.ConcluidaEm && // Não concluída ainda
+           a.PrevisaoConclusao >= startOfMonth &&
+           a.PrevisaoConclusao <= endOfMonth;
+});
+okrs.goLiveActivitiesConcluded = goLiveActivitiesConcluded;
+okrs.goLiveActivitiesPredicted = goLiveActivitiesPredicted;
+
+// --- NPS Pós Go Live (clientes da carteira filtrada) ---
+const clientKeysWithGoLive = [...new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto))];
+// Filtra a lista JÁ FILTRADA de clientes (filteredOnboardingClients)
+const clientsWithGoLiveAndNPSData = filteredOnboardingClients.filter(c =>
+    clientKeysWithGoLive.includes((c.Cliente || '').trim().toLowerCase())
+);
+okrs.clientsWithGoLive = clientsWithGoLiveAndNPSData; // Clientes *filtrados* que tiveram Go Live no mês
+okrs.npsResponded = clientsWithGoLiveAndNPSData.filter(c => c.NPSOnboarding && String(c.NPSOnboarding).trim() !== '');
+
+// --- Clientes > R$50 mil (clientes da carteira filtrada) ---
+okrs.highValueClients = filteredOnboardingClients.filter(c => c.ValorNaoFaturado > 50000);
+
+// --- 3. TEMPO MÉDIO (APENAS CARTEIRA EM ANÁLISE + FASE != ONBOARDING) ---
+const completedOnboardingsDetails = [];
+const clientKeysWithCompletedGoLive = new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto));
+
+clientKeysWithCompletedGoLive.forEach(clientKey => {
+    // Encontra a data MAIS RECENTE de Go Live para o cliente no período
+    const goLiveDate = goLiveActivitiesConcluded
+        .filter(a => a.ClienteCompleto === clientKey)
+        .map(a => a.ConcluidaEm)
+        .sort((a,b) => b - a)[0]; // Pega a data mais recente
+
+    // Busca a data de início do onboarding para este cliente
+    const playbookStartDate = clientOnboardingStartDate.get(clientKey);
+
+    // Busca a informação MAIS ATUAL do cliente (para checar a Fase)
+    const clientInfoCurrent = processedClientsMap.get(clientKey);
+
+    // Condição: Tem data de início, data de Go Live E a fase ATUAL NÃO é mais 'onboarding'
+    if (goLiveDate && playbookStartDate && clientInfoCurrent && clientInfoCurrent.FaseNorm !== 'onboarding') {
+        const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
+        if (duration >= 0) { // Evita durações negativas
+            // Busca o nome original do cliente na lista filtrada para exibição
+            const clientOriginalData = filteredOnboardingClients.find(c => (c.Cliente || '').trim().toLowerCase() === clientKey);
+            completedOnboardingsDetails.push({ client: clientOriginalData?.Cliente || clientKey, duration: duration });
         }
-    });
-    okrs.completedOnboardingsList = completedOnboardings;
-    const durations = completedOnboardings.map(item => item.duration);
-    okrs.averageCompletedOnboardingTime = durations.length > 0
-        ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-        : 0;
+    }
+});
 
-    const today = new Date();
-    const openClientsWithDuration = onboardingClients
-        .filter(client => !clientsWithCompletedGoLive.has((client.Cliente || '').trim().toLowerCase()))
-        .map(client => {
-            const clientKey = (client.Cliente || '').trim().toLowerCase();
-            const startDate = clientOnboardingStartDate.get(clientKey);
-            if (startDate) {
-                const duration = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                return { ...client, onboardingDuration: duration };
-            }
-            return { ...client, onboardingDuration: null };
-        }).filter(c => c.onboardingDuration !== null);
-    openClientsWithDuration.sort((a, b) => b.onboardingDuration - a.onboardingDuration);
-    okrs.top5LongestOnboardings = openClientsWithDuration.slice(0, 5);
-    okrs.clientsOver120Days = openClientsWithDuration.filter(c => c.onboardingDuration > 120);
+okrs.completedOnboardingsList = completedOnboardingsDetails; // Lista detalhada
 
-    const processTargets = {
-        welcome: { name: 'contato de welcome', sla: 3 },
-        kickoff: { name: 'call/reunião kickoff', sla: 7 },
-        planejamento: { name: 'planejamento finalizado' },
-        goLiveMeeting: { name: 'call/reunião de go live' },
-        mapearContatos: { name: 'mapear contatos' },
-        acompanhamento: { name: 'acompanhamento / status reports' }
-    };
+const durations = completedOnboardingsDetails.map(item => item.duration);
+okrs.averageCompletedOnboardingTime = durations.length > 0
+    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+    : 0;
 
-    Object.entries(processTargets).forEach(([key, config]) => {
-        const allInPeriod = onboardingActivities.filter(a =>
-            normalizeText(a.Atividade) === config.name &&
-            ((a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth) ||
-             (a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth))
-        );
-        const previstoList = allInPeriod.filter(a => a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth);
-        const realizadoList = allInPeriod.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
-        okrs[`${key}Previsto`] = previstoList;
-        okrs[`${key}Realizado`] = realizadoList;
-        if (config.sla) {
-            okrs[`${key}SLAOk`] = realizadoList.filter(a => {
-                const dueDate = a.PrevisaoConclusao;
-                const completedDate = a.ConcluidaEm;
-                if (dueDate && completedDate) {
-                    const diffDays = (completedDate - dueDate) / (1000 * 60 * 60 * 24);
-                    return diffDays <= config.sla;
-                }
-                return false;
-            });
+// --- 4. RANKING ABERTOS (FASE ONBOARDING + PLAYBOOK START vs HOJE) ---
+const openOnboardingsDuration = [];
+
+// Itera SOMENTE sobre os clientes FILTRADOS
+filteredOnboardingClients.forEach(client => {
+    const clientKey = (client.Cliente || '').trim().toLowerCase();
+    // Busca a informação MAIS ATUAL do cliente (para checar a Fase)
+    const clientInfoCurrent = processedClientsMap.get(clientKey);
+
+    // Considera 'aberto' APENAS se a Fase ATUAL na planilha de Clientes AINDA é 'onboarding'
+    if (clientInfoCurrent && clientInfoCurrent.FaseNorm === 'onboarding') {
+        // Busca a data de início do onboarding
+        const startDate = clientOnboardingStartDate.get(clientKey);
+
+        if (startDate) {
+            // Duração é da data de início até HOJE
+            const duration = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+             if (duration >= 0) {
+                 openOnboardingsDuration.push({ Cliente: client.Cliente, onboardingDuration: duration });
+             }
         }
-    });
+    }
+});
 
-    return okrs;
+// Ordena por duração descendente
+openOnboardingsDuration.sort((a, b) => b.onboardingDuration - a.onboardingDuration);
+
+okrs.top5LongestOnboardings = openOnboardingsDuration.slice(0, 5);
+okrs.clientsOver120Days = openOnboardingsDuration.filter(item => item.onboardingDuration > 120);
+
+
+// --- 5. MÉTRICAS DE PROCESSO (SLA e PRAZO COM CONCLUSÃO ANTECIPADA OK) ---
+const processTargets = {
+    // Nome normalizado da atividade : { config }
+    'contato de welcome': { key: 'welcome', sla: 3 },
+    'call/reuniao kickoff': { key: 'kickoff', sla: 7 },
+    'planejamento finalizado': { key: 'planejamento', isDeadline: true },
+    'call/reuniao de go live': { key: 'goLiveMeeting', isDeadline: true }, // Mesmo título do Go Live geral
+    'mapear contatos': { key: 'mapearContatos', isDeadline: true },
+    'acompanhamento / status reports': { key: 'acompanhamento', isDeadline: true }
 };
+
+// Inicializa os arrays nos OKRs
+Object.values(processTargets).forEach(config => {
+    okrs[`${config.key}Previsto`] = [];
+    okrs[`${config.key}Realizado`] = [];
+    if (config.sla) {
+        okrs[`${config.key}SLAOk`] = [];
+    }
+});
+
+// Itera UMA VEZ sobre as atividades filtradas do onboarding
+filteredOnboardingActivities.forEach(a => {
+    const atividadeNorm = normalizeText(a['Título'] || a['Nome'] || ''); // Adapte a coluna
+    const config = processTargets[atividadeNorm];
+
+    if (config) { // Se a atividade for uma das que monitoramos
+        const key = config.key;
+        const previsao = a.PrevisaoConclusao;
+        const conclusao = a.ConcluidaEm;
+
+        // Verifica se a PREVISÃO está no mês
+        if (previsao && previsao >= startOfMonth && previsao <= endOfMonth) {
+            okrs[`${key}Previsto`].push(a);
+        }
+
+        // Verifica se foi CONCLUÍDA no mês
+        if (conclusao && conclusao >= startOfMonth && conclusao <= endOfMonth) {
+            okrs[`${key}Realizado`].push(a);
+
+            // Se tem SLA, verifica se cumpriu (incluindo antes do prazo)
+            if (config.sla && previsao) {
+                 // diffDays negativo ou zero significa concluído no prazo ou antes
+                const diffDays = (conclusao - previsao) / (1000 * 60 * 60 * 24);
+                if (diffDays <= config.sla) {
+                    okrs[`${key}SLAOk`].push(a);
+                }
+            }
+            // Se for métrica de prazo (isDeadline), verifica se cumpriu (antes ou no dia)
+            // A lista xxxRealizado JÁ VAI CONTER apenas os que foram concluídos no mês.
+            // A barra de progresso na UI usará Realizado / Previsto.
+            // A lógica de comparar conclusao <= previsao foi removida daqui
+            // pois a definição de "realizado no prazo" para a UI agora é apenas se foi concluído no mês.
+            // A checagem de SLA é feita separadamente.
+        }
+    }
+});
+
+
+// Retorna o objeto com todas as métricas calculadas
+return okrs;
+};
+
+// ------------------------------------------------------------------- // FIM DO BLOCO DE SUBSTITUIÇÃO ```
 
 
 // --- MANIPULADOR DE MENSAGENS DO WORKER ---
@@ -657,7 +742,7 @@ self.onmessage = (e) => {
             }
 
             // 4. Calcula OKRs de Onboarding
-            const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, rawClients, payload.teamView, payload.selectedISM);
+            const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, rawClients, payload.teamView, payload.selectedISM, processedClientsMap);
 
             // 5. Calcula Atividades Atrasadas
             const overdueMetrics = calculateOverdueMetrics(rawActivities, payload.selectedCS);
@@ -765,4 +850,5 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
