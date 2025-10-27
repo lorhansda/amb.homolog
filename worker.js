@@ -492,13 +492,22 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     const onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
     const concludedInPeriod = onboardingActivities.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
 
-    const goLiveActivitiesConcluded = concludedInPeriod.filter(a => normalizeText(a.Atividade).includes('go live'));
+    // ==================================================================
+    // ALTERAÇÃO 1: Busca exata pelo nome da atividade "Go Live"
+    // ==================================================================
+    const goLiveActivityName = normalizeText('Call/Reunião de GO LIVE');
+
+    const goLiveActivitiesConcluded = concludedInPeriod.filter(a => normalizeText(a.Atividade) === goLiveActivityName);
     const goLiveActivitiesPredicted = onboardingActivities.filter(a =>
-        normalizeText(a.Atividade).includes('go live') &&
+        normalizeText(a.Atividade) === goLiveActivityName &&
         !a.ConcluidaEm &&
         a.PrevisaoConclusao >= startOfMonth &&
         a.PrevisaoConclusao <= endOfMonth
     );
+    // ==================================================================
+    // FIM DA ALTERAÇÃO 1
+    // ==================================================================
+
     okrs.goLiveActivitiesConcluded = goLiveActivitiesConcluded;
     okrs.goLiveActivitiesPredicted = goLiveActivitiesPredicted;
 
@@ -528,8 +537,13 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         : 0;
 
     const today = new Date();
+    // ==================================================================
+    // ALTERAÇÃO 2: Lógica do "Top Ranking"
+    // A lista `onboardingClients` já contém APENAS clientes com Fase == 'onboarding'.
+    // Portanto, ela é a definição de "em aberto".
+    // Apenas calculamos a duração de todos eles até HOJE.
+    // ==================================================================
     const openClientsWithDuration = onboardingClients
-        .filter(client => !clientsWithCompletedGoLive.has((client.Cliente || '').trim().toLowerCase()))
         .map(client => {
             const clientKey = (client.Cliente || '').trim().toLowerCase();
             const startDate = clientOnboardingStartDate.get(clientKey);
@@ -538,7 +552,11 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
                 return { ...client, onboardingDuration: duration };
             }
             return { ...client, onboardingDuration: null };
-        }).filter(c => c.onboardingDuration !== null);
+        }).filter(c => c.onboardingDuration !== null); // Mantém filtro para clientes sem data de início
+    // ==================================================================
+    // FIM DA ALTERAÇÃO 2
+    // ==================================================================
+
     openClientsWithDuration.sort((a, b) => b.onboardingDuration - a.onboardingDuration);
     okrs.top5LongestOnboardings = openClientsWithDuration.slice(0, 5);
     okrs.clientsOver120Days = openClientsWithDuration.filter(c => c.onboardingDuration > 120);
@@ -562,6 +580,12 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         const realizadoList = allInPeriod.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
         okrs[`${key}Previsto`] = previstoList;
         okrs[`${key}Realizado`] = realizadoList;
+
+        // Lógica de SLA (Revisada e confirmada):
+        // Se diffDays for negativo (feito antes), -5 <= 3 (true) -> OK
+        // Se diffDays for 0 (feito no dia), 0 <= 3 (true) -> OK
+        // Se diffDays for 3 (feito 3 dias depois), 3 <= 3 (true) -> OK
+        // Se diffDays for 4 (feito 4 dias depois), 4 <= 3 (false) -> Não OK
         if (config.sla) {
             okrs[`${key}SLAOk`] = realizadoList.filter(a => {
                 const dueDate = a.PrevisaoConclusao;
@@ -765,5 +789,3 @@ self.onmessage = (e) => {
         });
     }
 };
-
-
