@@ -381,20 +381,26 @@ const onboardingEmails = [
         currentUser.name = decodedToken.name;
 
         const managerEmails = ['lorhanska@gmail.com', 'elianeokr@gmail.com', 'juliarail@gmail.com', 'jadecristianettirp@gmail.com'];
+        
+        // --- LÓGICA DE GRUPO ATUALIZADA ---
         currentUser.isManager = managerEmails.includes(currentUser.email);
 
-        // --- 2. NOVA LÓGICA DE GRUPO ---
-        if (onboardingEmails.includes(currentUser.email)) {
+        // 1. Prioriza o status de ADM
+        if (currentUser.isManager) {
+            currentUser.userGroup = 'admin';
+        
+        // 2. Separa os outros grupos
+        } else if (onboardingEmails.includes(currentUser.email)) {
             currentUser.userGroup = 'onboarding';
         } else {
             currentUser.userGroup = 'ongoing';
         }
-        // --- FIM DA NOVA LÓGICA ---
+        // --- FIM DA LÓGICA ATUALIZADA ---
 
         document.getElementById('login-container').style.display = 'none';
         document.getElementById('dashboard-wrapper').style.display = 'block';
 
-        initializeDashboard(); // Dashboard será inicializado com o grupo já definido
+        initializeDashboard();
     } else {
         alert("Falha no login. Não foi possível verificar suas credenciais. Tente novamente.");
         localStorage.removeItem('googleUserToken');
@@ -527,52 +533,49 @@ if (savedTheme === 'light') {
 function setupUserView() {
             console.log(`Configurando view para o grupo: ${currentUser.userGroup}`);
 
-            // Seleciona os botões das abas
             const tabDashboard = document.querySelector('.tab-button[data-tab="dashboard-view"]');
             const tabOnboarding = document.querySelector('.tab-button[data-tab="onboarding-view"]');
             const tabOverdue = document.querySelector('.tab-button[data-tab="overdue-view"]');
             const tabData = document.querySelector('.tab-button[data-tab="data-view"]');
 
-            // Seleciona os painéis de conteúdo
             const contentDashboard = document.getElementById('dashboard-view');
             const contentOnboarding = document.getElementById('onboarding-view');
             const contentOverdue = document.getElementById('overdue-view');
             const contentData = document.getElementById('data-view');
 
-            // Reseta classes 'active'
-            tabDashboard.classList.remove('active');
-            contentDashboard.classList.remove('active');
-            tabOnboarding.classList.remove('active');
-            contentOnboarding.classList.remove('active');
+            // Reseta todas as classes 'active'
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-            if (currentUser.userGroup === 'onboarding') {
-                // ESCONDE abas de Ongoing
+            // LÓGICA DE VISUALIZAÇÃO ATUALIZADA
+            if (currentUser.userGroup === 'admin') {
+                // 1. ADMIN: Mostra todas as abas
+                document.querySelectorAll('.tab-button').forEach(b => b.style.display = 'block');
+                
+                // Ativa o Dashboard por padrão
+                tabDashboard.classList.add('active');
+                contentDashboard.classList.add('active');
+
+            } else if (currentUser.userGroup === 'onboarding') {
+                // 2. ONBOARDING: Mostra APENAS Onboarding
                 tabDashboard.style.display = 'none';
                 tabOverdue.style.display = 'none';
                 tabData.style.display = 'none';
-                contentDashboard.style.display = 'none';
-                contentOverdue.style.display = 'none';
-                contentData.style.display = 'none';
                 
-                // MOSTRA aba de Onboarding
-                tabOnboarding.style.display = 'block';
-                contentOnboarding.style.display = 'block';
-
-                // Define Onboarding como a aba ativa
+                tabOnboarding.style.display = 'block'; // Garante que a de onboarding apareça
+                
+                // Ativa a aba Onboarding
                 tabOnboarding.classList.add('active');
                 contentOnboarding.classList.add('active');
 
-            } else { // userGroup === 'ongoing'
-                // ESCONDE aba de Onboarding
+            } else { // 3. ONGOING: Mostra tudo, MENOS Onboarding
                 tabOnboarding.style.display = 'none';
-                contentOnboarding.style.display = 'none';
 
-                // MOSTRA abas de Ongoing
                 tabDashboard.style.display = 'block';
                 tabOverdue.style.display = 'block';
                 tabData.style.display = 'block';
 
-                // Define Dashboard como a aba ativa (padrão)
+                // Ativa o Dashboard por padrão
                 tabDashboard.classList.add('active');
                 contentDashboard.classList.add('active');
             }
@@ -873,7 +876,8 @@ function setupUserView() {
 
         const populateFilters = () => {
             // Usa os dados de filtro recebidos do worker
-            const { csSet, squadSet, years } = filterDataCache;
+            // 1. Puxa o ismSet para o escopo local
+            const { csSet, squadSet, years, ismSet } = filterDataCache;
 
             const selectSquad = document.getElementById('select-squad');
             selectCS.innerHTML = '';
@@ -890,32 +894,6 @@ function setupUserView() {
                 selectCS.appendChild(option);
             });
             
-            // Auto-seleção do CS (lógica movida do worker para cá, pois `currentUser` está aqui)
-            if (!currentUser.isManager) {
-                let foundCS = null;
-                if (manualEmailToCsMap[currentUser.email]) {
-                    foundCS = manualEmailToCsMap[currentUser.email];
-                } else {
-                    const emailIdentifier = normalizeText(currentUser.email.split('@')[0]);
-                    for (const csName of sortedCS) {
-                        const csNameParts = normalizeText(csName).split(' ');
-                        for (const part of csNameParts) {
-                            if (part.length > 2 && emailIdentifier.includes(part)) {
-                                foundCS = csName;
-                                break;
-                            }
-                        }
-                        if (foundCS) break;
-                    }
-                }
-                if (foundCS && sortedCS.includes(foundCS)) {
-                    selectCS.value = foundCS;
-                } else {
-                    console.warn(`Nenhum CS correspondente encontrado para o e-mail ${currentUser.email}.`);
-                }
-                selectCS.disabled = true;
-            }
-
             if (currentUser.isManager) {
                 selectSquad.innerHTML = '<option value="Todos">Todos os Squads</option>';
                 const sortedSquads = [...squadSet].sort();
@@ -927,7 +905,66 @@ function setupUserView() {
                 });
             }
 
-            updateIsmFilter(); // Agora usa rawClients e filterDataCache
+            // 2. Popula o filtro de ISM
+            updateIsmFilter(); // Esta função usa rawClients e filterDataCache
+
+            // --- 3. LÓGICA DE AUTO-SELEÇÃO E TRAVA ATUALIZADA ---
+            if (!currentUser.isManager) {
+                const emailIdentifier = normalizeText(currentUser.email.split('@')[0]);
+
+                if (currentUser.userGroup === 'ongoing') {
+                    // Lógica de auto-seleção de CS (existente)
+                    let foundCS = null;
+                    if (manualEmailToCsMap[currentUser.email]) {
+                        foundCS = manualEmailToCsMap[currentUser.email];
+                    } else {
+                        for (const csName of sortedCS) {
+                            const csNameParts = normalizeText(csName).split(' ');
+                            for (const part of csNameParts) {
+                                if (part.length > 2 && emailIdentifier.includes(part)) {
+                                    foundCS = csName;
+                                    break;
+                                }
+                            }
+                            if (foundCS) break;
+                        }
+                    }
+                    if (foundCS && sortedCS.includes(foundCS)) {
+                        selectCS.value = foundCS;
+                    } else {
+                         console.warn(`Nenhum CS correspondente encontrado para o e-mail ${currentUser.email}.`);
+                    }
+                    selectCS.disabled = true;
+
+                } else if (currentUser.userGroup === 'onboarding') {
+                    // NOVA Lógica de auto-seleção de ISM
+                    let foundISM = null;
+                    const sortedISM = [...ismSet].sort(); // Usamos o ismSet
+                    
+                    // (Vamos assumir a mesma lógica de match de email, já que não temos um mapa ISM)
+                    for (const ismName of sortedISM) {
+                        const ismNameParts = normalizeText(ismName).split(' ');
+                        for (const part of ismNameParts) {
+                            if (part.length > 2 && emailIdentifier.includes(part)) {
+                                foundISM = ismName;
+                                break;
+                            }
+                        }
+                        if (foundISM) break;
+                    }
+
+                    if (foundISM && sortedISM.includes(foundISM)) {
+                        selectISM.value = foundISM; // Seleciona o ISM
+                    } else {
+                        console.warn(`Nenhum ISM correspondente encontrado para o e-mail ${currentUser.email}.`);
+                        // Se não encontrar, ele ficará em "Todos os ISMs",
+                        // o que pode ser um problema. O ideal é ter um mapa manual para ISMs
+                        // ou garantir que os nomes/emails batam.
+                    }
+                    selectISM.disabled = true; // Desabilita o filtro de ISM
+                }
+            }
+            // --- FIM DA NOVA LÓGICA ---
 
             const segmentosPredefinidos = ["SMB CAD", "SMB Multiprodutos", "MID/Enterprise"];
             selectSegmento.innerHTML = '';
@@ -2287,17 +2324,41 @@ setupUserView();
 
         // --- CONTROLE DE ACESSO VISUAL ---
         if (!currentUser.isManager) {
+            // Oculta botões de admin para TODOS os não-admins
             document.getElementById('settings-button').style.display = 'none';
             document.getElementById('bulk-export-button').style.display = 'none';
-            document.getElementById('squad-filter-group').style.display = 'none';
-            document.getElementById('squad-cs-list').style.display = 'none';
-            const csLabel = document.querySelector('[for="select-cs"]');
-            if (csLabel) {
-                csLabel.style.pointerEvents = 'none';
-                csLabel.style.opacity = '0.6';
+
+            if (currentUser.userGroup === 'ongoing') {
+                // Oculta filtros de squad
+                document.getElementById('squad-filter-group').style.display = 'none';
+                document.getElementById('squad-cs-list').style.display = 'none';
+                
+                // Desabilita visualmente o label de CS (já que o select está travado)
+                const csLabel = document.querySelector('[for="select-cs"]');
+                if (csLabel) {
+                    csLabel.style.pointerEvents = 'none';
+                    csLabel.style.opacity = '0.6';
+                }
+            } 
+            
+            if (currentUser.userGroup === 'onboarding') {
+                // Oculta os filtros principais que não se aplicam ao onboarding
+                document.getElementById('squad-filter-group').style.display = 'none';
+                document.getElementById('squad-cs-list').style.display = 'none';
+                document.querySelector('.control-group label[for="select-cs"]').parentElement.style.display = 'none';
+                document.querySelector('.control-group label[for="select-segmento"]').parentElement.style.display = 'none';
+                document.querySelector('.control-group label[for="select-comparison"]').parentElement.style.display = 'none';
+                document.querySelector('.control-group label[for="include-onboarding-toggle"]').parentElement.style.display = 'none';
+
+                // Desabilita visualmente o label de ISM (na aba de onboarding)
+                // (O select já está travado pela lógica de populateFilters)
+                const ismLabel = document.querySelector('[for="select-ism"]');
+                if (ismLabel) {
+                    ismLabel.style.pointerEvents = 'none';
+                    ismLabel.style.opacity = '0.6';
+                }
             }
         }
-    }
 </script>
 
 <script type="text/javascript">
@@ -2318,5 +2379,6 @@ setupUserView();
 
 
 </html>
+
 
 
