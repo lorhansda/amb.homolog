@@ -348,13 +348,20 @@
         "okrmarina1@gmail.com": "Marina Santos",
         "deborahsimonearruda@gmail.com": "Deborah Arruda",
     };
+const onboardingEmails = [
+    "usuario.onboarding1@ska.com.br",
+    "usuario.onboarding2@gmail.com",
+    "outro.email@provedor.com"
+    // Adicione aqui todos os e-mails do time de Onboarding e-mail onboarding
+];
 
     // --- LOGIN AUTHENTICATION SCRIPT ---
     let currentUser = {
-        email: null,
-        name: null,
-        isManager: false
-    };
+    email: null,
+    name: null,
+    isManager: false,
+    userGroup: null // <-- 1. Nova propriedade
+};
 
     function parseJwt(token) {
         try {
@@ -365,26 +372,34 @@
     }
 
     function handleCredentialResponse(response) {
-        const decodedToken = parseJwt(response.credential);
+    const decodedToken = parseJwt(response.credential);
 
-        if (decodedToken) {
-            localStorage.setItem('googleUserToken', response.credential);
+    if (decodedToken) {
+        localStorage.setItem('googleUserToken', response.credential);
 
-            currentUser.email = decodedToken.email;
-            currentUser.name = decodedToken.name;
+        currentUser.email = decodedToken.email;
+        currentUser.name = decodedToken.name;
 
-            const managerEmails = ['lorhanska@gmail.com', 'elianeokr@gmail.com', 'juliarail@gmail.com', 'jadecristianettirp@gmail.com'];
-            currentUser.isManager = managerEmails.includes(currentUser.email);
+        const managerEmails = ['lorhanska@gmail.com', 'elianeokr@gmail.com', 'juliarail@gmail.com', 'jadecristianettirp@gmail.com'];
+        currentUser.isManager = managerEmails.includes(currentUser.email);
 
-            document.getElementById('login-container').style.display = 'none';
-            document.getElementById('dashboard-wrapper').style.display = 'block';
-
-            initializeDashboard();
+        // --- 2. NOVA LÓGICA DE GRUPO ---
+        if (onboardingEmails.includes(currentUser.email)) {
+            currentUser.userGroup = 'onboarding';
         } else {
-            alert("Falha no login. Não foi possível verificar suas credenciais. Tente novamente.");
-            localStorage.removeItem('googleUserToken');
+            currentUser.userGroup = 'ongoing';
         }
+        // --- FIM DA NOVA LÓGICA ---
+
+        document.getElementById('login-container').style.display = 'none';
+        document.getElementById('dashboard-wrapper').style.display = 'block';
+
+        initializeDashboard(); // Dashboard será inicializado com o grupo já definido
+    } else {
+        alert("Falha no login. Não foi possível verificar suas credenciais. Tente novamente.");
+        localStorage.removeItem('googleUserToken');
     }
+}
 
     function logout() {
         localStorage.removeItem('googleUserToken');
@@ -509,6 +524,59 @@ if (savedTheme === 'light') {
         const selectISM = document.getElementById('select-ism');
         const onboardingOutcomesGrid = document.getElementById('onboarding-outcomes-grid');
         const onboardingProcessGrid = document.getElementById('onboarding-process-grid');
+function setupUserView() {
+            console.log(`Configurando view para o grupo: ${currentUser.userGroup}`);
+
+            // Seleciona os botões das abas
+            const tabDashboard = document.querySelector('.tab-button[data-tab="dashboard-view"]');
+            const tabOnboarding = document.querySelector('.tab-button[data-tab="onboarding-view"]');
+            const tabOverdue = document.querySelector('.tab-button[data-tab="overdue-view"]');
+            const tabData = document.querySelector('.tab-button[data-tab="data-view"]');
+
+            // Seleciona os painéis de conteúdo
+            const contentDashboard = document.getElementById('dashboard-view');
+            const contentOnboarding = document.getElementById('onboarding-view');
+            const contentOverdue = document.getElementById('overdue-view');
+            const contentData = document.getElementById('data-view');
+
+            // Reseta classes 'active'
+            tabDashboard.classList.remove('active');
+            contentDashboard.classList.remove('active');
+            tabOnboarding.classList.remove('active');
+            contentOnboarding.classList.remove('active');
+
+            if (currentUser.userGroup === 'onboarding') {
+                // ESCONDE abas de Ongoing
+                tabDashboard.style.display = 'none';
+                tabOverdue.style.display = 'none';
+                tabData.style.display = 'none';
+                contentDashboard.style.display = 'none';
+                contentOverdue.style.display = 'none';
+                contentData.style.display = 'none';
+                
+                // MOSTRA aba de Onboarding
+                tabOnboarding.style.display = 'block';
+                contentOnboarding.style.display = 'block';
+
+                // Define Onboarding como a aba ativa
+                tabOnboarding.classList.add('active');
+                contentOnboarding.classList.add('active');
+
+            } else { // userGroup === 'ongoing'
+                // ESCONDE aba de Onboarding
+                tabOnboarding.style.display = 'none';
+                contentOnboarding.style.display = 'none';
+
+                // MOSTRA abas de Ongoing
+                tabDashboard.style.display = 'block';
+                tabOverdue.style.display = 'block';
+                tabData.style.display = 'block';
+
+                // Define Dashboard como a aba ativa (padrão)
+                tabDashboard.classList.add('active');
+                contentDashboard.classList.add('active');
+            }
+        }
 
         // --- VARIÁVEIS GLOBAIS DA THREAD PRINCIPAL ---
         let dataWorker; // O nosso Web Worker
@@ -1451,7 +1519,7 @@ if (savedTheme === 'light') {
                         </span>
                     </div>
                     <div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp">
-                        <span class="metric-label">✉️ E-mail/Whatsapp (CS):</span>
+                        <span class="metric-label"✉️ E-mail/Whatsapp (CS):</span>
                         <span class="metric-value">${totalEmails} <span class="sub-metric">(${percEmail}%)</span></span>
                     </div>
                     ${onboardingMetricHtml}
@@ -2113,7 +2181,7 @@ if (savedTheme === 'light') {
                 closeModal(e.target);
             }
         });
-
+setupUserView();
         loadGoals();
 
         // --- LÓGICA PARA EXPORTAÇÃO EM LOTE ---
