@@ -8,12 +8,14 @@
  */
 
 // --- VARIÁVEIS GLOBAIS DO WORKER ---
+// --- VARIÁVEIS GLOBAIS DO WORKER ---
 let rawActivities = [],
     rawClients = [],
     clientOnboardingStartDate = new Map(),
     csToSquadMap = new Map(),
     currentUser = {},
-    manualEmailToCsMap = {};
+    manualEmailToCsMap = {},
+    processedClientsMap = new Map(); // <-- ADICIONADO AQUI
 
 // --- FUNÇÕES AUXILIARES DE PROCESSAMENTO (Movidas do script principal) ---
 
@@ -683,6 +685,19 @@ self.onmessage = (e) => {
             // 3. Constrói o mapa de Squads
             buildCsToSquadMap();
 
+            // 3.5. Cria o Mapa de Clientes Processados (para consulta rápida de Fase)
+            processedClientsMap.clear(); // Limpa antes de popular
+            rawClients.forEach(client => {
+                const clientKey = (client.Cliente || '').trim().toLowerCase();
+                if (clientKey) {
+                    processedClientsMap.set(clientKey, {
+                        ...client, // Inclui todos os dados originais
+                        FaseNorm: normalizeText(client.Fase || '') // Adiciona a fase normalizada
+                    });
+                }
+            });
+            // **** FIM DO BLOCO ADICIONADO ****
+
             // 4. Extrai dados para os filtros
             const csSet = [...new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean))];
             const squadSet = [...new Set(rawClients.map(d => d['Squad CS']).filter(Boolean))];
@@ -850,5 +865,6 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
