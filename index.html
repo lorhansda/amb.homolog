@@ -1200,103 +1200,7 @@ function setupUserView() {
                 { id: 'inicio', title: 'Início', icon: 'fa-play-circle', data: stageLists.inicio || [] },
                 { id: 'backlog', title: 'Backlog', icon: 'fa-box-open', data: stageLists.backlog || [] }
             };
-            // ==================================================================
-// NOVA FUNÇÃO (Adicionada para o gráfico de produtos)
-// ==================================================================
-function renderOnboardingProductChart(chartData) {
-    if (!chartData || !chartData.labels || chartData.labels.length === 0) {
-        const chartCard = document.getElementById('onboarding-product-chart-card');
-        if (chartCard) chartCard.style.display = 'none';
-        return;
-    }
-
-    const canvasId = 'onboardingProductChart';
-    if (chartInstances[canvasId]) {
-        chartInstances[canvasId].destroy();
-    }
-
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    const isLightTheme = document.body.classList.contains('light-theme');
-    const textColor = isLightTheme ? '#2c3e50' : '#F0F2F5';
-    const gridColor = isLightTheme ? '#e3e8f0' : '#3a476a';
-
-    chartInstances[canvasId] = new Chart(ctx, {
-        type: 'bar', // Tipo base é barra
-        data: {
-            labels: chartData.labels,
-            datasets: [
-                {
-                    label: 'Nº de Clientes (em Onboarding)',
-                    data: chartData.clientCount,
-                    backgroundColor: 'rgba(0, 123, 255, 0.6)', // Azul
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    borderWidth: 1,
-                    yAxisID: 'yClients' // Eixo da esquerda
-                },
-                {
-                    label: 'Tempo Médio (dias)',
-                    data: chartData.avgTime,
-                    type: 'line', // Sobrescreve para linha
-                    fill: false,
-                    borderColor: '#ffc107', // Amarelo
-                    backgroundColor: '#ffc107',
-                    tension: 0.1,
-                    yAxisID: 'yTime', // Eixo da direita
-                    pointRadius: 4,
-                    pointHoverRadius: 7
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { color: textColor }
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false
-                }
-            },
-            scales: {
-                x: {
-                    ticks: { color: textColor },
-                    grid: { display: false }
-                },
-                yClients: { // Eixo da Esquerda (Contagem)
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Nº de Clientes',
-                        color: textColor
-                    },
-                    ticks: { color: textColor, precision: 0 },
-                    grid: { color: gridColor }
-                },
-                yTime: { // Eixo da Direita (Tempo)
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: 'Tempo Médio (dias)',
-                        color: textColor
-                    },
-                    ticks: { color: textColor, precision: 0 },
-                    grid: { display: false } // Desliga a grade do eixo da direita
-                }
-            }
-        }
-    });
-}
-// ==================================================================
-// FIM DA NOVA FUNÇÃO
-// ==================================================================
-
+           
             // Armazena as listas de dados no dataStore principal para o modal
             stages.forEach(stage => {
                 onboardingDataStore[`onb-stage-${stage.id}`] = stage.data;
@@ -2712,5 +2616,6 @@ setupUserView();
 
 
 </html>
+
 
 
