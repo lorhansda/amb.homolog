@@ -481,23 +481,24 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
 
     // 1. Encontra clientes EM ONBOARDING DENTRO da carteira filtrada
     let onboardingClients = clients.filter(c => normalizeText(c.Fase) === 'onboarding');
-    
+
     // Filtros específicos da aba de Onboarding (Time e ISM)
     if (teamView === 'syneco') {
         onboardingClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
     } else if (teamView === 'outros') {
         onboardingClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
     }
+    // Aplica o filtro ISM *antes* de calcular as etapas e outros dados baseados nos clientes *atualmente* em onboarding
     if (selectedISM !== 'Todos') {
         onboardingClients = onboardingClients.filter(c => c.ISM === selectedISM);
     }
-    
-    okrs.filteredClients = onboardingClients;
+
+    okrs.filteredClients = onboardingClients; // Clientes em onboarding após todos os filtros
     const onboardingClientNames = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
     // Filtra atividades APENAS dos clientes que estão em onboarding NAQUELE FILTRO
     const onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
-    
+
     // ==================================================================
     // LÓGICA: Cálculo de Etapas do Onboarding (Baseado nos clientes em onboarding do filtro)
     // ==================================================================
@@ -512,6 +513,7 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
 
     okrs.totalFilteredClients = onboardingClients.length;
 
+    // Usa as atividades filtradas dos clientes em onboarding
     const concludedOnboardingActivities = onboardingActivities.filter(a => a.ConcluidaEm);
 
     const clientConcludedActivitiesMap = new Map();
@@ -523,6 +525,7 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         clientConcludedActivitiesMap.get(clientKey).add(normalizeText(activity.Atividade));
     });
 
+    // Itera sobre os clientes JÁ FILTRADOS por CS/Squad e ISM
     onboardingClients.forEach(client => {
         const clientKey = (client.Cliente || '').trim().toLowerCase();
         const concludedSet = clientConcludedActivitiesMap.get(clientKey) || new Set();
@@ -563,18 +566,18 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     okrs.goLiveActivitiesPredicted = goLiveActivitiesPredicted;
 
     const clientsWithGoLive = [...new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto))];
-    const clientsWithGoLiveAndNPSData = onboardingClients.filter(c => clientsWithGoLive.includes((c.Cliente || '').trim().toLowerCase()));
+    const clientsWithGoLiveAndNPSData = onboardingClients.filter(c => clientsWithGoLive.includes((c.Cliente || '').trim().toLowerCase())); // Usa onboardingClients já filtrado
     okrs.clientsWithGoLive = clientsWithGoLiveAndNPSData;
     okrs.npsResponded = clientsWithGoLiveAndNPSData.filter(c => c.NPSOnboarding && String(c.NPSOnboarding).trim() !== '');
-    okrs.highValueClients = onboardingClients.filter(c => c.ValorNaoFaturado > 50000);
+    okrs.highValueClients = onboardingClients.filter(c => c.ValorNaoFaturado > 50000); // Usa onboardingClients já filtrado
 
     // ==================================================================
-    // ATUALIZAÇÃO SOLICITADA: Lógica de Tempo Médio (Histórico da CARTEIRA) e Gráfico por Produto
+    // ATUALIZAÇÃO SOLICITADA: Lógica de Tempo Médio (Histórico da CARTEIRA filtrado por ISM) e Gráfico por Produto
     // ==================================================================
-    
+
     // Cria um Set com TODOS os clientes da carteira filtrada (ongoing + onboarding)
     const portfolioClientNames = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
-    
+
     const welcomeActivityName = normalizeText('Contato de Welcome');
 
     // 1. Mapear data de início (Welcome) para CADA cliente (apenas da CARTEIRA)
@@ -596,15 +599,19 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         normalizeText(a.Atividade) === goLiveActivityName && a.ConcluidaEm
     );
 
-    // 3. Mapear "Negócio" dos clientes da CARTEIRA
+    // 3. Mapear "Negócio" e "ISM" dos clientes da CARTEIRA
     const portfolioClientToNegocioMap = new Map();
+    const portfolioClientToIsmMap = new Map(); // NOVO
     clients.forEach(c => { // 'clients' é filteredClients
-        portfolioClientToNegocioMap.set((c.Cliente || '').trim().toLowerCase(), c['Negócio'] || 'Não Definido');
+         const clientKey = (c.Cliente || '').trim().toLowerCase();
+         portfolioClientToNegocioMap.set(clientKey, c['Negócio'] || 'Não Definido');
+         portfolioClientToIsmMap.set(clientKey, c.ISM); // NOVO - Guarda o ISM
     });
 
-    // 4. Calcular TODAS as durações concluídas (da CARTEIRA) e agrupar por "Negócio"
+
+    // 4. Calcular TODAS as durações concluídas (da CARTEIRA), filtrar por ISM e agrupar por "Negócio"
     const productMetrics = {}; // { 'ProdutoA': { durations: [], clientCount: 0 }, ... }
-    const allCompletedOnboardings = [];
+    const allCompletedOnboardingsFilteredByIsm = []; // Renomeado para clareza
 
     const clientsWithCompletedGoLiveAllTime = new Set(allGoLiveActivitiesConcluded.map(a => a.ClienteCompleto));
 
@@ -613,66 +620,75 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         const goLiveDate = allGoLiveActivitiesConcluded
             .filter(a => a.ClienteCompleto === clientKey)
             .map(a => a.ConcluidaEm)
-            .sort((a,b) => b - a)[0]; 
-        
+            .sort((a,b) => b - a)[0];
+
         const playbookStartDate = welcomeContactCreationDate.get(clientKey);
-        const negocio = portfolioClientToNegocioMap.get(clientKey) || 'Não Definido';
 
         if (goLiveDate && playbookStartDate) {
             const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
             if (duration >= 0) { // Ignorar durações negativas/inválidas
-                
-                // Adiciona à lista geral para o card de "Tempo Médio"
-                allCompletedOnboardings.push({ client: clientKey, duration: duration });
 
-                // Agrupa por "Negócio" para o novo gráfico
-                if (!productMetrics[negocio]) {
-                    productMetrics[negocio] = { durations: [], clientCount: 0 };
-                }
-                productMetrics[negocio].durations.push(duration);
+                // --- INÍCIO DA LÓGICA DE FILTRO ISM ---
+                const clientIsm = portfolioClientToIsmMap.get(clientKey);
+                const negocio = portfolioClientToNegocioMap.get(clientKey) || 'Não Definido';
+                // selectedISM vem dos parâmetros da função
+                const ismMatchesFilter = (selectedISM === 'Todos' || clientIsm === selectedISM);
+                // --- FIM DA LÓGICA DE FILTRO ISM ---
+
+                // Agrupa por "Negócio" para o novo gráfico (independente do filtro ISM, para mostrar todos os produtos)
+                 if (!productMetrics[negocio]) {
+                     productMetrics[negocio] = { durations: [], clientCount: 0 };
+                 }
+                 // Adiciona a duração ao gráfico E ao card SOMENTE SE o ISM bater
+                if (ismMatchesFilter) {
+                     productMetrics[negocio].durations.push(duration); // Adiciona duração para média do produto (filtrado)
+                     allCompletedOnboardingsFilteredByIsm.push({ client: clientKey, duration: duration }); // Adiciona à lista do card (filtrado)
+                 }
             }
         }
     });
-    
-    // 5. Contar clientes ATUAIS em onboarding (da CARTEIRA) por "Negócio"
+
+    // 5. Contar clientes ATUAIS em onboarding (da CARTEIRA e JÁ FILTRADOS por ISM no início) por "Negócio"
     // Usa a lista `onboardingClients` que já foi filtrada no início desta função
     onboardingClients.forEach(client => {
         const negocio = client['Negócio'] || 'Não Definido';
         if (!productMetrics[negocio]) { // Caso um produto não tenha NENHUM onboarding concluído
             productMetrics[negocio] = { durations: [], clientCount: 0 };
         }
-        productMetrics[negocio].clientCount++;
+        productMetrics[negocio].clientCount++; // Adiciona à contagem do gráfico
     });
 
-    // 6. Salva a lista de concluídos (histórico da carteira) para o card de "Tempo Médio"
-    okrs.completedOnboardingsList = allCompletedOnboardings;
-    
-    // 7. Calcula o tempo médio GERAL (histórico da carteira)
-    const allDurations = allCompletedOnboardings.map(item => item.duration);
-    okrs.averageCompletedOnboardingTime = allDurations.length > 0
-        ? Math.round(allDurations.reduce((a, b) => a + b, 0) / allDurations.length)
+
+    // 6. Salva a lista de concluídos (histórico da carteira, filtrado por ISM) para o card de "Tempo Médio"
+    okrs.completedOnboardingsList = allCompletedOnboardingsFilteredByIsm;
+
+    // 7. Calcula o tempo médio GERAL (histórico da carteira, filtrado por ISM)
+    const allDurationsFiltered = allCompletedOnboardingsFilteredByIsm.map(item => item.duration);
+    okrs.averageCompletedOnboardingTime = allDurationsFiltered.length > 0
+        ? Math.round(allDurationsFiltered.reduce((a, b) => a + b, 0) / allDurationsFiltered.length)
         : 0;
-        
-    // 8. Formatar os dados para o novo gráfico
+
+    // 8. Formatar os dados para o novo gráfico (usando as durações filtradas por ISM)
     const chartLabels = [];
     const clientCountData = [];
     const avgTimeData = [];
 
     Object.keys(productMetrics).sort().forEach(negocio => {
-        // Só exibe se tiver clientes atuais OU concluídos
+        // Só exibe se tiver clientes atuais OU concluídos (mesmo que a duração não entre na média por causa do filtro ISM)
         if (productMetrics[negocio].clientCount > 0 || productMetrics[negocio].durations.length > 0) {
             chartLabels.push(negocio);
-            clientCountData.push(productMetrics[negocio].clientCount);
-            
-            const durations = productMetrics[negocio].durations;
+            clientCountData.push(productMetrics[negocio].clientCount); // Contagem de clientes atuais (já filtrado por ISM no passo 5)
+
+            const durations = productMetrics[negocio].durations; // Durações JÁ FILTRADAS por ISM no passo 4
             if (durations.length > 0) {
                 const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
                 avgTimeData.push(Math.round(avg));
             } else {
-                avgTimeData.push(0); // Média 0 se não houver concluídos
+                avgTimeData.push(0); // Média 0 se não houver concluídos *para aquele ISM*
             }
         }
     });
+
 
     // 9. Salvar no objeto okrs
     okrs.productChartData = {
@@ -686,9 +702,9 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
 
     const today = new Date();
     // ==================================================================
-    // Lógica do "Top Ranking" (Baseado nos clientes em onboarding do filtro)
+    // Lógica do "Top Ranking" (Baseado nos clientes em onboarding do filtro - JÁ FILTRADO POR ISM)
     // ==================================================================
-    const openClientsWithDuration = onboardingClients // já filtrado
+    const openClientsWithDuration = onboardingClients // já filtrado por ISM
         .map(client => {
             const clientKey = (client.Cliente || '').trim().toLowerCase();
             // Re-usa o mapa de "Welcome" que já foi calculado (baseado na carteira)
@@ -707,7 +723,7 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     okrs.top5LongestOnboardings = openClientsWithDuration.slice(0, 5);
     okrs.clientsOver120Days = openClientsWithDuration.filter(c => c.onboardingDuration > 120);
 
-    // Lógica de Processos (baseada nos clientes em onboarding do filtro)
+    // Lógica de Processos (baseada nos clientes em onboarding do filtro - JÁ FILTRADO POR ISM)
     const processTargets = {
         welcome: { name: 'contato de welcome', sla: 3 },
         kickoff: { name: 'call/reunião kickoff', sla: 7 },
@@ -718,7 +734,7 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     };
 
     Object.entries(processTargets).forEach(([key, config]) => {
-        const allInPeriod = onboardingActivities.filter(a => // usa 'onboardingActivities' (já filtrado)
+        const allInPeriod = onboardingActivities.filter(a => // usa 'onboardingActivities' (já filtrado por ISM)
             normalizeText(a.Atividade) === config.name &&
             ((a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth) ||
              (a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth))
@@ -931,5 +947,6 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
