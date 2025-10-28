@@ -573,24 +573,116 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     okrs.npsResponded = clientsWithGoLiveAndNPSData.filter(c => c.NPSOnboarding && String(c.NPSOnboarding).trim() !== '');
     okrs.highValueClients = onboardingClients.filter(c => c.ValorNaoFaturado > 50000);
 
-    const completedOnboardings = [];
-    const clientsWithCompletedGoLive = new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto));
-    clientsWithCompletedGoLive.forEach(clientKey => {
-        const goLiveDate = goLiveActivitiesConcluded
-            .filter(a => a.ClienteCompleto === clientKey)
-            .map(a => a.ConcluidaEm)
-            .sort((a,b) => b - a)[0];
-        const playbookStartDate = clientOnboardingStartDate.get(clientKey);
-        if (goLiveDate && playbookStartDate) {
-            const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
-            completedOnboardings.push({ client: clientKey, duration: duration });
+    // ==================================================================
+    // ATUALIZAÇÃO SOLICITADA: Lógica de Tempo Médio (Histórico) e Gráfico por Produto
+    // ==================================================================
+
+    const welcomeActivityName = normalizeText('Contato de Welcome');
+
+    // 1. Mapear data de início (Welcome) para CADA cliente (usando dados brutos)
+    const welcomeContactCreationDate = new Map();
+    rawActivities.forEach(a => { // Usar rawActivities
+        if (normalizeText(a.Atividade) === welcomeActivityName && a.CriadoEm) {
+            const clientKey = a.ClienteCompleto;
+            const existingDate = welcomeContactCreationDate.get(clientKey);
+            if (!existingDate || a.CriadoEm < existingDate) {
+                welcomeContactCreationDate.set(clientKey, a.CriadoEm);
+            }
         }
     });
-    okrs.completedOnboardingsList = completedOnboardings;
-    const durations = completedOnboardings.map(item => item.duration);
-    okrs.averageCompletedOnboardingTime = durations.length > 0
-        ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+
+    // 2. Encontrar TODAS as atividades de Go Live concluídas (de todos os tempos, usando dados brutos)
+    const allGoLiveActivitiesConcluded = rawActivities.filter(a => // Usar rawActivities
+        normalizeText(a.Atividade) === goLiveActivityName && a.ConcluidaEm
+    );
+
+    // 3. Mapear "Negócio" de TODOS os clientes (usando dados brutos)
+    const allClientToNegocioMap = new Map();
+    rawClients.forEach(c => { // Usar rawClients
+        allClientToNegocioMap.set((c.Cliente || '').trim().toLowerCase(), c['Negócio'] || 'Não Definido');
+    });
+
+    // 4. Calcular TODAS as durações concluídas e agrupar por "Negócio"
+    const productMetrics = {}; // { 'ProdutoA': { durations: [], clientCount: 0 }, ... }
+    const allCompletedOnboardings = [];
+
+    const clientsWithCompletedGoLiveAllTime = new Set(allGoLiveActivitiesConcluded.map(a => a.ClienteCompleto));
+
+    clientsWithCompletedGoLiveAllTime.forEach(clientKey => {
+        // Pega a data de Go Live mais recente para o cliente
+        const goLiveDate = allGoLiveActivitiesConcluded
+            .filter(a => a.ClienteCompleto === clientKey)
+            .map(a => a.ConcluidaEm)
+            .sort((a,b) => b - a)[0]; 
+        
+        const playbookStartDate = welcomeContactCreationDate.get(clientKey);
+        const negocio = allClientToNegocioMap.get(clientKey) || 'Não Definido';
+
+        if (goLiveDate && playbookStartDate) {
+            const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
+            if (duration >= 0) { // Ignorar durações negativas/inválidas
+                
+                // Adiciona à lista geral para o card de "Tempo Médio"
+                allCompletedOnboardings.push({ client: clientKey, duration: duration });
+
+                // Agrupa por "Negócio" para o novo gráfico
+                if (!productMetrics[negocio]) {
+                    productMetrics[negocio] = { durations: [], clientCount: 0 };
+                }
+                productMetrics[negocio].durations.push(duration);
+            }
+        }
+    });
+    
+    // 5. Contar clientes ATUAIS em onboarding por "Negócio"
+    // Usa a lista `onboardingClients` que já foi filtrada no início desta função
+    onboardingClients.forEach(client => {
+        const negocio = client['Negócio'] || 'Não Definido';
+        if (!productMetrics[negocio]) { // Caso um produto não tenha NENHUM onboarding concluído
+            productMetrics[negocio] = { durations: [], clientCount: 0 };
+        }
+        productMetrics[negocio].clientCount++;
+    });
+
+    // 6. Salva a lista de concluídos (histórico) para o card de "Tempo Médio"
+    okrs.completedOnboardingsList = allCompletedOnboardings;
+    
+    // 7. Calcula o tempo médio GERAL (histórico)
+    const allDurations = allCompletedOnboardings.map(item => item.duration);
+    okrs.averageCompletedOnboardingTime = allDurations.length > 0
+        ? Math.round(allDurations.reduce((a, b) => a + b, 0) / allDurations.length)
         : 0;
+        
+    // 8. Formatar os dados para o novo gráfico
+    const chartLabels = [];
+    const clientCountData = [];
+    const avgTimeData = [];
+
+    Object.keys(productMetrics).sort().forEach(negocio => {
+        // Só exibe se tiver clientes atuais OU concluídos
+        if (productMetrics[negocio].clientCount > 0 || productMetrics[negocio].durations.length > 0) {
+            chartLabels.push(negocio);
+            clientCountData.push(productMetrics[negocio].clientCount);
+            
+            const durations = productMetrics[negocio].durations;
+            if (durations.length > 0) {
+                const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
+                avgTimeData.push(Math.round(avg));
+            } else {
+                avgTimeData.push(0); // Média 0 se não houver concluídos
+            }
+        }
+    });
+
+    // 9. Salvar no objeto okrs
+    okrs.productChartData = {
+        labels: chartLabels,
+        clientCount: clientCountData,
+        avgTime: avgTimeData
+    };
+    // ==================================================================
+    // FIM DA ATUALIZAÇÃO SOLICITADA
+    // ==================================================================
 
     const today = new Date();
     // ==================================================================
@@ -845,3 +937,4 @@ self.onmessage = (e) => {
         });
     }
 };
+
