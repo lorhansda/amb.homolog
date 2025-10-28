@@ -1200,6 +1200,102 @@ function setupUserView() {
                 { id: 'inicio', title: 'Início', icon: 'fa-play-circle', data: stageLists.inicio || [] },
                 { id: 'backlog', title: 'Backlog', icon: 'fa-box-open', data: stageLists.backlog || [] }
             ];
+            // ==================================================================
+        // NOVA FUNÇÃO (Adicionada para o gráfico de produtos)
+        // ==================================================================
+        function renderOnboardingProductChart(chartData) {
+            if (!chartData || !chartData.labels || chartData.labels.length === 0) {
+                const chartCard = document.getElementById('onboarding-product-chart-card');
+                if (chartCard) chartCard.style.display = 'none';
+                return;
+            }
+            
+            const canvasId = 'onboardingProductChart';
+            if (chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+            
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const isLightTheme = document.body.classList.contains('light-theme');
+            const textColor = isLightTheme ? '#2c3e50' : '#F0F2F5';
+            const gridColor = isLightTheme ? '#e3e8f0' : '#3a476a';
+
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar', // Tipo base é barra
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Nº de Clientes (em Onboarding)',
+                            data: chartData.clientCount,
+                            backgroundColor: 'rgba(0, 123, 255, 0.6)', // Azul
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'yClients' // Eixo da esquerda
+                        },
+                        {
+                            label: 'Tempo Médio (dias)',
+                            data: chartData.avgTime,
+                            type: 'line', // Sobrescreve para linha
+                            fill: false,
+                            borderColor: '#ffc107', // Amarelo
+                            backgroundColor: '#ffc107',
+                            tension: 0.1,
+                            yAxisID: 'yTime', // Eixo da direita
+                            pointRadius: 4,
+                            pointHoverRadius: 7
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: textColor }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { display: false }
+                        },
+                        yClients: { // Eixo da Esquerda (Contagem)
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Nº de Clientes',
+                                color: textColor
+                            },
+                            ticks: { color: textColor, precision: 0 },
+                            grid: { color: gridColor }
+                        },
+                        yTime: { // Eixo da Direita (Tempo)
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Tempo Médio (dias)',
+                                color: textColor
+                            },
+                            ticks: { color: textColor, precision: 0 },
+                            grid: { display: false } // Desliga a grade do eixo da direita
+                        }
+                    }
+                }
+            });
+        }
+        // ==================================================================
+        // FIM DA NOVA FUNÇÃO
+        // ==================================================================
 
             // Armazena as listas de dados no dataStore principal para o modal
             stages.forEach(stage => {
@@ -1377,14 +1473,28 @@ function setupUserView() {
             const npsRespondedCount = onboardingDataStore.npsResponded?.length || 0;
             const goLivesTotal = (onboardingDataStore.goLiveActivitiesConcluded?.length || 0) + (onboardingDataStore.goLiveActivitiesPredicted?.length || 0);
 
+            // ==================================================================
+            // ATUALIZAÇÃO SOLICITADA: Texto do card e adição do novo gráfico
+            // ==================================================================
             outcomesGrid.innerHTML = `
                 ${createOnboardingStageCard(onboardingDataStore.totalFilteredClients || 0, onboardingDataStore.stageCounts, onboardingDataStore.stageLists || {})}
                 ${createOnboardingMetricCard('Go-Lives Realizados e Previstos', 'Total de Go-Lives concluídos e previstos para o mês.', goLivesTotal, `<strong>${onboardingDataStore.goLiveActivitiesConcluded?.length || 0}</strong> realizados, <strong>${onboardingDataStore.goLiveActivitiesPredicted?.length || 0}</strong> previstos.`, 'fa-rocket', 'onb-go-live-combined', [...(onboardingDataStore.goLiveActivitiesConcluded || []), ...(onboardingDataStore.goLiveActivitiesPredicted || [])])}
                 ${createOnboardingMetricCard('NPS Pós Go-Live', 'Taxa de resposta dos clientes que tiveram Go-Live.', `${npsRespondedCount}/${npsTotal}`, `responderam`, 'fa-star-half-alt', 'onb-nps-responded', onboardingDataStore.npsResponded || [])}
-                ${createOnboardingMetricCard('Tempo Médio de Onboarding (Concluído)', 'Duração média (Playbook vs Go-Live).', `${onboardingDataStore.averageCompletedOnboardingTime || 0} dias`, `para ${onboardingDataStore.completedOnboardingsList?.length || 0} onboardings concluídos`, 'fa-check-circle', 'onb-completed-list', onboardingDataStore.completedOnboardingsList || [])}
+                ${createOnboardingMetricCard('Tempo Médio de Onboarding (Concluído)', 'Duração média histórica (Welcome vs Go-Live).', `${onboardingDataStore.averageCompletedOnboardingTime || 0} dias`, `baseado em ${onboardingDataStore.completedOnboardingsList?.length || 0} onboardings concluídos (histórico)`, 'fa-check-circle', 'onb-completed-list', onboardingDataStore.completedOnboardingsList || [])}
                 ${createTop5OnboardingCard(onboardingDataStore.top5LongestOnboardings || [], onboardingDataStore.clientsOver120Days || [])}
                 ${createOnboardingMetricCard('Clientes Onboarding > R$50 mil', 'Clientes com alto valor não faturado em onboarding.', onboardingDataStore.highValueClients?.length || 0, 'clientes', 'fa-dollar-sign', 'onb-high-value', onboardingDataStore.highValueClients || [])}
+
+                <div class="card" id="onboarding-product-chart-card">
+                    <h3>Análise de Onboarding por Produto</h3>
+                    <p style="font-style: italic; color: var(--text-light-color); margin: -15px 0 20px 0; font-size: 0.9rem;">Clientes na carteira e tempo médio de conclusão (histórico).</p>
+                    <div class="card-content" style="height: 350px; padding-top: 20px;">
+                        <canvas id="onboardingProductChart"></canvas>
+                    </div>
+                </div>
             `;
+            // ==================================================================
+            // FIM DA ATUALIZAÇÃO
+            // ==================================================================
 
             const processGrid = document.getElementById('onboarding-process-grid');
             processGrid.innerHTML = `
@@ -1395,6 +1505,12 @@ function setupUserView() {
                 ${createOnboardingProcessCard('Prazo: Reunião de GO LIVE', 'Avalia a realização da reunião que oficializa o Go-Live.', (onboardingDataStore.goLiveMeetingPrevisto || []).length, (onboardingDataStore.goLiveMeetingRealizado || []).length, 'fa-calendar-check', 'goLiveMeeting')}
                 ${createOnboardingProcessCard('Prazo: Acompanhamento', 'Avalia a execução dos status reports planejados.', (onboardingDataStore.acompanhamentoPrevisto || []).length, (onboardingDataStore.acompanhamentoRealizado || []).length, 'fa-sync-alt', 'acompanhamento')}
             `;
+
+            // ==================================================================
+            // ATUALIZAÇÃO SOLICITADA: Chamar a renderização do novo gráfico
+            // ==================================================================
+            renderOnboardingProductChart(onboardingDataStore.productChartData);
+            // ==================================================================
 
             document.querySelectorAll('#onboarding-view .card[data-metric-id], #onboarding-view button[data-metric-id]').forEach(el => {
                 el.addEventListener('click', (e) => {
@@ -2500,3 +2616,4 @@ setupUserView();
 
 
 </html>
+
