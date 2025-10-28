@@ -490,6 +490,62 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     const onboardingClientNames = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
     const onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
+    
+    // ==================================================================
+    // NOVA LÓGICA: Cálculo de Etapas do Onboarding
+    // ==================================================================
+    const stageActivityNames = {
+        preGoLive: normalizeText('Validação de usabilidade / Agendamento GO LIVE'),
+        execucao: normalizeText('Planejamento Finalizado'),
+        inicio: normalizeText('Contato de Welcome')
+    };
+
+    const stageCounts = { preGoLive: 0, execucao: 0, inicio: 0, backlog: 0 };
+    const stageLists = { preGoLive: [], execucao: [], inicio: [], backlog: [] };
+
+    // 1. O total de clientes é simples
+    okrs.totalFilteredClients = onboardingClients.length;
+
+    // 2. Encontrar todas as atividades concluídas de uma vez (de todos os tempos)
+    const concludedOnboardingActivities = onboardingActivities.filter(a => a.ConcluidaEm);
+
+    // 3. Mapear as atividades concluídas por cliente para checagem rápida
+    const clientConcludedActivitiesMap = new Map();
+    concludedOnboardingActivities.forEach(activity => {
+        const clientKey = activity.ClienteCompleto;
+        if (!clientConcludedActivitiesMap.has(clientKey)) {
+            clientConcludedActivitiesMap.set(clientKey, new Set());
+        }
+        clientConcludedActivitiesMap.get(clientKey).add(normalizeText(activity.Atividade));
+    });
+
+    // 4. Iterar sobre os clientes filtrados e atribuir a etapa
+    onboardingClients.forEach(client => {
+        const clientKey = (client.Cliente || '').trim().toLowerCase();
+        const concludedSet = clientConcludedActivitiesMap.get(clientKey) || new Set();
+
+        if (concludedSet.has(stageActivityNames.preGoLive)) {
+            stageCounts.preGoLive++;
+            stageLists.preGoLive.push(client);
+        } else if (concludedSet.has(stageActivityNames.execucao)) {
+            stageCounts.execucao++;
+            stageLists.execucao.push(client);
+        } else if (concludedSet.has(stageActivityNames.inicio)) {
+            stageCounts.inicio++;
+            stageLists.inicio.push(client);
+        } else {
+            stageCounts.backlog++;
+            stageLists.backlog.push(client);
+        }
+    });
+
+    // 5. Adicionar ao objeto okrs
+    okrs.stageCounts = stageCounts;
+    okrs.stageLists = stageLists;
+    // ==================================================================
+    // FIM DA NOVA LÓGICA
+    // ==================================================================
+
     const concludedInPeriod = onboardingActivities.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
 
     // ==================================================================
