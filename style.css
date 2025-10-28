@@ -1159,3 +1159,122 @@
             opacity: 0.8;
         }
 
+/* --- ESTILOS PARA O NOVO CARD DE ETAPAS DO ONBOARDING --- */
+
+/* Ajuste no grupo de métricas para espaçamento */
+#onboarding-stages-group {
+    margin-bottom: 30px; /* Reduz um pouco a margem inferior para ficar mais próximo */
+}
+
+/* Card principal */
+#onboarding-stages-card {
+    grid-column: 1 / -1; /* Faz o card ocupar a largura total */
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 15%, transparent) 0%, var(--card-bg-color) 30%);
+    border-left: 5px solid var(--primary-color);
+}
+
+#onboarding-stages-card h3 {
+    font-size: 1.5rem; /* Título um pouco maior */
+    color: var(--primary-color);
+    border-bottom-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
+}
+
+/* Container para o total e as etapas */
+.onboarding-stages-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Layout responsivo */
+    gap: 20px;
+    align-items: center;
+    padding: 10px 0;
+}
+
+/* Bloco do total de clientes */
+.onboarding-total-clients {
+    text-align: center;
+    padding-right: 20px;
+    border-right: 1px solid var(--border-color); /* Linha divisória */
+}
+
+.onboarding-total-clients .metric-label {
+    font-size: 1rem;
+    color: var(--text-light-color);
+    margin-bottom: 5px;
+    display: block;
+}
+
+.onboarding-total-clients .metric-value {
+    font-size: 3.5rem; /* Valor bem destacado */
+    font-weight: 800;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+/* Container para as etapas individuais */
+.onboarding-stages-breakdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 colunas para as etapas */
+    gap: 15px;
+    padding-left: 20px;
+}
+
+/* Estilo de cada etapa */
+.onboarding-stage-item {
+    text-align: center;
+    cursor: pointer;
+    padding: 15px 10px;
+    border-radius: var(--border-radius-md);
+    background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.onboarding-stage-item:hover {
+    background-color: color-mix(in srgb, var(--primary-color) 15%, transparent);
+    transform: translateY(-5px);
+    border-color: var(--primary-color);
+}
+
+.onboarding-stage-item .stage-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-light-color);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.onboarding-stage-item .stage-count {
+    font-size: 1.8rem; /* Contagem destacada */
+    font-weight: 700;
+    color: var(--text-color);
+    display: block;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 900px) {
+    .onboarding-stages-content {
+        grid-template-columns: 1fr; /* Empilha total e etapas */
+        gap: 30px;
+    }
+    .onboarding-total-clients {
+        border-right: none;
+        padding-right: 0;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-color); /* Linha divisória abaixo */
+    }
+    .onboarding-stages-breakdown {
+        padding-left: 0;
+        grid-template-columns: repeat(2, 1fr); /* 2 colunas em telas menores */
+    }
+}
+
+@media (max-width: 500px) {
+    .onboarding-stages-breakdown {
+        grid-template-columns: 1fr; /* 1 coluna em telas muito pequenas */
+    }
+    .onboarding-stage-item .stage-count {
+        font-size: 1.6rem;
+    }
+    .onboarding-total-clients .metric-value {
+        font-size: 3rem;
+    }
+}
