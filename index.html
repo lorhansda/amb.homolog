@@ -1189,8 +1189,56 @@ function setupUserView() {
         };
         
         // ==================================================================
-        // ATUALIZAÇÃO SOLICITADA
+        // NOVA FUNÇÃO (Adicionada)
+        // ==================================================================
+        const createOnboardingStageCard = (totalClients, stageCounts, stageLists) => {
+            if (!stageCounts) return ''; // Proteção caso os dados não existam
+
+            const stages = [
+                { id: 'preGoLive', title: 'Pré GO LIVE', icon: 'fa-flag-checkered', data: stageLists.preGoLive || [] },
+                { id: 'execucao', title: 'Execução', icon: 'fa-cogs', data: stageLists.execucao || [] },
+                { id: 'inicio', title: 'Início', icon: 'fa-play-circle', data: stageLists.inicio || [] },
+                { id: 'backlog', title: 'Backlog', icon: 'fa-box-open', data: stageLists.backlog || [] }
+            ];
+
+            // Armazena as listas de dados no dataStore principal para o modal
+            stages.forEach(stage => {
+                onboardingDataStore[`onb-stage-${stage.id}`] = stage.data;
+            });
+
+            const stagesHtml = stages.map(stage => {
+                const count = stageCounts[stage.id] || 0;
+                const isClickable = count > 0;
+                return `
+                <div class="metric" ${isClickable ? `data-metric-id="onb-stage-${stage.id}" data-metric-title="Clientes em: ${stage.title}"` : ''}>
+                    <span class="metric-label"><i class="fas ${stage.icon}" style="margin-right: 8px; width: 1.2em; text-align: center;"></i> ${stage.title}:</span>
+                    <span class="metric-value" style="font-size: 1.6rem;">${count}</span>
+                </div>
+                `;
+            }).join('');
+
+            return `
+            <div class="card">
+                <h3>Clientes em Onboarding</h3>
+                <p style="font-style: italic; color: var(--text-light-color); margin: -15px 0 10px 0; font-size: 0.9rem;">Distribuição por etapa concluída</p>
+                <div class="card-content">
+                    <div class="metric" style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px;">
+                        <span class="metric-label" style="font-weight: 700; font-size: 1.1rem;"><i class="fas fa-users" style="margin-right: 8px;"></i>Total de Clientes:</span>
+                        <span class="metric-value" style="font-size: 2.2rem; color: var(--primary-color);">${totalClients}</span>
+                    </div>
+                    ${stagesHtml}
+                </div>
+            </div>`;
+        };
+        // ==================================================================
+        // FIM DA NOVA FUNÇÃO
+        // ==================================================================
+
+
+        // ==================================================================
+        // ATUALIZAÇÃO SOLICITADA (index.html)
         // A função `createOnboardingProcessCard` foi modificada.
+        // A função `renderNewOnboardingView` foi modificada para chamar o novo card de etapas.
         // ==================================================================
         const renderNewOnboardingView = () => {
             // Esta função usa `onboardingDataStore` que foi preenchido pelo worker
@@ -1251,7 +1299,6 @@ function setupUserView() {
                     const realizadoSLAOkList = slaOkList || [];
                     
                     // Calcula a lista dos que foram realizados fora do prazo
-                    // Compara por referência de objeto, assumindo que `realizadoSLAOkList` é um subconjunto filtrado de `realizadoList`
                     const realizadoForaPrazoList = realizadoList.filter(item => !realizadoSLAOkList.includes(item));
                     
                     // Armazena no dataStore para o modal
@@ -1331,6 +1378,7 @@ function setupUserView() {
             const goLivesTotal = (onboardingDataStore.goLiveActivitiesConcluded?.length || 0) + (onboardingDataStore.goLiveActivitiesPredicted?.length || 0);
 
             outcomesGrid.innerHTML = `
+                ${createOnboardingStageCard(onboardingDataStore.totalFilteredClients || 0, onboardingDataStore.stageCounts, onboardingDataStore.stageLists || {})}
                 ${createOnboardingMetricCard('Go-Lives Realizados e Previstos', 'Total de Go-Lives concluídos e previstos para o mês.', goLivesTotal, `<strong>${onboardingDataStore.goLiveActivitiesConcluded?.length || 0}</strong> realizados, <strong>${onboardingDataStore.goLiveActivitiesPredicted?.length || 0}</strong> previstos.`, 'fa-rocket', 'onb-go-live-combined', [...(onboardingDataStore.goLiveActivitiesConcluded || []), ...(onboardingDataStore.goLiveActivitiesPredicted || [])])}
                 ${createOnboardingMetricCard('NPS Pós Go-Live', 'Taxa de resposta dos clientes que tiveram Go-Live.', `${npsRespondedCount}/${npsTotal}`, `responderam`, 'fa-star-half-alt', 'onb-nps-responded', onboardingDataStore.npsResponded || [])}
                 ${createOnboardingMetricCard('Tempo Médio de Onboarding (Concluído)', 'Duração média (Playbook vs Go-Live).', `${onboardingDataStore.averageCompletedOnboardingTime || 0} dias`, `para ${onboardingDataStore.completedOnboardingsList?.length || 0} onboardings concluídos`, 'fa-check-circle', 'onb-completed-list', onboardingDataStore.completedOnboardingsList || [])}
