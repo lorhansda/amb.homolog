@@ -473,11 +473,16 @@ const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClie
 };
 
 const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, selectedISM) => {
+    // 'activities' é rawActivities
+    // 'clients' AGORA É filteredClients (a carteira em análise)
     const okrs = {};
     const startOfMonth = new Date(Date.UTC(year, month, 1));
     const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
 
+    // 1. Encontra clientes EM ONBOARDING DENTRO da carteira filtrada
     let onboardingClients = clients.filter(c => normalizeText(c.Fase) === 'onboarding');
+    
+    // Filtros específicos da aba de Onboarding (Time e ISM)
     if (teamView === 'syneco') {
         onboardingClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
     } else if (teamView === 'outros') {
@@ -486,13 +491,15 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     if (selectedISM !== 'Todos') {
         onboardingClients = onboardingClients.filter(c => c.ISM === selectedISM);
     }
+    
     okrs.filteredClients = onboardingClients;
     const onboardingClientNames = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
+    // Filtra atividades APENAS dos clientes que estão em onboarding NAQUELE FILTRO
     const onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
     
     // ==================================================================
-    // NOVA LÓGICA: Cálculo de Etapas do Onboarding
+    // LÓGICA: Cálculo de Etapas do Onboarding (Baseado nos clientes em onboarding do filtro)
     // ==================================================================
     const stageActivityNames = {
         preGoLive: normalizeText('Validação de usabilidade / Agendamento GO LIVE'),
@@ -503,13 +510,10 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     const stageCounts = { preGoLive: 0, execucao: 0, inicio: 0, backlog: 0 };
     const stageLists = { preGoLive: [], execucao: [], inicio: [], backlog: [] };
 
-    // 1. O total de clientes é simples
     okrs.totalFilteredClients = onboardingClients.length;
 
-    // 2. Encontrar todas as atividades concluídas de uma vez (de todos os tempos)
     const concludedOnboardingActivities = onboardingActivities.filter(a => a.ConcluidaEm);
 
-    // 3. Mapear as atividades concluídas por cliente para checagem rápida
     const clientConcludedActivitiesMap = new Map();
     concludedOnboardingActivities.forEach(activity => {
         const clientKey = activity.ClienteCompleto;
@@ -519,7 +523,6 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         clientConcludedActivitiesMap.get(clientKey).add(normalizeText(activity.Atividade));
     });
 
-    // 4. Iterar sobre os clientes filtrados e atribuir a etapa
     onboardingClients.forEach(client => {
         const clientKey = (client.Cliente || '').trim().toLowerCase();
         const concludedSet = clientConcludedActivitiesMap.get(clientKey) || new Set();
@@ -539,18 +542,13 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         }
     });
 
-    // 5. Adicionar ao objeto okrs
     okrs.stageCounts = stageCounts;
     okrs.stageLists = stageLists;
     // ==================================================================
-    // FIM DA NOVA LÓGICA
+    // FIM DA LÓGICA DE ETAPAS
     // ==================================================================
 
     const concludedInPeriod = onboardingActivities.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
-
-    // ==================================================================
-    // ALTERAÇÃO 1: Busca exata pelo nome da atividade "Go Live"
-    // ==================================================================
     const goLiveActivityName = normalizeText('Call/Reunião de GO LIVE');
 
     const goLiveActivitiesConcluded = concludedInPeriod.filter(a => normalizeText(a.Atividade) === goLiveActivityName);
@@ -560,9 +558,6 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         a.PrevisaoConclusao >= startOfMonth &&
         a.PrevisaoConclusao <= endOfMonth
     );
-    // ==================================================================
-    // FIM DA ALTERAÇÃO 1
-    // ==================================================================
 
     okrs.goLiveActivitiesConcluded = goLiveActivitiesConcluded;
     okrs.goLiveActivitiesPredicted = goLiveActivitiesPredicted;
@@ -574,16 +569,20 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     okrs.highValueClients = onboardingClients.filter(c => c.ValorNaoFaturado > 50000);
 
     // ==================================================================
-    // ATUALIZAÇÃO SOLICITADA: Lógica de Tempo Médio (Histórico) e Gráfico por Produto
+    // ATUALIZAÇÃO SOLICITADA: Lógica de Tempo Médio (Histórico da CARTEIRA) e Gráfico por Produto
     // ==================================================================
-
+    
+    // Cria um Set com TODOS os clientes da carteira filtrada (ongoing + onboarding)
+    const portfolioClientNames = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
+    
     const welcomeActivityName = normalizeText('Contato de Welcome');
 
-    // 1. Mapear data de início (Welcome) para CADA cliente (usando dados brutos)
+    // 1. Mapear data de início (Welcome) para CADA cliente (apenas da CARTEIRA)
     const welcomeContactCreationDate = new Map();
-    rawActivities.forEach(a => { // Usar rawActivities
-        if (normalizeText(a.Atividade) === welcomeActivityName && a.CriadoEm) {
-            const clientKey = a.ClienteCompleto;
+    activities.forEach(a => { // 'activities' é rawActivities
+        const clientKey = a.ClienteCompleto;
+        // FILTRA para incluir apenas atividades de clientes da carteira selecionada
+        if (portfolioClientNames.has(clientKey) && normalizeText(a.Atividade) === welcomeActivityName && a.CriadoEm) {
             const existingDate = welcomeContactCreationDate.get(clientKey);
             if (!existingDate || a.CriadoEm < existingDate) {
                 welcomeContactCreationDate.set(clientKey, a.CriadoEm);
@@ -591,18 +590,19 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         }
     });
 
-    // 2. Encontrar TODAS as atividades de Go Live concluídas (de todos os tempos, usando dados brutos)
-    const allGoLiveActivitiesConcluded = rawActivities.filter(a => // Usar rawActivities
+    // 2. Encontrar TODAS as atividades de Go Live concluídas (apenas da CARTEIRA)
+    const allGoLiveActivitiesConcluded = activities.filter(a => // 'activities' é rawActivities
+        portfolioClientNames.has(a.ClienteCompleto) && // FILTRA para clientes da carteira
         normalizeText(a.Atividade) === goLiveActivityName && a.ConcluidaEm
     );
 
-    // 3. Mapear "Negócio" de TODOS os clientes (usando dados brutos)
-    const allClientToNegocioMap = new Map();
-    rawClients.forEach(c => { // Usar rawClients
-        allClientToNegocioMap.set((c.Cliente || '').trim().toLowerCase(), c['Negócio'] || 'Não Definido');
+    // 3. Mapear "Negócio" dos clientes da CARTEIRA
+    const portfolioClientToNegocioMap = new Map();
+    clients.forEach(c => { // 'clients' é filteredClients
+        portfolioClientToNegocioMap.set((c.Cliente || '').trim().toLowerCase(), c['Negócio'] || 'Não Definido');
     });
 
-    // 4. Calcular TODAS as durações concluídas e agrupar por "Negócio"
+    // 4. Calcular TODAS as durações concluídas (da CARTEIRA) e agrupar por "Negócio"
     const productMetrics = {}; // { 'ProdutoA': { durations: [], clientCount: 0 }, ... }
     const allCompletedOnboardings = [];
 
@@ -616,7 +616,7 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
             .sort((a,b) => b - a)[0]; 
         
         const playbookStartDate = welcomeContactCreationDate.get(clientKey);
-        const negocio = allClientToNegocioMap.get(clientKey) || 'Não Definido';
+        const negocio = portfolioClientToNegocioMap.get(clientKey) || 'Não Definido';
 
         if (goLiveDate && playbookStartDate) {
             const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
@@ -634,7 +634,7 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         }
     });
     
-    // 5. Contar clientes ATUAIS em onboarding por "Negócio"
+    // 5. Contar clientes ATUAIS em onboarding (da CARTEIRA) por "Negócio"
     // Usa a lista `onboardingClients` que já foi filtrada no início desta função
     onboardingClients.forEach(client => {
         const negocio = client['Negócio'] || 'Não Definido';
@@ -644,10 +644,10 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         productMetrics[negocio].clientCount++;
     });
 
-    // 6. Salva a lista de concluídos (histórico) para o card de "Tempo Médio"
+    // 6. Salva a lista de concluídos (histórico da carteira) para o card de "Tempo Médio"
     okrs.completedOnboardingsList = allCompletedOnboardings;
     
-    // 7. Calcula o tempo médio GERAL (histórico)
+    // 7. Calcula o tempo médio GERAL (histórico da carteira)
     const allDurations = allCompletedOnboardings.map(item => item.duration);
     okrs.averageCompletedOnboardingTime = allDurations.length > 0
         ? Math.round(allDurations.reduce((a, b) => a + b, 0) / allDurations.length)
@@ -686,29 +686,28 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
 
     const today = new Date();
     // ==================================================================
-    // ALTERAÇÃO 2: Lógica do "Top Ranking"
-    // A lista `onboardingClients` já contém APENAS clientes com Fase == 'onboarding'.
-    // Portanto, ela é a definição de "em aberto".
-    // Apenas calculamos a duração de todos eles até HOJE.
+    // Lógica do "Top Ranking" (Baseado nos clientes em onboarding do filtro)
     // ==================================================================
-    const openClientsWithDuration = onboardingClients
+    const openClientsWithDuration = onboardingClients // já filtrado
         .map(client => {
             const clientKey = (client.Cliente || '').trim().toLowerCase();
-            const startDate = clientOnboardingStartDate.get(clientKey);
+            // Re-usa o mapa de "Welcome" que já foi calculado (baseado na carteira)
+            const startDate = welcomeContactCreationDate.get(clientKey);
             if (startDate) {
                 const duration = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
                 return { ...client, onboardingDuration: duration };
             }
             return { ...client, onboardingDuration: null };
-        }).filter(c => c.onboardingDuration !== null); // Mantém filtro para clientes sem data de início
+        }).filter(c => c.onboardingDuration !== null);
     // ==================================================================
-    // FIM DA ALTERAÇÃO 2
+    // FIM DA LÓGICA "Top Ranking"
     // ==================================================================
 
     openClientsWithDuration.sort((a, b) => b.onboardingDuration - a.onboardingDuration);
     okrs.top5LongestOnboardings = openClientsWithDuration.slice(0, 5);
     okrs.clientsOver120Days = openClientsWithDuration.filter(c => c.onboardingDuration > 120);
 
+    // Lógica de Processos (baseada nos clientes em onboarding do filtro)
     const processTargets = {
         welcome: { name: 'contato de welcome', sla: 3 },
         kickoff: { name: 'call/reunião kickoff', sla: 7 },
@@ -719,7 +718,7 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     };
 
     Object.entries(processTargets).forEach(([key, config]) => {
-        const allInPeriod = onboardingActivities.filter(a =>
+        const allInPeriod = onboardingActivities.filter(a => // usa 'onboardingActivities' (já filtrado)
             normalizeText(a.Atividade) === config.name &&
             ((a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth) ||
              (a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth))
@@ -729,11 +728,6 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         okrs[`${key}Previsto`] = previstoList;
         okrs[`${key}Realizado`] = realizadoList;
 
-        // Lógica de SLA (Revisada e confirmada):
-        // Se diffDays for negativo (feito antes), -5 <= 3 (true) -> OK
-        // Se diffDays for 0 (feito no dia), 0 <= 3 (true) -> OK
-        // Se diffDays for 3 (feito 3 dias depois), 3 <= 3 (true) -> OK
-        // Se diffDays for 4 (feito 4 dias depois), 4 <= 3 (false) -> Não OK
         if (config.sla) {
             okrs[`${key}SLAOk`] = realizadoList.filter(a => {
                 const dueDate = a.PrevisaoConclusao;
@@ -829,7 +823,7 @@ self.onmessage = (e) => {
             }
 
             // 4. Calcula OKRs de Onboarding
-            const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, rawClients, payload.teamView, payload.selectedISM);
+            const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, filteredClients, payload.teamView, payload.selectedISM);
 
             // 5. Calcula Atividades Atrasadas
             const overdueMetrics = calculateOverdueMetrics(rawActivities, payload.selectedCS);
@@ -937,4 +931,5 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
