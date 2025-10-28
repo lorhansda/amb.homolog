@@ -1278,3 +1278,7 @@
         font-size: 3rem;
     }
 }
+/* --- ESTILOS PARA O NOVO GRÁFICO DE PRODUTOS --- */
+#onboarding-product-chart-card {
+    grid-column: 1 / -1; /* Faz o card ocupar a largura total */
+}
