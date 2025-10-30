@@ -12,4 +12,5 @@ const ISM_MAPPING = {
     // Adicione seus mapeamentos aqui. Exemplo:
     // 'joao.silva@empresa.com.br': 'João Silva',
     // 'maria.santos@empresa.com.br': 'Maria Santos',
+    'naty.naveal@gmail.com': 'Nathalia Fagundes',
 };
