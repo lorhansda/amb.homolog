@@ -13,4 +13,5 @@ const ISM_MAPPING = {
     // 'joao.silva@empresa.com.br': 'João Silva',
     // 'maria.santos@empresa.com.br': 'Maria Santos',
     'naty.naveal@gmail.com': 'Nathalia Fagundes',
+    'lorhangames2@gmail.com': 'Nathalia Fagundes',
 };
