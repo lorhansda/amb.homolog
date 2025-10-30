@@ -13,7 +13,8 @@ let rawActivities = [],
     clientOnboardingStartDate = new Map(),
     csToSquadMap = new Map(),
     currentUser = {},
-    manualEmailToCsMap = {};
+    manualEmailToCsMap = {},
+    ismToFilter = 'Todos'; // Novo: Armazena o ISM a ser usado no filtro de Onboarding
 
 // --- FUNÇÕES AUXILIARES DE PROCESSAMENTO (Movidas do script principal) ---
 
@@ -205,16 +206,32 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     let csRealizedActivities = [];
     let onboardingRealizedActivities = [];
 
+    // Lista de ISMs para filtro retroativo/legado
+    const ismList = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))].map(ism => ism.trim());
+
     allConcludedActivitiesInPortfolio.forEach(activity => {
         const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
         const isClientOnboarding = clientInfo?.fase === 'onboarding';
+        const activityOwner = (activity['Responsável'] || '').trim();
+
         if (!isClientOnboarding) {
-            const activityOwner = (activity['Responsável'] || '').trim();
+            // Lógica para clientes NÃO estão em onboarding
             if (selectedCS === 'Todos' || activityOwner === selectedCS) {
                 csRealizedActivities.push(activity);
             }
         } else {
-            onboardingRealizedActivities.push(activity);
+            // Lógica para clientes EM onboarding
+            // Se a atividade for de um cliente em onboarding, verifica se o Responsável é um ISM
+            // e se o filtro de ISM está ativo (se for um usuário de Onboarding logado)
+            if (ismList.includes(activityOwner) && ismToFilter !== 'Todos') {
+                if (activityOwner === ismToFilter) {
+                    onboardingRealizedActivities.push(activity);
+                }
+            } else {
+                // Se o filtro de ISM não estiver ativo ou o responsável não for um ISM,
+                // a atividade é considerada parte do portfólio de Onboarding geral
+                onboardingRealizedActivities.push(activity);
+            }
         }
     });
 
@@ -497,7 +514,12 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     const onboardingClientNames = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
     // Filtra atividades APENAS dos clientes que estão em onboarding NAQUELE FILTRO
-    const onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
+    let onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
+
+    // Correção de omissão: Filtra as atividades pelo Responsável (ISM) para o usuário de Onboarding
+    if (currentUser.userGroup === 'onboarding' && ismToFilter !== 'Todos') {
+        onboardingActivities = onboardingActivities.filter(a => (a['Responsável'] || '').trim() === ismToFilter);
+    }
 
     // ==================================================================
     // LÓGICA: Cálculo de Etapas do Onboarding (Baseado nos clientes em onboarding do filtro)
@@ -578,17 +600,33 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     // Cria um Set com TODOS os clientes da carteira filtrada (ongoing + onboarding)
     const portfolioClientNames = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
 
-    const welcomeActivityName = normalizeText('Contato de Welcome');
+    // NOVO: Atividades que marcam o início do tempo de onboarding
+    const onboardingStartActivities = [
+        normalizeText('Validação e Planejamento'),
+        normalizeText('Validação do pedido'),
+        normalizeText('Contato de Welcome') // Mantido como fallback/legado, mas prioriza os novos
+    ];
 
-    // 1. Mapear data de início (Welcome) para CADA cliente (apenas da CARTEIRA)
-    const welcomeContactCreationDate = new Map();
+    // 1. Mapear data de início (Validação/Welcome) para CADA cliente (apenas da CARTEIRA)
+    const onboardingStartCreationDate = new Map();
     activities.forEach(a => { // 'activities' é rawActivities
         const clientKey = a.ClienteCompleto;
+        const activityNormalized = normalizeText(a.Atividade);
+
         // FILTRA para incluir apenas atividades de clientes da carteira selecionada
-        if (portfolioClientNames.has(clientKey) && normalizeText(a.Atividade) === welcomeActivityName && a.CriadoEm) {
-            const existingDate = welcomeContactCreationDate.get(clientKey);
-            if (!existingDate || a.CriadoEm < existingDate) {
-                welcomeContactCreationDate.set(clientKey, a.CriadoEm);
+        if (portfolioClientNames.has(clientKey) && a.CriadoEm) {
+            
+            let isStartActivity = false;
+            if (onboardingStartActivities.includes(activityNormalized)) {
+                isStartActivity = true;
+            }
+
+            if (isStartActivity) {
+                const existingDate = onboardingStartCreationDate.get(clientKey);
+                // A data de início é a MAIS ANTIGA entre as atividades de início
+                if (!existingDate || a.CriadoEm < existingDate) {
+                    onboardingStartCreationDate.set(clientKey, a.CriadoEm);
+                }
             }
         }
     });
@@ -622,7 +660,7 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
             .map(a => a.ConcluidaEm)
             .sort((a,b) => b - a)[0];
 
-        const playbookStartDate = welcomeContactCreationDate.get(clientKey);
+        const playbookStartDate = onboardingStartCreationDate.get(clientKey);
 
         if (goLiveDate && playbookStartDate) {
             const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
@@ -707,8 +745,8 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     const openClientsWithDuration = onboardingClients // já filtrado por ISM
         .map(client => {
             const clientKey = (client.Cliente || '').trim().toLowerCase();
-            // Re-usa o mapa de "Welcome" que já foi calculado (baseado na carteira)
-            const startDate = welcomeContactCreationDate.get(clientKey);
+	            // Re-usa o mapa de "Início do Onboarding" que já foi calculado (baseado na carteira)
+	            const startDate = onboardingStartCreationDate.get(clientKey);
             if (startDate) {
                 const duration = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
                 return { ...client, onboardingDuration: duration };
@@ -746,10 +784,15 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
 
         if (config.sla) {
             okrs[`${key}SLAOk`] = realizadoList.filter(a => {
-                const dueDate = a.PrevisaoConclusao;
                 const completedDate = a.ConcluidaEm;
-                if (dueDate && completedDate) {
-                    const diffDays = (completedDate - dueDate) / (1000 * 60 * 60 * 24);
+                const createdDate = a.CriadoEm; // NOVO: Data de Criação
+                
+                if (completedDate && createdDate) {
+                    // Calcula a diferença em dias entre a conclusão e a criação
+                    const diffDays = (completedDate - createdDate) / (1000 * 60 * 60 * 24);
+                    
+                    // O SLA é considerado ok se a conclusão for até 'config.sla' dias após a criação.
+                    // O SLA para 'Contato de Welcome' é 3 dias.
                     return diffDays <= config.sla;
                 }
                 return false;
@@ -773,6 +816,7 @@ self.onmessage = (e) => {
             rawClients = payload.rawClients;
             currentUser = payload.currentUser;
             manualEmailToCsMap = payload.manualEmailToCsMap;
+            ismToFilter = currentUser.selectedISM || 'Todos'; // Define o ISM a ser usado no filtro de Onboarding
 
             // 2. Processa e junta os dados
             processInitialData(); // Modifica rawActivities
@@ -803,20 +847,26 @@ self.onmessage = (e) => {
         }
 
         else if (type === 'CALCULATE_MONTHLY') {
-            // 1. Filtra clientes baseado nos filtros de CS/Squad
-            let filteredClients = rawClients;
-            let csForCalc = payload.selectedCS;
+    // 1. Filtra clientes baseado nos filtros de CS/Squad
+    let filteredClients = rawClients;
+    let csForCalc = payload.selectedCS;
 
-            if (currentUser.isManager) {
-                if (payload.selectedSquad !== 'Todos') {
-                    filteredClients = rawClients.filter(d => d['Squad CS'] === payload.selectedSquad);
-                    csForCalc = 'Todos';
-                } else if (payload.selectedCS !== 'Todos') {
-                    filteredClients = rawClients.filter(d => d.CS?.trim() === payload.selectedCS);
-                }
-            } else {
-                filteredClients = rawClients.filter(d => d.CS?.trim() === payload.selectedCS);
-            }
+    if (currentUser.userGroup === 'onboarding' && ismToFilter !== 'Todos') {
+        // Se o usuário for de Onboarding e tiver um ISM definido, o filtro principal é o ISM
+        // Isso corrige o problema de omissão de valores, garantindo que o filtro de Onboarding
+        // seja aplicado na lista de clientes antes de qualquer outro cálculo.
+        filteredClients = rawClients.filter(d => (d.ISM || '').trim() === ismToFilter);
+        csForCalc = 'Todos'; // Desconsidera o CS para o time de Onboarding
+    } else if (currentUser.isManager) {
+        if (payload.selectedSquad !== 'Todos') {
+            filteredClients = rawClients.filter(d => d['Squad CS'] === payload.selectedSquad);
+            csForCalc = 'Todos';
+        } else if (payload.selectedCS !== 'Todos') {
+            filteredClients = rawClients.filter(d => d.CS?.trim() === payload.selectedCS);
+        }
+    } else {
+        filteredClients = rawClients.filter(d => d.CS?.trim() === payload.selectedCS);
+    }
 
             // 2. Calcula métricas do mês atual
             const dataStore = calculateMetricsForPeriod(payload.month, payload.year, rawActivities, filteredClients, csForCalc, payload.includeOnboarding, payload.goals);
@@ -839,7 +889,8 @@ self.onmessage = (e) => {
             }
 
             // 4. Calcula OKRs de Onboarding
-            const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, filteredClients, payload.teamView, payload.selectedISM);
+            // Passa o ISM do usuário logado para o cálculo de Onboarding
+    const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, filteredClients, payload.teamView, ismToFilter);
 
             // 5. Calcula Atividades Atrasadas
             const overdueMetrics = calculateOverdueMetrics(rawActivities, payload.selectedCS);
@@ -947,6 +998,7 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
 
