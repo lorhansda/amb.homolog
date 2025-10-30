@@ -372,6 +372,73 @@ const onboardingEmails = [
     }
 
     function handleCredentialResponse(response) {
+            const userEmail = response.email.toLowerCase();
+            const userName = response.name;
+
+            // --- NOVO: Mapeamento de Login para ISM ---
+            // Verifica se ISM_MAPPING está definido e se o e-mail está mapeado
+            const mappedISM = (typeof ISM_MAPPING !== 'undefined' && ISM_MAPPING[userEmail]) ? ISM_MAPPING[userEmail] : null;
+
+            // Simulação de verificação de permissão
+            let userGroup = 'viewer'; // Padrão: apenas visualizador
+            let isManager = false;
+
+            // Lista de e-mails com permissão de Manager (exemplo)
+            const managerEmails = [
+                // Adicione os e-mails dos managers aqui
+            ];
+
+            // Lista de e-mails com permissão de CS (exemplo)
+            const csEmails = [
+                // Adicione os e-mails dos CSs aqui
+            ];
+
+            // Lista de e-mails com permissão de Onboarding (exemplo)
+            const onboardingEmails = [
+                // Adicione os e-mails do time de Onboarding aqui
+            ];
+
+            if (managerEmails.includes(userEmail)) {
+                userGroup = 'manager';
+                isManager = true;
+            } else if (csEmails.includes(userEmail)) {
+                userGroup = 'ongoing';
+            } else if (onboardingEmails.includes(userEmail) || mappedISM) { // Se estiver na lista OU tiver mapeamento ISM
+                userGroup = 'onboarding';
+            }
+
+            // Se o usuário não for manager, seu nome é o CS selecionado por padrão
+            let selectedCS = 'Todos';
+            let selectedISM = 'Todos';
+
+            if (!isManager) {
+                if (userGroup === 'ongoing') {
+                    selectedCS = userName;
+                } else if (userGroup === 'onboarding') {
+                    // Usa o ISM mapeado, ou o nome do usuário como fallback
+                    selectedISM = mappedISM || userName;
+                }
+            }
+
+            currentUser = {
+                email: userEmail,
+                name: userName,
+                userGroup: userGroup,
+                isManager: isManager,
+                selectedCS: selectedCS, // O CS que será pré-selecionado no filtro
+                selectedISM: selectedISM // O ISM que será pré-selecionado no filtro de Onboarding
+            };
+
+            // Salva no localStorage para persistir o login
+            localStorage.setItem('userProfile', JSON.stringify(currentUser));
+
+            // Configura a visualização e inicia o processo de carregamento de dados
+            setupUserView();
+        }
+
+        const selectSquad = document.getElementById('select-squad');
+        const selectISM = document.getElementById('select-ism'); // Adicionado aqui
+        const squadCsListDiv = document.getElementById('squad-cs-list');
     const decodedToken = parseJwt(response.credential);
 
     if (decodedToken) {
@@ -2574,28 +2641,43 @@ setupUserView();
                 }
             } 
             
-            if (currentUser.userGroup === 'onboarding') {
-                // Oculta os filtros principais que não se aplicam ao onboarding
-                document.getElementById('squad-filter-group').style.display = 'none';
-                document.getElementById('squad-cs-list').style.display = 'none';
-                document.querySelector('.control-group label[for="select-cs"]').parentElement.style.display = 'none';
-                document.querySelector('.control-group label[for="select-segmento"]').parentElement.style.display = 'none';
-                document.querySelector('.control-group label[for="select-comparison"]').parentElement.style.display = 'none';
-                document.querySelector('.control-group label[for="include-onboarding-toggle"]').parentElement.style.display = 'none';
-
-                // Desabilita visualmente o label de ISM (na aba de onboarding)
-                // (O select já está travado pela lógica de populateFilters)
-                const ismLabel = document.querySelector('[for="select-ism"]');
-                if (ismLabel) {
-                    ismLabel.style.pointerEvents = 'none';
-                    ismLabel.style.opacity = '0.6';
-                }
-            }
-        }
-    }
-</script>
-
-<script type="text/javascript">
+if (currentUser.userGroup === 'onboarding') {
+	                // Oculta os filtros principais que não se aplicam ao onboarding
+	                document.getElementById('squad-filter-group').style.display = 'none';
+	                document.getElementById('squad-cs-list').style.display = 'none';
+	                document.querySelector('.control-group label[for="select-cs"]').parentElement.style.display = 'none';
+	                document.querySelector('.control-group label[for="select-segmento"]').parentElement.style.display = 'none';
+	                document.querySelector('.control-group label[for="select-comparison"]').parentElement.style.display = 'none';
+	                document.querySelector('.control-group label[for="include-onboarding-toggle"]').parentElement.style.display = 'none';
+	
+	                // Lógica de trava do filtro ISM
+	                const ismLabel = document.querySelector('[for="select-ism"]');
+	                if (!currentUser.isManager) {
+	                    // Trava o filtro para o ISM do usuário logado
+	                    if (selectISM.value !== currentUser.selectedISM) {
+	                        selectISM.value = currentUser.selectedISM;
+	                    }
+	                    selectISM.disabled = true;
+	                    if (ismLabel) {
+	                        ismLabel.style.pointerEvents = 'none';
+	                        ismLabel.style.opacity = '0.6';
+	                    }
+	                } else {
+	                    // Garante que managers possam usar o filtro
+	                    selectISM.disabled = false;
+	                     if (ismLabel) {
+	                        ismLabel.style.pointerEvents = 'auto';
+	                        ismLabel.style.opacity = '1';
+	                    }
+	                }
+	            }
+	        }
+	    }
+	</script>
+	
+	<script src="ism_config.js"></script>
+	
+	<script type="text/javascript">
     var Tawk_API = Tawk_API || {},
         Tawk_LoadStart = new Date();
     (function() {
@@ -2613,4 +2695,3 @@ setupUserView();
 
 
 </html>
-
