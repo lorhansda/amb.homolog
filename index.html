@@ -1397,6 +1397,10 @@ function setupUserView() {
              * Função atualizada para renderizar cards de processo de Onboarding.
              * Detecta automaticamente se é um card de SLA (com 3 métricas) ou um card de Prazo (com 2 métricas).
              */
+            /**
+             * Função atualizada para renderizar cards de processo de Onboarding.
+             * Detecta automaticamente se é um card de SLA (com 3 métricas) ou um card de Prazo (com 2 métricas).
+             */
             const createOnboardingProcessCard = (title, subtitle, previsto, realizado, icon, metricIdPrefix = null) => {
                 // Verifica se este é um card baseado em SLA (ex: welcomeSLAOk)
                 const slaOkList = onboardingDataStore[`${metricIdPrefix}SLAOk`];
@@ -1405,39 +1409,45 @@ function setupUserView() {
                 let cardContentHtml = '';
                 let percentage = 0;
                 let percentageTitle = '';
+                
+                // --- Listas de dados ---
+                const previstoList = onboardingDataStore[`${metricIdPrefix}Previsto`] || [];
+                const antecipadoList = onboardingDataStore[`${metricIdPrefix}Antecipado`] || [];
+                const previstoCount = previstoList.length;
+                const antecipadoCount = antecipadoList.length;
+                const antecipadoClickable = metricIdPrefix && antecipadoCount > 0;
+                const previstoClickable = metricIdPrefix && previstoCount > 0;
 
                 if (isSlaCard) {
-                    // --- NOVA LÓGICA PARA CARDS DE SLA (Formato de 3 métricas) ---
-                    const previstoList = onboardingDataStore[`${metricIdPrefix}Previsto`] || [];
-                    const realizadoList = onboardingDataStore[`${metricIdPrefix}Realizado`] || [];
+                    // --- NOVA LÓGICA PARA CARDS DE SLA (Formato de lista) ---
                     const realizadoSLAOkList = slaOkList || [];
+                    const realizadoList = onboardingDataStore[`${metricIdPrefix}Realizado`] || []; // Todos realizados no mês
                     
-                    // Calcula a lista dos que foram realizados fora do prazo
                     const realizadoForaPrazoList = realizadoList.filter(item => !realizadoSLAOkList.includes(item));
-                    
-                    // Armazena no dataStore para o modal
                     onboardingDataStore[`${metricIdPrefix}RealizadoForaPrazo`] = realizadoForaPrazoList;
 
-                    const previstoCount = previstoList.length;
                     const realizadoSLAOkCount = realizadoSLAOkList.length;
                     const realizadoForaPrazoCount = realizadoForaPrazoList.length;
-                    const totalRealizado = realizadoSLAOkCount + realizadoForaPrazoCount; // = realizadoList.length
                     
-                    // A porcentagem de progresso (barra) é "Total Realizado" vs "Previsto"
-                    percentage = previstoCount > 0 ? (totalRealizado / previstoCount) * 100 : (totalRealizado > 0 ? 100 : 0);
-                    percentageTitle = `${percentage.toFixed(1)}% de conclusão (Total Realizado vs. Previsto)`;
+                    const totalConcluido = realizadoSLAOkCount + realizadoForaPrazoCount + antecipadoCount;
+                    const totalProgramado = totalConcluido + previstoCount;
 
-                    // Click handlers
-                    const previstoClickable = metricIdPrefix && previstoCount > 0;
+                    percentage = totalProgramado > 0 ? (totalConcluido / totalProgramado) * 100 : (totalConcluido > 0 ? 100 : 0);
+                    percentageTitle = `${percentage.toFixed(1)}% de conclusão (${totalConcluido} de ${totalProgramado})`;
+                    
                     const realizadoOkClickable = metricIdPrefix && realizadoSLAOkCount > 0;
                     const realizadoForaClickable = metricIdPrefix && realizadoForaPrazoCount > 0;
 
                     // Constrói o HTML com o novo formato
                     cardContentHtml = `
                     <div class="card-content" style="display: block; text-align: left;">
-                        <div class="metric" ${previstoClickable ? `data-metric-id="${metricIdPrefix}Previsto" data-metric-title="Previsto: ${title}"` : ''}>
-                            <span class="metric-label">Previsto:</span>
+                        <div class="metric" ${previstoClickable ? `data-metric-id="${metricIdPrefix}Previsto" data-metric-title="Pendentes: ${title}"` : ''}>
+                            <span class="metric-label">Pendentes:</span>
                             <span class="metric-value" style="font-size: 1.8rem;">${previstoCount}</span>
+                        </div>
+                        <div class="metric" ${antecipadoClickable ? `data-metric-id="${metricIdPrefix}Antecipado" data-metric-title="Concluído (Antecipado): ${title}"` : ''}>
+                            <span class="metric-label">Concluído (Antecip.):</span>
+                            <span class="metric-value success" style="font-size: 1.8rem;">${antecipadoCount}</span>
                         </div>
                         <div class="metric" ${realizadoOkClickable ? `data-metric-id="${metricIdPrefix}SLAOk" data-metric-title="Realizado (no prazo): ${title}"` : ''}>
                             <span class="metric-label">Realizado (no prazo):</span>
@@ -1450,21 +1460,32 @@ function setupUserView() {
                     </div>`;
 
                 } else {
-                    // --- LÓGICA ORIGINAL (para cards de "Prazo" sem SLA) ---
-                    percentage = previsto > 0 ? (realizado / previsto) * 100 : (realizado > 0 ? 100 : 0);
-                    percentageTitle = `${percentage.toFixed(1)}% de conclusão`;
-                    const previstoClickable = metricIdPrefix && onboardingDataStore[`${metricIdPrefix}Previsto`]?.length > 0;
-                    const realizadoClickable = metricIdPrefix && onboardingDataStore[`${metricIdPrefix}Realizado`]?.length > 0;
+                    // --- LÓGICA ATUALIZADA (para cards de "Prazo" sem SLA) ---
+                    // Mudar para o formato de lista, igual ao card de SLA
+                    const realizadoList = onboardingDataStore[`${metricIdPrefix}Realizado`] || [];
+                    const realizadoCount = realizadoList.length;
+                    
+                    const totalConcluido = realizadoCount + antecipadoCount;
+                    const totalProgramado = totalConcluido + previstoCount;
+
+                    percentage = totalProgramado > 0 ? (totalConcluido / totalProgramado) * 100 : (totalConcluido > 0 ? 100 : 0);
+                    percentageTitle = `${percentage.toFixed(1)}% de conclusão (${totalConcluido} de ${totalProgramado})`;
+                    
+                    const realizadoClickable = metricIdPrefix && realizadoCount > 0;
 
                     cardContentHtml = `
-                    <div class="card-content" style="display: flex; justify-content: space-around; gap: 20px; text-align: center;">
-                        <div ${previstoClickable ? `data-metric-id="${metricIdPrefix}Previsto" data-metric-title="Previsto: ${title}"` : ''}>
-                            <span class="metric-label">Previsto</span>
-                            <span class="metric-value" style="font-size: 2rem;">${previsto}</span>
+                    <div class="card-content" style="display: block; text-align: left;">
+                        <div class="metric" ${previstoClickable ? `data-metric-id="${metricIdPrefix}Previsto" data-metric-title="Pendentes: ${title}"` : ''}>
+                            <span class="metric-label">Pendentes:</span>
+                            <span class="metric-value" style="font-size: 1.8rem;">${previstoCount}</span>
                         </div>
-                        <div ${realizadoClickable ? `data-metric-id="${metricIdPrefix}Realizado" data-metric-title="Realizado: ${title}"` : ''}>
-                            <span class="metric-label">Realizado</span>
-                            <span class="metric-value success" style="font-size: 2rem;">${realizado}</span>
+                        <div class="metric" ${antecipadoClickable ? `data-metric-id="${metricIdPrefix}Antecipado" data-metric-title="Concluído (Antecipado): ${title}"` : ''}>
+                            <span class="metric-label">Concluído (Antecip.):</span>
+                            <span class="metric-value success" style="font-size: 1.8rem;">${antecipadoCount}</span>
+                        </div>
+                        <div class="metric" ${realizadoClickable ? `data-metric-id="${metricIdPrefix}Realizado" data-metric-title="Realizado (no Mês): ${title}"` : ''}>
+                            <span class="metric-label">Realizado (no Mês):</span>
+                            <span class="metric-value success" style="font-size: 1.8rem;">${realizadoCount}</span>
                         </div>
                     </div>`;
                 }
@@ -1774,9 +1795,8 @@ function setupUserView() {
             const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
             const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
 
-            const followupCard = createPrevistoRealizadoCard('Follow-Up Pós Loop', (dataStore['followup-previsto'] || []).length, (dataStore['followup-realizado'] || []).length, 'followup', null, (dataStore['followup-atrasado-concluido'] || []).length);
-            const discoveryCard = createPrevistoRealizadoCard('Discovery Potencial', (dataStore['discovery-previsto'] || []).length, (dataStore['discovery-realizado'] || []).length, 'discovery', null, (dataStore['discovery-atrasado-concluido'] || []).length);
-
+            const followupCard = createPrevistoRealizadoCard('Follow-Up Pós Loop', (dataStore['followup-previsto'] || []).length, (dataStore['followup-realizado'] || []).length, 'followup', null, (dataStore['followup-atrasado-concluido'] || []).length, (dataStore['followup-concluido-antecipado'] || []).length);
+            const discoveryCard = createPrevistoRealizadoCard('Discovery Potencial', (dataStore['discovery-previsto'] || []).length, (dataStore['discovery-realizado'] || []).length, 'discovery', null, (dataStore['discovery-atrasado-concluido'] || []).length, (dataStore['discovery-concluido-antecipado'] || []).length);
             let onboardingMetricHtml = '';
             const includeOnboarding = onboardingToggle.checked;
             const onboardingContacts = dataStore['onboarding-contacts-display'] || [];
@@ -1832,8 +1852,8 @@ function setupUserView() {
     );
 
             playbookGrid.innerHTML = `
-            ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length)}
-            ${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length)}
+            ${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length, (dataStore['plano-concluido-antecipado'] || []).length)}
+            ${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length, (dataStore['adocao-concluido-antecipado'] || []).length)}
             ${followupCard}
             ${(selectedSegmento !== 'MID/Enterprise') ? discoveryCard : ''}
             `;
@@ -1841,9 +1861,9 @@ function setupUserView() {
             let okrHtml = '';
             if (selectedSegmento === 'MID/Enterprise') {
                 okrHtml = `
-                    ${createPrevistoRealizadoCard('Reuniões de QBR', (dataStore['reunioes-qbr-previsto'] || []).length, (dataStore['reunioes-qbr-realizado'] || []).length, 'reunioes-qbr', appGoals.qbr, (dataStore['reunioes-qbr-atrasado-concluido'] || []).length)}
-                    ${createPrevistoRealizadoCard('Planos de Sucesso', (dataStore['planos-sucesso-previsto'] || []).length, (dataStore['planos-sucesso-realizado'] || []).length, 'planos-sucesso', appGoals.successplan, (dataStore['planos-sucesso-atrasado-concluido'] || []).length)}
-                    ${createPrevistoRealizadoCard('Baixo Engajamento (MID/ENT)', (dataStore['baixo-engajamento-mid-previsto'] || []).length, (dataStore['baixo-engajamento-mid-realizado'] || []).length, 'baixo-engajamento-mid', null, (dataStore['baixo-engajamento-mid-atrasado-concluido'] || []).length)}
+                    ${createPrevistoRealizadoCard('Reuniões de QBR', (dataStore['reunioes-qbr-previsto'] || []).length, (dataStore['reunioes-qbr-realizado'] || []).length, 'reunioes-qbr', appGoals.qbr, (dataStore['reunioes-qbr-atrasado-concluido'] || []).length, (dataStore['reunioes-qbr-concluido-antecipado'] || []).length)}
+                    ${createPrevistoRealizadoCard('Planos de Sucesso', (dataStore['planos-sucesso-previsto'] || []).length, (dataStore['planos-sucesso-realizado'] || []).length, 'planos-sucesso', appGoals.successplan, (dataStore['planos-sucesso-atrasado-concluido'] || []).length, (dataStore['planos-sucesso-concluido-antecipado'] || []).length)}
+                    ${createPrevistoRealizadoCard('Baixo Engajamento (MID/ENT)', (dataStore['baixo-engajamento-mid-previsto'] || []).length, (dataStore['baixo-engajamento-mid-realizado'] || []).length, 'baixo-engajamento-mid', null, (dataStore['baixo-engajamento-mid-atrasado-concluido'] || []).length, (dataStore['baixo-engajamento-mid-concluido-antecipado'] || []).length)}
                     ${labsCard}`;
             } else {
                 const previstos = dataStore['engajamento-smb-previsto'] || [];
@@ -2007,11 +2027,28 @@ function setupUserView() {
             return `<div class="card"><h3>${title}${trendButtonHtml}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">${labelText}</span><span class="metric-value">${valueText}${trendHtml}</span></div>${clientesFaltantesHtml}${distribuicaoContatosHtml}${additionalHtml}</div><div class="progress-bar-container" title="Atingimento da meta: ${percentage.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div><span class="progress-percentage">${percentage.toFixed(0)}%</span></div></div>`;
         };
 
-        const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0) => {
-            const totalRealizado = realizadoNoPrazo + overdueCount;
-            const percentage = previsto > 0 ? (realizadoNoPrazo / previsto) * 100 : 0;
+        const createPrevistoRealizadoCard = (title, previsto, realizadoNoPrazo, metricIdPrefix, goal = null, overdueCount = 0, antecipadoCount = 0) => {
+            const totalRealizado = realizadoNoPrazo + overdueCount + antecipadoCount; // Total concluído
+            const totalProgramado = totalRealizado + previsto; // Total (Concluído + Pendente)
+            
+            // A barra agora reflete (Total Concluído / Total Programado)
+            const percentage = totalProgramado > 0 ? (totalRealizado / totalProgramado) * 100 : (totalRealizado > 0 ? 100 : 0);
+            
             let metaHtml = '';
             if (goal !== null && currentUser.isManager) metaHtml = `<div class="metric"><span class="metric-label">Meta Mensal:</span><span class="metric-value">${goal}</span></div>`;
+            
+            // --- NOVO BLOCO HTML PARA "ANTECIPADO" ---
+            let antecipadoHtml = '';
+            if (antecipadoCount > 0) {
+                antecipadoHtml = `
+                    <div class="metric" data-metric-id="${metricIdPrefix}-concluido-antecipado" data-metric-title="${title} (Concluídas com Antecedência)" title="${antecipadoCount} atividades concluídas antes do mês de previsão">
+                        <span class="metric-label"><i class="fas fa-calendar-check" style="color: var(--secondary-color);"></i>Concluídas (Antecip.):</span>
+                        <span class="metric-value success">${antecipadoCount}</span>
+                    </div>
+                `;
+            }
+            // --- FIM DO NOVO BLOCO ---
+            
             let overdueHtml = '';
             if (overdueCount > 0) {
                 overdueHtml = `
@@ -2030,14 +2067,13 @@ function setupUserView() {
                             <span class="metric-label">Realizado (Prazo):</span>
                             <span class="metric-value success">${realizadoNoPrazo}</span>
                         </div>
-                        ${overdueHtml}
-                        <div class="metric" data-metric-id="${metricIdPrefix}-previsto" data-metric-title="${title} (Previsto)">
-                            <span class="metric-label">Previsto:</span>
-                            <span class="metric-value">${previsto}</span>
+                        ${antecipadoHtml} ${overdueHtml}
+                        <div class="metric" data-metric-id="${metricIdPrefix}-previsto" data-metric-title="${title} (Pendentes)">
+                            <span class="metric-label">Pendentes:</span> <span class="metric-value">${previsto}</span>
                         </div>
                         ${metaHtml}
                     </div>
-                    <div class="progress-bar-container" title="Progresso de atividades previstas para o mês. Realizado (Prazo): ${realizadoNoPrazo}. Total Realizado (com atrasos): ${totalRealizado}.">
+                    <div class="progress-bar-container" title="Progresso total: ${totalRealizado} de ${totalProgramado} concluídas (${percentage.toFixed(0)}%)">
                         <div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div></div>
                         <span class="progress-percentage">${percentage.toFixed(0)}%</span>
                     </div>
@@ -2649,5 +2685,6 @@ if (currentUser.userGroup === 'onboarding') {
 
 
 </html>
+
 
 
