@@ -185,10 +185,11 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
     const isPredictedForPeriod = (activity) => {
-        const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
-        const notCompletedBeforePeriod = !activity.ConcluidaEm || activity.ConcluidaEm >= startOfPeriod;
-        return isDueInPeriod && notCompletedBeforePeriod;
-    };
+            const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
+            // A atividade SÓ é "prevista" (pendente) se não tiver data de conclusão
+            const isPending = !activity.ConcluidaEm; 
+            return isDueInPeriod && isPending;
+        };
     const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
 
     const clientOwnerMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), {
@@ -777,7 +778,11 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
             ((a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth) ||
              (a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth))
         );
-        const previstoList = allInPeriod.filter(a => a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth);
+        const previstoList = allInPeriod.filter(a => 
+            a.PrevisaoConclusao >= startOfMonth && 
+            a.PrevisaoConclusao <= endOfMonth &&
+            !a.ConcluidaEm // <-- Garante que apenas atividades PENDENTES sejam contadas
+        );
         const realizadoList = allInPeriod.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
         okrs[`${key}Previsto`] = previstoList;
         okrs[`${key}Realizado`] = realizadoList;
@@ -998,6 +1003,7 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
 
