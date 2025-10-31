@@ -190,7 +190,16 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
             const isPending = !activity.ConcluidaEm; 
             return isDueInPeriod && isPending;
         };
-    const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
+        
+        // --- ADICIONE ESTA NOVA FUNÇÃO ---
+        const isConcludedEarly = (activity) => {
+            const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
+            const isCompletedBeforePeriod = activity.ConcluidaEm && activity.ConcluidaEm < startOfPeriod;
+            return isDueInPeriod && isCompletedBeforePeriod;
+        };
+        // --- FIM DA ADIÇÃO ---
+
+        const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
 
     const clientOwnerMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), {
         cs: cli.CS,
@@ -249,6 +258,8 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
     };
 
+    // [BLOCO DE CÓDIGO MODIFICADO]
+
     for (const [key, def] of Object.entries(playbookDefs)) {
         let filterFn;
         if (key === 'plano') {
@@ -262,9 +273,15 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         } else {
             filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
         }
-        const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
-        metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
-        metrics[`${key}-realizado`] = totalRealizadoList.filter(a => !isOverdue(a));
+
+        // --- ADICIONE ESTA LINHA ---
+        const allActivitiesOfType = activitiesByCS_previstos.filter(filterFn);
+
+        // Modifique a linha de "previsto" para usar a nova variável
+        metrics[`${key}-previsto`] = allActivitiesOfType.filter(isPredictedForPeriod);
+        
+        // --- ADICIONE ESTA NOVA LINHA ---
+        metrics[`${key}-concluido-antecipado`] = allActivitiesOfType.filter(isConcludedEarly);
     }
 
     const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
@@ -778,12 +795,25 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
             ((a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth) ||
              (a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth))
         );
+        
+        // --- LÓGICA DE "PREVISTO" (PENDENTE) ATUALIZADA ---
         const previstoList = allInPeriod.filter(a => 
             a.PrevisaoConclusao >= startOfMonth && 
             a.PrevisaoConclusao <= endOfMonth &&
-            !a.ConcluidaEm // <-- Garante que apenas atividades PENDENTES sejam contadas
+            !a.ConcluidaEm // Garante que apenas atividades PENDENTES sejam contadas
         );
+        
         const realizadoList = allInPeriod.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
+        
+        // --- ADICIONE ESTE BLOCO ---
+        const antecipadoList = allInPeriod.filter(a => 
+            a.PrevisaoConclusao >= startOfMonth && 
+            a.PrevisaoConclusao <= endOfMonth &&
+            a.ConcluidaEm && a.ConcluidaEm < startOfMonth // Concluída ANTES do início do mês
+        );
+        okrs[`${key}Antecipado`] = antecipadoList; // Store the list
+        // --- FIM DA ADIÇÃO ---
+
         okrs[`${key}Previsto`] = previstoList;
         okrs[`${key}Realizado`] = realizadoList;
 
@@ -1003,6 +1033,7 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
 
