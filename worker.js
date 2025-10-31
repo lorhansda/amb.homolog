@@ -175,7 +175,6 @@ const calculateOverdueMetrics = (activities, selectedCS) => {
         }
         metrics.overdueActivities[key] = overdue.filter(filterFn);
     }
-    // !! REMOVIDO O BLOCO INCORRETO DAQUI !!
     return metrics;
 };
 
@@ -185,21 +184,19 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
     
-    // --- AJUSTE 1: isPredictedForPeriod agora significa "Pendente" ---
+    // "Previsto" agora significa "Pendente"
     const isPredictedForPeriod = (activity) => {
         const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
-        // A atividade SÓ é "prevista" (pendente) se não tiver data de conclusão
         const isPending = !activity.ConcluidaEm; 
         return isDueInPeriod && isPending;
     };
-    
-    // --- AJUSTE 2: Nova função para "Concluído Antecipadamente" ---
+        
+    // Nova função para "Concluído Antecipadamente"
     const isConcludedEarly = (activity) => {
         const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
         const isCompletedBeforePeriod = activity.ConcluidaEm && activity.ConcluidaEm < startOfPeriod;
         return isDueInPeriod && isCompletedBeforePeriod;
     };
-    // --- FIM DOS AJUSTES ---
 
     const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
 
@@ -208,7 +205,6 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         fase: normalizeText(cli.Fase || '')
     }]));
 
-    // ESTA É A DEFINIÇÃO CORRETA DE clientsForPeriod
     const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
 
     const allConcludedActivitiesInPortfolio = rawActivities
@@ -218,7 +214,6 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     let csRealizedActivities = [];
     let onboardingRealizedActivities = [];
 
-    // Lista de ISMs para filtro retroativo/legado
     const ismList = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))].map(ism => ism.trim());
 
     allConcludedActivitiesInPortfolio.forEach(activity => {
@@ -227,21 +222,15 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         const activityOwner = (activity['Responsável'] || '').trim();
 
         if (!isClientOnboarding) {
-            // Lógica para clientes NÃO estão em onboarding
             if (selectedCS === 'Todos' || activityOwner === selectedCS) {
                 csRealizedActivities.push(activity);
             }
         } else {
-            // Lógica para clientes EM onboarding
-            // Se a atividade for de um cliente em onboarding, verifica se o Responsável é um ISM
-            // e se o filtro de ISM está ativo (se for um usuário de Onboarding logado)
             if (ismList.includes(activityOwner) && ismToFilter !== 'Todos') {
                 if (activityOwner === ismToFilter) {
                     onboardingRealizedActivities.push(activity);
                 }
             } else {
-                // Se o filtro de ISM não estiver ativo ou o responsável não for um ISM,
-                // a atividade é considerada parte do portfólio de Onboarding geral
                 onboardingRealizedActivities.push(activity);
             }
         }
@@ -260,8 +249,8 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
     };
 
-    // --- AJUSTE 3: CORREÇÃO DO LOOP 1 (REALIZADO) ---
-    // Este é o PRIMEIRO loop (para "realizado") - DEVE FICAR ASSIM (original):
+    // --- CORREÇÃO APLICADA: LOOP 1 (Realizado) ---
+    // Este é o PRIMEIRO loop (para "realizado") - Versão Original Restaurada
     for (const [key, def] of Object.entries(playbookDefs)) {
         let filterFn;
         if (key === 'plano') {
@@ -279,7 +268,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
         metrics[`${key}-realizado`] = totalRealizadoList.filter(a => !isOverdue(a));
     }
-    // --- FIM DO AJUSTE 3 ---
+    // --- FIM DA CORREÇÃO ---
 
     const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
     const isCountableContact = (a) => {
@@ -356,7 +345,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         });
     }
 
-    // --- AJUSTE 4: CORREÇÃO DO LOOP 2 (PREVISTO / PENDENTE) ---
+    // --- CORREÇÃO APLICADA: LOOP 2 (Previsto/Pendente) ---
     // Este é o SEGUNDO loop (para "previsto") - ONDE A MUDANÇA DEVE OCORRER
     for (const [key, def] of Object.entries(playbookDefs)) {
         let filterFn;
@@ -382,7 +371,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         metrics[`${key}-concluido-antecipado`] = allActivitiesOfType.filter(isConcludedEarly);
         // --- FIM DA MODIFICAÇÃO CORRETA ---
     }
-    // --- FIM DO AJUSTE 4 ---
+    // --- FIM DA CORREÇÃO ---
 
     const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
     const uniqueSmbContacts = new Map();
@@ -398,7 +387,6 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const clientesContatados = metrics['cob-carteira'] || [];
     const clientesContatadosComDados = clientesContatados.map(atividade => {
-        // CORREÇÃO: Usar 'clients' (todos os clientes do filtro) em vez de 'clientsForPeriod' para buscar dados
         const clienteData = clients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
         return { ...atividade,
             'Modelo de negócio': clienteData ? (clienteData['Modelo de negócio'] || 'Vazio') : 'Não encontrado',
@@ -412,14 +400,13 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const selectedQuarter = Math.floor(month / 3);
     const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getUTCMonth() / 3) === selectedQuarter && item.ConcluidaEm.getUTCFullYear() === year;
-    // CORREÇÃO: Usar 'clients' (todos os clientes do filtro) para a base do cálculo de LABS
     const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
-    metrics['total-labs-eligible'] = clients.length; // Usar o total de clientes do filtro
+    metrics['total-labs-eligible'] = clients.length; 
     metrics['ska-labs-realizado-list'] = [...new Map(
         rawActivities
         .filter(isConcludedInQuarter)
         .filter(a => normalizeText(a.Atividade).includes('participou do ska labs'))
-        .filter(a => eligibleClientSet.has(a.ClienteCompleto)) // Verifica se o cliente está na carteira filtrada
+        .filter(a => eligibleClientSet.has(a.ClienteCompleto))
         .map(a => [a.ClienteCompleto, a])
     ).values()];
 
@@ -434,13 +421,11 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['contatos-por-negocio'] = contatosPorNegocio;
     metrics['contatos-por-comercial'] = contatosPorComercial;
 
-    // --- Novos cálculos de distribuição (para o card de cobertura) ---
     const metaCobertura = (goals.coverage || 40) / 100;
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(metrics['total-clientes-unicos-cs'] * metaCobertura));
     metrics['clientes-faltantes-meta-cobertura'] = Math.max(0, clientesParaAtingirMeta - clientesContatados.length);
 
-    let ligacaoPerc = 0.65; // Padrão SMB
-    // CORREÇÃO: Usar 'clients' (todos os clientes do filtro) para determinar o segmento predominante
+    let ligacaoPerc = 0.65;
     if (clients.length > 0 && (normalizeText(clients[0].Segmento || '').includes('mid') || normalizeText(clients[0].Segmento || '').includes('enterprise'))) {
         ligacaoPerc = 0.75;
     }
@@ -451,10 +436,8 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['dist-faltante-ligacao'] = Math.max(0, targetLigacoes - realizadoLigacoes);
     metrics['dist-faltante-email'] = Math.max(0, targetEmails - realizadoEmails);
 
-    // --- CÁLCULO CORRIGIDO: Distribuição de Clientes por Negócio ---
-    // Está no lugar certo agora!
     const clientesPorNegocio = {};
-    clientsForPeriod.forEach(client => { // Usa clientsForPeriod que existe aqui
+    clientsForPeriod.forEach(client => {
         const negocio = client['Negócio'] || 'Não Definido';
         if (negocio) {
             clientesPorNegocio[negocio] = (clientesPorNegocio[negocio] || 0) + 1;
@@ -502,7 +485,6 @@ const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClie
             periodMetrics.playbookTotals[key].previsto += (monthlyMetrics[`${key}-previsto`] || []).length;
             const realizadoNoPrazo = (monthlyMetrics[`${key}-realizado`] || []).length;
             const realizadoAtrasado = (monthlyMetrics[`${key}-atrasado-concluido`] || []).length;
-            // --- AJUSTE NA SOMA DO PERÍODO ---
             // Adiciona os antecipados ao realizado total do período
             const realizadoAntecipado = (monthlyMetrics[`${key}-concluido-antecipado`] || []).length;
             periodMetrics.playbookTotals[key].realizado += realizadoNoPrazo + realizadoAtrasado + realizadoAntecipado;
@@ -807,10 +789,11 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
             normalizeText(a.Atividade) === config.name &&
             ((a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth) ||
              (a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth) ||
-             (a.ConcluidaEm < startOfMonth && a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth)) // <-- Adicionado para capturar antecipados
+             // Adicionado para capturar antecipados que tinham previsão no mês
+             (a.ConcluidaEm < startOfMonth && a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth))
         );
         
-        // --- LÓGICA DE "PREVISTO" (PENDENTE) ATUALIZADA ---
+        // "Previsto" agora significa "Pendente"
         const previstoList = allInPeriod.filter(a => 
             a.PrevisaoConclusao >= startOfMonth && 
             a.PrevisaoConclusao <= endOfMonth &&
@@ -819,14 +802,13 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         
         const realizadoList = allInPeriod.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
         
-        // --- BLOCO ADICIONADO ---
+        // Nova métrica "Antecipado"
         const antecipadoList = allInPeriod.filter(a => 
             a.PrevisaoConclusao >= startOfMonth && 
             a.PrevisaoConclusao <= endOfMonth &&
             a.ConcluidaEm && a.ConcluidaEm < startOfMonth // Concluída ANTES do início do mês
         );
         okrs[`${key}Antecipado`] = antecipadoList; // Store the list
-        // --- FIM DA ADIÇÃO ---
 
         okrs[`${key}Previsto`] = previstoList;
         okrs[`${key}Realizado`] = realizadoList;
@@ -834,14 +816,10 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
         if (config.sla) {
             okrs[`${key}SLAOk`] = realizadoList.filter(a => {
                 const completedDate = a.ConcluidaEm;
-                const createdDate = a.CriadoEm; // NOVO: Data de Criação
+                const createdDate = a.CriadoEm;
                 
                 if (completedDate && createdDate) {
-                    // Calcula a diferença em dias entre a conclusão e a criação
                     const diffDays = (completedDate - createdDate) / (1000 * 60 * 60 * 24);
-                    
-                    // O SLA é considerado ok se a conclusão for até 'config.sla' dias após a criação.
-                    // O SLA para 'Contato de Welcome' é 3 dias.
                     return diffDays <= config.sla;
                 }
                 return false;
@@ -902,11 +880,8 @@ self.onmessage = (e) => {
     let csForCalc = payload.selectedCS;
 
     if (currentUser.userGroup === 'onboarding' && ismToFilter !== 'Todos') {
-        // Se o usuário for de Onboarding e tiver um ISM definido, o filtro principal é o ISM
-        // Isso corrige o problema de omissão de valores, garantindo que o filtro de Onboarding
-        // seja aplicado na lista de clientes antes de qualquer outro cálculo.
         filteredClients = rawClients.filter(d => (d.ISM || '').trim() === ismToFilter);
-        csForCalc = 'Todos'; // Desconsidera o CS para o time de Onboarding
+        csForCalc = 'Todos'; 
     } else if (currentUser.isManager) {
         if (payload.selectedSquad !== 'Todos') {
             filteredClients = rawClients.filter(d => d['Squad CS'] === payload.selectedSquad);
@@ -939,7 +914,6 @@ self.onmessage = (e) => {
             }
 
             // 4. Calcula OKRs de Onboarding
-            // Passa o ISM do usuário logado para o cálculo de Onboarding
     const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, filteredClients, payload.teamView, ismToFilter);
 
             // 5. Calcula Atividades Atrasadas
@@ -1026,7 +1000,6 @@ self.onmessage = (e) => {
                 } else if (type === 'playbook') {
                     const realizado = (periodMetrics[`${metricId}-realizado`] || []).length;
                     const atrasado = (periodMetrics[`${metricId}-atrasado-concluido`] || []).length;
-                    // --- AJUSTE NA SOMA DE TENDÊNCIA ---
                     // Adiciona os antecipados ao cálculo de tendência
                     const antecipado = (periodMetrics[`${metricId}-concluido-antecipado`] || []).length;
                     value = realizado + atrasado + antecipado;
