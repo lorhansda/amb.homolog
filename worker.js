@@ -892,43 +892,46 @@ if (selectedISM !== 'Todos') {
 
 // --- MANIPULADOR DE MENSAGENS DO WORKER ---
 
-self.onmessage = (e) => {
+self.onmessage = async (e) => { // <-- Adicione 'async'
     const { type, payload } = e.data;
 
     try {
-        if (type === 'INIT') {
-            // 1. Recebe os dados brutos
-            rawActivities = payload.rawActivities;
-            rawClients = payload.rawClients;
-            currentUser = payload.currentUser;
-            manualEmailToCsMap = payload.manualEmailToCsMap;
-            ismToFilter = currentUser.selectedISM || 'Todos'; // Define o ISM a ser usado no filtro de Onboarding
+        if (type === 'INIT_FILES') { // <-- Mudança de 'INIT' para 'INIT_FILES'
+            
+            // --- INÍCIO DA NOVA LÓGICA DE LEITURA ---
+            // 1. Recebe os ARQUIVOS (não os dados)
+            const { atividadesFile, clientesFile, currentUser, manualEmailToCsMap } = payload;
 
-            // 2. Processa e junta os dados
+            // 2. Copie a função 'readFile' do seu index.html para cá (dentro do worker)
+            // Esta função 'readFile' DEVE estar definida aqui no worker
+            // (Estou assumindo que você colou a função 'readFile' acima no worker)
+            const [atividadesJson, clientesJson] = await Promise.all([
+                readFile(atividadesFile),
+                readFile(clientesFile)
+            ]);
+
+            // 3. Define as variáveis globais do worker
+            rawActivities = atividadesJson;
+            rawClients = clientesJson;
+            self.currentUser = currentUser; // Use self.currentUser
+            self.manualEmailToCsMap = manualEmailToCsMap;
+            ismToFilter = self.currentUser.selectedISM || 'Todos';
+            // --- FIM DA NOVA LÓGICA DE LEITURA ---
+
+            // 2. Processa e junta os dados (Lógica antiga mantida)
             processInitialData(); // Modifica rawActivities
 
-            // 3. Constrói o mapa de Squads
+            // 3. Constrói o mapa de Squads (Lógica antiga mantida)
             buildCsToSquadMap();
 
-            // 4. Extrai dados para os filtros
+            // 4. Extrai dados para os filtros (Lógica antiga mantida)
             const csSet = [...new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean))];
-            const squadSet = [...new Set(rawClients.map(d => d['Squad CS']).filter(Boolean))];
-            const ismSet = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))];
-            const allDates = [...rawActivities.map(a => a.PrevisaoConclusao), ...rawActivities.map(a => a.ConcluidaEm)];
-            const years = [...new Set(allDates.map(d => d?.getFullYear()).filter(Boolean))];
-
+            // ... (resto do seu código 'INIT' original) ...
+            
             // 5. Envia os dados de filtro de volta
             postMessage({
                 type: 'INIT_COMPLETE',
-                payload: {
-                    filterData: {
-                        csSet,
-                        squadSet,
-                        ismSet,
-                        years,
-                        csToSquadMap: Object.fromEntries(csToSquadMap) // Converte Map para Objeto
-                    }
-                }
+                // ... (payload original) ...
             });
         }
 
@@ -1082,6 +1085,7 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
 
