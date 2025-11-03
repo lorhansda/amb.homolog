@@ -454,7 +454,7 @@ const onboardingEmails = [
     // O Dashboard só inicializa após o login
     async function initializeDashboard() {
         // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-        const APP_VERSION = '1.4.9-worker'; // Versão atualizada
+        const APP_VERSION = '1.5.0-worker'; // Versão atualizada
 
         const storedVersion = localStorage.getItem('appVersion');
 
@@ -740,35 +740,28 @@ function setupUserView() {
         
         let atividadesFile, clientesFile;
         
+        // CÓDIGO CORRIGIDO
         const attemptProcess = () => {
             if (atividadesFile && clientesFile) {
-                statusMessage.textContent = 'Lendo arquivos...';
-                Promise.all([readFile(atividadesFile), readFile(clientesFile)])
-                    .then(([atividadesJson, clientesJson]) => {
-                        rawActivities = atividadesJson; // Salva na thread principal para a aba "Dados"
-                        rawClients = clientesJson; // Salva na thread principal para a aba "Dados"
+                statusMessage.textContent = 'Arquivos recebidos. Processando dados no worker...';
 
-                        statusMessage.textContent = 'Arquivos lidos. Processando dados... Isso pode levar alguns instantes.';
-                        
-                        // Inicia o Worker
-                        if (dataWorker) dataWorker.terminate(); // Encerra worker anterior, se houver
-                        dataWorker = new Worker('worker.js');
-
-                        // Define o que fazer quando o worker mandar uma mensagem
-                        dataWorker.onmessage = handleWorkerMessage;
-                        
-                        // Envia os dados brutos para o worker inicializar
-                        dataWorker.postMessage({
-                            type: 'INIT',
-                            payload: {
-                                rawActivities: atividadesJson,
-                                rawClients: clientesJson,
-                                currentUser: currentUser, // Envia dados do usuário
-                                manualEmailToCsMap: manualEmailToCsMap // Envia mapa manual
-                            }
-                        });
-
-                    })
+                // Inicia o Worker (se não estiver iniciado)
+                if (dataWorker) dataWorker.terminate(); 
+                dataWorker = new Worker('worker.js'); 
+                dataWorker.onmessage = handleWorkerMessage;
+                
+                // Envia os OBJETOS 'File' para o worker (muito leve)
+                dataWorker.postMessage({
+                    type: 'INIT_FILES', // Usaremos um novo 'type'
+                    payload: {
+                        atividadesFile: atividadesFile, // Envia o arquivo
+                        clientesFile: clientesFile,     // Envia o arquivo
+                        currentUser: currentUser, 
+                        manualEmailToCsMap: manualEmailToCsMap
+                    }
+                });
+            }
+        };
                     .catch(err => {
                         statusMessage.textContent = 'Erro ao ler. Verifique os arquivos e o console (F12) para mais detalhes.';
                         console.error(err);
@@ -2734,6 +2727,7 @@ if (!currentUser.isManager) {
 
 
 </html>
+
 
 
 
