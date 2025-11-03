@@ -795,14 +795,36 @@ function setupUserView() {
                         }
                     }
 
-                    renderDataTables(); // Renderiza tabelas com dados da thread principal
-                    
-                    [selectCS, document.getElementById('select-squad'), selectSegmento, selectMonth, selectYear, onboardingToggle, selectPeriod, selectOnboardingTeam, selectISM].forEach(el => el.disabled = false);
-                    if (!currentUser.isManager) {
-                        selectCS.disabled = true;
-                    }
-                    
-                    tabsContainer.style.display = 'flex';
+                    // COLOQUE ESTE CÓDIGO CORRIGIDO NO LUGAR:
+renderDataTables(); // Renderiza tabelas com dados da thread principal
+
+// --- LÓGICA DE HABILITAÇÃO DE FILTRO CORRIGIDA ---
+// Habilita apenas os filtros que NÃO são controlados por permissão de usuário
+[document.getElementById('select-squad'), selectSegmento, selectMonth, selectYear, onboardingToggle, selectPeriod].forEach(el => el.disabled = false);
+
+// Agora, habilita/desabilita os filtros de usuário (CS, ISM, Time) com base na lógica de acesso
+if (currentUser.isManager) {
+    // Manager pode mexer em tudo
+    selectCS.disabled = false;
+    selectISM.disabled = false;
+    selectOnboardingTeam.disabled = false;
+} else {
+    // Usuários normais
+    if (currentUser.userGroup === 'ongoing') {
+        selectCS.disabled = true;
+        // Deixa os filtros de onboarding destravados (caso o usuário tenha acesso a essa aba)
+        selectISM.disabled = false; 
+        selectOnboardingTeam.disabled = false;
+    } else if (currentUser.userGroup === 'onboarding') {
+        // Usuário de onboarding tem CS, ISM e Time TRAVADOS
+        selectCS.disabled = true;
+        selectISM.disabled = true;
+        selectOnboardingTeam.disabled = true;
+    }
+}
+// --- FIM DA CORREÇÃO ---
+
+tabsContainer.style.display = 'flex';
                     statusMessage.style.display = 'none'; // Esconde "Processando"
                     dashboard.style.display = 'block';
                     onboardingDashboard.style.display = 'block';
@@ -2712,6 +2734,7 @@ if (!currentUser.isManager) {
 
 
 </html>
+
 
 
 
