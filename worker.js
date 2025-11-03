@@ -537,10 +537,13 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
     // Filtra atividades APENAS dos clientes que estão em onboarding NAQUELE FILTRO
     let onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
 
-    // Correção de omissão: Filtra as atividades pelo Responsável (ISM) para o usuário de Onboarding
-    if (currentUser.userGroup === 'onboarding' && ismToFilter !== 'Todos') {
-        onboardingActivities = onboardingActivities.filter(a => (a['Responsável'] || '').trim() === ismToFilter);
-    }
+// --- CORREÇÃO (ADMIN FILTER) ---
+// Filtra as atividades pelo ISM selecionado no dropdown (selectedISM),
+// não pelo ISM do usuário logado (ismToFilter).
+// Isso faz o filtro funcionar para Admins.
+if (selectedISM !== 'Todos') {
+    onboardingActivities = onboardingActivities.filter(a => (a['Responsável'] || '').trim() === selectedISM);
+}
 
     // ==================================================================
     // LÓGICA: Cálculo de Etapas do Onboarding (Baseado nos clientes em onboarding do filtro)
@@ -1078,4 +1081,5 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
