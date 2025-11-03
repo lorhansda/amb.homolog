@@ -296,7 +296,7 @@
 
         </div>
     </div>
-    
+    <script src="ism_config.js"></script>
     <script>
     // --- SCRIPT DE LIMPEZA FORÇADA E CONTROLE DE VERSÃO ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -348,11 +348,7 @@
         "okrmarina1@gmail.com": "Marina Santos",
         "deborahsimonearruda@gmail.com": "Deborah Arruda",
     };
-		const ISM_MAPPING = {
-    "lorhangames2@gmail.com": "Nathalia Fagundes",
-    "naty.naveal@gmail.com": "Nathalia Fagundes"
-    // Adicione outros e-mails e nomes de ISM aqui, se necessário
-};
+		
 const onboardingEmails = [
     "lorhangames2@gmail.com",
     "naty.naveal@gmail.com",
@@ -458,7 +454,7 @@ const onboardingEmails = [
     // O Dashboard só inicializa após o login
     async function initializeDashboard() {
         // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-        const APP_VERSION = '1.4.7-worker'; // Versão atualizada
+        const APP_VERSION = '1.4.8-worker'; // Versão atualizada
 
         const storedVersion = localStorage.getItem('appVersion');
 
@@ -2696,7 +2692,7 @@ if (!currentUser.isManager) {
 }
 </script>
 	
-	<script src="ism_config.js"></script>
+	
 	
 	<script type="text/javascript">
     var Tawk_API = Tawk_API || {},
@@ -2716,6 +2712,7 @@ if (!currentUser.isManager) {
 
 
 </html>
+
 
 
 
