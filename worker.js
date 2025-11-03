@@ -971,7 +971,7 @@ self.onmessage = (e) => {
             }
 
             // 4. Calcula OKRs de Onboarding
-    const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, filteredClients, payload.teamView, ismToFilter);
+    const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, filteredClients, payload.teamView, payload.selectedISM);
 
             // 5. Calcula Atividades Atrasadas
             const overdueMetrics = calculateOverdueMetrics(rawActivities, payload.selectedCS);
@@ -1081,5 +1081,6 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
