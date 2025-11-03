@@ -864,6 +864,25 @@ tabsContainer.style.display = 'flex';
                     console.log("Dados de tendência recebidos.");
                     renderTrendChart(payload.labels, payload.dataPoints, payload.title);
                     break;
+					case 'DATA_PAGE_COMPLETE': 
+                    const { type, data, page, totalPages } = payload;
+                    const tableId = type === 'atividades' ? 'atividades-table' : 'clientes-table';
+                    const paginationId = type === 'atividades' ? 'atividades-pagination' : 'clientes-pagination';
+                    
+                    // Renderiza a tabela com os dados recebidos
+                    document.getElementById(tableId).innerHTML = createHtmlTable(data);
+                    
+                    // Renderiza a paginação
+                    const paginationContainer = document.getElementById(paginationId);
+                    paginationContainer.innerHTML = `<button data-type="${type}" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${page} de ${totalPages || 1}</span><button data-type="${type}" data-page="${page + 1}" ${page === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
+                    
+                    // Adiciona listeners aos novos botões
+                    paginationContainer.querySelectorAll('button').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            dataWorker.postMessage({ type: 'GET_DATA_PAGE', payload: { type: btn.dataset.type, page: parseInt(btn.dataset.page) } });
+                        });
+                    });
+                    break;
 
                 case 'ERROR':
                     console.error("Erro recebido do Worker:", payload.error);
@@ -2761,6 +2780,7 @@ if (!currentUser.isManager) {
 
 
 </html>
+
 
 
 
