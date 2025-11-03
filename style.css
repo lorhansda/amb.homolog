@@ -340,7 +340,12 @@
             background-position: right 15px center;
             background-size: 1em;
         }
-
+.control-group select:disabled {
+    background-color: color-mix(in srgb, var(--border-color) 40%, transparent); /* Fundo cinza/desabilitado */
+    color: var(--text-light-color); /* Texto cinza/desabilitado */
+    cursor: not-allowed; /* Cursor de "não permitido" */
+    opacity: 0.7; /* Garante o aspecto "cinza" */
+}
         body.light-theme .control-group select {
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2357606A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
         }
@@ -1282,3 +1287,4 @@
 #onboarding-product-chart-card {
     grid-column: 1 / -1; /* Faz o card ocupar a largura total */
 }
+
