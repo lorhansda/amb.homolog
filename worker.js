@@ -8,6 +8,7 @@
  */
 
 // --- VARIÁVEIS GLOBAIS DO WORKER ---
+importScripts('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
 let rawActivities = [],
     rawClients = [],
     clientOnboardingStartDate = new Map(),
@@ -1081,6 +1082,7 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
 
