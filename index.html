@@ -348,10 +348,14 @@
         "okrmarina1@gmail.com": "Marina Santos",
         "deborahsimonearruda@gmail.com": "Deborah Arruda",
     };
-const onboardingEmails = [
+		const ISM_MAPPING = {
     "lorhangames2@gmail.com": "Nathalia Fagundes",
-    "naty.naveal@gmail.com": "Nathalia Fagundes",
-    "outro.email@provedor.com"
+    "naty.naveal@gmail.com": "Nathalia Fagundes"
+    // Adicione outros e-mails e nomes de ISM aqui, se necessário
+};
+const onboardingEmails = [
+    "lorhangames2@gmail.com",
+    "naty.naveal@gmail.com""
     // Adicione aqui todos os e-mails do time de Onboarding e-mail onboarding
 ];
 
@@ -453,7 +457,7 @@ const onboardingEmails = [
     // O Dashboard só inicializa após o login
     async function initializeDashboard() {
         // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-        const APP_VERSION = '1.4.5-worker'; // Versão atualizada
+        const APP_VERSION = '1.4.6-worker'; // Versão atualizada
 
         const storedVersion = localStorage.getItem('appVersion');
 
@@ -2713,6 +2717,7 @@ setupUserView();
 
 
 </html>
+
 
 
 
