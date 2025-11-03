@@ -1073,7 +1073,27 @@ self.onmessage = async (e) => { // <-- Adicione 'async'
                 payload: { labels, dataPoints, title }
             });
         }
+else if (type === 'GET_DATA_PAGE') {
+            const rowsPerPage = 100;
+            const page = payload.page || 1;
+            const dataType = payload.type;
+            const sourceData = (dataType === 'atividades') ? rawActivities : rawClients;
+            
+            const totalPages = Math.ceil(sourceData.length / rowsPerPage);
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageData = sourceData.slice(start, end);
 
+            postMessage({
+                type: 'DATA_PAGE_COMPLETE',
+                payload: {
+                    type: dataType,
+                    data: pageData,
+                    page: page,
+                    totalPages: totalPages
+                }
+            });
+        }
     } catch (err) {
         // Envia erros de volta para a thread principal
         postMessage({
@@ -1085,6 +1105,7 @@ self.onmessage = async (e) => { // <-- Adicione 'async'
         });
     }
 };
+
 
 
 
