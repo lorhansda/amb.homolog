@@ -2158,11 +2158,45 @@ tabsContainer.style.display = 'flex';
             renderPage();
         };
 
+        // EM INDEX.HTML
         const renderDataTables = () => {
-            // Usa os dados `rawActivities` e `rawClients` da thread principal
-            renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
-            renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
+            // Pede os dados paginados ao worker
+            if (dataWorker) {
+                dataWorker.postMessage({ type: 'GET_DATA_PAGE', payload: { type: 'atividades', page: 1 } });
+                dataWorker.postMessage({ type: 'GET_DATA_PAGE', payload: { type: 'clientes', page: 1 } });
+            }
         };
+
+        // ... E adicione este novo 'case' na sua função handleWorkerMessage (em index.html)
+        // ...
+                case 'TREND_DATA_COMPLETE':
+                    console.log("Dados de tendência recebidos.");
+                    renderTrendChart(payload.labels, payload.dataPoints, payload.title);
+                    break;
+
+                // ADICIONE ESTE NOVO BLOCO
+                case 'DATA_PAGE_COMPLETE': 
+                    const { type, data, page, totalPages } = payload;
+                    const tableId = type === 'atividades' ? 'atividades-table' : 'clientes-table';
+                    const paginationId = type === 'atividades' ? 'atividades-pagination' : 'clientes-pagination';
+                    
+                    // Renderiza a tabela com os dados recebidos
+                    document.getElementById(tableId).innerHTML = createHtmlTable(data);
+                    
+                    // Renderiza a paginação
+                    const paginationContainer = document.getElementById(paginationId);
+                    paginationContainer.innerHTML = `<button data-type="${type}" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${page} de ${totalPages || 1}</span><button data-type="${type}" data-page="${page + 1}" ${page === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
+                    
+                    // Adiciona listeners aos novos botões
+                    paginationContainer.querySelectorAll('button').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            dataWorker.postMessage({ type: 'GET_DATA_PAGE', payload: { type: btn.dataset.type, page: parseInt(btn.dataset.page) } });
+                        });
+                    });
+                    break;
+
+                case 'ERROR':
+        // ...
         
         // --- FUNÇÕES DE MODAL (Thread Principal) ---
 
@@ -2727,6 +2761,7 @@ if (!currentUser.isManager) {
 
 
 </html>
+
 
 
 
