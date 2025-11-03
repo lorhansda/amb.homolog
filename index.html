@@ -453,7 +453,7 @@ const onboardingEmails = [
     // O Dashboard só inicializa após o login
     async function initializeDashboard() {
         // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-        const APP_VERSION = '1.4.3-worker'; // Versão atualizada
+        const APP_VERSION = '1.4.4-worker'; // Versão atualizada
 
         const storedVersion = localStorage.getItem('appVersion');
 
@@ -2641,57 +2641,57 @@ setupUserView();
                 }
             } 
             
-if (currentUser.userGroup === 'onboarding') {
-    // Oculta os filtros principais que não se aplicam ao onboarding
-    document.getElementById('squad-filter-group').style.display = 'none';
-    document.getElementById('squad-cs-list').style.display = 'none';
-    document.querySelector('.control-group label[for="select-cs"]').parentElement.style.display = 'none';
-    document.querySelector('.control-group label[for="select-segmento"]').parentElement.style.display = 'none';
-    document.querySelector('.control-group label[for="select-comparison"]').parentElement.style.display = 'none';
-    document.querySelector('.control-group label[for="include-onboarding-toggle"]').parentElement.style.display = 'none';
-
-    // --- LÓGICA DE TRAVA ATUALIZADA ---
-    const ismLabel = document.querySelector('[for="select-ism"]');
-    // Pega o label de Visão do Time
-    const teamLabel = document.querySelector('[for="select-onboarding-team"]'); 
-
-    if (!currentUser.isManager) {
-        // Trava o filtro para o ISM do usuário logado
-        if (selectISM.value !== currentUser.selectedISM) {
-            selectISM.value = currentUser.selectedISM;
-        }
-        selectISM.disabled = true;
-        if (ismLabel) {
-            ismLabel.style.pointerEvents = 'none';
-            ismLabel.style.opacity = '0.6';
-        }
-
-        // NOVO: Trava o filtro Visão do Time
-        selectOnboardingTeam.disabled = true;
-        if (teamLabel) {
-            teamLabel.style.pointerEvents = 'none';
-            teamLabel.style.opacity = '0.6';
-        }
-        
-    } else {
-        // Garante que managers possam usar o filtro ISM
-        selectISM.disabled = false;
-         if (ismLabel) {
-            ismLabel.style.pointerEvents = 'auto';
-            ismLabel.style.opacity = '1';
-        }
-
-        // NOVO: Garante que managers possam usar o filtro Visão do Time
-        selectOnboardingTeam.disabled = false;
-        if (teamLabel) {
-            teamLabel.style.pointerEvents = 'auto';
-            teamLabel.style.opacity = '1';
-        }
-    }
-}
-	        }
+            if (currentUser.userGroup === 'onboarding') {
+                // Oculta os filtros principais que não se aplicam ao onboarding
+                document.getElementById('squad-filter-group').style.display = 'none';
+                document.getElementById('squad-cs-list').style.display = 'none';
+                document.querySelector('.control-group label[for="select-cs"]').parentElement.style.display = 'none';
+                document.querySelector('.control-group label[for="select-segmento"]').parentElement.style.display = 'none';
+                document.querySelector('.control-group label[for="select-comparison"]').parentElement.style.display = 'none';
+                document.querySelector('.control-group label[for="include-onboarding-toggle"]').parentElement.style.display = 'none';
+            
+                // --- LÓGICA DE TRAVA ATUALIZADA ---
+                const ismLabel = document.querySelector('[for="select-ism"]');
+                // Pega o label de Visão do Time
+                const teamLabel = document.querySelector('[for="select-onboarding-team"]'); 
+            
+                if (!currentUser.isManager) {
+                    // Trava o filtro para o ISM do usuário logado
+                    if (selectISM.value !== currentUser.selectedISM) {
+                        selectISM.value = currentUser.selectedISM;
+                    }
+                    selectISM.disabled = true; // <-- Isso ativa a regra CSS que você adicionou
+                    if (ismLabel) {
+                        ismLabel.style.pointerEvents = 'none';
+                        ismLabel.style.opacity = '0.6'; // <-- Isso deixa o NOME (label) cinza
+                    }
+            
+                    // NOVO: Trava o filtro Visão do Time
+                    selectOnboardingTeam.disabled = true; // <-- Isso ativa a regra CSS
+                    if (teamLabel) {
+                        teamLabel.style.pointerEvents = 'none';
+                        teamLabel.style.opacity = '0.6'; // <-- Isso deixa o NOME (label) cinza
+                    }
+                    
+                } else {
+                    // Garante que managers possam usar o filtro ISM
+                    selectISM.disabled = false;
+                     if (ismLabel) {
+                        ismLabel.style.pointerEvents = 'auto';
+                        ismLabel.style.opacity = '1';
+                    }
+            
+                    // NOVO: Garante que managers possam usar o filtro Visão do Time
+                    selectOnboardingTeam.disabled = false;
+                    if (teamLabel) {
+                        teamLabel.style.pointerEvents = 'auto';
+                        teamLabel.style.opacity = '1';
+                    }
+                }
+            }
 	    }
-	</script>
+	}
+</script>
 	
 	<script src="ism_config.js"></script>
 	
@@ -2713,6 +2713,7 @@ if (currentUser.userGroup === 'onboarding') {
 
 
 </html>
+
 
 
 
