@@ -181,6 +181,7 @@ const calculateOverdueMetrics = (activities, selectedCS) => {
 const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS, includeOnboarding, goals) => {
     const metrics = {};
     const startOfPeriod = new Date(Date.UTC(year, month, 1));
+	const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)); // Fim do mês
 
     const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
     
@@ -252,23 +253,34 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     // --- CORREÇÃO APLICADA: LOOP 1 (Realizado) ---
     // Este é o PRIMEIRO loop (para "realizado") - Versão Original Restaurada
     for (const [key, def] of Object.entries(playbookDefs)) {
-        let filterFn;
-        if (key === 'plano') {
-            filterFn = (item) => {
-                const atividadeNormalizada = normalizeText(item.Atividade);
-                const playbookNormalizado = normalizeText(item.Playbook);
-                const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
-                const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
-                return isPlanoOriginal || isAlertaSuporte;
-            };
-        } else {
-            filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
-        }
-        const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
-        metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
-        metrics[`${key}-realizado`] = totalRealizadoList.filter(a => !isOverdue(a));
+    let filterFn;
+    if (key === 'plano') {
+        filterFn = (item) => {
+            const atividadeNormalizada = normalizeText(item.Atividade);
+            const playbookNormalizado = normalizeText(item.Playbook);
+            const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
+            const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
+            return isPlanoOriginal || isAlertaSuporte;
+        };
+    } else {
+        filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
     }
-    // --- FIM DA CORREÇÃO ---
+
+    const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
+
+    // 1. Concluídas com Atraso (Concluídas no mês, mas a previsão era de meses anteriores)
+    metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
+
+    // Lista do que não está atrasado (Previsto para este mês ou meses futuros)
+    const notOverdueList = totalRealizadoList.filter(a => !isOverdue(a));
+
+    // 2. Realizado no Prazo (Concluídas no mês, Previstas para o mês)
+    metrics[`${key}-realizado`] = notOverdueList.filter(a => a.PrevisaoConclusao <= endOfMonth);
+
+    // 3. Concluído Antecipado (NOVA LÓGICA: Concluídas no mês, Previstas para meses futuros)
+    metrics[`${key}-concluido-antecipado`] = notOverdueList.filter(a => a.PrevisaoConclusao > endOfMonth);
+}
+// --- FIM DA ATUALIZAÇÃO ---
 
     const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
     const isCountableContact = (a) => {
@@ -348,30 +360,27 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     // --- CORREÇÃO APLICADA: LOOP 2 (Previsto/Pendente) ---
     // Este é o SEGUNDO loop (para "previsto") - ONDE A MUDANÇA DEVE OCORRER
     for (const [key, def] of Object.entries(playbookDefs)) {
-        let filterFn;
-        if (key === 'plano') {
-            filterFn = (item) => {
-                const atividadeNormalizada = normalizeText(item.Atividade);
-                const playbookNormalizado = normalizeText(item.Playbook);
-                const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
-                const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
-                return isPlanoOriginal || isAlertaSuporte;
-            };
-        } else {
-            filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
-        }
-
-        // --- INÍCIO DA MODIFICAÇÃO CORRETA ---
-        const allActivitiesOfType = activitiesByCS_previstos.filter(filterFn);
-
-        // Modificado para usar a nova variável (isPredictedForPeriod agora significa "Pendente")
-        metrics[`${key}-previsto`] = allActivitiesOfType.filter(isPredictedForPeriod);
-        
-        // Nova linha adicionada
-        metrics[`${key}-concluido-antecipado`] = allActivitiesOfType.filter(isConcludedEarly);
-        // --- FIM DA MODIFICAÇÃO CORRETA ---
+    let filterFn;
+    if (key === 'plano') {
+        filterFn = (item) => {
+            const atividadeNormalizada = normalizeText(item.Atividade);
+            const playbookNormalizado = normalizeText(item.Playbook);
+            const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
+            const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
+            return isPlanoOriginal || isAlertaSuporte;
+        };
+    } else {
+        filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
     }
-    // --- FIM DA CORREÇÃO ---
+
+    const allActivitiesOfType = activitiesByCS_previstos.filter(filterFn);
+
+    // "Previsto" agora significa "Pendente": Previsão no mês E não concluída.
+    metrics[`${key}-previsto`] = allActivitiesOfType.filter(isPredictedForPeriod);
+
+    // A lógica de 'concluido-antecipado' foi movida para o LOOP 1 (acima).
+}
+// --- FIM DA ATUALIZAÇÃO ---
 
     const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
     const uniqueSmbContacts = new Map();
@@ -785,48 +794,93 @@ const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, 
 
     // --- AJUSTE 5: CÁLCULO DE ONBOARDING (PREVISTO/ANTECIPADO) ---
     Object.entries(processTargets).forEach(([key, config]) => {
-        const allInPeriod = onboardingActivities.filter(a => // usa 'onboardingActivities' (já filtrado por ISM)
-            normalizeText(a.Atividade) === config.name &&
-            ((a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth) ||
-             (a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth) ||
-             // Adicionado para capturar antecipados que tinham previsão no mês
-             (a.ConcluidaEm < startOfMonth && a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth))
-        );
-        
-        // "Previsto" agora significa "Pendente"
-        const previstoList = allInPeriod.filter(a => 
-            a.PrevisaoConclusao >= startOfMonth && 
-            a.PrevisaoConclusao <= endOfMonth &&
-            !a.ConcluidaEm // Garante que apenas atividades PENDENTES sejam contadas
-        );
-        
-        const realizadoList = allInPeriod.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
-        
-        // Nova métrica "Antecipado"
-        const antecipadoList = allInPeriod.filter(a => 
-            a.PrevisaoConclusao >= startOfMonth && 
-            a.PrevisaoConclusao <= endOfMonth &&
-            a.ConcluidaEm && a.ConcluidaEm < startOfMonth // Concluída ANTES do início do mês
-        );
-        okrs[`${key}Antecipado`] = antecipadoList; // Store the list
+    const activityNameNormalized = normalizeText(config.name);
 
+    if (key === 'welcome') {
+        // --- LÓGICA ESPECÍFICA DO WELCOME (Change 1) ---
+        const welcomeActivities = onboardingActivities.filter(a => normalizeText(a.Atividade) === activityNameNormalized);
+
+        // 1. "Previsto" (Pendente) = Criado em (no mês) E Não Concluído
+        okrs[`${key}Previsto`] = welcomeActivities.filter(a =>
+            a.CriadoEm >= startOfMonth && a.CriadoEm <= endOfMonth && !a.ConcluidaEm
+        );
+
+        // 2. "Realizado" (Concluído no mês)
+        const realizadoList = welcomeActivities.filter(a =>
+            a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth
+        );
+
+        // Helper para calcular a diferença de dias entre Criação e Conclusão
+        const getDiffDays = (activity) => {
+            if (activity.ConcluidaEm && activity.CriadoEm) {
+                return (activity.ConcluidaEm - activity.CriadoEm) / (1000 * 60 * 60 * 24);
+            }
+            return Infinity; // Se não tiver datas, considera como fora do SLA
+        };
+
+        // 3. "SLA Ok" = Concluído em <= 3 dias da Criação
+        okrs[`${key}SLAOk`] = realizadoList.filter(a => getDiffDays(a) <= config.sla);
+
+        // 4. "Fora do Prazo" = Concluído em > 3 dias da Criação
+        okrs[`${key}RealizadoForaPrazo`] = realizadoList.filter(a => getDiffDays(a) > config.sla);
+
+        // Zera métricas que não se aplicam a esta lógica
+        okrs[`${key}Antecipado`] = [];
+        okrs[`${key}Realizado`] = []; // Usamos SLAOk e ForaPrazo
+        okrs[`${key}RealizadoAtrasado`] = []; // O "ForaPrazo" cobre isso
+        okrs[`${key}RealizadoTotal`] = realizadoList; // Para o cálculo de %
+
+    } else {
+        // --- LÓGICA GERAL PARA OUTRAS ATIVIDADES (Change 2) ---
+        const allActivitiesOfType = onboardingActivities.filter(a => normalizeText(a.Atividade) === activityNameNormalized);
+
+        // 1. "Previsto" (Pendente) = Previsão no mês E Não Concluído
+        const previstoList = allActivitiesOfType.filter(a =>
+            a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth && !a.ConcluidaEm
+        );
+
+        // 2. "Realizado" (Todas as concluídas no mês)
+        const realizadoList = allActivitiesOfType.filter(a =>
+            a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth
+        );
+
+        // 3. "Antecipado" (NOVA LÓGICA: Concluída no mês, Previsão futura)
+        const antecipadoList = realizadoList.filter(a => a.PrevisaoConclusao > endOfMonth);
+
+        // 4. "Realizado no Prazo" (Concluída no mês, Previsão no mês)
+        const realizadoNoPrazoList = realizadoList.filter(a =>
+            a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth
+        );
+
+        // 5. "Realizado com Atraso" (Concluída no mês, Previsão passada)
+        const realizadoAtrasadoList = realizadoList.filter(a =>
+            a.PrevisaoConclusao < startOfMonth
+        );
+
+        // Salva as métricas
+        okrs[`${key}Antecipado`] = antecipadoList;
         okrs[`${key}Previsto`] = previstoList;
-        okrs[`${key}Realizado`] = realizadoList;
+        okrs[`${key}Realizado`] = realizadoNoPrazoList; // "Realizado" agora significa "No Prazo"
+        okrs[`${key}RealizadoAtrasado`] = realizadoAtrasadoList; // Nova métrica para o card
+        okrs[`${key}RealizadoTotal`] = realizadoList; // Usado pelo SLA do Kickoff
 
+        // Lógica de SLA (para Kickoff, que ainda usa a previsão)
         if (config.sla) {
+            // O SLA do Kickoff ainda é baseado na previsão
             okrs[`${key}SLAOk`] = realizadoList.filter(a => {
                 const completedDate = a.ConcluidaEm;
-                const createdDate = a.CriadoEm;
-                
-                if (completedDate && createdDate) {
-                    const diffDays = (completedDate - createdDate) / (1000 * 60 * 60 * 24);
+                const predictedDate = a.PrevisaoConclusao; // Usa Previsão
+
+                if (completedDate && predictedDate) {
+                    const diffDays = (completedDate - predictedDate) / (1000 * 60 * 60 * 24);
                     return diffDays <= config.sla;
                 }
-                return false;
+                return false; // Se não tiver data de previsão, não está no SLA
             });
         }
-    });
-    // --- FIM DO AJUSTE 5 ---
+    }
+});
+// --- FIM DA ATUALIZAÇÃO ---
 
     return okrs;
 };
@@ -1024,3 +1078,4 @@ self.onmessage = (e) => {
         });
     }
 };
+
