@@ -458,7 +458,7 @@ const onboardingEmails = [
     // O Dashboard só inicializa após o login
     async function initializeDashboard() {
         // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-        const APP_VERSION = '1.4.6-worker'; // Versão atualizada
+        const APP_VERSION = '1.4.7-worker'; // Versão atualizada
 
         const storedVersion = localStorage.getItem('appVersion');
 
@@ -963,32 +963,25 @@ function setupUserView() {
                     selectCS.disabled = true;
 
                 } else if (currentUser.userGroup === 'onboarding') {
-                    // NOVA Lógica de auto-seleção de ISM
-                    let foundISM = null;
-                    const sortedISM = [...ismSet].sort(); // Usamos o ismSet
-                    
-                    // (Vamos assumir a mesma lógica de match de email, já que não temos um mapa ISM)
-                    for (const ismName of sortedISM) {
-                        const ismNameParts = normalizeText(ismName).split(' ');
-                        for (const part of ismNameParts) {
-                            if (part.length > 2 && emailIdentifier.includes(part)) {
-                                foundISM = ismName;
-                                break;
-                            }
-                        }
-                        if (foundISM) break;
-                    }
+    // LÓGICA CORRIGIDA: Usa o ISM que já foi definido no login (via ISM_MAPPING)
 
-                    if (foundISM && sortedISM.includes(foundISM)) {
-                        selectISM.value = foundISM; // Seleciona o ISM
-                    } else {
-                        console.warn(`Nenhum ISM correspondente encontrado para o e-mail ${currentUser.email}.`);
-                        // Se não encontrar, ele ficará em "Todos os ISMs",
-                        // o que pode ser um problema. O ideal é ter um mapa manual para ISMs
-                        // ou garantir que os nomes/emails batam.
-                    }
-                    selectISM.disabled = true; // Desabilita o filtro de ISM
-                }
+    // Pega o nome do ISM que foi definido no login (ex: "Nathalia Fagundes")
+    const mappedISM = currentUser.selectedISM;
+
+    // Pega a lista de ISMs que vieram da planilha de Clientes
+    const sortedISM = [...ismSet].sort(); 
+
+    // Verifica se o ISM mapeado ("Nathalia Fagundes") existe na lista de ISMs da planilha
+    if (mappedISM && sortedISM.includes(mappedISM)) {
+        selectISM.value = mappedISM; // Seleciona o valor correto no dropdown
+    } else {
+        // O erro agora é mais claro, caso o nome na planilha esteja diferente
+        console.warn(`AVISO: O ISM "${mappedISM}" (do e-mail ${currentUser.email}) não foi encontrado na lista de ISMs da planilha de Clientes. Verifique se os nomes batem 100%.`);
+    }
+
+    // A trava do filtro (que você pediu) já está aqui
+    selectISM.disabled = true; 
+}
             }
             // --- FIM DA NOVA LÓGICA ---
 
@@ -2718,6 +2711,7 @@ setupUserView();
 
 
 </html>
+
 
 
 
