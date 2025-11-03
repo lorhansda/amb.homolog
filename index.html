@@ -742,32 +742,26 @@ function setupUserView() {
         
         // CÓDIGO CORRIGIDO
         const attemptProcess = () => {
-            if (atividadesFile && clientesFile) {
-                statusMessage.textContent = 'Arquivos recebidos. Processando dados no worker...';
+            if (atividadesFile && clientesFile) {
+                statusMessage.textContent = 'Arquivos recebidos. Processando dados no worker...';
 
-                // Inicia o Worker (se não estiver iniciado)
-                if (dataWorker) dataWorker.terminate(); 
-                dataWorker = new Worker('worker.js'); 
-                dataWorker.onmessage = handleWorkerMessage;
-                
-                // Envia os OBJETOS 'File' para o worker (muito leve)
-                dataWorker.postMessage({
-                    type: 'INIT_FILES', // Usaremos um novo 'type'
-                    payload: {
-                        atividadesFile: atividadesFile, // Envia o arquivo
-                        clientesFile: clientesFile,     // Envia o arquivo
-                        currentUser: currentUser, 
-                        manualEmailToCsMap: manualEmailToCsMap
-                    }
-                });
-            }
-        };
-                    .catch(err => {
-                        statusMessage.textContent = 'Erro ao ler. Verifique os arquivos e o console (F12) para mais detalhes.';
-                        console.error(err);
-                    });
-            }
-        };
+                // Inicia o Worker (se não estiver iniciado)
+                if (dataWorker) dataWorker.terminate(); 
+                dataWorker = new Worker('worker.js'); 
+                dataWorker.onmessage = handleWorkerMessage;
+                
+                // Envia os OBJETOS 'File' para o worker (muito leve)
+                dataWorker.postMessage({
+                    type: 'INIT_FILES', // Usaremos um novo 'type'
+                    payload: {
+                        atividadesFile: atividadesFile, // Envia o arquivo
+                        clientesFile: clientesFile,     // Envia o arquivo
+                        currentUser: currentUser, 
+                        manualEmailToCsMap: manualEmailToCsMap
+                    }
+                });
+            }
+        };
 
         // --- MANIPULAÇÃO DE MENSAGENS DO WORKER ---
         function handleWorkerMessage(e) {
@@ -2780,6 +2774,7 @@ if (!currentUser.isManager) {
 
 
 </html>
+
 
 
 
