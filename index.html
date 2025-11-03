@@ -2622,70 +2622,76 @@ setupUserView();
 
         // --- CONTROLE DE ACESSO VISUAL ---
         if (!currentUser.isManager) {
-            // Oculta botões de admin para TODOS os não-admins
-            document.getElementById('settings-button').style.display = 'none';
-            document.getElementById('bulk-export-button').style.display = 'none';
+    // Oculta botões de admin para TODOS os não-admins
+    document.getElementById('settings-button').style.display = 'none';
+    document.getElementById('bulk-export-button').style.display = 'none';
 
-            if (currentUser.userGroup === 'ongoing') {
-                // Oculta filtros de squad
-                document.getElementById('squad-filter-group').style.display = 'none';
-                document.getElementById('squad-cs-list').style.display = 'none';
-                
-                // Desabilita visualmente o label de CS (já que o select está travado)
-                const csLabel = document.querySelector('[for="select-cs"]');
-                if (csLabel) {
-                    csLabel.style.pointerEvents = 'none';
-                    csLabel.style.opacity = '0.6';
-                }
-            } 
-            
-            if (currentUser.userGroup === 'onboarding') {
-                // Oculta os filtros principais que não se aplicam ao onboarding
-                document.getElementById('squad-filter-group').style.display = 'none';
-                document.getElementById('squad-cs-list').style.display = 'none';
-                document.querySelector('.control-group label[for="select-cs"]').parentElement.style.display = 'none';
-                document.querySelector('.control-group label[for="select-segmento"]').parentElement.style.display = 'none';
-                document.querySelector('.control-group label[for="select-comparison"]').parentElement.style.display = 'none';
-                document.querySelector('.control-group label[for="include-onboarding-toggle"]').parentElement.style.display = 'none';
-            
-                // --- LÓGICA DE TRAVA ATUALIZADA ---
-                const ismLabel = document.querySelector('[for="select-ism"]');
-                // Pega o label de Visão do Time
-                const teamLabel = document.querySelector('[for="select-onboarding-team"]'); 
-            
-                if (!currentUser.isManager) {
-                    // Trava o filtro para o ISM do usuário logado
-                    if (selectISM.value !== currentUser.selectedISM) {
-                        selectISM.value = currentUser.selectedISM;
-                    }
-                    selectISM.disabled = true; // <-- Isso ativa a regra CSS que você adicionou
-                    if (ismLabel) {
-                        ismLabel.style.pointerEvents = 'none';
-                        ismLabel.style.opacity = '0.6'; // <-- Isso deixa o NOME (label) cinza
-                    }
-            
-                    // NOVO: Trava o filtro Visão do Time
-                    selectOnboardingTeam.disabled = true; // <-- Isso ativa a regra CSS
-                    if (teamLabel) {
-                        teamLabel.style.pointerEvents = 'none';
-                        teamLabel.style.opacity = '0.6'; // <-- Isso deixa o NOME (label) cinza
-                    }
-                    
-                } else {
-                    // Garante que managers possam usar o filtro ISM
-                    selectISM.disabled = false;
-                     if (ismLabel) {
-                        ismLabel.style.pointerEvents = 'auto';
-                        ismLabel.style.opacity = '1';
-                    }
-            
-                    // NOVO: Garante que managers possam usar o filtro Visão do Time
-                    selectOnboardingTeam.disabled = false;
-                    if (teamLabel) {
-                        teamLabel.style.pointerEvents = 'auto';
-                        teamLabel.style.opacity = '1';
-                    }
-                }
+    if (currentUser.userGroup === 'ongoing') {
+        // Oculta filtros de squad
+        document.getElementById('squad-filter-group').style.display = 'none';
+        document.getElementById('squad-cs-list').style.display = 'none';
+        
+        // Desabilita visualmente o label de CS (já que o select está travado)
+        const csLabel = document.querySelector('[for="select-cs"]');
+        if (csLabel) {
+            csLabel.style.pointerEvents = 'none';
+            csLabel.style.opacity = '0.6';
+        }
+    } 
+    
+    // SEU BLOCO 'onboarding' FOI SIMPLIFICADO:
+    if (currentUser.userGroup === 'onboarding') {
+        // Oculta os filtros principais que não se aplicam ao onboarding
+        document.getElementById('squad-filter-group').style.display = 'none';
+        document.getElementById('squad-cs-list').style.display = 'none';
+        document.querySelector('.control-group label[for="select-cs"]').parentElement.style.display = 'none';
+        document.querySelector('.control-group label[for="select-segmento"]').parentElement.style.display = 'none';
+        document.querySelector('.control-group label[for="select-comparison"]').parentElement.style.display = 'none';
+        document.querySelector('.control-group label[for="include-onboarding-toggle"]').parentElement.style.display = 'none';
+        
+        // --- LÓGICA DE TRAVA SIMPLIFICADA ---
+        // Removemos o 'if/else' interno, pois já sabemos que o usuário NÃO é manager.
+
+        const ismLabel = document.querySelector('[for="select-ism"]');
+        const teamLabel = document.querySelector('[for="select-onboarding-team"]'); 
+
+        // Trava o filtro para o ISM do usuário logado
+        if (selectISM.value !== currentUser.selectedISM) {
+            selectISM.value = currentUser.selectedISM;
+        }
+        selectISM.disabled = true; // <-- Trava o dropdown ISM
+        if (ismLabel) {
+            ismLabel.style.pointerEvents = 'none';
+            ismLabel.style.opacity = '0.6';
+        }
+
+        // Trava o filtro Visão do Time
+        selectOnboardingTeam.disabled = true; // <-- Trava o dropdown Time
+        if (teamLabel) {
+            teamLabel.style.pointerEvents = 'none';
+            teamLabel.style.opacity = '0.6';
+        }
+    }
+} else {
+    // --- LÓGICA PARA MANAGERS (ADMINS) ---
+    // Este bloco garante que os managers NÃO tenham os filtros travados.
+
+    // Garante que managers possam usar o filtro ISM
+    const ismLabel = document.querySelector('[for="select-ism"]');
+    selectISM.disabled = false;
+     if (ismLabel) {
+        ismLabel.style.pointerEvents = 'auto';
+        ismLabel.style.opacity = '1';
+    }
+
+    // Garante que managers possam usar o filtro Visão do Time
+    const teamLabel = document.querySelector('[for="select-onboarding-team"]');
+    selectOnboardingTeam.disabled = false;
+    if (teamLabel) {
+        teamLabel.style.pointerEvents = 'auto';
+        teamLabel.style.opacity = '1';
+    }
+}
             }
 	    }
 	}
@@ -2711,6 +2717,7 @@ setupUserView();
 
 
 </html>
+
 
 
 
