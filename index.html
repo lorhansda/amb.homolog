@@ -1460,35 +1460,45 @@ function setupUserView() {
                     </div>`;
 
                 } else {
-                    // --- LÓGICA ATUALIZADA (para cards de "Prazo" sem SLA) ---
-                    // Mudar para o formato de lista, igual ao card de SLA
-                    const realizadoList = onboardingDataStore[`${metricIdPrefix}Realizado`] || [];
-                    const realizadoCount = realizadoList.length;
-                    
-                    const totalConcluido = realizadoCount + antecipadoCount;
-                    const totalProgramado = totalConcluido + previstoCount;
+                // --- LÓGICA ATUALIZADA (para cards de "Prazo" sem SLA) (Change 2) ---
+                // "Realizado" agora é "Realizado (no Prazo)"
+                const realizadoList = onboardingDataStore[`${metricIdPrefix}Realizado`] || [];
+                const realizadoCount = realizadoList.length;
 
-                    percentage = totalProgramado > 0 ? (totalConcluido / totalProgramado) * 100 : (totalConcluido > 0 ? 100 : 0);
-                    percentageTitle = `${percentage.toFixed(1)}% de conclusão (${totalConcluido} de ${totalProgramado})`;
-                    
-                    const realizadoClickable = metricIdPrefix && realizadoCount > 0;
+                // Pega a nova métrica "RealizadoAtrasado" do worker
+                const atrasadoList = onboardingDataStore[`${metricIdPrefix}RealizadoAtrasado`] || [];
+                const atrasadoCount = atrasadoList.length;
 
-                    cardContentHtml = `
-                    <div class="card-content" style="display: block; text-align: left;">
-                        <div class="metric" ${previstoClickable ? `data-metric-id="${metricIdPrefix}Previsto" data-metric-title="Pendentes: ${title}"` : ''}>
-                            <span class="metric-label">Pendentes:</span>
-                            <span class="metric-value" style="font-size: 1.8rem;">${previstoCount}</span>
-                        </div>
-                        <div class="metric" ${antecipadoClickable ? `data-metric-id="${metricIdPrefix}Antecipado" data-metric-title="Concluído (Antecipado): ${title}"` : ''}>
-                            <span class="metric-label">Concluído (Antecip.):</span>
-                            <span class="metric-value success" style="font-size: 1.8rem;">${antecipadoCount}</span>
-                        </div>
-                        <div class="metric" ${realizadoClickable ? `data-metric-id="${metricIdPrefix}Realizado" data-metric-title="Realizado (no Mês): ${title}"` : ''}>
-                            <span class="metric-label">Realizado (no Mês):</span>
-                            <span class="metric-value success" style="font-size: 1.8rem;">${realizadoCount}</span>
-                        </div>
-                    </div>`;
-                }
+                // Total concluído agora soma os 3 tipos
+                const totalConcluido = realizadoCount + antecipadoCount + atrasadoCount;
+                const totalProgramado = totalConcluido + previstoCount;
+
+                percentage = totalProgramado > 0 ? (totalConcluido / totalProgramado) * 100 : (totalConcluido > 0 ? 100 : 0);
+                percentageTitle = `${percentage.toFixed(1)}% de conclusão (${totalConcluido} de ${totalProgramado})`;
+
+                const realizadoClickable = metricIdPrefix && realizadoCount > 0;
+                const atrasadoClickable = metricIdPrefix && atrasadoCount > 0; // Clique para a nova métrica
+
+                cardContentHtml = `
+                <div class="card-content" style="display: block; text-align: left;">
+                    <div class="metric" ${previstoClickable ? `data-metric-id="${metricIdPrefix}Previsto" data-metric-title="Pendentes: ${title}"` : ''}>
+                        <span class="metric-label">Pendentes:</span>
+                        <span class="metric-value" style="font-size: 1.8rem;">${previstoCount}</span>
+                    </div>
+                    <div class="metric" ${antecipadoClickable ? `data-metric-id="${metricIdPrefix}Antecipado" data-metric-title="Concluído (Antecipado): ${title}"` : ''}>
+                        <span class="metric-label">Concluído (Antecip.):</span>
+                        <span class="metric-value success" style="font-size: 1.8rem;">${antecipadoCount}</span>
+                    </div>
+                    <div class="metric" ${realizadoClickable ? `data-metric-id="${metricIdPrefix}Realizado" data-metric-title="Realizado (no Prazo): ${title}"` : ''}>
+                        <span class="metric-label">Realizado (no Prazo):</span>
+                        <span class="metric-value success" style="font-size: 1.8rem;">${realizadoCount}</span>
+                    </div>
+                    <div class="metric" ${atrasadoClickable ? `data-metric-id="${metricIdPrefix}RealizadoAtrasado" data-metric-title="Realizado (com Atraso): ${title}"` : ''}>
+                        <span class="metric-label">Realizado (com Atraso):</span>
+                        <span class="metric-value ${atrasadoCount > 0 ? 'danger' : 'success'}" style="font-size: 1.8rem;">${atrasadoCount}</span>
+                    </div>
+                </div>`;
+            }
 
                 // Retorna o card completo
                 return `
@@ -2685,6 +2695,7 @@ if (currentUser.userGroup === 'onboarding') {
 
 
 </html>
+
 
 
 
