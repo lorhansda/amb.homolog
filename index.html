@@ -2621,7 +2621,8 @@ setupUserView();
         bulkExportModal.querySelector('.close-button').addEventListener('click', () => closeModal(bulkExportModal));
 
         // --- CONTROLE DE ACESSO VISUAL ---
-        if (!currentUser.isManager) {
+        // --- CONTROLE DE ACESSO VISUAL ---
+if (!currentUser.isManager) {
     // Oculta botões de admin para TODOS os não-admins
     document.getElementById('settings-button').style.display = 'none';
     document.getElementById('bulk-export-button').style.display = 'none';
@@ -2692,9 +2693,6 @@ setupUserView();
         teamLabel.style.opacity = '1';
     }
 }
-            }
-	    }
-	}
 </script>
 	
 	<script src="ism_config.js"></script>
@@ -2717,6 +2715,7 @@ setupUserView();
 
 
 </html>
+
 
 
 
