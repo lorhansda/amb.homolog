@@ -58,6 +58,64 @@ const parseDate = (dateInput) => {
     }
     return null;
 };
+const readFile = (file) => new Promise((resolve, reject) => {
+            const excelSerialToDateObject = (serial) => {
+                const excelTimestamp = (serial - 25569) * 86400 * 1000;
+                const date = new Date(excelTimestamp);
+                const timezoneOffset = date.getTimezoneOffset() * 60000;
+                return new Date(date.getTime() + timezoneOffset);
+            }
+            const transpilePipeToCommaCSV = (pipeText) => {
+                let inQuotes = false;
+                let newCsvText = '';
+                for (let i = 0; i < pipeText.length; i++) {
+                    const char = pipeText[i];
+                    if (char === '"') inQuotes = !inQuotes;
+                    newCsvText += (char === '|' && !inQuotes) ? ',' : char;
+                }
+                return newCsvText;
+            };
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = event.target.result;
+                    const fileName = file.name.toLowerCase();
+                    let workbook;
+                    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                        workbook = XLSX.read(data, { type: 'array' });
+                    } else {
+                        const standardCsvText = transpilePipeToCommaCSV(data);
+                        workbook = XLSX.read(standardCsvText, { type: 'string' });
+                    }
+                    const sheetName = workbook.SheetNames[0];
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
+                    const dateColumns = ["Criado em", "Previsão de conclusão", "Concluída em"];
+                    jsonData.forEach(row => {
+                        dateColumns.forEach(colName => {
+                            if (row[colName]) {
+                                if (typeof row[colName] === 'number') {
+                                    row[colName] = excelSerialToDateObject(row[colName]);
+                                } else {
+                                    row[colName] = parseDate(row[colName]);
+                                }
+                            }
+                        });
+                    });
+                    resolve(jsonData);
+                } catch (e) {
+                    console.error("Erro detalhado no processamento do arquivo:", e);
+                    reject(new Error("Não foi possível processar o arquivo. Verifique o formato e se não está corrompido."));
+                }
+            };
+            reader.onerror = (error) => {
+                reject(new Error("Ocorreu um erro de hardware ou permissão ao tentar ler o arquivo."));
+            };
+            if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file, 'UTF-8');
+            }
+        });
 
 // --- FUNÇÕES DE INICIALIZAÇÃO DE DADOS (Executadas uma vez) ---
 
@@ -916,6 +974,34 @@ self.onmessage = async (e) => { // <-- Adicione 'async'
             self.currentUser = currentUser; // Use self.currentUser
             self.manualEmailToCsMap = manualEmailToCsMap;
             ismToFilter = self.currentUser.selectedISM || 'Todos';
+			// ▼▼▼ ADICIONE ESTE BLOCO DE CÓDIGO ABAIXO ▼▼▼
+            // 2. Processa e junta os dados (Lógica antiga mantida)
+            processInitialData(); // Modifica rawActivities
+
+            // 3. Constrói o mapa de Squads (Lógica antiga mantida)
+            buildCsToSquadMap();
+
+            // 4. Extrai dados para os filtros (Lógica antiga mantida)
+            const csSet = [...new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean))];
+            const squadSet = [...new Set(rawClients.map(d => d['Squad CS']).filter(Boolean))];
+            const ismSet = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))];
+            const allDates = [...rawActivities.map(a => a.PrevisaoConclusao), ...rawActivities.map(a => a.ConcluidaEm)];
+            const years = [...new Set(allDates.map(d => d?.getFullYear()).filter(Boolean))];
+
+            // 5. Envia os dados de filtro de volta
+            postMessage({
+                type: 'INIT_COMPLETE',
+                payload: {
+                    filterData: {
+                        csSet,
+                        squadSet,
+                        ismSet,
+                        years,
+                        csToSquadMap: Object.fromEntries(csToSquadMap) // Converte Map para Objeto
+                    }
+                }
+            });
+			
             // --- FIM DA NOVA LÓGICA DE LEITURA ---
 
             // 2. Processa e junta os dados (Lógica antiga mantida)
@@ -1105,6 +1191,7 @@ else if (type === 'GET_DATA_PAGE') {
         });
     }
 };
+
 
 
 
