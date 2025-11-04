@@ -954,34 +954,30 @@ self.onmessage = async (e) => { // <-- Adicione 'async'
     const { type, payload } = e.data;
 
     try {
-        if (type === 'INIT_FILES') { // <-- Mudança de 'INIT' para 'INIT_FILES'
-            
-            // --- INÍCIO DA NOVA LÓGICA DE LEITURA ---
-            // 1. Recebe os ARQUIVOS (não os dados)
-            const { atividadesFile, clientesFile, currentUser, manualEmailToCsMap } = payload;
+        if (type === 'INIT_FILES') { 
+            
+            // --- INÍCIO DA NOVA LÓGICA DE LEITURA ---
+            const { atividadesFile, clientesFile, currentUser, manualEmailToCsMap } = payload;
 
-            // 2. Copie a função 'readFile' do seu index.html para cá (dentro do worker)
-            // Esta função 'readFile' DEVE estar definida aqui no worker
-            // (Estou assumindo que você colou a função 'readFile' acima no worker)
-            const [atividadesJson, clientesJson] = await Promise.all([
-                readFile(atividadesFile),
-                readFile(clientesFile)
-            ]);
+            const [atividadesJson, clientesJson] = await Promise.all([
+                readFile(atividadesFile),
+                readFile(clientesFile)
+            ]);
 
-            // 3. Define as variáveis globais do worker
-            rawActivities = atividadesJson;
-            rawClients = clientesJson;
-            self.currentUser = currentUser; // Use self.currentUser
-            self.manualEmailToCsMap = manualEmailToCsMap;
-            ismToFilter = self.currentUser.selectedISM || 'Todos';
-			// ▼▼▼ ADICIONE ESTE BLOCO DE CÓDIGO ABAIXO ▼▼▼
-            // 2. Processa e junta os dados (Lógica antiga mantida)
+            rawActivities = atividadesJson;
+            rawClients = clientesJson;
+            self.currentUser = currentUser; 
+            self.manualEmailToCsMap = manualEmailToCsMap;
+            ismToFilter = self.currentUser.selectedISM || 'Todos';
+            // --- FIM DA NOVA LÓGICA DE LEITURA ---
+
+            // 2. Processa e junta os dados
             processInitialData(); // Modifica rawActivities
 
-            // 3. Constrói o mapa de Squads (Lógica antiga mantida)
+            // 3. Constrói o mapa de Squads
             buildCsToSquadMap();
 
-            // 4. Extrai dados para os filtros (Lógica antiga mantida)
+            // 4. Extrai dados para os filtros
             const csSet = [...new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean))];
             const squadSet = [...new Set(rawClients.map(d => d['Squad CS']).filter(Boolean))];
             const ismSet = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))];
@@ -997,10 +993,11 @@ self.onmessage = async (e) => { // <-- Adicione 'async'
                         squadSet,
                         ismSet,
                         years,
-                        csToSquadMap: Object.fromEntries(csToSquadMap) // Converte Map para Objeto
+                        csToSquadMap: Object.fromEntries(csToSquadMap)
                     }
                 }
             });
+        }
 			
             // --- FIM DA NOVA LÓGICA DE LEITURA ---
 
@@ -1180,6 +1177,49 @@ else if (type === 'GET_DATA_PAGE') {
                 }
             });
         }
+	// ... (depois do 'else if (type === 'GET_CLIENT_360')')
+            else if (type === 'CALCULATE_BULK_REPORT') {
+                const { month, year, selectedCS, includeOnboarding, goals } = payload;
+
+                // 1. Filtra os clientes para este CS
+                let bulkClients = rawClients.filter(d => d.CS?.trim() === selectedCS);
+
+                // 2. Determina o segmento (copiado da lógica de autoSelectSegment)
+                let segment = 'SMB CAD'; // Padrão
+                if (bulkClients.length > 0) {
+                    let midEnterpriseCount = 0, smbCount = 0;
+                    bulkClients.forEach(c => {
+                        const seg = normalizeText(c.Segmento || '');
+                        if (seg === 'mid-market' || seg === 'enterprise') midEnterpriseCount++;
+                        else if (seg.includes('smb')) smbCount++;
+                    });
+                    if (midEnterpriseCount > smbCount) {
+                        segment = 'MID/Enterprise';
+                    } else {
+                         const smbClients = bulkClients.filter(c => normalizeText(c.Segmento || '').includes('smb'));
+                         let smbCadCount = 0, smbMultiCount = 0;
+                         smbClients.forEach(c => {
+                            const clientName = (c.Cliente || '').trim().toLowerCase();
+                            if (clientName.endsWith('solidworks') || clientName.endsWith('solidworks electrical')) smbCadCount++;
+                            else smbMultiCount++;
+                         });
+                         segment = smbCadCount > smbMultiCount ? 'SMB CAD' : 'SMB Multiprodutos';
+                    }
+                }
+
+                // 3. Calcula os dados do relatório
+                const reportData = calculateMetricsForPeriod(month, year, rawActivities, bulkClients, selectedCS, includeOnboarding, goals);
+
+                // 4. Envia de volta
+                postMessage({
+                    type: 'BULK_REPORT_COMPLETE',
+                    payload: {
+                        reportData: reportData,
+                        csName: selectedCS,
+                        segment: segment // Envia o segmento detectado
+                    }
+                });
+            }
     } catch (err) {
         // Envia erros de volta para a thread principal
         postMessage({
@@ -1191,6 +1231,7 @@ else if (type === 'GET_DATA_PAGE') {
         });
     }
 };
+
 
 
 
