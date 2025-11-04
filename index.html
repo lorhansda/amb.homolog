@@ -454,7 +454,7 @@ const onboardingEmails = [
     // O Dashboard só inicializa após o login
     async function initializeDashboard() {
         // --- CONTROLE DE VERSÃO E LIMPEZA AUTOMÁTICA DE CACHE ---
-        const APP_VERSION = '1.5.0-worker'; // Versão atualizada
+        const APP_VERSION = '1.4.9-worker'; // Versão atualizada
 
         const storedVersion = localStorage.getItem('appVersion');
 
@@ -740,28 +740,41 @@ function setupUserView() {
         
         let atividadesFile, clientesFile;
         
-        // CÓDIGO CORRIGIDO
         const attemptProcess = () => {
-            if (atividadesFile && clientesFile) {
-                statusMessage.textContent = 'Arquivos recebidos. Processando dados no worker...';
+            if (atividadesFile && clientesFile) {
+                statusMessage.textContent = 'Lendo arquivos...';
+                Promise.all([readFile(atividadesFile), readFile(clientesFile)])
+                    .then(([atividadesJson, clientesJson]) => {
+                        rawActivities = atividadesJson; // Salva na thread principal para a aba "Dados"
+                        rawClients = clientesJson; // Salva na thread principal para a aba "Dados"
 
-                // Inicia o Worker (se não estiver iniciado)
-                if (dataWorker) dataWorker.terminate(); 
-                dataWorker = new Worker('worker.js'); 
-                dataWorker.onmessage = handleWorkerMessage;
-                
-                // Envia os OBJETOS 'File' para o worker (muito leve)
-                dataWorker.postMessage({
-                    type: 'INIT_FILES', // Usaremos um novo 'type'
-                    payload: {
-                        atividadesFile: atividadesFile, // Envia o arquivo
-                        clientesFile: clientesFile,     // Envia o arquivo
-                        currentUser: currentUser, 
-                        manualEmailToCsMap: manualEmailToCsMap
-                    }
-                });
-            }
-        };
+                        statusMessage.textContent = 'Arquivos lidos. Processando dados... Isso pode levar alguns instantes.';
+                        
+                        // Inicia o Worker
+                        if (dataWorker) dataWorker.terminate(); // Encerra worker anterior, se houver
+                        dataWorker = new Worker('worker.js');
+
+                        // Define o que fazer quando o worker mandar uma mensagem
+                        dataWorker.onmessage = handleWorkerMessage;
+                        
+                        // Envia os dados brutos para o worker inicializar
+                        dataWorker.postMessage({
+                            type: 'INIT',
+                            payload: {
+                                rawActivities: atividadesJson,
+                                rawClients: clientesJson,
+                                currentUser: currentUser, // Envia dados do usuário
+                                manualEmailToCsMap: manualEmailToCsMap // Envia mapa manual
+                            }
+                        });
+
+                    })
+                    .catch(err => {
+                        statusMessage.textContent = 'Erro ao ler. Verifique os arquivos e o console (F12) para mais detalhes.';
+                        console.error(err);
+                    });
+            }
+        };
 
         // --- MANIPULAÇÃO DE MENSAGENS DO WORKER ---
         function handleWorkerMessage(e) {
@@ -858,38 +871,6 @@ tabsContainer.style.display = 'flex';
                     console.log("Dados de tendência recebidos.");
                     renderTrendChart(payload.labels, payload.dataPoints, payload.title);
                     break;
-					case 'DATA_PAGE_COMPLETE': 
-                    const { type, data, page, totalPages } = payload;
-                    const tableId = type === 'atividades' ? 'atividades-table' : 'clientes-table';
-                    const paginationId = type === 'atividades' ? 'atividades-pagination' : 'clientes-pagination';
-                    
-                    // Renderiza a tabela com os dados recebidos
-                    document.getElementById(tableId).innerHTML = createHtmlTable(data);
-                    
-                    // Renderiza a paginação
-                    const paginationContainer = document.getElementById(paginationId);
-                    paginationContainer.innerHTML = `<button data-type="${type}" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${page} de ${totalPages || 1}</span><button data-type="${type}" data-page="${page + 1}" ${page === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
-                    
-                    // Adiciona listeners aos novos botões
-                    paginationContainer.querySelectorAll('button').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            dataWorker.postMessage({ type: 'GET_DATA_PAGE', payload: { type: btn.dataset.type, page: parseInt(btn.dataset.page) } });
-                        });
-                    });
-                    break;
-					// ... (depois do case 'CLIENT_360_DATA')
-            case 'BULK_REPORT_COMPLETE':
-                const { reportData, csName, segment } = payload;
-
-                // Define o segmento global (necessário para a função de gerar HTML)
-                selectSegmento.value = segment; 
-
-                // Gera o download
-                generateAndDownloadHtmlReport(csName, reportData, appGoals);
-
-                // Pausa de 300ms e chama o próximo
-                setTimeout(processNextBulkReport, 300);
-                break;
 
                 case 'ERROR':
                     console.error("Erro recebido do Worker:", payload.error);
@@ -2184,75 +2165,11 @@ tabsContainer.style.display = 'flex';
             renderPage();
         };
 
-        // EM INDEX.HTML
         const renderDataTables = () => {
-            // Pede os dados paginados ao worker
-            if (dataWorker) {
-                dataWorker.postMessage({ type: 'GET_DATA_PAGE', payload: { type: 'atividades', page: 1 } });
-                dataWorker.postMessage({ type: 'GET_DATA_PAGE', payload: { type: 'clientes', page: 1 } });
-            }
+            // Usa os dados `rawActivities` e `rawClients` da thread principal
+            renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
+            renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
         };
-
-        // ... E adicione este novo 'case' na sua função handleWorkerMessage (em index.html)
-        // ...
-                case 'TREND_DATA_COMPLETE':
-                    console.log("Dados de tendência recebidos.");
-                    renderTrendChart(payload.labels, payload.dataPoints, payload.title);
-                    break;
-
-                // ADICIONE ESTE NOVO BLOCO
-                case 'DATA_PAGE_COMPLETE': 
-                    const { type, data, page, totalPages } = payload;
-                    const tableId = type === 'atividades' ? 'atividades-table' : 'clientes-table';
-                    const paginationId = type === 'atividades' ? 'atividades-pagination' : 'clientes-pagination';
-                    
-                    // Renderiza a tabela com os dados recebidos
-                    document.getElementById(tableId).innerHTML = createHtmlTable(data);
-                    
-                    // Renderiza a paginação
-                    const paginationContainer = document.getElementById(paginationId);
-                    paginationContainer.innerHTML = `<button data-type="${type}" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>&lt; Anterior</button><span>Página ${page} de ${totalPages || 1}</span><button data-type="${type}" data-page="${page + 1}" ${page === totalPages || totalPages === 0 ? 'disabled' : ''}>Próximo &gt;</button>`;
-                    
-                    // Adiciona listeners aos novos botões
-                    paginationContainer.querySelectorAll('button').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            dataWorker.postMessage({ type: 'GET_DATA_PAGE', payload: { type: btn.dataset.type, page: parseInt(btn.dataset.page) } });
-                        });
-                    });
-                    break;
-		// ... (depois do case 'DATA_PAGE_COMPLETE')
-            case 'CLIENT_360_DATA':
-                const { clientData, clientActivities } = payload;
-                if (!clientData) return;
-
-                document.getElementById('client-360-name').textContent = clientData.Cliente;
-                const infoContainer = document.getElementById('client-360-info');
-                infoContainer.innerHTML = `
-                    <div class="client-info-item"><span class="client-info-label">CS Responsável</span><span class="client-info-value">${clientData.CS || 'N/A'}</span></div>
-                    <div class="client-info-item"><span class="client-info-label">ISM Responsável</span><span class="client-info-value">${clientData.ISM || 'N/A'}</span></div>
-                    <div class="client-info-item"><span class="client-info-label">Segmento</span><span class="client-info-value">${clientData.Segmento || 'N/A'}</span></div>
-                    <div class="client-info-item"><span class="client-info-label">Sense Score</span><span class="client-info-value">${clientData['Sense Score'] || 'N/A'}</span></div>
-                    <div class="client-info-item"><span class="client-info-label">Fase</span><span class="client-info-value">${clientData.Fase || 'N/A'}</span></div>
-                `;
-                document.querySelector('#client-360-activities .data-table-container').innerHTML = createHtmlTable(clientActivities);
-                showModal(client360Modal);
-                break;
-// ... (depois do 'else if (type === 'GET_DATA_PAGE')')
-            else if (type === 'GET_CLIENT_360') {
-                const clientName = payload.clientName.toLowerCase();
-                const clientData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === clientName);
-
-                const clientActivities = rawActivities
-                    .filter(a => (a.Cliente || '').trim().toLowerCase() === clientName)
-                    .sort((a, b) => (b.ConcluidaEm || new Date(0)) - (a.ConcluidaEm || new Date(0)));
-
-                postMessage({
-                    type: 'CLIENT_360_DATA',
-                    payload: { clientData, clientActivities }
-                });
-            }
-                case 'ERROR':
-        // ...
         
         // --- FUNÇÕES DE MODAL (Thread Principal) ---
 
@@ -2310,14 +2227,23 @@ tabsContainer.style.display = 'flex';
         }
 
         const showClient360Modal = (clientName) => {
-            if (dataWorker) {
-                // Pede os dados do cliente ao worker
-                dataWorker.postMessage({ 
-                    type: 'GET_CLIENT_360', 
-                    payload: { clientName: clientName } 
-                });
-            }
-        };
+            const clientData = rawClients.find(c => (c.Cliente || '').trim().toLowerCase() === clientName.toLowerCase());
+            if (!clientData) return;
+            document.getElementById('client-360-name').textContent = clientData.Cliente;
+            const infoContainer = document.getElementById('client-360-info');
+            infoContainer.innerHTML = `
+                <div class="client-info-item"><span class="client-info-label">CS Responsável</span><span class="client-info-value">${clientData.CS || 'N/A'}</span></div>
+                <div class="client-info-item"><span class="client-info-label">ISM Responsável</span><span class="client-info-value">${clientData.ISM || 'N/A'}</span></div>
+                <div class="client-info-item"><span class="client-info-label">Segmento</span><span class="client-info-value">${clientData.Segmento || 'N/A'}</span></div>
+                <div class="client-info-item"><span class="client-info-label">Sense Score</span><span class="client-info-value">${clientData['Sense Score'] || 'N/A'}</span></div>
+                <div class="client-info-item"><span class="client-info-label">Fase</span><span class="client-info-value">${clientData.Fase || 'N/A'}</span></div>
+                `;
+            const clientActivities = rawActivities
+                .filter(a => normalizeText(a.Cliente) === clientName.toLowerCase())
+                .sort((a, b) => (b.ConcluidaEm || new Date(0)) - (a.ConcluidaEm || new Date(0)));
+            document.querySelector('#client-360-activities .data-table-container').innerHTML = createHtmlTable(clientActivities);
+            showModal(client360Modal);
+        };
 
         let trendChartInstance = null;
         
@@ -2638,56 +2564,60 @@ setupUserView();
             showModal(bulkExportModal);
         });
 
-        let bulkExportQueue = []; // Fila de relatórios
-    let currentBulkPayload = {}; // Armazena filtros do momento
-
-    generateBulkReportsButton.addEventListener('click', () => {
-        const selectedCSs = Array.from(document.querySelectorAll('.cs-checkbox:checked')).map(cb => cb.value);
-        if (selectedCSs.length === 0) {
-            alert('Por favor, selecione pelo menos um CS.');
-            return;
-        }
-        if (!dataWorker) {
-            alert('O Worker não está pronto. Tente novamente.');
-            return;
-        }
-
-        bulkExportQueue = selectedCSs; // Define a fila
-
-        // Salva os filtros atuais para usar no worker
-        currentBulkPayload = {
-            month: parseInt(selectMonth.value, 10),
-            year: parseInt(selectYear.value, 10),
-            includeOnboarding: onboardingToggle.checked,
-            goals: appGoals
-        };
-
-        generateBulkReportsButton.disabled = true;
-        processNextBulkReport(); // Inicia o primeiro da fila
-    });
-
-    function processNextBulkReport() {
-        if (bulkExportQueue.length === 0) {
-            generateBulkReportsButton.disabled = false;
-            generateBulkReportsButton.innerHTML = '<i class="fas fa-download" style="margin-right:10px;"></i>Gerar Relatórios Selecionados';
-            closeModal(bulkExportModal);
-            alert(`Exportação concluída!`);
-            return;
-        }
-
-        const cs = bulkExportQueue.shift(); // Pega o próximo CS da fila
-        const progress = ((generateBulkReportsButton.dataset.total - bulkExportQueue.length) / generateBulkReportsButton.dataset.total) * 100;
-        generateBulkReportsButton.textContent = `Gerando... (${progress.toFixed(0)}%) - ${cs}`;
-
-        // Pede ao worker principal para calcular este relatório
-        dataWorker.postMessage({
-            type: 'CALCULATE_BULK_REPORT',
-            payload: {
-                ...currentBulkPayload,
-                selectedCS: cs
+        generateBulkReportsButton.addEventListener('click', async () => {
+            const selectedCSs = Array.from(document.querySelectorAll('.cs-checkbox:checked')).map(cb => cb.value);
+            if (selectedCSs.length === 0) {
+                alert('Por favor, selecione pelo menos um CS.');
+                return;
             }
-        });
-    }
+            generateBulkReportsButton.disabled = true;
+            generateBulkReportsButton.textContent = 'Gerando... (0%)';
+            
+            const mesSelecionado = parseInt(selectMonth.value, 10);
+            const anoSelecionado = parseInt(selectYear.value, 10);
+            const includeOnboarding = onboardingToggle.checked;
+
+            for (let i = 0; i < selectedCSs.length; i++) {
+                const cs = selectedCSs[i];
+                const progress = ((i / selectedCSs.length) * 100).toFixed(0);
+                generateBulkReportsButton.textContent = `Gerando... (${progress}%) - ${cs}`;
+
+                // Cria uma promessa para aguardar o worker
+                const reportData = await new Promise((resolve, reject) => {
+                    const tempWorker = new Worker('worker.js'); // Cria um worker temporário
+                    
+                    tempWorker.onmessage = (e) => {
+                        const { type, payload } = e.data;
+                        if (type === 'INIT_COMPLETE') {
+                            // Worker está pronto, pede o cálculo
+                            tempWorker.postMessage({
+                                type: 'CALCULATE_MONTHLY',
+                                payload: {
+                                    month: mesSelecionado,
+                                    year: anoSelecionado,
+                                    selectedCS: cs,
+                                    selectedSquad: 'Todos', // Exporta por CS, não por squad
+                                    includeOnboarding: includeOnboarding,
+                                    comparison: 'none',
+                                    segmento: 'SMB CAD', // O segmento é auto-detectado, mas precisamos de um
+                                    goals: appGoals
+                                }
+                            });
+                        } else if (type === 'CALCULATION_COMPLETE') {
+                            resolve(payload.dataStore); // Retorna os dados
+                            tempWorker.terminate(); // Encerra o worker
+                        } else if (type === 'ERROR') {
+                            reject(new Error(payload.error));
+                            tempWorker.terminate();
+                        }
+                    };
+                    
+                    // Inicia o worker
+                    tempWorker.postMessage({
+                        type: 'INIT',
+                        payload: { rawActivities, rawClients, currentUser }
+                    });
+                });
                 
                 // Pega o segmento auto-selecionado (esta é uma simplificação, idealmente o worker retornaria isso)
                 const clientsForSegmentCheck = includeOnboarding ? rawClients : rawClients.filter(cli => normalizeText(cli.Fase) !== 'onboarding');
@@ -2804,12 +2734,6 @@ if (!currentUser.isManager) {
 
 
 </html>
-
-
-
-
-
-
 
 
 
