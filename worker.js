@@ -8,7 +8,6 @@
  */
 
 // --- VARIÁVEIS GLOBAIS DO WORKER ---
-importScripts('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
 let rawActivities = [],
     rawClients = [],
     clientOnboardingStartDate = new Map(),
@@ -58,64 +57,6 @@ const parseDate = (dateInput) => {
     }
     return null;
 };
-const readFile = (file) => new Promise((resolve, reject) => {
-            const excelSerialToDateObject = (serial) => {
-                const excelTimestamp = (serial - 25569) * 86400 * 1000;
-                const date = new Date(excelTimestamp);
-                const timezoneOffset = date.getTimezoneOffset() * 60000;
-                return new Date(date.getTime() + timezoneOffset);
-            }
-            const transpilePipeToCommaCSV = (pipeText) => {
-                let inQuotes = false;
-                let newCsvText = '';
-                for (let i = 0; i < pipeText.length; i++) {
-                    const char = pipeText[i];
-                    if (char === '"') inQuotes = !inQuotes;
-                    newCsvText += (char === '|' && !inQuotes) ? ',' : char;
-                }
-                return newCsvText;
-            };
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const data = event.target.result;
-                    const fileName = file.name.toLowerCase();
-                    let workbook;
-                    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                        workbook = XLSX.read(data, { type: 'array' });
-                    } else {
-                        const standardCsvText = transpilePipeToCommaCSV(data);
-                        workbook = XLSX.read(standardCsvText, { type: 'string' });
-                    }
-                    const sheetName = workbook.SheetNames[0];
-                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
-                    const dateColumns = ["Criado em", "Previsão de conclusão", "Concluída em"];
-                    jsonData.forEach(row => {
-                        dateColumns.forEach(colName => {
-                            if (row[colName]) {
-                                if (typeof row[colName] === 'number') {
-                                    row[colName] = excelSerialToDateObject(row[colName]);
-                                } else {
-                                    row[colName] = parseDate(row[colName]);
-                                }
-                            }
-                        });
-                    });
-                    resolve(jsonData);
-                } catch (e) {
-                    console.error("Erro detalhado no processamento do arquivo:", e);
-                    reject(new Error("Não foi possível processar o arquivo. Verifique o formato e se não está corrompido."));
-                }
-            };
-            reader.onerror = (error) => {
-                reject(new Error("Ocorreu um erro de hardware ou permissão ao tentar ler o arquivo."));
-            };
-            if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsText(file, 'UTF-8');
-            }
-        });
 
 // --- FUNÇÕES DE INICIALIZAÇÃO DE DADOS (Executadas uma vez) ---
 
@@ -950,71 +891,43 @@ if (selectedISM !== 'Todos') {
 
 // --- MANIPULADOR DE MENSAGENS DO WORKER ---
 
-self.onmessage = async (e) => { // <-- Adicione 'async'
+self.onmessage = (e) => {
     const { type, payload } = e.data;
 
     try {
-        if (type === 'INIT_FILES') { 
-            
-            // --- INÍCIO DA NOVA LÓGICA DE LEITURA ---
-            const { atividadesFile, clientesFile, currentUser, manualEmailToCsMap } = payload;
+        if (type === 'INIT') {
+            // 1. Recebe os dados brutos
+            rawActivities = payload.rawActivities;
+            rawClients = payload.rawClients;
+            currentUser = payload.currentUser;
+            manualEmailToCsMap = payload.manualEmailToCsMap;
+            ismToFilter = currentUser.selectedISM || 'Todos'; // Define o ISM a ser usado no filtro de Onboarding
 
-            const [atividadesJson, clientesJson] = await Promise.all([
-                readFile(atividadesFile),
-                readFile(clientesFile)
-            ]);
-
-            rawActivities = atividadesJson;
-            rawClients = clientesJson;
-            self.currentUser = currentUser; 
-            self.manualEmailToCsMap = manualEmailToCsMap;
-            ismToFilter = self.currentUser.selectedISM || 'Todos';
-            // --- FIM DA NOVA LÓGICA DE LEITURA ---
-
-            // 2. Processa e junta os dados
-            processInitialData(); // Modifica rawActivities
-
-            // 3. Constrói o mapa de Squads
-            buildCsToSquadMap();
-
-            // 4. Extrai dados para os filtros
-            const csSet = [...new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean))];
-            const squadSet = [...new Set(rawClients.map(d => d['Squad CS']).filter(Boolean))];
-            const ismSet = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))];
-            const allDates = [...rawActivities.map(a => a.PrevisaoConclusao), ...rawActivities.map(a => a.ConcluidaEm)];
-            const years = [...new Set(allDates.map(d => d?.getFullYear()).filter(Boolean))];
-
-            // 5. Envia os dados de filtro de volta
-            postMessage({
-                type: 'INIT_COMPLETE',
-                payload: {
-                    filterData: {
-                        csSet,
-                        squadSet,
-                        ismSet,
-                        years,
-                        csToSquadMap: Object.fromEntries(csToSquadMap)
-                    }
-                }
-            });
-        }
-			
-            // --- FIM DA NOVA LÓGICA DE LEITURA ---
-
-            // 2. Processa e junta os dados (Lógica antiga mantida)
+            // 2. Processa e junta os dados
             processInitialData(); // Modifica rawActivities
 
-            // 3. Constrói o mapa de Squads (Lógica antiga mantida)
+            // 3. Constrói o mapa de Squads
             buildCsToSquadMap();
 
-            // 4. Extrai dados para os filtros (Lógica antiga mantida)
+            // 4. Extrai dados para os filtros
             const csSet = [...new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean))];
-            // ... (resto do seu código 'INIT' original) ...
-            
+            const squadSet = [...new Set(rawClients.map(d => d['Squad CS']).filter(Boolean))];
+            const ismSet = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))];
+            const allDates = [...rawActivities.map(a => a.PrevisaoConclusao), ...rawActivities.map(a => a.ConcluidaEm)];
+            const years = [...new Set(allDates.map(d => d?.getFullYear()).filter(Boolean))];
+
             // 5. Envia os dados de filtro de volta
             postMessage({
                 type: 'INIT_COMPLETE',
-                // ... (payload original) ...
+                payload: {
+                    filterData: {
+                        csSet,
+                        squadSet,
+                        ismSet,
+                        years,
+                        csToSquadMap: Object.fromEntries(csToSquadMap) // Converte Map para Objeto
+                    }
+                }
             });
         }
 
@@ -1156,70 +1069,7 @@ self.onmessage = async (e) => { // <-- Adicione 'async'
                 payload: { labels, dataPoints, title }
             });
         }
-else if (type === 'GET_DATA_PAGE') {
-            const rowsPerPage = 100;
-            const page = payload.page || 1;
-            const dataType = payload.type;
-            const sourceData = (dataType === 'atividades') ? rawActivities : rawClients;
-            
-            const totalPages = Math.ceil(sourceData.length / rowsPerPage);
-            const start = (page - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            const pageData = sourceData.slice(start, end);
 
-            postMessage({
-                type: 'DATA_PAGE_COMPLETE',
-                payload: {
-                    type: dataType,
-                    data: pageData,
-                    page: page,
-                    totalPages: totalPages
-                }
-            });
-        }
-	// ... (depois do 'else if (type === 'GET_CLIENT_360')')
-            else if (type === 'CALCULATE_BULK_REPORT') {
-                const { month, year, selectedCS, includeOnboarding, goals } = payload;
-
-                // 1. Filtra os clientes para este CS
-                let bulkClients = rawClients.filter(d => d.CS?.trim() === selectedCS);
-
-                // 2. Determina o segmento (copiado da lógica de autoSelectSegment)
-                let segment = 'SMB CAD'; // Padrão
-                if (bulkClients.length > 0) {
-                    let midEnterpriseCount = 0, smbCount = 0;
-                    bulkClients.forEach(c => {
-                        const seg = normalizeText(c.Segmento || '');
-                        if (seg === 'mid-market' || seg === 'enterprise') midEnterpriseCount++;
-                        else if (seg.includes('smb')) smbCount++;
-                    });
-                    if (midEnterpriseCount > smbCount) {
-                        segment = 'MID/Enterprise';
-                    } else {
-                         const smbClients = bulkClients.filter(c => normalizeText(c.Segmento || '').includes('smb'));
-                         let smbCadCount = 0, smbMultiCount = 0;
-                         smbClients.forEach(c => {
-                            const clientName = (c.Cliente || '').trim().toLowerCase();
-                            if (clientName.endsWith('solidworks') || clientName.endsWith('solidworks electrical')) smbCadCount++;
-                            else smbMultiCount++;
-                         });
-                         segment = smbCadCount > smbMultiCount ? 'SMB CAD' : 'SMB Multiprodutos';
-                    }
-                }
-
-                // 3. Calcula os dados do relatório
-                const reportData = calculateMetricsForPeriod(month, year, rawActivities, bulkClients, selectedCS, includeOnboarding, goals);
-
-                // 4. Envia de volta
-                postMessage({
-                    type: 'BULK_REPORT_COMPLETE',
-                    payload: {
-                        reportData: reportData,
-                        csName: selectedCS,
-                        segment: segment // Envia o segmento detectado
-                    }
-                });
-            }
     } catch (err) {
         // Envia erros de volta para a thread principal
         postMessage({
@@ -1231,11 +1081,5 @@ else if (type === 'GET_DATA_PAGE') {
         });
     }
 };
-
-
-
-
-
-
 
 
