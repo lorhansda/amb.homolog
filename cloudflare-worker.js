@@ -3,16 +3,14 @@ const TASKS_ENDPOINT = "https://api.sensedata.io/v2/tasks";
 const CUSTOMERS_ENDPOINT = "https://api.sensedata.io/v2/customers";
 const DELETED_TASKS_ENDPOINT = "https://api.sensedata.io/v2/deleted_tasks";
 
-const DEFAULT_INCREMENTAL_LOOKBACK_DAYS = 3;
-const FULL_SYNC_LOOKBACK_DAYS = 120;
+const LOOKBACK_DAYS = 3;
 const MIRROR_WINDOW_DAYS = 90;
-const MAX_PAGES = 50;
+const MAX_PAGES = 10;
 const TASKS_LIMIT = 1000;
 const CUSTOMERS_LIMIT = 200;
 const DELETED_LIMIT = 500;
 const ACTIVITIES_BATCH_SIZE = 50;
 const CUSTOMERS_BATCH_SIZE = 20;
-const SYNC_STATE_ID = 1;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,63 +28,28 @@ const sanitize = (val) => {
   return String(val).trim();
 };
 
-const toISODate = (date) => date.toISOString().split("T")[0];
-
 const subtractDays = (days) => {
   const d = new Date();
   d.setDate(d.getDate() - days);
   return d;
 };
 
-const ensureSyncStateTable = async (env) => {
-  await env.DB.prepare(`
-    CREATE TABLE IF NOT EXISTS sync_state (
-      id INTEGER PRIMARY KEY,
-      activities_created_cursor TEXT,
-      activities_updated_cursor TEXT,
-      deleted_cursor TEXT,
-      last_full_sync TEXT,
-      last_run TEXT,
-      last_error TEXT
-    )
-  `).run();
+const getWindowStart = () => {
+  const start = subtractDays(LOOKBACK_DAYS);
+  start.setUTCHours(0, 0, 0, 0);
+  return start;
 };
 
-const getSyncState = async (env) => {
-  await ensureSyncStateTable(env);
-  return env.DB.prepare(`SELECT * FROM sync_state WHERE id = ?`).bind(SYNC_STATE_ID).first();
-};
-
-const updateSyncState = async (env, data) => {
-  const columns = [
-    "activities_created_cursor",
-    "activities_updated_cursor",
-    "deleted_cursor",
-    "last_full_sync",
-    "last_run",
-    "last_error"
-  ];
-  const values = columns.map((key) => data[key] ?? null);
-  await env.DB.prepare(
-    `INSERT INTO sync_state (id, ${columns.join(", ")})
-     VALUES (?, ${columns.map(() => "?").join(", ")})
-     ON CONFLICT(id) DO UPDATE SET ${columns.map((col) => `${col}=excluded.${col}`).join(", ")}`
-  ).bind(SYNC_STATE_ID, ...values).run();
-};
+const encodeDate = (date) => encodeURIComponent(date.toISOString().split("T")[0]);
 
 const getAuthToken = (env) => env.SENSEDATA_TOKEN || DEFAULT_TOKEN;
 
-const encodeQueryDate = (date) => encodeURIComponent(toISODate(date));
-
-const pickCS = (task) => {
-  return (
-    task?.customer?.cs?.name ||
-    task?.cs?.name ||
-    task?.customer?.csm?.name ||
-    task?.owner?.name ||
-    "Sem CS"
-  );
-};
+const pickCS = (task) =>
+  task?.customer?.cs?.name ||
+  task?.cs?.name ||
+  task?.customer?.csm?.name ||
+  task?.owner?.name ||
+  "Sem CS";
 
 const buildTaskStatement = (env, task) => {
   const playbookName = task.parent?.description || task.playbook?.description || "";
@@ -130,31 +93,24 @@ const buildTaskStatement = (env, task) => {
   );
 };
 
-const ingestTasks = async ({ env, token, filterField, since, mode }) => {
+const fetchTasksWindow = async ({ env, token, filterField, since }) => {
   let page = 1;
-  let hasMore = true;
-  let safetyCounter = 0;
-  let saved = 0;
-  let maxTimestamp = since;
+  let fetched = 0;
+  let safety = 0;
 
-  while (hasMore && safetyCounter < MAX_PAGES) {
-    const apiUrl = `${TASKS_ENDPOINT}?limit=${TASKS_LIMIT}&page=${page}&${filterField}:start=${encodeQueryDate(
+  while (safety < MAX_PAGES) {
+    const url = `${TASKS_ENDPOINT}?limit=${TASKS_LIMIT}&page=${page}&${filterField}:start=${encodeDate(
       since
     )}`;
-    const response = await fetch(apiUrl, {
+    const response = await fetch(url, {
       method: "GET",
       headers: { Authorization: token, Accept: "application/json" }
     });
-
     if (!response.ok) break;
 
     const json = await response.json();
     const tasks = Array.isArray(json.tasks) ? json.tasks : [];
-
-    if (tasks.length === 0) {
-      hasMore = false;
-      break;
-    }
+    if (tasks.length === 0) break;
 
     const statements = tasks.map((task) => buildTaskStatement(env, task));
     for (let i = 0; i < statements.length; i += ACTIVITIES_BATCH_SIZE) {
@@ -162,94 +118,43 @@ const ingestTasks = async ({ env, token, filterField, since, mode }) => {
       await env.DB.batch(chunk);
     }
 
-    tasks.forEach((task) => {
-      const ts = task[filterField];
-      if (!ts) return;
-      const tsDate = new Date(ts);
-      if (!maxTimestamp || tsDate > maxTimestamp) maxTimestamp = tsDate;
-    });
-
-    saved += tasks.length;
+    fetched += tasks.length;
     page++;
-    safetyCounter++;
+    safety++;
+    if (tasks.length < TASKS_LIMIT) break;
   }
 
-  return { saved, cursor: maxTimestamp ? maxTimestamp.toISOString() : since.toISOString(), mode };
+  return fetched;
 };
 
-const syncActivitiesDoubleNet = async (request, env) => {
-  const url = new URL(request.url);
-  const mode = url.searchParams.get("mode") === "full" ? "full" : "incremental";
+const syncActivities = async (env) => {
   const token = getAuthToken(env);
-  const syncState = await getSyncState(env);
-
-  const fallback = subtractDays(mode === "full" ? FULL_SYNC_LOOKBACK_DAYS : DEFAULT_INCREMENTAL_LOOKBACK_DAYS);
-  const createdCursor = mode === "full" ? fallback : new Date(syncState?.activities_created_cursor || fallback);
-  const updatedCursor = mode === "full" ? fallback : new Date(syncState?.activities_updated_cursor || fallback);
-
-  const results = [];
-  results.push(
-    await ingestTasks({ env, token, filterField: "created_at", since: createdCursor, mode })
-  );
-  results.push(
-    await ingestTasks({ env, token, filterField: "updated_at", since: updatedCursor, mode })
-  );
-
-  const savedTotal = results.reduce((acc, res) => acc + res.saved, 0);
-
-  await updateSyncState(env, {
-    activities_created_cursor: results[0]?.cursor,
-    activities_updated_cursor: results[1]?.cursor,
-    last_full_sync: mode === "full" ? new Date().toISOString() : syncState?.last_full_sync || null,
-    last_run: new Date().toISOString(),
-    last_error: null,
-    deleted_cursor: syncState?.deleted_cursor || null
-  });
-
-  return new Response(
-    JSON.stringify({ success: true, saved_count: savedTotal, mode }),
-    { headers: corsHeaders, status: 200 }
-  );
+  const since = getWindowStart();
+  const created = await fetchTasksWindow({ env, token, filterField: "created_at", since });
+  const updated = await fetchTasksWindow({ env, token, filterField: "updated_at", since });
+  return { created, updated };
 };
 
-const syncClients = async (request, env) => {
-  const url = new URL(request.url);
+const syncClients = async (env) => {
   const token = getAuthToken(env);
-  let mode = url.searchParams.get("mode") || "incremental";
-  const page = parseInt(url.searchParams.get("page") || "1", 10);
+  const since = getWindowStart();
+  let page = 1;
+  let saved = 0;
+  let safety = 0;
 
-  let dateFilter = "";
-  if (mode === "incremental") {
-    const since = subtractDays(DEFAULT_INCREMENTAL_LOOKBACK_DAYS);
-    dateFilter = `&updated_at:start=${encodeQueryDate(since)}`;
-  } else if (mode === "full") {
-    const since = subtractDays(FULL_SYNC_LOOKBACK_DAYS);
-    dateFilter = `&updated_at:start=${encodeQueryDate(since)}`;
-  }
-
-  const apiUrl = `${CUSTOMERS_ENDPOINT}?limit=${CUSTOMERS_LIMIT}&page=${page}${dateFilter}`;
-
-  try {
-    const response = await fetch(apiUrl, {
+  while (safety < MAX_PAGES) {
+    const url = `${CUSTOMERS_ENDPOINT}?limit=${CUSTOMERS_LIMIT}&page=${page}&updated_at:start=${encodeDate(
+      since
+    )}`;
+    const response = await fetch(url, {
       method: "GET",
       headers: { Authorization: token, Accept: "application/json" }
     });
-    if (!response.ok) {
-      return new Response(JSON.stringify({ error: "Erro ao consultar clientes" }), {
-        headers: corsHeaders,
-        status: response.status
-      });
-    }
+    if (!response.ok) break;
 
     const json = await response.json();
     const customers = Array.isArray(json.customers) ? json.customers : [];
-
-    if (customers.length === 0) {
-      return new Response(JSON.stringify({ success: true, finished: true }), {
-        headers: corsHeaders,
-        status: 200
-      });
-    }
+    if (customers.length === 0) break;
 
     const activeCustomers = customers.filter(
       (c) => c.status?.description?.toLowerCase().trim() === "ativo-produto"
@@ -315,88 +220,53 @@ const syncClients = async (request, env) => {
         const chunk = statements.slice(i, i + CUSTOMERS_BATCH_SIZE);
         await env.DB.batch(chunk);
       }
+
+      saved += activeCustomers.length;
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        saved: activeCustomers.length,
-        next: page + 1,
-        finished: activeCustomers.length === 0
-      }),
-      { headers: corsHeaders, status: 200 }
-    );
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: corsHeaders,
-      status: 500
-    });
+    page++;
+    safety++;
+    if (customers.length < CUSTOMERS_LIMIT) break;
   }
+
+  return saved;
 };
 
-const syncDeletions = async (request, env) => {
-  const url = new URL(request.url);
-  const mode = url.searchParams.get("mode") === "full" ? "full" : "incremental";
+const syncDeletions = async (env) => {
   const token = getAuthToken(env);
-  const state = await getSyncState(env);
-  const fallback = subtractDays(mode === "full" ? FULL_SYNC_LOOKBACK_DAYS : DEFAULT_INCREMENTAL_LOOKBACK_DAYS);
-  const deletedSince = mode === "full" ? fallback : new Date(state?.deleted_cursor || fallback);
+  const since = getWindowStart();
 
   let page = 1;
-  let hasMore = true;
-  let safetyCounter = 0;
-  let totalDeleted = 0;
-  let maxCursor = deletedSince;
+  let removed = 0;
+  let safety = 0;
 
-  while (hasMore && safetyCounter < MAX_PAGES) {
-    const apiUrl = `${DELETED_TASKS_ENDPOINT}?limit=${DELETED_LIMIT}&page=${page}&updated_at:start=${encodeQueryDate(
-      deletedSince
+  while (safety < MAX_PAGES) {
+    const url = `${DELETED_TASKS_ENDPOINT}?limit=${DELETED_LIMIT}&page=${page}&updated_at:start=${encodeDate(
+      since
     )}`;
-    const response = await fetch(apiUrl, {
+    const response = await fetch(url, {
       method: "GET",
       headers: { Authorization: token, Accept: "application/json" }
     });
-
     if (!response.ok) break;
 
     const json = await response.json();
     const deletedItems = json.deleted_tasks || json.tasks || [];
-
-    if (deletedItems.length === 0) {
-      hasMore = false;
-      break;
-    }
+    if (deletedItems.length === 0) break;
 
     for (const item of deletedItems) {
       const id = item.id_legacy || item.id;
       if (!id) continue;
       await env.DB.prepare(`DELETE FROM atividades WHERE id_sensedata = ?`).bind(id).run();
-      totalDeleted++;
-
-      const ts = item.updated_at || item.deleted_at;
-      if (ts) {
-        const tsDate = new Date(ts);
-        if (!maxCursor || tsDate > maxCursor) maxCursor = tsDate;
-      }
+      removed++;
     }
 
     page++;
-    safetyCounter++;
+    safety++;
+    if (deletedItems.length < DELETED_LIMIT) break;
   }
 
-  await updateSyncState(env, {
-    deleted_cursor: maxCursor ? maxCursor.toISOString() : deletedSince.toISOString(),
-    activities_created_cursor: state?.activities_created_cursor || null,
-    activities_updated_cursor: state?.activities_updated_cursor || null,
-    last_full_sync: mode === "full" ? new Date().toISOString() : state?.last_full_sync || null,
-    last_run: new Date().toISOString(),
-    last_error: null
-  });
-
-  return new Response(
-    JSON.stringify({ success: true, deleted_count: totalDeleted, mode }),
-    { headers: corsHeaders, status: 200 }
-  );
+  return removed;
 };
 
 const getAtividades = async (env, requestUrl) => {
@@ -419,13 +289,28 @@ const getAtividades = async (env, requestUrl) => {
 };
 
 const getClientes = async (env) => {
-  const result = await env.DB.prepare(
-    `SELECT * FROM clientes ORDER BY cliente ASC`
-  ).all();
+  const result = await env.DB.prepare(`SELECT * FROM clientes ORDER BY cliente ASC`).all();
   return new Response(JSON.stringify(result.results), {
     headers: corsHeaders,
     status: 200
   });
+};
+
+const runDailySync = async (env) => {
+  const [activities, removed, clients] = await Promise.all([
+    syncActivities(env),
+    syncDeletions(env),
+    syncClients(env)
+  ]);
+
+  return {
+    success: true,
+    activities_created: activities.created,
+    activities_updated: activities.updated,
+    deletions: removed,
+    clients_synced: clients,
+    window_days: LOOKBACK_DAYS
+  };
 };
 
 const handleFetch = async (request, env) => {
@@ -436,14 +321,27 @@ const handleFetch = async (request, env) => {
   const url = new URL(request.url);
 
   try {
-    if (url.pathname === "/api/sync-clientes") {
-      return await syncClients(request, env);
+    if (url.pathname === "/api/sync") {
+      const summary = await runDailySync(env);
+      return new Response(JSON.stringify(summary), { headers: corsHeaders, status: 200 });
     }
     if (url.pathname === "/api/sync-atividades") {
-      return await syncActivitiesDoubleNet(request, env);
+      const summary = await syncActivities(env);
+      return new Response(JSON.stringify(summary), { headers: corsHeaders, status: 200 });
     }
     if (url.pathname === "/api/sync-deletados") {
-      return await syncDeletions(request, env);
+      const removed = await syncDeletions(env);
+      return new Response(JSON.stringify({ success: true, deletions: removed }), {
+        headers: corsHeaders,
+        status: 200
+      });
+    }
+    if (url.pathname === "/api/sync-clientes") {
+      const summary = await syncClients(env);
+      return new Response(JSON.stringify({ success: true, clients_synced: summary }), {
+        headers: corsHeaders,
+        status: 200
+      });
     }
     if (url.pathname === "/api/atividades") {
       return await getAtividades(env, request.url);
@@ -457,10 +355,6 @@ const handleFetch = async (request, env) => {
       status: 200
     });
   } catch (error) {
-    await updateSyncState(env, {
-      last_error: error.message,
-      last_run: new Date().toISOString()
-    });
     return new Response(JSON.stringify({ error: error.message }), {
       headers: corsHeaders,
       status: 500
@@ -469,11 +363,7 @@ const handleFetch = async (request, env) => {
 };
 
 const handleScheduled = async (_event, env) => {
-  const mockOrigin = "http://localhost";
-  const run = (path) => ({ url: `${mockOrigin}${path}` });
-  await syncActivitiesDoubleNet(run("/api/sync-atividades?mode=incremental"), env);
-  await syncDeletions(run("/api/sync-deletados?mode=incremental"), env);
-  await syncClients(run("/api/sync-clientes?mode=incremental"), env);
+  await runDailySync(env);
 };
 
 export default {
