@@ -348,7 +348,7 @@
         try {
             // 1. Baixar Atividades (LIMITE AUMENTADO PARA 300k)
             if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-tasks"></i> Baixando histórico de Atividades...';
-            const resAtividades = await fetch(`${WORKER_URL}/api/atividades?limit=300000`); 
+            const resAtividades = await fetch(`${WORKER_URL}/api/atividades?limit=70000`); 
             if (!resAtividades.ok) throw new Error("Falha ao baixar tabela de Atividades");
             const jsonAtividades = await resAtividades.json();
 
@@ -1383,4 +1383,5 @@
 
 </body>
 </html>
+
 
