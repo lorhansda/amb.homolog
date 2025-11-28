@@ -239,6 +239,7 @@ const syncDeletions = async (env) => {
   let page = 1;
   let removed = 0;
   let safety = 0;
+  const debugSample = [];
 
   while (safety < MAX_PAGES) {
     const url = `${DELETED_TASKS_ENDPOINT}?limit=${DELETED_LIMIT}&page=${page}&updated_at:start=${encodeDate(
@@ -254,6 +255,17 @@ const syncDeletions = async (env) => {
     const deletedItems = json.deleted_tasks || json.tasks || [];
     if (deletedItems.length === 0) break;
 
+    if (debugSample.length < 20) {
+      deletedItems.slice(0, 20 - debugSample.length).forEach((item) => {
+        debugSample.push({
+          id: item.id,
+          id_legacy: item.id_legacy,
+          updated_at: item.updated_at,
+          deleted_at: item.deleted_at
+        });
+      });
+    }
+
     for (const item of deletedItems) {
       const id = item.id_legacy || item.id;
       if (!id) continue;
@@ -264,6 +276,16 @@ const syncDeletions = async (env) => {
     page++;
     safety++;
     if (deletedItems.length < DELETED_LIMIT) break;
+  }
+
+  if (debugSample.length > 0) {
+    console.log(
+      `[sync-deletados] Excluídos desde ${since.toISOString()} | total=${removed} | sample=${JSON.stringify(
+        debugSample
+      )}`
+    );
+  } else {
+    console.log(`[sync-deletados] Nenhum registro retornado desde ${since.toISOString()}`);
   }
 
   return removed;
