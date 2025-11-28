@@ -403,7 +403,127 @@
     }
 
     // --- FUNÇÕES DE RENDERIZAÇÃO (QUE ESTAVAM FALTANDO) ---
-    
+    // --- FUNÇÕES GRÁFICAS (CHART.JS) ---
+    let chartInstances = {};
+
+    function customLegendClickHandler(e, legendItem, legend) {
+        const chart = legend.chart;
+        const index = legendItem.index;
+        const meta = chart.getDatasetMeta(0);
+        
+        // Lógica de clique duplo para isolar itens
+        if (!chart.legendClickState) {
+            chart.legendClickState = { lastClickedIndex: null, clickCount: 0 };
+        }
+        if (index !== chart.legendClickState.lastClickedIndex) {
+            let visibleCount = 0;
+            meta.data.forEach(dataPoint => { if (!dataPoint.hidden) visibleCount++; });
+            const isIsolated = visibleCount === 1 && chart.data.labels.length > 1;
+            if (isIsolated) {
+                meta.data.forEach(dataPoint => { dataPoint.hidden = false; });
+            }
+            chart.legendClickState.clickCount = 0;
+        }
+        chart.legendClickState.lastClickedIndex = index;
+        chart.legendClickState.clickCount++;
+
+        if (chart.legendClickState.clickCount === 1) {
+            meta.data[index].hidden = !meta.data[index].hidden;
+        } else if (chart.legendClickState.clickCount === 2) {
+            meta.data.forEach((dataPoint, i) => { dataPoint.hidden = (i !== index); });
+        } else {
+            meta.data.forEach(dataPoint => { dataPoint.hidden = false; });
+            chart.legendClickState.clickCount = 0;
+            chart.legendClickState.lastClickedIndex = null;
+        }
+        chart.update();
+    }
+
+    function renderDoughnutChart(containerId, canvasId, title, data) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+
+        if (labels.length === 0) {
+            container.innerHTML = `<div class="card"><h3>${title}</h3><div class="loader" style="padding: 40px; font-size: 1rem;">Sem dados para exibir.</div></div>`;
+            return;
+        }
+
+        // Recria o container do canvas para evitar bugs de redimensionamento
+        container.innerHTML = `<div class="card"><h3>${title}</h3><div class="card-content" style="position: relative; height: 320px; padding-top: 10px;"><canvas id="${canvasId}"></canvas></div></div>`;
+
+        if (chartInstances[canvasId]) {
+            chartInstances[canvasId].destroy();
+        }
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        
+        // Cores padrão do sistema
+        const colors = ['#007BFF', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2', '#fd7e14', '#20c997'];
+        const backgroundColors = labels.map((_, i) => colors[i % colors.length]);
+        const isLightTheme = document.body.classList.contains('light-theme');
+        const legendColor = isLightTheme ? '#2c3e50' : '#F0F2F5';
+        const borderColor = isLightTheme ? '#ffffff' : '#1a2238';
+
+        chartInstances[canvasId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColor,
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: legendColor, padding: 15, boxWidth: 12, font: { size: 11 } },
+                        onClick: customLegendClickHandler
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+                                return `${label}: ${value} (${percentage})`;
+                            }
+                        }
+                    }
+                },
+                onClick: (event, elements) => {
+                    // Lógica de clique na fatia para abrir modal
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const label = labels[index];
+                        // Aqui chamamos o modal filtrado (Lógica simplificada para funcionar rápido)
+                        let filterData = [];
+                        if(containerId.includes('negocio')) {
+                            filterData = (dataStore['cob-carteira']||[]).filter(c => (c.Negocio||'Não Definido') === label);
+                        } else if(containerId.includes('comercial')) {
+                            filterData = (dataStore['cob-carteira']||[]).filter(c => (c.Comercial||'Não Definido') === label);
+                        } else if(containerId.includes('clientes')) {
+                            filterData = (dataStore['total-clientes']||[]).filter(c => (c['Negócio']||'Não Definido') === label);
+                        }
+                        if(filterData.length > 0) showDataInModal(filterData, `${title}: ${label}`);
+                    }
+                },
+                onHover: (event, chartElement) => {
+                    event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                }
+            }
+        });
+    }
     const renderOKRs = () => {
         const selectedSegmento = document.getElementById('select-segmento').value;
         document.getElementById('okr-title-header').textContent = `OKRs do Segmento: ${selectedSegmento}`;
@@ -1263,3 +1383,4 @@
 
 </body>
 </html>
+
