@@ -69,55 +69,9 @@ const buildCsToSquadMap = () => {
 };
 
 const processInitialData = () => {
-    // 1. MAPEAR A ÚLTIMA ATIVIDADE DE CADA CLIENTE (CÁLCULO DE DIAS SEM TOUCH)
-    const lastTouchMap = new Map();
-    const today = new Date();
-
-    rawActivities.forEach(a => {
-        // Converter datas se necessário
-        if(!(a.ConcluidaEm instanceof Date)) a.ConcluidaEm = parseDate(a['Concluída em']);
-        if(!(a.PrevisaoConclusao instanceof Date)) a.PrevisaoConclusao = parseDate(a['Previsão de conclusão']);
-        if(!(a.CriadoEm instanceof Date)) a.CriadoEm = parseDate(a['Criado em']);
-
-        const clienteKey = (a.Cliente || '').trim().toLowerCase();
-        
-        // Lógica para achar a data mais recente de conclusão
-        if (a.ConcluidaEm && clienteKey) {
-            const currentMax = lastTouchMap.get(clienteKey);
-            if (!currentMax || a.ConcluidaEm > currentMax) {
-                lastTouchMap.set(clienteKey, a.ConcluidaEm);
-            }
-        }
-    });
-
-    // 2. ENRIQUECER DADOS DOS CLIENTES
-    // Agora injetamos o "Dias sem Touch" que calculamos acima
-    rawClients = rawClients.map(c => {
-        const clienteKey = (c.Cliente || '').trim().toLowerCase();
-        const lastDate = lastTouchMap.get(clienteKey);
-        
-        let daysWithoutTouch = 999; // Valor alto padrão se nunca houve contato
-        if (lastDate) {
-            const diffTime = Math.abs(today - lastDate);
-            daysWithoutTouch = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-
-        // Definir Situação/Saúde baseado no Touch (Regra de Negócio Genérica)
-        // Se o SenseData não manda, nós criamos nossa regra:
-        let calculatedHealth = "Sem Dados";
-        if (daysWithoutTouch <= 30) calculatedHealth = "Saudável";
-        else if (daysWithoutTouch <= 60) calculatedHealth = "Atenção";
-        else calculatedHealth = "Em Risco";
-
-        return {
-            ...c,
-            "Dias sem touch": daysWithoutTouch,
-            "Situação": c.Status || calculatedHealth // Usa o Status se existir, senão usa o calculado
-        };
-    });
-
-    // 3. ENRIQUECER ATIVIDADES COM DADOS DO CLIENTE
+    // Mapeamento rápido de clientes
     const clienteMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), cli]));
+    
     const onboardingPlaybooks = [
         'onboarding lantek', 'onboarding elétrica', 'onboarding altium',
         'onboarding solidworks', 'onboarding usinagem', 'onboarding hp',
@@ -126,31 +80,50 @@ const processInitialData = () => {
 
     clientOnboardingStartDate.clear();
 
+    // 1. Processa Atividades e Enriquece com dados do Cliente
     rawActivities = rawActivities.map(ativ => {
         const clienteKey = (ativ.Cliente || '').trim().toLowerCase();
         const clienteInfo = clienteMap.get(clienteKey) || {};
         
+        // Garante datas
+        let criadoEmDate = ativ['Criado em'];
+        if(!(criadoEmDate instanceof Date)) criadoEmDate = parseDate(criadoEmDate);
+
         const playbookNormalized = normalizeText(ativ.Playbook);
 
-        if (onboardingPlaybooks.includes(playbookNormalized) && ativ.CriadoEm) {
+        if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
             const existingStartDate = clientOnboardingStartDate.get(clienteKey);
-            if (!existingStartDate || ativ.CriadoEm < existingStartDate) {
-                clientOnboardingStartDate.set(clienteKey, ativ.CriadoEm);
+            if (!existingStartDate || criadoEmDate < existingStartDate) {
+                clientOnboardingStartDate.set(clienteKey, criadoEmDate);
             }
         }
 
         return {
             ...ativ,
             ClienteCompleto: clienteKey,
+            // Puxa dados da tabela de Clientes (JOIN)
             Segmento: clienteInfo.Segmento || 'Não Identificado',
-            CS: clienteInfo.CS || 'Não Identificado', // O CS vem do Cliente agora!
-            Squad: clienteInfo['Squad CS'],
+            CS: clienteInfo.CS || 'Não Identificado', 
+            Squad: clienteInfo['Squad CS'], // Agora puxa o Squad correto
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
             Negocio: clienteInfo['Negócio'],
             Comercial: clienteInfo['Comercial'],
+            CriadoEm: criadoEmDate,
+            PrevisaoConclusao: (ativ['Previsão de conclusão'] instanceof Date) ? ativ['Previsão de conclusão'] : parseDate(ativ['Previsão de conclusão']),
+            ConcluidaEm: (ativ['Concluída em'] instanceof Date) ? ativ['Concluída em'] : parseDate(ativ['Concluída em']),
             NPSOnboarding: clienteInfo['NPS onboarding'],
             ValorNaoFaturado: parseFloat(String(clienteInfo['Valor total não faturado'] || '0').replace(/[^0-9,-]+/g, "").replace(",", "."))
+        };
+    });
+
+    // 2. Ajuste final nos Clientes (Prioriza o dado do SenseData)
+    rawClients = rawClients.map(c => {
+        return {
+            ...c,
+            // Se o SenseData mandou dias sem touch, usa. Se não, mantém 0 ou calcula.
+            "Dias sem touch": c['Dias sem touch'] !== undefined ? c['Dias sem touch'] : 0,
+            "Situação": c['Situação'] || c.Status
         };
     });
 };
@@ -792,3 +765,4 @@ self.onmessage = (e) => {
         });
     }
 };
+
