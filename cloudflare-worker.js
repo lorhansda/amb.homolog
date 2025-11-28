@@ -93,12 +93,13 @@ const buildTaskStatement = (env, task) => {
   );
 };
 
-const fetchTasksWindow = async ({ env, token, filterField, since }) => {
+const fetchTasksWindow = async ({ env, token, filterField, since, maxPages }) => {
+  const pageLimit = maxPages ?? MAX_PAGES;
   let page = 1;
   let fetched = 0;
   let safety = 0;
 
-  while (safety < MAX_PAGES) {
+  while (safety < pageLimit) {
     const url = `${TASKS_ENDPOINT}?limit=${TASKS_LIMIT}&page=${page}&${filterField}:start=${encodeDate(
       since
     )}`;
@@ -127,22 +128,35 @@ const fetchTasksWindow = async ({ env, token, filterField, since }) => {
   return fetched;
 };
 
-const syncActivities = async (env) => {
+const syncActivities = async (env, options = {}) => {
   const token = getAuthToken(env);
   const since = getWindowStart();
-  const created = await fetchTasksWindow({ env, token, filterField: "created_at", since });
-  const updated = await fetchTasksWindow({ env, token, filterField: "updated_at", since });
+  const created = await fetchTasksWindow({
+    env,
+    token,
+    filterField: "created_at",
+    since,
+    maxPages: options.maxPages
+  });
+  const updated = await fetchTasksWindow({
+    env,
+    token,
+    filterField: "updated_at",
+    since,
+    maxPages: options.maxPages
+  });
   return { created, updated };
 };
 
-const syncClients = async (env) => {
+const syncClients = async (env, options = {}) => {
   const token = getAuthToken(env);
   const since = getWindowStart();
+  const pageLimit = options.maxPages ?? MAX_PAGES;
   let page = 1;
   let saved = 0;
   let safety = 0;
 
-  while (safety < MAX_PAGES) {
+  while (safety < pageLimit) {
     const url = `${CUSTOMERS_ENDPOINT}?limit=${CUSTOMERS_LIMIT}&page=${page}&updated_at:start=${encodeDate(
       since
     )}`;
@@ -232,9 +246,10 @@ const syncClients = async (env) => {
   return saved;
 };
 
-const syncDeletions = async (env) => {
+const syncDeletions = async (env, options = {}) => {
   const token = getAuthToken(env);
   const since = getWindowStart();
+  const pageLimit = options.maxPages ?? MAX_PAGES;
 
   let page = 1;
   let removed = 0;
@@ -242,7 +257,7 @@ const syncDeletions = async (env) => {
   const debugSample = [];
   let rawSample = null;
 
-  while (safety < MAX_PAGES) {
+  while (safety < pageLimit) {
     const url = `${DELETED_TASKS_ENDPOINT}?limit=${DELETED_LIMIT}&page=${page}&updated_at:start=${encodeDate(
       since
     )}`;
@@ -324,11 +339,11 @@ const getClientes = async (env) => {
   });
 };
 
-const runDailySync = async (env) => {
+const runDailySync = async (env, options = {}) => {
   const [activities, removed, clients] = await Promise.all([
-    syncActivities(env),
-    syncDeletions(env),
-    syncClients(env)
+    syncActivities(env, options),
+    syncDeletions(env, options),
+    syncClients(env, options)
   ]);
 
   return {
@@ -347,25 +362,27 @@ const handleFetch = async (request, env) => {
   }
 
   const url = new URL(request.url);
+  const pagesParam = url.searchParams.get("pages");
+  const maxPagesOverride = pagesParam ? Math.max(1, parseInt(pagesParam, 10) || 1) : undefined;
 
   try {
     if (url.pathname === "/api/sync") {
-      const summary = await runDailySync(env);
+      const summary = await runDailySync(env, { maxPages: maxPagesOverride });
       return new Response(JSON.stringify(summary), { headers: corsHeaders, status: 200 });
     }
     if (url.pathname === "/api/sync-atividades") {
-      const summary = await syncActivities(env);
+      const summary = await syncActivities(env, { maxPages: maxPagesOverride });
       return new Response(JSON.stringify(summary), { headers: corsHeaders, status: 200 });
     }
     if (url.pathname === "/api/sync-deletados") {
-      const removed = await syncDeletions(env);
+      const removed = await syncDeletions(env, { maxPages: maxPagesOverride });
       return new Response(JSON.stringify({ success: true, deletions: removed }), {
         headers: corsHeaders,
         status: 200
       });
     }
     if (url.pathname === "/api/sync-clientes") {
-      const summary = await syncClients(env);
+      const summary = await syncClients(env, { maxPages: maxPagesOverride });
       return new Response(JSON.stringify({ success: true, clients_synced: summary }), {
         headers: corsHeaders,
         status: 200
