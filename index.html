@@ -482,7 +482,6 @@
             return;
         }
 
-        // Recria o container do canvas para evitar bugs de redimensionamento
         container.innerHTML = `<div class="card"><h3>${title}</h3><div class="card-content" style="position: relative; height: 320px; padding-top: 10px;"><canvas id="${canvasId}"></canvas></div></div>`;
 
         if (chartInstances[canvasId]) {
@@ -491,8 +490,8 @@
 
         const ctx = document.getElementById(canvasId).getContext('2d');
         
-        // Cores padrão do sistema
-        const colors = ['#007BFF', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2', '#fd7e14', '#20c997'];
+        // Cores para os gráficos
+        const colors = ['#007BFF', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#6f42c1', '#e83e8c'];
         const backgroundColors = labels.map((_, i) => colors[i % colors.length]);
         const isLightTheme = document.body.classList.contains('light-theme');
         const legendColor = isLightTheme ? '#2c3e50' : '#F0F2F5';
@@ -533,20 +532,52 @@
                     }
                 },
                 onClick: (event, elements) => {
-                    // Lógica de clique na fatia para abrir modal
                     if (elements.length > 0) {
-                        const index = elements[0].index;
-                        const label = labels[index];
-                        // Aqui chamamos o modal filtrado (Lógica simplificada para funcionar rápido)
-                        let filterData = [];
-                        if(containerId.includes('negocio')) {
-                            filterData = (dataStore['cob-carteira']||[]).filter(c => (c.Negocio||'Não Definido') === label);
-                        } else if(containerId.includes('comercial')) {
-                            filterData = (dataStore['cob-carteira']||[]).filter(c => (c.Comercial||'Não Definido') === label);
-                        } else if(containerId.includes('clientes')) {
-                            filterData = (dataStore['total-clientes']||[]).filter(c => (c['Negócio']||'Não Definido') === label);
+                        try {
+                            const index = elements[0].index;
+                            const label = labels[index];
+                            let filterData = [];
+                            let modalTitle = `${title}: ${label}`;
+
+                            // --- LÓGICA DE DRILLDOWN CORRIGIDA ---
+                            
+                            // 1. Prioridade: Clientes (verifica se o ID tem 'clientes')
+                            if (containerId.includes('clientes')) {
+                                // Filtra a lista de CLIENTES
+                                const allClients = dataStore['total-clientes'] || [];
+                                filterData = allClients.filter(c => {
+                                    const neg = c['Negócio'] || 'Não Definido';
+                                    return normalizeText(neg) === normalizeText(label);
+                                });
+                            } 
+                            // 2. Contatos por Negócio
+                            else if (containerId.includes('negocio')) {
+                                // Filtra a lista de ATIVIDADES (Contatos)
+                                const allContacts = dataStore['cob-carteira'] || [];
+                                filterData = allContacts.filter(c => {
+                                    const neg = c.Negocio || 'Não Definido';
+                                    return normalizeText(neg) === normalizeText(label);
+                                });
+                            } 
+                            // 3. Contatos por Comercial
+                            else if (containerId.includes('comercial')) {
+                                // Filtra a lista de ATIVIDADES (Contatos)
+                                const allContacts = dataStore['cob-carteira'] || [];
+                                filterData = allContacts.filter(c => {
+                                    const com = c.Comercial || 'Não Definido';
+                                    return normalizeText(com) === normalizeText(label);
+                                });
+                            }
+
+                            if (filterData.length > 0) {
+                                showDataInModal(filterData, modalTitle);
+                            } else {
+                                console.warn("Nenhum dado encontrado para o filtro:", label);
+                                alert("Não há detalhes disponíveis para esta fatia.");
+                            }
+                        } catch (err) {
+                            console.error("Erro no Drilldown:", err);
                         }
-                        if(filterData.length > 0) showDataInModal(filterData, `${title}: ${label}`);
                     }
                 },
                 onHover: (event, chartElement) => {
@@ -1414,6 +1445,7 @@
 
 </body>
 </html>
+
 
 
 
