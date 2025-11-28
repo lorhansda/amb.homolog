@@ -1,10 +1,7 @@
 /**
  * ===================================================================
- * WORKER DE PROCESSAMENTO DE OKRs
+ * WORKER DE PROCESSAMENTO DE OKRs (V3 - Com Cálculo Automático de Touch)
  * ===================================================================
- * Este script é executado em uma thread separada.
- * Ele não pode acessar o DOM (window, document).
- * Ele se comunica com a thread principal através de `postMessage` e `onmessage`.
  */
 
 // --- VARIÁVEIS GLOBAIS DO WORKER ---
@@ -14,13 +11,13 @@ let rawActivities = [],
     csToSquadMap = new Map(),
     currentUser = {},
     manualEmailToCsMap = {},
-    ismToFilter = 'Todos'; // Novo: Armazena o ISM a ser usado no filtro de Onboarding
+    ismToFilter = 'Todos';
 
-// --- FUNÇÕES AUXILIARES DE PROCESSAMENTO (Movidas do script principal) ---
+// --- FUNÇÕES AUXILIARES ---
 
 const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-const getQuarter = (date) => Math.floor(date.getUTCMonth() / 3); // Corrigido para getUTCMonth
+const getQuarter = (date) => Math.floor(date.getUTCMonth() / 3);
 
 const formatDate = (date) => {
     if (!(date instanceof Date) || isNaN(date)) return '';
@@ -33,35 +30,20 @@ const formatDate = (date) => {
 const parseDate = (dateInput) => {
     if (!dateInput) return null;
     if (dateInput instanceof Date && !isNaN(dateInput)) return dateInput;
-
     const dateStr = String(dateInput).trim();
     const dateOnlyStr = dateStr.split(' ')[0];
-    let parts;
-
-    parts = dateOnlyStr.split(/[-/]/);
-    if (parts.length === 3 && parts[2].length === 4) {
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10);
-        const year = parseInt(parts[2], 10);
-        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-            return new Date(Date.UTC(year, month - 1, day));
-        }
-    }
-    if (parts.length === 3 && parts[0].length === 4) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10);
-        const day = parseInt(parts[2], 10);
-        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-            return new Date(Date.UTC(year, month - 1, day));
-        }
+    let parts = dateOnlyStr.split(/[-/]/);
+    if (parts.length === 3) {
+        if (parts[2].length === 4) return new Date(Date.UTC(parts[2], parts[1] - 1, parts[0]));
+        if (parts[0].length === 4) return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
     }
     return null;
 };
 
-// --- FUNÇÕES DE INICIALIZAÇÃO DE DADOS (Executadas uma vez) ---
+// --- FUNÇÕES DE INICIALIZAÇÃO ---
 
 const buildCsToSquadMap = () => {
-    csToSquadMap.clear(); // Limpa o mapa
+    csToSquadMap.clear();
     const allCSs = [...new Set(rawClients.map(c => c.CS).filter(Boolean))];
 
     allCSs.forEach(csName => {
@@ -70,9 +52,7 @@ const buildCsToSquadMap = () => {
 
         const squadCounts = clientsOfCS.reduce((acc, client) => {
             const squad = client['Squad CS'];
-            if (squad) {
-                acc[squad] = (acc[squad] || 0) + 1;
-            }
+            if (squad) acc[squad] = (acc[squad] || 0) + 1;
             return acc;
         }, {});
 
@@ -84,13 +64,59 @@ const buildCsToSquadMap = () => {
                 majoritySquad = squad;
             }
         }
-        if (majoritySquad) {
-            csToSquadMap.set(csName, majoritySquad);
-        }
+        if (majoritySquad) csToSquadMap.set(csName, majoritySquad);
     });
 };
 
 const processInitialData = () => {
+    // 1. MAPEAR A ÚLTIMA ATIVIDADE DE CADA CLIENTE (CÁLCULO DE DIAS SEM TOUCH)
+    const lastTouchMap = new Map();
+    const today = new Date();
+
+    rawActivities.forEach(a => {
+        // Converter datas se necessário
+        if(!(a.ConcluidaEm instanceof Date)) a.ConcluidaEm = parseDate(a['Concluída em']);
+        if(!(a.PrevisaoConclusao instanceof Date)) a.PrevisaoConclusao = parseDate(a['Previsão de conclusão']);
+        if(!(a.CriadoEm instanceof Date)) a.CriadoEm = parseDate(a['Criado em']);
+
+        const clienteKey = (a.Cliente || '').trim().toLowerCase();
+        
+        // Lógica para achar a data mais recente de conclusão
+        if (a.ConcluidaEm && clienteKey) {
+            const currentMax = lastTouchMap.get(clienteKey);
+            if (!currentMax || a.ConcluidaEm > currentMax) {
+                lastTouchMap.set(clienteKey, a.ConcluidaEm);
+            }
+        }
+    });
+
+    // 2. ENRIQUECER DADOS DOS CLIENTES
+    // Agora injetamos o "Dias sem Touch" que calculamos acima
+    rawClients = rawClients.map(c => {
+        const clienteKey = (c.Cliente || '').trim().toLowerCase();
+        const lastDate = lastTouchMap.get(clienteKey);
+        
+        let daysWithoutTouch = 999; // Valor alto padrão se nunca houve contato
+        if (lastDate) {
+            const diffTime = Math.abs(today - lastDate);
+            daysWithoutTouch = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // Definir Situação/Saúde baseado no Touch (Regra de Negócio Genérica)
+        // Se o SenseData não manda, nós criamos nossa regra:
+        let calculatedHealth = "Sem Dados";
+        if (daysWithoutTouch <= 30) calculatedHealth = "Saudável";
+        else if (daysWithoutTouch <= 60) calculatedHealth = "Atenção";
+        else calculatedHealth = "Em Risco";
+
+        return {
+            ...c,
+            "Dias sem touch": daysWithoutTouch,
+            "Situação": c.Status || calculatedHealth // Usa o Status se existir, senão usa o calculado
+        };
+    });
+
+    // 3. ENRIQUECER ATIVIDADES COM DADOS DO CLIENTE
     const clienteMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), cli]));
     const onboardingPlaybooks = [
         'onboarding lantek', 'onboarding elétrica', 'onboarding altium',
@@ -98,53 +124,45 @@ const processInitialData = () => {
         'onboarding alphacam', 'onboarding mkf', 'onboarding formlabs', 'tech journey'
     ];
 
-    clientOnboardingStartDate.clear(); // Limpa o mapa
+    clientOnboardingStartDate.clear();
 
-    // Esta função agora MODIFICA o `rawActivities` global do worker
     rawActivities = rawActivities.map(ativ => {
         const clienteKey = (ativ.Cliente || '').trim().toLowerCase();
         const clienteInfo = clienteMap.get(clienteKey) || {};
-        const criadoEmDate = parseDate(ativ['Criado em']);
+        
         const playbookNormalized = normalizeText(ativ.Playbook);
 
-        if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
+        if (onboardingPlaybooks.includes(playbookNormalized) && ativ.CriadoEm) {
             const existingStartDate = clientOnboardingStartDate.get(clienteKey);
-            if (!existingStartDate || criadoEmDate < existingStartDate) {
-                clientOnboardingStartDate.set(clienteKey, criadoEmDate);
+            if (!existingStartDate || ativ.CriadoEm < existingStartDate) {
+                clientOnboardingStartDate.set(clienteKey, ativ.CriadoEm);
             }
         }
 
         return {
             ...ativ,
             ClienteCompleto: clienteKey,
-            Segmento: clienteInfo.Segmento,
-            CS: clienteInfo.CS,
+            Segmento: clienteInfo.Segmento || 'Não Identificado',
+            CS: clienteInfo.CS || 'Não Identificado', // O CS vem do Cliente agora!
             Squad: clienteInfo['Squad CS'],
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
             Negocio: clienteInfo['Negócio'],
             Comercial: clienteInfo['Comercial'],
-            CriadoEm: criadoEmDate,
-            PrevisaoConclusao: parseDate(ativ['Previsão de conclusão']),
-            ConcluidaEm: parseDate(ativ['Concluída em']),
             NPSOnboarding: clienteInfo['NPS onboarding'],
             ValorNaoFaturado: parseFloat(String(clienteInfo['Valor total não faturado'] || '0').replace(/[^0-9,-]+/g, "").replace(",", "."))
         };
     });
 };
 
-// --- FUNÇÕES DE CÁLCULO PRINCIPAIS (Executadas a cada mudança de filtro) ---
+// --- CÁLCULOS DE MÉTRICAS ---
 
 const calculateOverdueMetrics = (activities, selectedCS) => {
-    const metrics = {
-        overdueActivities: {}
-    };
+    const metrics = { overdueActivities: {} };
     const now = new Date();
     const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
-    const csActivities = selectedCS === 'Todos' ?
-        activities :
-        activities.filter(a => (a['Responsável'] || '').trim() === selectedCS);
+    const csActivities = selectedCS === 'Todos' ? activities : activities.filter(a => (a.CS || '').trim() === selectedCS);
 
     const overdue = csActivities.filter(a => {
         const dueDate = a.PrevisaoConclusao;
@@ -166,11 +184,9 @@ const calculateOverdueMetrics = (activities, selectedCS) => {
         let filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
         if (key === 'plano') {
             filterFn = (item) => {
-                const atividadeNormalizada = normalizeText(item.Atividade);
-                const playbookNormalizado = normalizeText(item.Playbook);
-                const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
-                const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
-                return isPlanoOriginal || isAlertaSuporte;
+                const ativNorm = normalizeText(item.Atividade);
+                const playNorm = normalizeText(item.Playbook);
+                return (playNorm.includes(def.p) && ativNorm.includes(def.a)) || ativNorm.startsWith('alerta suporte');
             };
         }
         metrics.overdueActivities[key] = overdue.filter(filterFn);
@@ -181,56 +197,36 @@ const calculateOverdueMetrics = (activities, selectedCS) => {
 const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS, includeOnboarding, goals) => {
     const metrics = {};
     const startOfPeriod = new Date(Date.UTC(year, month, 1));
-	const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)); // Fim do mês
+    const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
 
     const isConcludedInPeriod = (item) => item.ConcluidaEm?.getUTCMonth() === month && item.ConcluidaEm?.getUTCFullYear() === year;
-    
-    // "Previsto" agora significa "Pendente"
     const isPredictedForPeriod = (activity) => {
         const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
-        const isPending = !activity.ConcluidaEm; 
-        return isDueInPeriod && isPending;
+        return isDueInPeriod && !activity.ConcluidaEm; 
     };
-        
-    // Nova função para "Concluído Antecipadamente"
-    const isConcludedEarly = (activity) => {
-        const isDueInPeriod = activity.PrevisaoConclusao?.getUTCMonth() === month && activity.PrevisaoConclusao?.getUTCFullYear() === year;
-        const isCompletedBeforePeriod = activity.ConcluidaEm && activity.ConcluidaEm < startOfPeriod;
-        return isDueInPeriod && isCompletedBeforePeriod;
-    };
-
     const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
-
-    const clientOwnerMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), {
-        cs: cli.CS,
-        fase: normalizeText(cli.Fase || '')
-    }]));
 
     const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
 
-    const allConcludedActivitiesInPortfolio = rawActivities
-        .filter(isConcludedInPeriod)
-        .filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto));
+    // Filtra atividades concluídas no período e pertencentes à carteira ATUAL
+    const allConcludedActivitiesInPortfolio = rawActivities.filter(isConcludedInPeriod).filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto));
 
     let csRealizedActivities = [];
     let onboardingRealizedActivities = [];
-
     const ismList = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))].map(ism => ism.trim());
 
     allConcludedActivitiesInPortfolio.forEach(activity => {
-        const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-        const isClientOnboarding = clientInfo?.fase === 'onboarding';
+        const isClientOnboarding = normalizeText(activity.Fase) === 'onboarding';
+        // AQUI ESTÁ A MUDANÇA PRINCIPAL: USAR O CS DO CLIENTE, NÃO O RESPONSÁVEL DA ATIVIDADE
+        const activityCS = (activity.CS || '').trim(); 
         const activityOwner = (activity['Responsável'] || '').trim();
 
         if (!isClientOnboarding) {
-            if (selectedCS === 'Todos' || activityOwner === selectedCS) {
-                csRealizedActivities.push(activity);
-            }
+            // Verifica se o CS da conta bate com o filtro selecionado
+            if (selectedCS === 'Todos' || activityCS === selectedCS) csRealizedActivities.push(activity);
         } else {
             if (ismList.includes(activityOwner) && ismToFilter !== 'Todos') {
-                if (activityOwner === ismToFilter) {
-                    onboardingRealizedActivities.push(activity);
-                }
+                if (activityOwner === ismToFilter) onboardingRealizedActivities.push(activity);
             } else {
                 onboardingRealizedActivities.push(activity);
             }
@@ -250,52 +246,37 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         'baixo-engajamento-mid': { p: null, a: "cliente com baixo engajamento - mid/enter" }
     };
 
-    // --- CORREÇÃO APLICADA: LOOP 1 (Realizado) ---
-    // Este é o PRIMEIRO loop (para "realizado") - Versão Original Restaurada
     for (const [key, def] of Object.entries(playbookDefs)) {
-    let filterFn;
-    if (key === 'plano') {
-        filterFn = (item) => {
-            const atividadeNormalizada = normalizeText(item.Atividade);
-            const playbookNormalizado = normalizeText(item.Playbook);
-            const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
-            const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
-            return isPlanoOriginal || isAlertaSuporte;
-        };
-    } else {
-        filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+        let filterFn;
+        if (key === 'plano') {
+            filterFn = (item) => {
+                const an = normalizeText(item.Atividade);
+                const pn = normalizeText(item.Playbook);
+                return (pn.includes(def.p) && an.includes(def.a)) || an.startsWith('alerta suporte');
+            };
+        } else {
+            filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+        }
+
+        const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
+        metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
+        const notOverdueList = totalRealizadoList.filter(a => !isOverdue(a));
+        metrics[`${key}-realizado`] = notOverdueList.filter(a => a.PrevisaoConclusao <= endOfMonth);
+        metrics[`${key}-concluido-antecipado`] = notOverdueList.filter(a => a.PrevisaoConclusao > endOfMonth);
     }
-
-    const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
-
-    // 1. Concluídas com Atraso (Concluídas no mês, mas a previsão era de meses anteriores)
-    metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
-
-    // Lista do que não está atrasado (Previsto para este mês ou meses futuros)
-    const notOverdueList = totalRealizadoList.filter(a => !isOverdue(a));
-
-    // 2. Realizado no Prazo (Concluídas no mês, Previstas para o mês)
-    metrics[`${key}-realizado`] = notOverdueList.filter(a => a.PrevisaoConclusao <= endOfMonth);
-
-    // 3. Concluído Antecipado (NOVA LÓGICA: Concluídas no mês, Previstas para meses futuros)
-    metrics[`${key}-concluido-antecipado`] = notOverdueList.filter(a => a.PrevisaoConclusao > endOfMonth);
-}
-// --- FIM DA ATUALIZAÇÃO ---
 
     const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
     const isCountableContact = (a) => {
-        const activityType = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
-        const activityName = normalizeText(a.Atividade || '');
-        return !activityName.includes('regra') && (validContactKeywords.some(type => activityType.includes(type)) || activityName.startsWith('whatsapp octadesk'));
+        const at = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
+        const an = normalizeText(a.Atividade || '');
+        return !an.includes('regra') && (validContactKeywords.some(type => at.includes(type)) || an.startsWith('whatsapp octadesk'));
     };
 
     const csContactActivities = csRealizedActivities.filter(isCountableContact);
     const onboardingContactActivities = onboardingRealizedActivities.filter(isCountableContact);
-
     let contactsForCoverage = [...csContactActivities];
-    if (includeOnboarding) {
-        contactsForCoverage = [...contactsForCoverage, ...onboardingContactActivities];
-    }
+    if (includeOnboarding) contactsForCoverage = [...contactsForCoverage, ...onboardingContactActivities];
+    
     const uniqueClientContactsMap = new Map();
     contactsForCoverage.forEach(activity => uniqueClientContactsMap.set(activity.ClienteCompleto, activity));
     metrics['cob-carteira'] = Array.from(uniqueClientContactsMap.values());
@@ -306,10 +287,11 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     csContactActivities.forEach(activity => {
         const clientKey = activity.ClienteCompleto;
         if (!clientKey) return;
-        const activityType = normalizeText(activity['Tipo de Atividade'] || activity['Tipo de atividade'] || activity['Tipo']);
+        const at = normalizeText(activity['Tipo de Atividade'] || a['Tipo']);
         let currentCategory = '';
-        if (callKeywords.some(k => activityType.includes(k))) currentCategory = 'call';
-        else if (emailKeywords.some(k => activityType.includes(k))) currentCategory = 'email';
+        if (callKeywords.some(k => at.includes(k))) currentCategory = 'call';
+        else if (emailKeywords.some(k => at.includes(k))) currentCategory = 'email';
+        
         if (currentCategory === 'call') prioritizedCsContacts.set(clientKey, { activity, category: 'call' });
         else if (currentCategory === 'email' && (!prioritizedCsContacts.has(clientKey) || prioritizedCsContacts.get(clientKey).category !== 'call')) prioritizedCsContacts.set(clientKey, { activity, category: 'email' });
     });
@@ -319,69 +301,50 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const prioritizedOnboardingContacts = new Map();
     onboardingContactActivities.forEach(activity => {
-        const clientKey = activity.ClienteCompleto;
-        if (!clientKey) return;
-        prioritizedOnboardingContacts.set(clientKey, activity);
+        if (activity.ClienteCompleto) prioritizedOnboardingContacts.set(activity.ClienteCompleto, activity);
     });
     metrics['onboarding-contacts-display'] = Array.from(prioritizedOnboardingContacts.values());
 
     const allCallsAndMeetings = metrics['contato-ligacao'] || [];
     const classifiedCallsAndMeetings = allCallsAndMeetings.filter(a => {
-        const categoria = normalizeText(a['Categoria']);
-        return categoria === 'engajado' || categoria === 'desengajado';
+        const cat = normalizeText(a['Categoria']);
+        return cat === 'engajado' || cat === 'desengajado';
     });
     metrics['ligacoes-classificadas'] = classifiedCallsAndMeetings;
     metrics['ligacoes-engajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'engajado');
     metrics['ligacoes-desengajadas'] = classifiedCallsAndMeetings.filter(a => normalizeText(a['Categoria']) === 'desengajado');
 
     metrics['total-clientes-unicos-cs'] = clientsForPeriod.length;
-    metrics['total-clientes'] = clientsForPeriod; // Guarda a lista filtrada para usar no gráfico de clientes
+    metrics['total-clientes'] = clientsForPeriod;
     const senseScores = clientsForPeriod.map(c => parseFloat(c['Sense Score'])).filter(s => !isNaN(s) && s !== null);
     metrics['sensescore-avg'] = senseScores.length > 0 ? senseScores.reduce((acc, val) => acc + val, 0) / senseScores.length : 0;
 
     const applyOwnershipRule = (activity) => {
-        const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-        if (!clientInfo) return false;
         if (selectedCS === 'Todos') return true;
-        return clientInfo.cs === selectedCS;
+        return activity.CS === selectedCS; // Verifica direto no campo CS da atividade (que veio do cliente)
     };
 
-    let activitiesByCS_previstos = rawActivities
-        .filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto))
-        .filter(applyOwnershipRule);
-
+    let activitiesByCS_previstos = rawActivities.filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto)).filter(applyOwnershipRule);
     if (!includeOnboarding) {
-        activitiesByCS_previstos = activitiesByCS_previstos.filter(activity => {
-            const clientInfo = clientOwnerMap.get(activity.ClienteCompleto);
-            return clientInfo?.fase !== 'onboarding';
-        });
+        activitiesByCS_previstos = activitiesByCS_previstos.filter(activity => normalizeText(activity.Fase) !== 'onboarding');
     }
 
-    // --- CORREÇÃO APLICADA: LOOP 2 (Previsto/Pendente) ---
-    // Este é o SEGUNDO loop (para "previsto") - ONDE A MUDANÇA DEVE OCORRER
     for (const [key, def] of Object.entries(playbookDefs)) {
-    let filterFn;
-    if (key === 'plano') {
-        filterFn = (item) => {
-            const atividadeNormalizada = normalizeText(item.Atividade);
-            const playbookNormalizado = normalizeText(item.Playbook);
-            const isPlanoOriginal = playbookNormalizado.includes(def.p) && atividadeNormalizada.includes(def.a);
-            const isAlertaSuporte = atividadeNormalizada.startsWith('alerta suporte');
-            return isPlanoOriginal || isAlertaSuporte;
-        };
-    } else {
-        filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+        let filterFn;
+        if (key === 'plano') {
+            filterFn = (item) => {
+                const an = normalizeText(item.Atividade);
+                const pn = normalizeText(item.Playbook);
+                return (pn.includes(def.p) && an.includes(def.a)) || an.startsWith('alerta suporte');
+            };
+        } else {
+            filterFn = (item) => def.p ? (normalizeText(item.Playbook).includes(def.p) && normalizeText(item.Atividade).includes(def.a)) : (Array.isArray(def.a) ? def.a.some(term => normalizeText(item.Atividade).includes(term)) : normalizeText(item.Atividade).includes(def.a));
+        }
+        const allActivitiesOfType = activitiesByCS_previstos.filter(filterFn);
+        metrics[`${key}-previsto`] = allActivitiesOfType.filter(isPredictedForPeriod);
     }
 
-    const allActivitiesOfType = activitiesByCS_previstos.filter(filterFn);
-
-    // "Previsto" agora significa "Pendente": Previsão no mês E não concluída.
-    metrics[`${key}-previsto`] = allActivitiesOfType.filter(isPredictedForPeriod);
-
-    // A lógica de 'concluido-antecipado' foi movida para o LOOP 1 (acima).
-}
-// --- FIM DA ATUALIZAÇÃO ---
-
+    // Engajamento SMB
     const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
     const uniqueSmbContacts = new Map();
     smbConcluidoList.forEach(a => {
@@ -394,11 +357,12 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['engajamento-smb-engajado'] = finalSmbList.filter(item => item.status === 'engajado').map(item => item.activity);
     metrics['engajamento-smb-desengajado'] = finalSmbList.filter(item => item.status === 'desengajado').map(item => item.activity);
 
+    // Campos Faltantes
     const clientesContatados = metrics['cob-carteira'] || [];
     const clientesContatadosComDados = clientesContatados.map(atividade => {
         const clienteData = clients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
         return { ...atividade,
-            'Modelo de negócio': clienteData ? (clienteData['Modelo de negócio'] || 'Vazio') : 'Não encontrado',
+            'Modelo de negócio': clienteData ? (clienteData['Negócio'] || 'Vazio') : 'Não encontrado',
             'Potencial': clienteData ? (clienteData['Potencial'] || 'Vazio') : 'Não encontrado'
         };
     });
@@ -407,18 +371,14 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['cliente-potencial-preenchido'] = clientesContatadosComDados.filter(item => item['Potencial'] && item['Potencial'] !== 'Vazio');
     metrics['cliente-potencial-faltante'] = clientesContatadosComDados.filter(item => !item['Potencial'] || item['Potencial'] === 'Vazio');
 
+    // SKA Labs
     const selectedQuarter = Math.floor(month / 3);
     const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getUTCMonth() / 3) === selectedQuarter && item.ConcluidaEm.getUTCFullYear() === year;
     const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
-    metrics['total-labs-eligible'] = clients.length; 
-    metrics['ska-labs-realizado-list'] = [...new Map(
-        rawActivities
-        .filter(isConcludedInQuarter)
-        .filter(a => normalizeText(a.Atividade).includes('participou do ska labs'))
-        .filter(a => eligibleClientSet.has(a.ClienteCompleto))
-        .map(a => [a.ClienteCompleto, a])
-    ).values()];
+    metrics['total-labs-eligible'] = clients.length;
+    metrics['ska-labs-realizado-list'] = [...new Map(rawActivities.filter(isConcludedInQuarter).filter(a => normalizeText(a.Atividade).includes('participou do ska labs')).filter(a => eligibleClientSet.has(a.ClienteCompleto)).map(a => [a.ClienteCompleto, a])).values()];
 
+    // Contagens para Gráficos
     const contatosPorNegocio = {};
     const contatosPorComercial = {};
     (metrics['cob-carteira'] || []).forEach(activity => {
@@ -430,14 +390,14 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['contatos-por-negocio'] = contatosPorNegocio;
     metrics['contatos-por-comercial'] = contatosPorComercial;
 
+    // Metas Distribuídas
     const metaCobertura = (goals.coverage || 40) / 100;
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(metrics['total-clientes-unicos-cs'] * metaCobertura));
     metrics['clientes-faltantes-meta-cobertura'] = Math.max(0, clientesParaAtingirMeta - clientesContatados.length);
 
     let ligacaoPerc = 0.65;
-    if (clients.length > 0 && (normalizeText(clients[0].Segmento || '').includes('mid') || normalizeText(clients[0].Segmento || '').includes('enterprise'))) {
-        ligacaoPerc = 0.75;
-    }
+    if (clients.length > 0 && (normalizeText(clients[0].Segmento || '').includes('mid') || normalizeText(clients[0].Segmento || '').includes('enterprise'))) ligacaoPerc = 0.75;
+    
     const targetLigacoes = Math.ceil(clientesParaAtingirMeta * ligacaoPerc);
     const targetEmails = clientesParaAtingirMeta - targetLigacoes;
     const realizadoLigacoes = (metrics['contato-ligacao'] || []).length;
@@ -448,9 +408,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     const clientesPorNegocio = {};
     clientsForPeriod.forEach(client => {
         const negocio = client['Negócio'] || 'Não Definido';
-        if (negocio) {
-            clientesPorNegocio[negocio] = (clientesPorNegocio[negocio] || 0) + 1;
-        }
+        if (negocio) clientesPorNegocio[negocio] = (clientesPorNegocio[negocio] || 0) + 1;
     });
     metrics['clientes-por-negocio'] = clientesPorNegocio;
 
@@ -471,11 +429,7 @@ const getPeriodDateRange = (period, year) => {
 };
 
 const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClients, selectedCS, includeOnboarding, goals) => {
-    const periodMetrics = {
-        monthlyCoverages: [],
-        totalClientsInPeriod: new Set(),
-        playbookTotals: {}
-    };
+    const periodMetrics = { monthlyCoverages: [], totalClientsInPeriod: new Set(), playbookTotals: {} };
     const playbookKeys = ['plano', 'adocao', 'reunioes-qbr', 'planos-sucesso', 'followup', 'discovery', 'engajamento-smb', 'baixo-engajamento-mid'];
     playbookKeys.forEach(key => periodMetrics.playbookTotals[key] = { previsto: 0, realizado: 0 });
     const clientsForPeriod = (selectedCS === 'Todos') ? allClients : allClients.filter(d => d.CS?.trim() === selectedCS);
@@ -489,14 +443,11 @@ const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClie
         const clientesContatadosCount = monthlyMetrics['cob-carteira']?.length || 0;
         const cobCarteiraPerc = totalClientsUnicosCS > 0 ? (clientesContatadosCount / totalClientsUnicosCS) * 100 : 0;
         periodMetrics.monthlyCoverages.push(cobCarteiraPerc);
-        (monthlyMetrics['total-clientes'] || []).forEach(client => periodMetrics.totalClientsInPeriod.add(client.Cliente)); // Use client.Cliente here
+        (monthlyMetrics['total-clientes'] || []).forEach(client => periodMetrics.totalClientsInPeriod.add(client.Cliente));
         playbookKeys.forEach(key => {
             periodMetrics.playbookTotals[key].previsto += (monthlyMetrics[`${key}-previsto`] || []).length;
-            const realizadoNoPrazo = (monthlyMetrics[`${key}-realizado`] || []).length;
-            const realizadoAtrasado = (monthlyMetrics[`${key}-atrasado-concluido`] || []).length;
-            // Adiciona os antecipados ao realizado total do período
-            const realizadoAntecipado = (monthlyMetrics[`${key}-concluido-antecipado`] || []).length;
-            periodMetrics.playbookTotals[key].realizado += realizadoNoPrazo + realizadoAtrasado + realizadoAntecipado;
+            const realizadoTotal = (monthlyMetrics[`${key}-realizado`] || []).length + (monthlyMetrics[`${key}-atrasado-concluido`] || []).length + (monthlyMetrics[`${key}-concluido-antecipado`] || []).length;
+            periodMetrics.playbookTotals[key].realizado += realizadoTotal;
         });
     }
 
@@ -511,281 +462,126 @@ const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClie
 };
 
 const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, selectedISM) => {
-    // 'activities' é rawActivities
-    // 'clients' AGORA É filteredClients (a carteira em análise)
     const okrs = {};
     const startOfMonth = new Date(Date.UTC(year, month, 1));
     const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
 
-    // 1. Encontra clientes EM ONBOARDING DENTRO da carteira filtrada
     let onboardingClients = clients.filter(c => normalizeText(c.Fase) === 'onboarding');
+    if (teamView === 'syneco') onboardingClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
+    else if (teamView === 'outros') onboardingClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
+    if (selectedISM !== 'Todos') onboardingClients = onboardingClients.filter(c => c.ISM === selectedISM);
 
-    // Filtros específicos da aba de Onboarding (Time e ISM)
-    if (teamView === 'syneco') {
-        onboardingClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
-    } else if (teamView === 'outros') {
-        onboardingClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
-    }
-    // Aplica o filtro ISM *antes* de calcular as etapas e outros dados baseados nos clientes *atualmente* em onboarding
-    if (selectedISM !== 'Todos') {
-        onboardingClients = onboardingClients.filter(c => c.ISM === selectedISM);
-    }
-
-    okrs.filteredClients = onboardingClients; // Clientes em onboarding após todos os filtros
+    okrs.filteredClients = onboardingClients;
     const onboardingClientNames = new Set(onboardingClients.map(c => (c.Cliente || '').trim().toLowerCase()));
-
-    // Filtra atividades APENAS dos clientes que estão em onboarding NAQUELE FILTRO
     let onboardingActivities = activities.filter(a => onboardingClientNames.has(a.ClienteCompleto));
+    if (selectedISM !== 'Todos') onboardingActivities = onboardingActivities.filter(a => (a['Responsável'] || '').trim() === selectedISM);
 
-// --- CORREÇÃO (ADMIN FILTER) ---
-// Filtra as atividades pelo ISM selecionado no dropdown (selectedISM),
-// não pelo ISM do usuário logado (ismToFilter).
-// Isso faz o filtro funcionar para Admins.
-if (selectedISM !== 'Todos') {
-    onboardingActivities = onboardingActivities.filter(a => (a['Responsável'] || '').trim() === selectedISM);
-}
-
-    // ==================================================================
-    // LÓGICA: Cálculo de Etapas do Onboarding (Baseado nos clientes em onboarding do filtro)
-    // ==================================================================
-    const stageActivityNames = {
-        preGoLive: normalizeText('Validação de usabilidade / Agendamento GO LIVE'),
-        execucao: normalizeText('Planejamento Finalizado'),
-        inicio: normalizeText('Contato de Welcome')
-    };
-
+    const stageActivityNames = { preGoLive: normalizeText('Validação de usabilidade / Agendamento GO LIVE'), execucao: normalizeText('Planejamento Finalizado'), inicio: normalizeText('Contato de Welcome') };
     const stageCounts = { preGoLive: 0, execucao: 0, inicio: 0, backlog: 0 };
     const stageLists = { preGoLive: [], execucao: [], inicio: [], backlog: [] };
-
     okrs.totalFilteredClients = onboardingClients.length;
 
-    // Usa as atividades filtradas dos clientes em onboarding
-    const concludedOnboardingActivities = onboardingActivities.filter(a => a.ConcluidaEm);
-
     const clientConcludedActivitiesMap = new Map();
-    concludedOnboardingActivities.forEach(activity => {
+    onboardingActivities.filter(a => a.ConcluidaEm).forEach(activity => {
         const clientKey = activity.ClienteCompleto;
-        if (!clientConcludedActivitiesMap.has(clientKey)) {
-            clientConcludedActivitiesMap.set(clientKey, new Set());
-        }
+        if (!clientConcludedActivitiesMap.has(clientKey)) clientConcludedActivitiesMap.set(clientKey, new Set());
         clientConcludedActivitiesMap.get(clientKey).add(normalizeText(activity.Atividade));
     });
 
-    // Itera sobre os clientes JÁ FILTRADOS por CS/Squad e ISM
     onboardingClients.forEach(client => {
         const clientKey = (client.Cliente || '').trim().toLowerCase();
         const concludedSet = clientConcludedActivitiesMap.get(clientKey) || new Set();
-
-        if (concludedSet.has(stageActivityNames.preGoLive)) {
-            stageCounts.preGoLive++;
-            stageLists.preGoLive.push(client);
-        } else if (concludedSet.has(stageActivityNames.execucao)) {
-            stageCounts.execucao++;
-            stageLists.execucao.push(client);
-        } else if (concludedSet.has(stageActivityNames.inicio)) {
-            stageCounts.inicio++;
-            stageLists.inicio.push(client);
-        } else {
-            stageCounts.backlog++;
-            stageLists.backlog.push(client);
-        }
+        if (concludedSet.has(stageActivityNames.preGoLive)) { stageCounts.preGoLive++; stageLists.preGoLive.push(client); }
+        else if (concludedSet.has(stageActivityNames.execucao)) { stageCounts.execucao++; stageLists.execucao.push(client); }
+        else if (concludedSet.has(stageActivityNames.inicio)) { stageCounts.inicio++; stageLists.inicio.push(client); }
+        else { stageCounts.backlog++; stageLists.backlog.push(client); }
     });
-
-    okrs.stageCounts = stageCounts;
-    okrs.stageLists = stageLists;
-    // ==================================================================
-    // FIM DA LÓGICA DE ETAPAS
-    // ==================================================================
+    okrs.stageCounts = stageCounts; okrs.stageLists = stageLists;
 
     const concludedInPeriod = onboardingActivities.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
     const goLiveActivityName = normalizeText('Call/Reunião de GO LIVE');
+    okrs.goLiveActivitiesConcluded = concludedInPeriod.filter(a => normalizeText(a.Atividade) === goLiveActivityName);
+    okrs.goLiveActivitiesPredicted = onboardingActivities.filter(a => normalizeText(a.Atividade) === goLiveActivityName && !a.ConcluidaEm && a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth);
 
-    const goLiveActivitiesConcluded = concludedInPeriod.filter(a => normalizeText(a.Atividade) === goLiveActivityName);
-    const goLiveActivitiesPredicted = onboardingActivities.filter(a =>
-        normalizeText(a.Atividade) === goLiveActivityName &&
-        !a.ConcluidaEm &&
-        a.PrevisaoConclusao >= startOfMonth &&
-        a.PrevisaoConclusao <= endOfMonth
-    );
-
-    okrs.goLiveActivitiesConcluded = goLiveActivitiesConcluded;
-    okrs.goLiveActivitiesPredicted = goLiveActivitiesPredicted;
-
-    const clientsWithGoLive = [...new Set(goLiveActivitiesConcluded.map(a => a.ClienteCompleto))];
-    const clientsWithGoLiveAndNPSData = onboardingClients.filter(c => clientsWithGoLive.includes((c.Cliente || '').trim().toLowerCase())); // Usa onboardingClients já filtrado
+    const clientsWithGoLive = [...new Set(okrs.goLiveActivitiesConcluded.map(a => a.ClienteCompleto))];
+    const clientsWithGoLiveAndNPSData = onboardingClients.filter(c => clientsWithGoLive.includes((c.Cliente || '').trim().toLowerCase()));
     okrs.clientsWithGoLive = clientsWithGoLiveAndNPSData;
     okrs.npsResponded = clientsWithGoLiveAndNPSData.filter(c => c.NPSOnboarding && String(c.NPSOnboarding).trim() !== '');
-    okrs.highValueClients = onboardingClients.filter(c => c.ValorNaoFaturado > 50000); // Usa onboardingClients já filtrado
+    okrs.highValueClients = onboardingClients.filter(c => c.ValorNaoFaturado > 50000);
 
-    // ==================================================================
-    // ATUALIZAÇÃO SOLICITADA: Lógica de Tempo Médio (Histórico da CARTEIRA filtrado por ISM) e Gráfico por Produto
-    // ==================================================================
-
-    // Cria um Set com TODOS os clientes da carteira filtrada (ongoing + onboarding)
     const portfolioClientNames = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
-
-    // NOVO: Atividades que marcam o início do tempo de onboarding
-    const onboardingStartActivities = [
-        normalizeText('Validação e Planejamento'),
-        normalizeText('Validação do pedido'),
-        normalizeText('Contato de Welcome') // Mantido como fallback/legado, mas prioriza os novos
-    ];
-
-    // 1. Mapear data de início (Validação/Welcome) para CADA cliente (apenas da CARTEIRA)
+    const onboardingStartActivities = [normalizeText('Validação e Planejamento'), normalizeText('Validação do pedido'), normalizeText('Contato de Welcome')];
     const onboardingStartCreationDate = new Map();
-    activities.forEach(a => { // 'activities' é rawActivities
+    activities.forEach(a => {
         const clientKey = a.ClienteCompleto;
-        const activityNormalized = normalizeText(a.Atividade);
+        if (portfolioClientNames.has(clientKey) && a.CriadoEm && onboardingStartActivities.includes(normalizeText(a.Atividade))) {
+            const existingDate = onboardingStartCreationDate.get(clientKey);
+            if (!existingDate || a.CriadoEm < existingDate) onboardingStartCreationDate.set(clientKey, a.CriadoEm);
+        }
+    });
 
-        // FILTRA para incluir apenas atividades de clientes da carteira selecionada
-        if (portfolioClientNames.has(clientKey) && a.CriadoEm) {
-            
-            let isStartActivity = false;
-            if (onboardingStartActivities.includes(activityNormalized)) {
-                isStartActivity = true;
-            }
+    const allGoLiveActivitiesConcluded = activities.filter(a => portfolioClientNames.has(a.ClienteCompleto) && normalizeText(a.Atividade) === goLiveActivityName && a.ConcluidaEm);
+    const portfolioClientToNegocioMap = new Map();
+    const portfolioClientToIsmMap = new Map();
+    clients.forEach(c => {
+        const clientKey = (c.Cliente || '').trim().toLowerCase();
+        portfolioClientToNegocioMap.set(clientKey, c['Negócio'] || 'Não Definido');
+        portfolioClientToIsmMap.set(clientKey, c.ISM);
+    });
 
-            if (isStartActivity) {
-                const existingDate = onboardingStartCreationDate.get(clientKey);
-                // A data de início é a MAIS ANTIGA entre as atividades de início
-                if (!existingDate || a.CriadoEm < existingDate) {
-                    onboardingStartCreationDate.set(clientKey, a.CriadoEm);
+    const productMetrics = {};
+    const allCompletedOnboardingsFilteredByIsm = [];
+    const clientsWithCompletedGoLiveAllTime = new Set(allGoLiveActivitiesConcluded.map(a => a.ClienteCompleto));
+
+    clientsWithCompletedGoLiveAllTime.forEach(clientKey => {
+        const goLiveDate = allGoLiveActivitiesConcluded.filter(a => a.ClienteCompleto === clientKey).map(a => a.ConcluidaEm).sort((a,b) => b - a)[0];
+        const playbookStartDate = onboardingStartCreationDate.get(clientKey);
+        if (goLiveDate && playbookStartDate) {
+            const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
+            if (duration >= 0) {
+                const clientIsm = portfolioClientToIsmMap.get(clientKey);
+                const negocio = portfolioClientToNegocioMap.get(clientKey) || 'Não Definido';
+                const ismMatchesFilter = (selectedISM === 'Todos' || clientIsm === selectedISM);
+                if (!productMetrics[negocio]) productMetrics[negocio] = { durations: [], clientCount: 0 };
+                if (ismMatchesFilter) {
+                    productMetrics[negocio].durations.push(duration);
+                    allCompletedOnboardingsFilteredByIsm.push({ client: clientKey, duration: duration });
                 }
             }
         }
     });
 
-    // 2. Encontrar TODAS as atividades de Go Live concluídas (apenas da CARTEIRA)
-    const allGoLiveActivitiesConcluded = activities.filter(a => // 'activities' é rawActivities
-        portfolioClientNames.has(a.ClienteCompleto) && // FILTRA para clientes da carteira
-        normalizeText(a.Atividade) === goLiveActivityName && a.ConcluidaEm
-    );
-
-    // 3. Mapear "Negócio" e "ISM" dos clientes da CARTEIRA
-    const portfolioClientToNegocioMap = new Map();
-    const portfolioClientToIsmMap = new Map(); // NOVO
-    clients.forEach(c => { // 'clients' é filteredClients
-         const clientKey = (c.Cliente || '').trim().toLowerCase();
-         portfolioClientToNegocioMap.set(clientKey, c['Negócio'] || 'Não Definido');
-         portfolioClientToIsmMap.set(clientKey, c.ISM); // NOVO - Guarda o ISM
-    });
-
-
-    // 4. Calcular TODAS as durações concluídas (da CARTEIRA), filtrar por ISM e agrupar por "Negócio"
-    const productMetrics = {}; // { 'ProdutoA': { durations: [], clientCount: 0 }, ... }
-    const allCompletedOnboardingsFilteredByIsm = []; // Renomeado para clareza
-
-    const clientsWithCompletedGoLiveAllTime = new Set(allGoLiveActivitiesConcluded.map(a => a.ClienteCompleto));
-
-    clientsWithCompletedGoLiveAllTime.forEach(clientKey => {
-        // Pega a data de Go Live mais recente para o cliente
-        const goLiveDate = allGoLiveActivitiesConcluded
-            .filter(a => a.ClienteCompleto === clientKey)
-            .map(a => a.ConcluidaEm)
-            .sort((a,b) => b - a)[0];
-
-        const playbookStartDate = onboardingStartCreationDate.get(clientKey);
-
-        if (goLiveDate && playbookStartDate) {
-            const duration = Math.floor((goLiveDate - playbookStartDate) / (1000 * 60 * 60 * 24));
-            if (duration >= 0) { // Ignorar durações negativas/inválidas
-
-                // --- INÍCIO DA LÓGICA DE FILTRO ISM ---
-                const clientIsm = portfolioClientToIsmMap.get(clientKey);
-                const negocio = portfolioClientToNegocioMap.get(clientKey) || 'Não Definido';
-                // selectedISM vem dos parâmetros da função
-                const ismMatchesFilter = (selectedISM === 'Todos' || clientIsm === selectedISM);
-                // --- FIM DA LÓGICA DE FILTRO ISM ---
-
-                // Agrupa por "Negócio" para o novo gráfico (independente do filtro ISM, para mostrar todos os produtos)
-                 if (!productMetrics[negocio]) {
-                     productMetrics[negocio] = { durations: [], clientCount: 0 };
-                 }
-                 // Adiciona a duração ao gráfico E ao card SOMENTE SE o ISM bater
-                if (ismMatchesFilter) {
-                     productMetrics[negocio].durations.push(duration); // Adiciona duração para média do produto (filtrado)
-                     allCompletedOnboardingsFilteredByIsm.push({ client: clientKey, duration: duration }); // Adiciona à lista do card (filtrado)
-                 }
-            }
-        }
-    });
-
-    // 5. Contar clientes ATUAIS em onboarding (da CARTEIRA e JÁ FILTRADOS por ISM no início) por "Negócio"
-    // Usa a lista `onboardingClients` que já foi filtrada no início desta função
     onboardingClients.forEach(client => {
         const negocio = client['Negócio'] || 'Não Definido';
-        if (!productMetrics[negocio]) { // Caso um produto não tenha NENHUM onboarding concluído
-            productMetrics[negocio] = { durations: [], clientCount: 0 };
-        }
-        productMetrics[negocio].clientCount++; // Adiciona à contagem do gráfico
+        if (!productMetrics[negocio]) productMetrics[negocio] = { durations: [], clientCount: 0 };
+        productMetrics[negocio].clientCount++;
     });
 
-
-    // 6. Salva a lista de concluídos (histórico da carteira, filtrado por ISM) para o card de "Tempo Médio"
     okrs.completedOnboardingsList = allCompletedOnboardingsFilteredByIsm;
-
-    // 7. Calcula o tempo médio GERAL (histórico da carteira, filtrado por ISM)
     const allDurationsFiltered = allCompletedOnboardingsFilteredByIsm.map(item => item.duration);
-    okrs.averageCompletedOnboardingTime = allDurationsFiltered.length > 0
-        ? Math.round(allDurationsFiltered.reduce((a, b) => a + b, 0) / allDurationsFiltered.length)
-        : 0;
+    okrs.averageCompletedOnboardingTime = allDurationsFiltered.length > 0 ? Math.round(allDurationsFiltered.reduce((a, b) => a + b, 0) / allDurationsFiltered.length) : 0;
 
-    // 8. Formatar os dados para o novo gráfico (usando as durações filtradas por ISM)
-    const chartLabels = [];
-    const clientCountData = [];
-    const avgTimeData = [];
-
+    const chartLabels = [], clientCountData = [], avgTimeData = [];
     Object.keys(productMetrics).sort().forEach(negocio => {
-        // Só exibe se tiver clientes atuais OU concluídos (mesmo que a duração não entre na média por causa do filtro ISM)
         if (productMetrics[negocio].clientCount > 0 || productMetrics[negocio].durations.length > 0) {
             chartLabels.push(negocio);
-            clientCountData.push(productMetrics[negocio].clientCount); // Contagem de clientes atuais (já filtrado por ISM no passo 5)
-
-            const durations = productMetrics[negocio].durations; // Durações JÁ FILTRADAS por ISM no passo 4
-            if (durations.length > 0) {
-                const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
-                avgTimeData.push(Math.round(avg));
-            } else {
-                avgTimeData.push(0); // Média 0 se não houver concluídos *para aquele ISM*
-            }
+            clientCountData.push(productMetrics[negocio].clientCount);
+            const durations = productMetrics[negocio].durations;
+            avgTimeData.push(durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0);
         }
     });
-
-
-    // 9. Salvar no objeto okrs
-    okrs.productChartData = {
-        labels: chartLabels,
-        clientCount: clientCountData,
-        avgTime: avgTimeData
-    };
-    // ==================================================================
-    // FIM DA ATUALIZAÇÃO SOLICITADA
-    // ==================================================================
+    okrs.productChartData = { labels: chartLabels, clientCount: clientCountData, avgTime: avgTimeData };
 
     const today = new Date();
-    // ==================================================================
-    // Lógica do "Top Ranking" (Baseado nos clientes em onboarding do filtro - JÁ FILTRADO POR ISM)
-    // ==================================================================
-    const openClientsWithDuration = onboardingClients // já filtrado por ISM
-        .map(client => {
-            const clientKey = (client.Cliente || '').trim().toLowerCase();
-	            // Re-usa o mapa de "Início do Onboarding" que já foi calculado (baseado na carteira)
-	            const startDate = onboardingStartCreationDate.get(clientKey);
-            if (startDate) {
-                const duration = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                return { ...client, onboardingDuration: duration };
-            }
-            return { ...client, onboardingDuration: null };
-        }).filter(c => c.onboardingDuration !== null);
-    // ==================================================================
-    // FIM DA LÓGICA "Top Ranking"
-    // ==================================================================
-
+    const openClientsWithDuration = onboardingClients.map(client => {
+        const clientKey = (client.Cliente || '').trim().toLowerCase();
+        const startDate = onboardingStartCreationDate.get(clientKey);
+        return { ...client, onboardingDuration: startDate ? Math.floor((today - startDate) / (1000 * 60 * 60 * 24)) : null };
+    }).filter(c => c.onboardingDuration !== null);
     openClientsWithDuration.sort((a, b) => b.onboardingDuration - a.onboardingDuration);
     okrs.top5LongestOnboardings = openClientsWithDuration.slice(0, 5);
     okrs.clientsOver120Days = openClientsWithDuration.filter(c => c.onboardingDuration > 120);
 
-    // Lógica de Processos (baseada nos clientes em onboarding do filtro - JÁ FILTRADO POR ISM)
     const processTargets = {
         welcome: { name: 'contato de welcome', sla: 3 },
         kickoff: { name: 'call/reunião kickoff', sla: 7 },
@@ -795,95 +591,29 @@ if (selectedISM !== 'Todos') {
         acompanhamento: { name: 'acompanhamento / status reports' }
     };
 
-    // --- AJUSTE 5: CÁLCULO DE ONBOARDING (PREVISTO/ANTECIPADO) ---
     Object.entries(processTargets).forEach(([key, config]) => {
-    const activityNameNormalized = normalizeText(config.name);
-
-    if (key === 'welcome') {
-        // --- LÓGICA ESPECÍFICA DO WELCOME (Change 1) ---
-        const welcomeActivities = onboardingActivities.filter(a => normalizeText(a.Atividade) === activityNameNormalized);
-
-        // 1. "Previsto" (Pendente) = Criado em (no mês) E Não Concluído
-        okrs[`${key}Previsto`] = welcomeActivities.filter(a =>
-            a.CriadoEm >= startOfMonth && a.CriadoEm <= endOfMonth && !a.ConcluidaEm
-        );
-
-        // 2. "Realizado" (Concluído no mês)
-        const realizadoList = welcomeActivities.filter(a =>
-            a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth
-        );
-
-        // Helper para calcular a diferença de dias entre Criação e Conclusão
-        const getDiffDays = (activity) => {
-            if (activity.ConcluidaEm && activity.CriadoEm) {
-                return (activity.ConcluidaEm - activity.CriadoEm) / (1000 * 60 * 60 * 24);
-            }
-            return Infinity; // Se não tiver datas, considera como fora do SLA
-        };
-
-        // 3. "SLA Ok" = Concluído em <= 3 dias da Criação
-        okrs[`${key}SLAOk`] = realizadoList.filter(a => getDiffDays(a) <= config.sla);
-
-        // 4. "Fora do Prazo" = Concluído em > 3 dias da Criação
-        okrs[`${key}RealizadoForaPrazo`] = realizadoList.filter(a => getDiffDays(a) > config.sla);
-
-        // Zera métricas que não se aplicam a esta lógica
-        okrs[`${key}Antecipado`] = [];
-        okrs[`${key}Realizado`] = []; // Usamos SLAOk e ForaPrazo
-        okrs[`${key}RealizadoAtrasado`] = []; // O "ForaPrazo" cobre isso
-        okrs[`${key}RealizadoTotal`] = realizadoList; // Para o cálculo de %
-
-    } else {
-        // --- LÓGICA GERAL PARA OUTRAS ATIVIDADES (Change 2) ---
+        const activityNameNormalized = normalizeText(config.name);
         const allActivitiesOfType = onboardingActivities.filter(a => normalizeText(a.Atividade) === activityNameNormalized);
+        
+        // Previsto (Pendente)
+        okrs[`${key}Previsto`] = allActivitiesOfType.filter(a => a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth && !a.ConcluidaEm);
+        // Realizado (Total no mês)
+        const realizadoList = allActivitiesOfType.filter(a => a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth);
+        // Antecipado
+        okrs[`${key}Antecipado`] = realizadoList.filter(a => a.PrevisaoConclusao > endOfMonth);
+        // Realizado no Prazo
+        okrs[`${key}Realizado`] = realizadoList.filter(a => a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth);
+        // Realizado com Atraso
+        okrs[`${key}RealizadoAtrasado`] = realizadoList.filter(a => a.PrevisaoConclusao < startOfMonth);
+        
+        okrs[`${key}RealizadoTotal`] = realizadoList;
 
-        // 1. "Previsto" (Pendente) = Previsão no mês E Não Concluído
-        const previstoList = allActivitiesOfType.filter(a =>
-            a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth && !a.ConcluidaEm
-        );
-
-        // 2. "Realizado" (Todas as concluídas no mês)
-        const realizadoList = allActivitiesOfType.filter(a =>
-            a.ConcluidaEm >= startOfMonth && a.ConcluidaEm <= endOfMonth
-        );
-
-        // 3. "Antecipado" (NOVA LÓGICA: Concluída no mês, Previsão futura)
-        const antecipadoList = realizadoList.filter(a => a.PrevisaoConclusao > endOfMonth);
-
-        // 4. "Realizado no Prazo" (Concluída no mês, Previsão no mês)
-        const realizadoNoPrazoList = realizadoList.filter(a =>
-            a.PrevisaoConclusao >= startOfMonth && a.PrevisaoConclusao <= endOfMonth
-        );
-
-        // 5. "Realizado com Atraso" (Concluída no mês, Previsão passada)
-        const realizadoAtrasadoList = realizadoList.filter(a =>
-            a.PrevisaoConclusao < startOfMonth
-        );
-
-        // Salva as métricas
-        okrs[`${key}Antecipado`] = antecipadoList;
-        okrs[`${key}Previsto`] = previstoList;
-        okrs[`${key}Realizado`] = realizadoNoPrazoList; // "Realizado" agora significa "No Prazo"
-        okrs[`${key}RealizadoAtrasado`] = realizadoAtrasadoList; // Nova métrica para o card
-        okrs[`${key}RealizadoTotal`] = realizadoList; // Usado pelo SLA do Kickoff
-
-        // Lógica de SLA (para Kickoff, que ainda usa a previsão)
-        if (config.sla) {
-            // O SLA do Kickoff ainda é baseado na previsão
-            okrs[`${key}SLAOk`] = realizadoList.filter(a => {
-                const completedDate = a.ConcluidaEm;
-                const predictedDate = a.PrevisaoConclusao; // Usa Previsão
-
-                if (completedDate && predictedDate) {
-                    const diffDays = (completedDate - predictedDate) / (1000 * 60 * 60 * 24);
-                    return diffDays <= config.sla;
-                }
-                return false; // Se não tiver data de previsão, não está no SLA
-            });
+        if (key === 'welcome' || key === 'kickoff') {
+            const getDiffDays = (a) => (a.ConcluidaEm && (key === 'welcome' ? a.CriadoEm : a.PrevisaoConclusao)) ? (a.ConcluidaEm - (key === 'welcome' ? a.CriadoEm : a.PrevisaoConclusao)) / (1000 * 60 * 60 * 24) : Infinity;
+            okrs[`${key}SLAOk`] = realizadoList.filter(a => getDiffDays(a) <= config.sla);
+            okrs[`${key}RealizadoForaPrazo`] = realizadoList.filter(a => getDiffDays(a) > config.sla);
         }
-    }
-});
-// --- FIM DA ATUALIZAÇÃO ---
+    });
 
     return okrs;
 };
@@ -896,27 +626,22 @@ self.onmessage = (e) => {
 
     try {
         if (type === 'INIT') {
-            // 1. Recebe os dados brutos
             rawActivities = payload.rawActivities;
             rawClients = payload.rawClients;
             currentUser = payload.currentUser;
             manualEmailToCsMap = payload.manualEmailToCsMap;
-            ismToFilter = currentUser.selectedISM || 'Todos'; // Define o ISM a ser usado no filtro de Onboarding
+            ismToFilter = currentUser.selectedISM || 'Todos';
 
-            // 2. Processa e junta os dados
-            processInitialData(); // Modifica rawActivities
+            processInitialData(); // Processa as datas e injeta Dias sem Touch
 
-            // 3. Constrói o mapa de Squads
             buildCsToSquadMap();
 
-            // 4. Extrai dados para os filtros
             const csSet = [...new Set(rawClients.map(d => d.CS && d.CS.trim()).filter(Boolean))];
             const squadSet = [...new Set(rawClients.map(d => d['Squad CS']).filter(Boolean))];
             const ismSet = [...new Set(rawClients.map(c => c.ISM).filter(Boolean))];
             const allDates = [...rawActivities.map(a => a.PrevisaoConclusao), ...rawActivities.map(a => a.ConcluidaEm)];
             const years = [...new Set(allDates.map(d => d?.getFullYear()).filter(Boolean))];
 
-            // 5. Envia os dados de filtro de volta
             postMessage({
                 type: 'INIT_COMPLETE',
                 payload: {
@@ -925,35 +650,32 @@ self.onmessage = (e) => {
                         squadSet,
                         ismSet,
                         years,
-                        csToSquadMap: Object.fromEntries(csToSquadMap) // Converte Map para Objeto
+                        csToSquadMap: Object.fromEntries(csToSquadMap)
                     }
                 }
             });
         }
 
         else if (type === 'CALCULATE_MONTHLY') {
-    // 1. Filtra clientes baseado nos filtros de CS/Squad
-    let filteredClients = rawClients;
-    let csForCalc = payload.selectedCS;
+            let filteredClients = rawClients;
+            let csForCalc = payload.selectedCS;
 
-    if (currentUser.userGroup === 'onboarding' && ismToFilter !== 'Todos') {
-        filteredClients = rawClients.filter(d => (d.ISM || '').trim() === ismToFilter);
-        csForCalc = 'Todos'; 
-    } else if (currentUser.isManager) {
-        if (payload.selectedSquad !== 'Todos') {
-            filteredClients = rawClients.filter(d => d['Squad CS'] === payload.selectedSquad);
-            csForCalc = 'Todos';
-        } else if (payload.selectedCS !== 'Todos') {
-            filteredClients = rawClients.filter(d => d.CS?.trim() === payload.selectedCS);
-        }
-    } else {
-        filteredClients = rawClients.filter(d => d.CS?.trim() === payload.selectedCS);
-    }
+            if (currentUser.userGroup === 'onboarding' && ismToFilter !== 'Todos') {
+                filteredClients = rawClients.filter(d => (d.ISM || '').trim() === ismToFilter);
+                csForCalc = 'Todos'; 
+            } else if (currentUser.isManager) {
+                if (payload.selectedSquad !== 'Todos') {
+                    filteredClients = rawClients.filter(d => d['Squad CS'] === payload.selectedSquad);
+                    csForCalc = 'Todos';
+                } else if (payload.selectedCS !== 'Todos') {
+                    filteredClients = rawClients.filter(d => d.CS?.trim() === payload.selectedCS);
+                }
+            } else {
+                filteredClients = rawClients.filter(d => d.CS?.trim() === payload.selectedCS);
+            }
 
-            // 2. Calcula métricas do mês atual
             const dataStore = calculateMetricsForPeriod(payload.month, payload.year, rawActivities, filteredClients, csForCalc, payload.includeOnboarding, payload.goals);
 
-            // 3. Calcula métricas de comparação (se necessário)
             if (payload.comparison !== 'none') {
                 let compMes = payload.month, compAno = payload.year;
                 if (payload.comparison === 'prev_month') {
@@ -963,29 +685,21 @@ self.onmessage = (e) => {
                     compAno--;
                 }
                 const comparisonMetrics = calculateMetricsForPeriod(compMes, compAno, rawActivities, filteredClients, csForCalc, payload.includeOnboarding, payload.goals);
-
-                // Adiciona dados de comparação ao dataStore
                 dataStore['cob-carteira_comp_perc'] = (comparisonMetrics['cob-carteira']?.length || 0) * 100 / (comparisonMetrics['total-clientes-unicos-cs'] || 1);
                 dataStore['sensescore-avg_comp'] = comparisonMetrics['sensescore-avg'];
                 dataStore['ska-labs-realizado-list_comp_perc'] = ((comparisonMetrics['ska-labs-realizado-list']?.length || 0) * 100) / (comparisonMetrics['total-labs-eligible'] || 1);
             }
 
-            // 4. Calcula OKRs de Onboarding
-    const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, filteredClients, payload.teamView, payload.selectedISM);
-
-            // 5. Calcula Atividades Atrasadas
+            const onboardingDataStore = calculateNewOnboardingOKRs(payload.month, payload.year, rawActivities, filteredClients, payload.teamView, payload.selectedISM);
             const overdueMetrics = calculateOverdueMetrics(rawActivities, payload.selectedCS);
-
-            // 6. Calcula Divergência
             const concludedInPeriodActivities = rawActivities.filter(a => a.ConcluidaEm?.getUTCMonth() === payload.month && a.ConcluidaEm?.getUTCFullYear() === payload.year);
             const divergentActivities = concludedInPeriodActivities.filter(a => {
                 const activityOwner = (a['Responsável'] || '').trim();
                 return a.CS && a.CS.trim() !== payload.selectedCS && activityOwner === payload.selectedCS && payload.selectedCS !== 'Todos';
             });
-            dataStore['divergent-activities'] = divergentActivities; // Salva para o modal
+            dataStore['divergent-activities'] = divergentActivities;
             const divergentClientCount = new Set(divergentActivities.map(a => a.ClienteCompleto)).size;
 
-            // 7. Envia tudo de volta
             postMessage({
                 type: 'CALCULATION_COMPLETE',
                 payload: {
@@ -1005,7 +719,7 @@ self.onmessage = (e) => {
                     type: 'PERIOD_CALCULATION_COMPLETE',
                     payload: {
                         periodData,
-                        periodName: payload.period // A thread principal tem o nome
+                        periodName: payload.period 
                     }
                 });
             }
@@ -1018,7 +732,6 @@ self.onmessage = (e) => {
             const dataPoints = [];
             const baseDate = new Date(baseYear, baseMonth, 1);
 
-            // Filtra clientes UMA VEZ
             let filteredClients = rawClients;
             let csForCalc = selectedCS;
             if (currentUser.isManager) {
@@ -1040,7 +753,7 @@ self.onmessage = (e) => {
 
                 labels.push(`${date.toLocaleString('default', { month: 'short' })}/${String(year).slice(2)}`);
 
-                const periodMetrics = calculateMetricsForPeriod(month, year, rawActivities, filteredClients, csForCalc, includeOnboarding, {}); // Não precisa de metas aqui
+                const periodMetrics = calculateMetricsForPeriod(month, year, rawActivities, filteredClients, csForCalc, includeOnboarding, {}); 
 
                 let value = 0;
                 if (type === 'okr') {
@@ -1057,7 +770,6 @@ self.onmessage = (e) => {
                 } else if (type === 'playbook') {
                     const realizado = (periodMetrics[`${metricId}-realizado`] || []).length;
                     const atrasado = (periodMetrics[`${metricId}-atrasado-concluido`] || []).length;
-                    // Adiciona os antecipados ao cálculo de tendência
                     const antecipado = (periodMetrics[`${metricId}-concluido-antecipado`] || []).length;
                     value = realizado + atrasado + antecipado;
                 }
@@ -1071,7 +783,6 @@ self.onmessage = (e) => {
         }
 
     } catch (err) {
-        // Envia erros de volta para a thread principal
         postMessage({
             type: 'ERROR',
             payload: {
@@ -1081,5 +792,3 @@ self.onmessage = (e) => {
         });
     }
 };
-
-
