@@ -6,6 +6,12 @@
     <meta name="google-signin-client_id" content="232267534625-oju4j8ob02rn6tim24tcdas26c5rh3j4.apps.googleusercontent.com">
     <title>Dashboard de OKRs - CS (Automático)</title>
     <link rel="icon" type="image/png" href="icone.png">
+    <script>
+        window.__gsiCallbackQueue = [];
+        window.handleCredentialResponse = function(response) {
+            window.__gsiCallbackQueue.push(response);
+        };
+    </script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -28,7 +34,7 @@
         </button>
     </div>
 
-    <div id="dashboard-wrapper">
+    <div id="dashboard-wrapper" style="display: none;">
         <div class="container">
             <header>
                 <div id="user-info-card" style="display: none;">
@@ -277,7 +283,171 @@
         </div>
     </div>
     <script src="ism_config.js"></script>
-    
+    <script>
+    (function() {
+        const MANAGER_EMAILS = ['lorhanska@gmail.com'];
+        const ADMIN_EMAILS = ['lorhanska@gmail.com'];
+
+        const normalizeEmail = (email) => (email || '').trim().toLowerCase();
+        const parseJwt = (token) => {
+            try {
+                if (!token) return null;
+                const payload = token.split('.')[1];
+                if (!payload) return null;
+                const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+                return JSON.parse(atob(normalizedPayload));
+            } catch (error) {
+                console.error('Erro ao decodificar token JWT', error);
+                return null;
+            }
+        };
+
+        const currentUser = window.currentUser = window.currentUser || {
+            email: null,
+            name: '',
+            picture: '',
+            isManager: false,
+            userGroup: 'guest',
+            selectedISM: 'Todos'
+        };
+
+        function applyUserRole(email) {
+            const normalized = normalizeEmail(email);
+            currentUser.userGroup = 'ongoing';
+            currentUser.selectedISM = 'Todos';
+            currentUser.isManager = MANAGER_EMAILS.includes(normalized);
+            if (ADMIN_EMAILS.includes(normalized)) {
+                currentUser.userGroup = 'admin';
+                currentUser.isManager = true;
+                return;
+            }
+            const mapping = window.ISM_MAPPING || {};
+            if (mapping[normalized]) {
+                currentUser.userGroup = 'onboarding';
+                currentUser.selectedISM = mapping[normalized];
+            }
+        }
+
+        function showDashboardUI() {
+            const login = document.getElementById('login-container');
+            const dashboard = document.getElementById('dashboard-wrapper');
+            if (login) login.style.display = 'none';
+            if (dashboard) dashboard.style.display = 'block';
+        }
+
+        function bootstrapDashboard() {
+            if (!currentUser.email) return;
+            if (typeof window.initializeDashboard === 'function') {
+                window.__pendingDashboardBootstrap = false;
+                window.initializeDashboard();
+            } else {
+                window.__pendingDashboardBootstrap = true;
+            }
+        }
+
+        async function forceClearAllData(showFeedback = true) {
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                if (window.caches) {
+                    const cacheKeys = await caches.keys();
+                    await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+                }
+                if (window.indexedDB && typeof indexedDB.databases === 'function') {
+                    const databases = await indexedDB.databases();
+                    await Promise.all(databases.map((db) => {
+                        if (!db || !db.name) return Promise.resolve();
+                        return new Promise((resolve) => {
+                            const req = indexedDB.deleteDatabase(db.name);
+                            req.onsuccess = req.onerror = req.onblocked = () => resolve();
+                        });
+                    }));
+                }
+            } catch (error) {
+                console.warn('Erro ao limpar dados locais', error);
+            } finally {
+                if (showFeedback) {
+                    alert('Dados locais apagados. A página será recarregada.');
+                    window.location.reload();
+                }
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('googleUserToken');
+            try {
+                if (window.google?.accounts?.id) {
+                    window.google.accounts.id.disableAutoSelect();
+                }
+            } catch (error) {
+                console.warn('Não foi possível desabilitar o auto select do Google', error);
+            }
+            window.location.reload();
+        }
+
+        window.forceClearAllData = forceClearAllData;
+        window.logout = logout;
+
+        function handleCredentialResponseInternal(response) {
+            const decodedToken = parseJwt(response?.credential);
+            if (!decodedToken) {
+                alert('Falha no login. Não foi possível validar o token do Google.');
+                localStorage.removeItem('googleUserToken');
+                return;
+            }
+            localStorage.setItem('googleUserToken', response.credential);
+            currentUser.email = decodedToken.email || '';
+            currentUser.name = decodedToken.name || decodedToken.email || 'Usuário';
+            currentUser.picture = decodedToken.picture || '';
+            applyUserRole(currentUser.email);
+            showDashboardUI();
+            bootstrapDashboard();
+        }
+
+        window.handleCredentialResponse = handleCredentialResponseInternal;
+
+        if (Array.isArray(window.__gsiCallbackQueue) && window.__gsiCallbackQueue.length) {
+            const queued = window.__gsiCallbackQueue.splice(0, window.__gsiCallbackQueue.length);
+            queued.forEach((payload) => {
+                try {
+                    handleCredentialResponseInternal(payload);
+                } catch (error) {
+                    console.error('Erro ao processar callback pendente do Google', error);
+                }
+            });
+        }
+
+        function attemptAutoLogin() {
+            const storedToken = localStorage.getItem('googleUserToken');
+            if (!storedToken) return;
+            const decoded = parseJwt(storedToken);
+            if (decoded && decoded.exp * 1000 > Date.now()) {
+                handleCredentialResponseInternal({ credential: storedToken });
+            } else {
+                localStorage.removeItem('googleUserToken');
+            }
+        }
+
+        function bindSupportButtons() {
+            const clearBtn = document.getElementById('force-clear-button');
+            if (!clearBtn) return;
+            clearBtn.addEventListener('click', async () => {
+                clearBtn.disabled = true;
+                const originalText = clearBtn.innerHTML;
+                clearBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Limpando dados...';
+                await forceClearAllData(true);
+                clearBtn.innerHTML = originalText;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const wrapper = document.getElementById('dashboard-wrapper');
+            if (wrapper) wrapper.style.display = 'none';
+            bindSupportButtons();
+            attemptAutoLogin();
+        });
+    })();
+    </script>
     <script>
     // ============================================================
     //  1. VARIÁVEIS GLOBAIS E CONFIGURAÇÕES
@@ -932,6 +1102,10 @@
 
     // --- INIT ---
     async function initializeDashboard() {
+        if (window.__dashboardInitialized) {
+            return;
+        }
+        window.__dashboardInitialized = true;
         const APP_VERSION = '2.2.0-stable'; 
         const storedVersion = localStorage.getItem('appVersion');
         if (storedVersion !== APP_VERSION) {
@@ -1205,6 +1379,11 @@
         alert('Metas salvas.');
         document.getElementById('settings-modal').style.display = 'none';
         triggerCalculations();
+    }
+
+    if (window.__pendingDashboardBootstrap && window.currentUser?.email) {
+        window.__pendingDashboardBootstrap = false;
+        initializeDashboard();
     }
     
     </script>
