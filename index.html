@@ -3,37 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-signin-client_id" content="232267534625-oju4j8ob02rn6tim24tcdas26c5rh3j4.apps.googleusercontent.com">
     <title>Dashboard de OKRs - CS (Automático)</title>
     <link rel="icon" type="image/png" href="icone.png">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <div id="app-version-marker"></div>
-    
     <div id="login-container">
         <h1>Dashboard de OKRs</h1>
         <p>Por favor, faça login com sua conta Google para acessar os dados de performance.</p>
-        
-        <div id="g_id_onload" 
-             data-client_id="232267534625-oju4j8ob02rn6tim24tcdas26c5rh3j4.apps.googleusercontent.com" 
-             data-callback="handleCredentialResponse">
+        <div id="g_id_onload" data-client_id="232267534625-oju4j8ob02rn6tim24tcdas26c5rh3j4.apps.googleusercontent.com" data-callback="handleCredentialResponse">
         </div>
         <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left">
         </div>
 
-        <button id="force-clear-button" style="background: none; border: 1px solid var(--border-color); color: #888; padding: 10px 20px; margin-top: 30px; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 0.9rem; transition: all 0.3s ease;">
+        <button id="force-clear-button" style="background: none; border: 1px solid var(--border-color); color: var(--text-light-color); padding: 10px 20px; margin-top: 30px; border-radius: var(--border-radius-sm); cursor: pointer; font-family: var(--font-family); font-size: 0.9rem; transition: all 0.3s ease;">
             <i class="fas fa-sync-alt" style="margin-right: 8px;"></i>
             Problemas para acessar? Limpar dados e recarregar
         </button>
     </div>
 
-    <div id="dashboard-wrapper" style="display: none;">
+    <div id="dashboard-wrapper">
         <div class="container">
             <header>
                 <div id="user-info-card" style="display: none;">
@@ -43,7 +38,6 @@
                 <h1>Dashboard de OKRs</h1>
                 <p>Avaliação de Resultados e Performance</p>
                 <div id="last-load-info" style="display: none;"></div>
-                
                 <div class="header-actions">
                     <div class="theme-switcher">
                         <i class="fas fa-sun"></i>
@@ -62,8 +56,8 @@
 
             <section class="controls">
                 <div class="control-group">
-                    <label style="color: var(--secondary-color); font-weight: bold;"><i class="fas fa-database"></i> Conexão SenseData</label>
-                    <button id="btn-refresh-data" onclick="window.loadDataFromAPI()" style="padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                    <label style="color: var(--secondary-color);"><i class="fas fa-database"></i> Conexão SenseData</label>
+                    <button id="btn-refresh-data" onclick="loadDataFromAPI()" style="padding: 12px 20px; background: var(--secondary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
                         <i class="fas fa-sync-alt"></i> Atualizar Agora
                     </button>
                 </div>
@@ -106,28 +100,43 @@
                 </div>
             </section>
 
-            <div id="squad-cs-list" style="text-align: center; margin: -15px 0 20px 0; color: #aaa; font-style: italic;"></div>
-            <div id="divergence-marker" class="divergence-info" style="display: none;"><span id="divergence-text"></span></div>
-            <div id="status-message" class="loader">Aguardando login...</div>
+            <div id="squad-cs-list" style="text-align: center; margin: -15px 0 20px 0; color: var(--text-light-color); font-style: italic;"></div>
+
+            <div id="divergence-marker" class="divergence-info" style="display: none;">
+                <span id="divergence-text"></span>
+            </div>
+
+            <div id="status-message" class="loader">Aguardando login ou atualização de dados...</div>
 
             <div class="tabs" style="display: none;">
                 <button class="tab-button active" data-tab="dashboard-view"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
                 <button class="tab-button" data-tab="onboarding-view"><i class="fas fa-rocket"></i> Onboarding</button>
-                <button class="tab-button" data-tab="overdue-view" style="color: #dc3545;"><i class="fas fa-clock-rotate-left"></i> Atrasadas</button>
+                <button class="tab-button" data-tab="overdue-view" style="color: var(--danger-color);"><i class="fas fa-clock-rotate-left"></i> Atrasadas</button>
                 <button class="tab-button" data-tab="data-view"><i class="fas fa-table"></i> Dados Carregados</button>
             </div>
 
             <main id="main-content">
                 <div id="dashboard-view" class="tab-content active">
                     <div id="dashboard" style="display: none;">
-                        <div class="metric-group"><h2 class="group-title">Indicadores Gerais da Carteira</h2><div class="group-content" id="general-indicators-grid"></div></div>
-                        <div class="metric-group"><h2 class="group-title">Visão por Negócio e Comercial</h2><div class="group-content" id="business-commercial-grid"></div></div>
-                        <div class="metric-group"><h2 class="group-title">Acompanhamento de Playbooks</h2><div class="group-content" id="playbooks-grid"></div></div>
-                        <div class="metric-group"><h2 class="group-title" id="okr-title-header">OKRs de Engajamento e Eventos</h2><div class="group-content" id="okr-grid-container"></div></div>
+                        <div class="metric-group">
+                            <h2 class="group-title">Indicadores Gerais da Carteira</h2>
+                            <div class="group-content" id="general-indicators-grid"></div>
+                        </div>
+                        <div class="metric-group">
+                            <h2 class="group-title">Visão por Negócio e Comercial</h2>
+                            <div class="group-content" id="business-commercial-grid"></div>
+                        </div>
+                        <div class="metric-group">
+                            <h2 class="group-title">Acompanhamento de Playbooks</h2>
+                            <div class="group-content" id="playbooks-grid"></div>
+                        </div>
+                        <div class="metric-group">
+                            <h2 class="group-title" id="okr-title-header">OKRs de Engajamento e Eventos</h2>
+                            <div class="group-content" id="okr-grid-container"></div>
+                        </div>
                     </div>
                     <div id="period-view" style="display: none;"></div>
                 </div>
-
                 <div id="onboarding-view" class="tab-content">
                     <div id="onboarding-dashboard" style="display: none;">
                         <section class="onboarding-controls">
@@ -144,32 +153,64 @@
                                 <select id="select-ism" disabled><option>Aguardando...</option></select>
                             </div>
                         </section>
-                        <div class="metric-group"><h2 class="group-title">Resultados e Performance do Onboarding</h2><div class="group-content" id="onboarding-outcomes-grid"><div class="loader">Calculando...</div></div></div>
-                        <div class="metric-group"><h2 class="group-title">Eficiência do Processo (Mês Atual)</h2><div class="group-content" id="onboarding-process-grid"><div class="loader">Calculando...</div></div></div>
+
+                        <div class="metric-group">
+                            <h2 class="group-title">Resultados e Performance do Onboarding</h2>
+                            <div class="group-content" id="onboarding-outcomes-grid">
+                                <div class="loader">Calculando Resultados de Onboarding...</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-group">
+                            <h2 class="group-title">Eficiência do Processo (Mês Atual)</h2>
+                            <div class="group-content" id="onboarding-process-grid">
+                                <div class="loader">Calculando Eficiência do Processo...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="overdue-view" class="tab-content">
+                    <div class="metric-group">
+                        <h2 class="group-title">Visão de Atividades Atrasadas</h2>
+                        <div class="group-content" id="overdue-grid-container">
+                            <div class="loader">Selecione um CS para ver as atividades atrasadas.</div>
+                        </div>
                     </div>
                 </div>
 
-                <div id="overdue-view" class="tab-content">
-                    <div class="metric-group"><h2 class="group-title">Visão de Atividades Atrasadas</h2><div class="group-content" id="overdue-grid-container"><div class="loader">Selecione um CS.</div></div></div>
-                </div>
-
                 <div id="data-view" class="tab-content">
-                    <div class="data-table-wrapper"><h3><i class="fas fa-clipboard-list" style="margin-right:10px;"></i>Atividades</h3><div id="atividades-table" class="data-table-container"></div><div id="atividades-pagination" class="pagination-controls"></div></div>
-                    <div class="data-table-wrapper"><h3><i class="fas fa-address-book" style="margin-right:10px;"></i>Clientes</h3><div id="clientes-table" class="data-table-container"></div><div id="clientes-pagination" class="pagination-controls"></div></div>
+                    <div class="data-table-wrapper">
+                        <h3><i class="fas fa-clipboard-list" style="margin-right:10px; color: var(--primary-color);"></i>Dados da Planilha de Atividades</h3>
+                        <div id="atividades-table" class="data-table-container"></div>
+                        <div id="atividades-pagination" class="pagination-controls"></div>
+                    </div>
+                    <div class="data-table-wrapper">
+                        <h3><i class="fas fa-address-book" style="margin-right:10px; color: var(--primary-color);"></i>Dados da Planilha de Clientes</h3>
+                        <div id="clientes-table" class="data-table-container"></div>
+                        <div id="clientes-pagination" class="pagination-controls"></div>
+                    </div>
                 </div>
             </main>
 
             <div id="details-modal" class="modal">
                 <div class="modal-content">
-                    <div class="modal-header"><h2 id="modal-title">Detalhes</h2><span class="close-button">&times;</span></div>
-                    <div class="modal-search-container"><input type="search" id="modal-search-input" placeholder="Pesquisar..."></div>
+                    <div class="modal-header">
+                        <h2 id="modal-title">Detalhes</h2>
+                        <span class="close-button">&times;</span>
+                    </div>
+                    <div class="modal-search-container">
+                        <input type="search" id="modal-search-input" placeholder="Pesquisar por cliente, atividade, etc...">
+                    </div>
                     <div id="modal-body" class="data-table-container"></div>
                 </div>
             </div>
 
             <div id="settings-modal" class="modal">
                 <div class="modal-content">
-                    <div class="modal-header"><h2>Configurar Metas</h2><span class="close-button">&times;</span></div>
+                    <div class="modal-header">
+                        <h2><i class="fas fa-bullseye" style="margin-right:15px;"></i>Configurar Metas</h2>
+                        <span class="close-button">&times;</span>
+                    </div>
                     <div class="settings-grid">
                         <div class="control-group"><label for="goal-sensescore">Média Sense Score</label><input type="number" id="goal-sensescore" step="1"></div>
                         <div class="control-group"><label for="goal-labs">Participação SKA LABS (%)</label><input type="number" id="goal-labs" step="1"></div>
@@ -177,65 +218,230 @@
                         <div class="control-group"><label for="goal-qbr">Ligações de QBR (nº)</label><input type="number" id="goal-qbr" step="1"></div>
                         <div class="control-group"><label for="goal-successplan">Planos de Sucesso (nº)</label><input type="number" id="goal-successplan" step="1"></div>
                         <div class="control-group"><label for="goal-engagement">Performance Engajamento SMB (%)</label><input type="number" id="goal-engagement" step="1"></div>
-                        <button id="save-settings-button"><i class="fas fa-save"></i> Salvar Metas</button>
+                        <button id="save-settings-button"><i class="fas fa-save" style="margin-right:10px;"></i>Salvar Metas</button>
                     </div>
                 </div>
             </div>
 
             <div id="client-360-modal" class="modal">
                 <div class="modal-content">
-                    <div class="modal-header"><h2 id="client-360-name">Visão 360°</h2><span class="close-button">&times;</span></div>
+                    <div class="modal-header">
+                        <h2 id="client-360-name">Visão 360° do Cliente</h2>
+                        <span class="close-button">&times;</span>
+                    </div>
                     <div id="client-360-info" class="client-info"></div>
-                    <div id="client-360-activities" class="data-table-wrapper" style="margin-bottom:0; box-shadow: none;"><div class="data-table-container"></div></div>
+                    <div id="client-360-activities" class="data-table-wrapper" style="margin-bottom:0; box-shadow: none;">
+                        <h3>Histórico de Atividades</h3>
+                        <div class="data-table-container"></div>
+                    </div>
                 </div>
             </div>
 
             <div id="trend-chart-modal" class="modal">
                 <div class="modal-content">
-                    <div class="modal-header"><h2 id="trend-chart-title">Gráfico de Tendência</h2><span class="close-button">&times;</span></div>
-                    <div id="trend-chart-container" style="padding: 20px 0;"><canvas id="trend-chart-canvas"></canvas></div>
+                    <div class="modal-header">
+                        <h2 id="trend-chart-title">Gráfico de Tendência</h2>
+                        <span class="close-button">&times;</span>
+                    </div>
+                    <div id="trend-chart-container" style="padding: 20px 0;">
+                        <canvas id="trend-chart-canvas"></canvas>
+                    </div>
                 </div>
             </div>
 
             <div id="bulk-export-modal" class="modal">
                 <div class="modal-content" style="max-width: 600px;">
-                    <div class="modal-header"><h2>Exportar em Lote</h2><span class="close-button">&times;</span></div>
-                    <div id="cs-selection-list" style="margin: 20px 0; max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid #ccc;"></div>
-                    <button id="generate-bulk-reports-button" style="width: 100%; padding: 14px; background: #28a745; color: white; border: none; cursor: pointer;">Gerar Relatórios</button>
+                    <div class="modal-header">
+                        <h2><i class="fas fa-users" style="margin-right:15px;"></i>Exportar Relatórios em Lote</h2>
+                        <span class="close-button">&times;</span>
+                    </div>
+                    <div id="cs-selection-list" style="margin: 20px 0; max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm);">
+                    </div>
+                    <button id="generate-bulk-reports-button" style="width: 100%; padding: 14px; font-size: 1.1rem; font-weight: 600; background-color: var(--secondary-color); color: #fff; border: none; border-radius: var(--border-radius-sm); cursor: pointer;">
+                        <i class="fas fa-download" style="margin-right:10px;"></i>Gerar Relatórios Selecionados
+                    </button>
                 </div>
             </div>
 
             <div id="anotacao-modal" class="modal">
                 <div class="modal-content" style="max-width: 700px;">
-                    <div class="modal-header"><h2 id="anotacao-modal-title">Anotação</h2><span class="close-button">&times;</span></div>
-                    <div id="anotacao-modal-body" style="padding: 20px 5px; white-space: pre-wrap; word-wrap: break-word;"></div>
+                    <div class="modal-header">
+                        <h2 id="anotacao-modal-title"><i class="fas fa-sticky-note" style="margin-right: 15px;"></i>Anotações da Atividade</h2>
+                        <span class="close-button">&times;</span>
+                    </div>
+                    <div id="anotacao-modal-body" style="padding: 20px 5px; white-space: pre-wrap; word-wrap: break-word; font-size: 1.1rem; line-height: 1.7;">
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
+    <script src="ism_config.js"></script>
     
     <script>
     // ============================================================
-    //  1. CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
+    //  1. VARIÁVEIS GLOBAIS E CONFIGURAÇÕES
     // ============================================================
     const WORKER_URL = "https://sensedata-api.sensedata-dash.workers.dev"; 
-    let dataWorker, rawActivities = [], rawClients = [], dataStore = {}, onboardingDataStore = {}, appGoals = {}, filterDataCache = {}, chartInstances = {};
-    const defaultGoals = { sensescore: 85, labs: 10, coverage: 40, qbr: 5, successplan: 5, engagement: 50 };
+
+    let dataWorker; 
+    let rawActivities = [], rawClients = []; 
+    let dataStore = {}; 
+    let onboardingDataStore = {}; 
+    let appGoals = {}; 
+    let filterDataCache = {}; 
+    let chartInstances = {};
+    
+    const defaultGoals = {
+        sensescore: 85, labs: 10, coverage: 40, qbr: 5, successplan: 5, engagement: 50
+    };
+
     const manualEmailToCsMap = {
         "email.dificil@provedor.com": "Nome Completo do CS",
         "gabriellermsviana@gmail.com": "Gabrielle Viana",
         "francielesilvadomingues@gmail.com": "Franciele Domingues",
         "okrmarina1@gmail.com": "Marina Santos",
-        "deborahsimonearruda@gmail.com": "Deborah Arruda"
+        "deborahsimonearruda@gmail.com": "Deborah Arruda",
     };
-    let currentUser = { email: null, name: null, isManager: false, userGroup: null };
 
     // ============================================================
-    //  2. FUNÇÕES GLOBAIS (WINDOW) - CORREÇÃO DO ERRO DE LOGIN
+    //  2. FUNÇÕES AUXILIARES E MODAIS (PRECISAM VIR PRIMEIRO)
     // ============================================================
     
-    // Tradução de Dados
-    window.mapDatabaseToDashboard = (dbData, type) => {
+    function normalizeText(str = '') {
+        return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function formatDate(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '';
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const year = date.getUTCFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    function showModal(el) { 
+        if(el) el.style.display = 'block'; 
+    }
+    
+    function closeModal(el) { 
+        if(el) {
+            el.style.display = 'none'; 
+            if(el.querySelector('input')) el.querySelector('input').value = ''; 
+        }
+    }
+
+    function createHtmlTable(data) {
+        if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Sem dados para exibir.</p>';
+        const headers = Object.keys(data[0]).filter(h => normalizeText(h) !== 'anotacoes');
+        const head = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`;
+        const body = `<tbody>${data.map(row => `<tr>${headers.map(h => {
+            let val = row[h];
+            if(val instanceof Date) val = formatDate(val);
+            // Verifica se é a coluna cliente para adicionar o gatilho de anotação
+            if(normalizeText(h) === 'cliente') return `<td><span class="client-activity-trigger" data-anotacao="${(row['Anotações']||'').replace(/"/g,'&quot;')}">${val}</span></td>`;
+            return `<td>${val !== null && val !== undefined ? val : ''}</td>`;
+        }).join('')}</tr>`).join('')}</tbody>`;
+        return `<table class="data-table">${head}${body}</table>`;
+    }
+
+    // FUNÇÃO CRÍTICA: Exibe dados no modal (Correção do erro ReferenceError)
+    function showDataInModal(data, title) {
+        if (!data || data.length === 0) { 
+            alert(`Não há dados para exibir para "${title}".`); 
+            return; 
+        }
+        const modal = document.getElementById('details-modal');
+        modal.querySelector('#modal-title').textContent = title;
+        const body = modal.querySelector('#modal-body');
+        const input = modal.querySelector('#modal-search-input');
+        
+        input.value = '';
+        input.oninput = () => {
+            const term = normalizeText(input.value);
+            const fil = data.filter(r => Object.values(r).some(v => normalizeText(String(v)).includes(term)));
+            body.innerHTML = createHtmlTable(fil);
+        };
+        body.innerHTML = createHtmlTable(data);
+        showModal(modal);
+    }
+
+    function showDetailsModal(id, title) {
+        const data = dataStore[id] || onboardingDataStore[id];
+        showDataInModal(data, title);
+    }
+
+    function showAnotacaoModal(txt) {
+        document.getElementById('anotacao-modal-body').textContent = txt || 'Sem anotações.';
+        showModal(document.getElementById('anotacao-modal'));
+    }
+
+    // --- LÓGICA DE GRÁFICO DE TENDÊNCIA (Correção do erro showTrendChart) ---
+    let trendChartInstance = null;
+
+    function showTrendChart(metricId, title, type) {
+        const trendModal = document.getElementById('trend-chart-modal');
+        document.getElementById('trend-chart-title').textContent = `Tendência: ${title}`;
+        const canvas = document.getElementById('trend-chart-canvas');
+        if (trendChartInstance) {
+            trendChartInstance.destroy();
+        }
+        showModal(trendModal);
+        document.getElementById('trend-chart-container').innerHTML = '<div class="loader">Calculando histórico...</div>';
+        
+        // Pede os dados de tendência ao worker
+        if(dataWorker) {
+            dataWorker.postMessage({
+                type: 'CALCULATE_TREND',
+                payload: {
+                    metricId, title, type,
+                    baseMonth: parseInt(document.getElementById('select-month').value, 10),
+                    baseYear: parseInt(document.getElementById('select-year').value, 10),
+                    selectedCS: document.getElementById('select-cs').value,
+                    selectedSquad: document.getElementById('select-squad').value,
+                    includeOnboarding: document.getElementById('include-onboarding-toggle').checked,
+                    segmento: document.getElementById('select-segmento').value
+                }
+            });
+        }
+    }
+
+    function renderTrendChart(labels, dataPoints, title) {
+        const canvas = document.getElementById('trend-chart-canvas');
+        // Garante que o canvas existe (caso tenha sido removido pelo loader)
+        if(!canvas) {
+             document.getElementById('trend-chart-container').innerHTML = '<canvas id="trend-chart-canvas"></canvas>';
+        } else {
+             document.getElementById('trend-chart-container').innerHTML = '';
+             document.getElementById('trend-chart-container').appendChild(canvas);
+        }
+        
+        const ctx = document.getElementById('trend-chart-canvas').getContext('2d');
+        if (trendChartInstance) trendChartInstance.destroy();
+        
+        trendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: title, data: dataPoints, fill: true, 
+                    borderColor: '#007BFF', backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                    pointBackgroundColor: '#007BFF', tension: 0.3, pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // ============================================================
+    //  3. FUNÇÕES DE DADOS E TRADUÇÃO
+    // ============================================================
+
+    function mapDatabaseToDashboard(dbData, type) {
         const translateType = (rawType) => {
             if (!rawType) return "";
             const t = rawType.toLowerCase();
@@ -246,6 +452,7 @@
             if (t.includes('task') || t.includes('tarefa')) return 'Tarefa';
             return rawType;
         };
+
         const translateStatus = (rawStatus) => {
             if (!rawStatus) return "";
             const s = rawStatus.toLowerCase();
@@ -291,31 +498,32 @@
                 };
             }
         });
-    };
+    }
 
-    // Carga de Dados
-    window.loadDataFromAPI = async function() {
+    async function loadDataFromAPI() {
         const statusMsg = document.getElementById('status-message');
         const btn = document.getElementById('btn-refresh-data');
+        
         if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...'; }
-        if(statusMsg) { statusMsg.style.display = 'block'; statusMsg.className = 'loader'; statusMsg.textContent = 'Conectando ao banco de dados...'; }
+        if(statusMsg) { statusMsg.style.display = 'block'; statusMsg.className = 'loader'; }
 
         try {
-            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-tasks"></i> Baixando Atividades...';
+            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-tasks"></i> Baixando histórico de Atividades...';
             const resAtividades = await fetch(`${WORKER_URL}/api/atividades?limit=300000`); 
-            if (!resAtividades.ok) throw new Error("Erro ao baixar Atividades");
+            if (!resAtividades.ok) throw new Error("Falha ao baixar tabela de Atividades");
             const jsonAtividades = await resAtividades.json();
 
-            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-users"></i> Baixando Clientes...';
+            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-users"></i> Baixando base de Clientes...';
             const resClientes = await fetch(`${WORKER_URL}/api/clientes`);
-            if (!resClientes.ok) throw new Error("Erro ao baixar Clientes");
+            if (!resClientes.ok) throw new Error("Falha ao baixar tabela de Clientes");
             const jsonClientes = await resClientes.json();
 
-            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando dados...';
-            rawActivities = window.mapDatabaseToDashboard(jsonAtividades, 'atividades');
-            rawClients = window.mapDatabaseToDashboard(jsonClientes, 'clientes');
+            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando e Cruzando informações...';
+            
+            rawActivities = mapDatabaseToDashboard(jsonAtividades, 'atividades');
+            rawClients = mapDatabaseToDashboard(jsonClientes, 'clientes');
 
-            console.log(`Carregado: ${rawActivities.length} ativ. / ${rawClients.length} cli.`);
+            console.log(`Sucesso: ${rawActivities.length} atividades e ${rawClients.length} clientes.`);
 
             if (dataWorker) dataWorker.terminate();
             dataWorker = new Worker('worker.js');
@@ -323,78 +531,40 @@
 
             dataWorker.postMessage({
                 type: 'INIT',
-                payload: { rawActivities, rawClients, currentUser, manualEmailToCsMap }
+                payload: {
+                    rawActivities: rawActivities,
+                    rawClients: rawClients,
+                    currentUser: currentUser,
+                    manualEmailToCsMap: manualEmailToCsMap
+                }
             });
             
             const lastLoadDiv = document.getElementById('last-load-info');
             if(lastLoadDiv) {
                 const agora = new Date();
                 lastLoadDiv.style.display = 'inline-block';
-                lastLoadDiv.innerHTML = `<i class="fas fa-check-circle"></i> Atualizado em: ${agora.toLocaleTimeString()} (${rawActivities.length} reg.)`;
-            }
-
-            if(statusMsg) {
-                statusMsg.textContent = 'Dados carregados com sucesso!';
-                setTimeout(() => { statusMsg.style.display = 'none'; }, 1500);
+                lastLoadDiv.innerHTML = `<i class="fas fa-check-circle"></i> Dados atualizados em: ${agora.toLocaleTimeString()} (${rawActivities.length} reg.)`;
             }
 
         } catch (error) {
             console.error(error);
-            if(statusMsg) statusMsg.textContent = 'Erro: ' + error.message;
-            alert("Erro de conexão com o banco de dados. Verifique o Worker.");
+            if(statusMsg) statusMsg.textContent = 'Erro ao conectar: ' + error.message;
+            alert("Erro ao conectar com o banco de dados. Tente novamente.");
         } finally {
             if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Agora'; }
         }
-    };
-
-    // Login Google Callback
-    window.handleCredentialResponse = function(response) {
-        function parseJwt(token) { try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; } }
-        const decodedToken = parseJwt(response.credential);
-
-        if (decodedToken) {
-            localStorage.setItem('googleUserToken', response.credential);
-            const userEmail = decodedToken.email.toLowerCase();
-            const userName = decodedToken.name;
-            const mappedISM = (typeof ISM_MAPPING !== 'undefined' && ISM_MAPPING[userEmail]) ? ISM_MAPPING[userEmail] : null;
-            const managerEmails = ['lorhanska@gmail.com', 'elianeokr@gmail.com', 'juliarail@gmail.com', 'jadecristianettirp@gmail.com'];
-            
-            let userGroup = 'ongoing';
-            let isManager = managerEmails.includes(userEmail);
-            if (isManager) userGroup = 'admin';
-            else if (mappedISM) userGroup = 'onboarding';
-
-            let selectedCS = 'Todos';
-            let selectedISM = 'Todos';
-
-            if (!isManager) {
-                if (userGroup === 'ongoing') selectedCS = userName;
-                else if (userGroup === 'onboarding') selectedISM = mappedISM || userName;
-            }
-
-            currentUser = { email: userEmail, name: userName, userGroup, isManager, selectedCS, selectedISM };
-            localStorage.setItem('userProfile', JSON.stringify(currentUser));
-
-            document.getElementById('login-container').style.display = 'none';
-            document.getElementById('dashboard-wrapper').style.display = 'block';
-
-            // Chama a carga automaticamente
-            window.loadDataFromAPI();
-            initializeDashboard();
-        } else {
-            alert("Falha no login.");
-            localStorage.removeItem('googleUserToken');
-        }
-    };
+    }
 
     // ============================================================
-    //  3. FUNÇÕES DE RENDERIZAÇÃO GRÁFICA (Donut Chart)
+    //  4. FUNÇÕES GRÁFICAS (CHART.JS)
     // ============================================================
+
     function customLegendClickHandler(e, legendItem, legend) {
         const chart = legend.chart;
         const index = legendItem.index;
         const meta = chart.getDatasetMeta(0);
         if (!chart.legendClickState) chart.legendClickState = { lastClickedIndex: null, clickCount: 0 };
+        
         if (index !== chart.legendClickState.lastClickedIndex) {
             let visibleCount = 0;
             meta.data.forEach(dataPoint => { if (!dataPoint.hidden) visibleCount++; });
@@ -405,9 +575,15 @@
         chart.legendClickState.lastClickedIndex = index;
         chart.legendClickState.clickCount++;
 
-        if (chart.legendClickState.clickCount === 1) meta.data[index].hidden = !meta.data[index].hidden;
-        else if (chart.legendClickState.clickCount === 2) meta.data.forEach((dataPoint, i) => { dataPoint.hidden = (i !== index); });
-        else { meta.data.forEach(dataPoint => { dataPoint.hidden = false; }); chart.legendClickState.clickCount = 0; chart.legendClickState.lastClickedIndex = null; }
+        if (chart.legendClickState.clickCount === 1) {
+            meta.data[index].hidden = !meta.data[index].hidden;
+        } else if (chart.legendClickState.clickCount === 2) {
+            meta.data.forEach((dataPoint, i) => { dataPoint.hidden = (i !== index); });
+        } else {
+            meta.data.forEach(dataPoint => { dataPoint.hidden = false; });
+            chart.legendClickState.clickCount = 0;
+            chart.legendClickState.lastClickedIndex = null;
+        }
         chart.update();
     }
 
@@ -421,7 +597,9 @@
             container.innerHTML = `<div class="card"><h3>${title}</h3><div class="loader" style="padding: 40px; font-size: 1rem;">Sem dados.</div></div>`;
             return;
         }
+
         container.innerHTML = `<div class="card"><h3>${title}</h3><div class="card-content" style="position: relative; height: 320px; padding-top: 10px;"><canvas id="${canvasId}"></canvas></div></div>`;
+
         if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
         const ctx = document.getElementById(canvasId).getContext('2d');
         const colors = ['#007BFF', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2', '#fd7e14', '#20c997'];
@@ -430,7 +608,10 @@
 
         chartInstances[canvasId] = new Chart(ctx, {
             type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: values, backgroundColor: backgroundColors, borderColor: isLightTheme ? '#fff' : '#1a2238', borderWidth: 2 }] },
+            data: {
+                labels: labels,
+                datasets: [{ data: values, backgroundColor: backgroundColors, borderColor: isLightTheme ? '#fff' : '#1a2238', borderWidth: 2 }]
+            },
             options: {
                 responsive: true, maintainAspectRatio: false, cutout: '60%',
                 plugins: {
@@ -442,9 +623,14 @@
                         const index = elements[0].index;
                         const label = labels[index];
                         let filterData = [];
-                        if(containerId.includes('negocio')) filterData = (dataStore['cob-carteira']||[]).filter(c => normalizeText(c.Negocio||'Não Definido') === normalizeText(label));
-                        else if(containerId.includes('comercial')) filterData = (dataStore['cob-carteira']||[]).filter(c => normalizeText(c.Comercial||'Não Definido') === normalizeText(label));
-                        else if(containerId.includes('clientes')) filterData = (dataStore['total-clientes']||[]).filter(c => normalizeText(c['Negócio']||'Não Definido') === normalizeText(label));
+                        // Lógica de Drilldown SEGURA
+                        if(containerId.includes('negocio')) {
+                            filterData = (dataStore['cob-carteira']||[]).filter(c => normalizeText(c.Negocio||'Não Definido') === normalizeText(label));
+                        } else if(containerId.includes('comercial')) {
+                            filterData = (dataStore['cob-carteira']||[]).filter(c => normalizeText(c.Comercial||'Não Definido') === normalizeText(label));
+                        } else if(containerId.includes('clientes')) {
+                            filterData = (dataStore['total-clientes']||[]).filter(c => normalizeText(c['Negócio']||'Não Definido') === normalizeText(label));
+                        }
                         if(filterData.length > 0) showDataInModal(filterData, `${title}: ${label}`);
                     }
                 },
@@ -452,7 +638,7 @@
             }
         });
     }
-
+    
     function renderOnboardingProductChart(data) {
         if(!data || !data.labels) return;
         const ctx = document.getElementById('onboardingProductChart').getContext('2d');
@@ -465,244 +651,579 @@
     }
 
     // ============================================================
-    //  4. LÓGICA DO DASHBOARD E AUXILIARES
+    //  5. LÓGICA DO DASHBOARD E WORKER HANDLERS
     // ============================================================
-    
-    function normalizeText(str = '') { return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
-    function formatDate(date) {
-        if (!(date instanceof Date) || isNaN(date)) return '';
-        const day = String(date.getUTCDate()).padStart(2, '0');
-        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-        const year = date.getUTCFullYear();
-        return `${day}/${month}/${year}`;
-    }
-    function showModal(el) { if(el) el.style.display = 'block'; }
-    function closeModal(el) { if(el) { el.style.display = 'none'; if(el.querySelector('input')) el.querySelector('input').value = ''; } }
-    
-    function createHtmlTable(data) {
-        if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Sem dados.</p>';
-        const headers = Object.keys(data[0]).filter(h => normalizeText(h) !== 'anotacoes');
-        const head = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`;
-        const body = `<tbody>${data.map(row => `<tr>${headers.map(h => {
-            let val = row[h];
-            if(val instanceof Date) val = formatDate(val);
-            if(normalizeText(h) === 'cliente') return `<td><span class="client-activity-trigger" data-anotacao="${(row['Anotações']||'').replace(/"/g,'&quot;')}">${val}</span></td>`;
-            return `<td>${val !== null && val !== undefined ? val : ''}</td>`;
-        }).join('')}</tr>`).join('')}</tbody>`;
-        return `<table class="data-table">${head}${body}</table>`;
-    }
 
-    function showDataInModal(data, title) {
-        if (!data || data.length === 0) { alert(`Não há dados.`); return; }
-        const modal = document.getElementById('details-modal');
-        modal.querySelector('#modal-title').textContent = title;
-        const body = modal.querySelector('#modal-body');
-        const input = modal.querySelector('#modal-search-input');
-        input.value = '';
-        input.oninput = () => {
-            const term = normalizeText(input.value);
-            const fil = data.filter(r => Object.values(r).some(v => normalizeText(String(v)).includes(term)));
-            body.innerHTML = createHtmlTable(fil);
-        };
-        body.innerHTML = createHtmlTable(data);
-        showModal(modal);
-    }
-    function showDetailsModal(id, title) { const data = dataStore[id] || onboardingDataStore[id]; showDataInModal(data, title); }
-    function showAnotacaoModal(txt) { document.getElementById('anotacao-modal-body').textContent = txt || 'Sem anotações.'; showModal(document.getElementById('anotacao-modal')); }
-
-    function showTrendChart(metricId, title, type) {
-        const trendModal = document.getElementById('trend-chart-modal');
-        document.getElementById('trend-chart-title').textContent = `Tendência: ${title}`;
-        const container = document.getElementById('trend-chart-container');
-        container.innerHTML = '<canvas id="trend-chart-canvas"></canvas>'; // Reset Canvas
-        showModal(trendModal);
-        if(dataWorker) {
-            dataWorker.postMessage({
-                type: 'CALCULATE_TREND',
-                payload: {
-                    metricId, title, type,
-                    baseMonth: parseInt(document.getElementById('select-month').value, 10),
-                    baseYear: parseInt(document.getElementById('select-year').value, 10),
-                    selectedCS: document.getElementById('select-cs').value,
-                    selectedSquad: document.getElementById('select-squad').value,
-                    includeOnboarding: document.getElementById('include-onboarding-toggle').checked,
-                    segmento: document.getElementById('select-segmento').value
+    function handleWorkerMessage(e) {
+        const { type, payload } = e.data;
+        switch(type) {
+            case 'INIT_COMPLETE':
+                console.log("Worker inicializado.");
+                filterDataCache = payload.filterData; 
+                populateFilters(); 
+                if (!currentUser.isManager) {
+                    const selectedCS = document.getElementById('select-cs').value;
+                    if (selectedCS) {
+                        const clientsOfLoggedInUser = rawClients.filter(client => client.CS?.trim() === selectedCS);
+                        autoSelectSegment(clientsOfLoggedInUser);
+                    }
                 }
-            });
+                renderDataTables(); 
+                applyFilterLocks(); 
+                document.querySelector('.tabs').style.display = 'flex';
+                document.getElementById('status-message').style.display = 'none'; 
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('onboarding-dashboard').style.display = 'block';
+                triggerCalculations(); 
+                break;
+            
+            case 'CALCULATION_COMPLETE':
+                dataStore = payload.dataStore; 
+                onboardingDataStore = payload.onboardingDataStore; 
+                renderOKRs(); // AGORA ESSA FUNÇÃO JÁ EXISTE PQ ESTÁ DECLARADA ABAIXO
+                renderNewOnboardingView();
+                renderOverdueView(payload.overdueMetrics); 
+                
+                const divMarker = document.getElementById('divergence-marker');
+                const divText = document.getElementById('divergence-text');
+                if (payload.divergentClientCount > 0 && document.getElementById('select-period').value === 'monthly') {
+                    divText.textContent = `Atenção: ${payload.divergentClientCount} clientes fora da carteira receberam atividades.`;
+                    divMarker.style.display = 'flex';
+                } else {
+                    divMarker.style.display = 'none';
+                }
+                document.getElementById('status-message').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('period-view').style.display = 'none';
+                break;
+
+            case 'PERIOD_CALCULATION_COMPLETE':
+                renderPeriodView(payload.periodData, payload.periodName);
+                document.getElementById('status-message').style.display = 'none';
+                break;
+
+            case 'TREND_DATA_COMPLETE':
+                renderTrendChart(payload.labels, payload.dataPoints, payload.title);
+                break;
+
+            case 'ERROR':
+                console.error("Erro Worker:", payload.error);
+                document.getElementById('status-message').textContent = `Erro: ${payload.error}`;
+                document.getElementById('status-message').style.display = 'block';
+                break;
         }
     }
 
-    function renderTrendChart(labels, dataPoints, title) {
-        const ctx = document.getElementById('trend-chart-canvas').getContext('2d');
-        if (window.trendInstance) window.trendInstance.destroy();
-        window.trendInstance = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: [{ label: title, data: dataPoints, fill: true, borderColor: '#007BFF', backgroundColor: 'rgba(0, 123, 255, 0.2)', pointBackgroundColor: '#007BFF', tension: 0.3 }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
-        });
-    }
+    // --- RENDERIZAÇÃO DE UI (Cards e Grids) ---
 
-    // --- RENDERIZAÇÃO DASHBOARD ---
-    const renderOKRs = () => {
+    function renderOKRs() {
         const selectedSegmento = document.getElementById('select-segmento').value;
         document.getElementById('okr-title-header').textContent = `OKRs do Segmento: ${selectedSegmento}`;
-        
-        // Gráficos
-        renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio'] || {});
-        renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial'] || {});
-        renderDoughnutChart('clientes-negocio-chart-container', 'clientesNegocioChart', 'Clientes por Negócio', dataStore['clientes-por-negocio'] || {});
 
-        // Cards e HTMLs (Mesma lógica de antes, apenas garantindo que execute)
-        // ... [Lógica de HTML dos cards mantida internamente pelo Worker e DataStore] ...
-        
-        // Atualiza HTMLs gerados
         const generalGrid = document.getElementById('general-indicators-grid');
         const playbookGrid = document.getElementById('playbooks-grid');
         const okrGrid = document.getElementById('okr-grid-container');
+        const businessCommercialGrid = document.getElementById('business-commercial-grid');
 
-        // Recalcula cards visuais básicos aqui para garantir renderização
-        const clientesContatadosCount = dataStore['cob-carteira']?.length || 0;
-        const totalClientes = (dataStore['total-clientes'] || []).length;
+        businessCommercialGrid.innerHTML = `<div id="negocio-chart-container"></div><div id="comercial-chart-container"></div><div id="clientes-negocio-chart-container"></div>`;
         
-        // Recriar card visão geral simples
-        generalGrid.innerHTML = `
-            <div class="card"><h3>Visão Geral</h3><div class="card-content">
-                <div class="metric"><span class="metric-label">Total Clientes:</span><span class="metric-value">${totalClientes}</span></div>
-                <div class="metric"><span class="metric-label">Contatados:</span><span class="metric-value">${clientesContatadosCount}</span></div>
-            </div></div>
-        `;
-        
-        // NOTA: Para encurtar, assumimos que o Worker já mandou os dados prontos, 
-        // mas aqui precisaríamos reconstruir o HTML dos cards baseados no dataStore igual fizemos na versão anterior.
-        // Vou reinserir a função completa de renderização abaixo para garantir que os cards apareçam.
-        rebuildDashboardHTML(); 
-    };
+        // AGORA ESSAS FUNÇÕES EXISTEM
+        if(dataStore['contatos-por-negocio']) renderDoughnutChart('negocio-chart-container', 'negocioChart', 'Contatos por Negócio', dataStore['contatos-por-negocio']);
+        if(dataStore['contatos-por-comercial']) renderDoughnutChart('comercial-chart-container', 'comercialChart', 'Contatos por Comercial', dataStore['contatos-por-comercial']);
+        if(dataStore['clientes-por-negocio']) renderDoughnutChart('clientes-negocio-chart-container', 'clientesNegocioChart', 'Clientes por Negócio', dataStore['clientes-por-negocio']);
 
-    function rebuildDashboardHTML() {
-        // Reconstrói o HTML completo dos cards usando dataStore (Código que estava faltando na versão anterior)
-        const generalGrid = document.getElementById('general-indicators-grid');
-        const playbookGrid = document.getElementById('playbooks-grid');
-        const okrGrid = document.getElementById('okr-grid-container');
-        const selectedSegmento = document.getElementById('select-segmento').value;
-
-        // ... (Código de geração de HTML dos cards - Versão Compacta)
-        const createSimple = (t, l, v) => `<div class="card"><h3>${t}</h3><div class="card-content"><div class="metric"><span class="metric-label">${l}:</span><span class="metric-value">${v}</span></div></div></div>`;
-        
-        // 1. Geral
-        generalGrid.innerHTML = createSimple('Total Clientes', 'Qtd', (dataStore['total-clientes']||[]).length) + 
-                                createSimple('Clientes Contatados', 'Qtd', (dataStore['cob-carteira']||[]).length) +
-                                createSimple('Média Sense Score', 'Pts', (dataStore['sensescore-avg']||0).toFixed(1));
-
-        // 2. Playbooks (Exemplo simples)
-        playbookGrid.innerHTML = '';
-        ['plano', 'adocao', 'followup'].forEach(pb => {
-            const prev = (dataStore[`${pb}-previsto`]||[]).length;
-            const real = (dataStore[`${pb}-realizado`]||[]).length;
-            playbookGrid.innerHTML += `<div class="card"><h3>${pb.toUpperCase()}</h3><div class="card-content"><div class="metric"><span class="metric-label">Previsto:</span><span class="metric-value">${prev}</span></div><div class="metric"><span class="metric-label">Realizado:</span><span class="metric-value success">${real}</span></div></div></div>`;
-        });
-
-        // 3. OKRs
-        okrGrid.innerHTML = '';
-        if (selectedSegmento.includes('SMB')) {
-             const eng = (dataStore['engajamento-smb-engajado']||[]).length;
-             okrGrid.innerHTML += createSimple('Engajamento SMB', 'Engajados', eng);
+        // ... (Restante da lógica de RenderOKRs - Cards, Métricas, etc. Mantida igual)
+        const totalCalls = (dataStore['contato-ligacao'] || []).length;
+        const totalEmails = (dataStore['contato-email'] || []).length;
+        const totalCsContacts = totalCalls + totalEmails;
+        const percLigacao = totalCsContacts > 0 ? ((totalCalls / totalCsContacts) * 100).toFixed(0) : 0;
+        const percEmail = totalCsContacts > 0 ? ((totalEmails / totalCsContacts) * 100).toFixed(0) : 0;
+        const totalClassified = (dataStore['ligacoes-classificadas'] || []).length;
+        let onboardingMetricHtml = '';
+        const includeOnboarding = document.getElementById('include-onboarding-toggle').checked;
+        const onboardingContacts = dataStore['onboarding-contacts-display'] || [];
+        if (includeOnboarding && onboardingContacts.length > 0) {
+            onboardingMetricHtml = `<div class="metric" data-metric-id="onboarding-contacts-display" data-metric-title="Contatos de Onboarding"><span class="metric-label"><i class="fas fa-user-plus"></i> Contatos Onboarding:</span><span class="metric-value">${onboardingContacts.length}</span></div>`;
         }
+        const cardTiposDeContato = `<div class="card"><h3>Tipos de Contato (Mês)</h3><div class="card-content"><div class="metric" data-metric-id="contato-ligacao" data-metric-title="Contatos do CS por Ligação/Reunião"><span class="metric-label">📞 Ligação/Reunião (CS):</span><span class="metric-value">${totalCalls} <span class="sub-metric">(${percLigacao}%)</span></span></div><div class="metric" data-metric-id="contato-email" data-metric-title="Contatos do CS por E-mail/Whatsapp"><span class="metric-label">✉️ E-mail/Whatsapp (CS):</span><span class="metric-value">${totalEmails} <span class="sub-metric">(${percEmail}%)</span></span></div>${onboardingMetricHtml}</div></div>`;
+
+        const totalClientesUnicosCS = dataStore['total-clientes-unicos-cs'] || 0;
+        const clientesContatadosCount = dataStore['cob-carteira']?.length || 0;
+        const cobCarteiraPerc = totalClientesUnicosCS > 0 ? (clientesContatadosCount / totalClientesUnicosCS) * 100 : 0;
+        const cobCarteiraPerc_comp = dataStore['cob-carteira_comp_perc'];
+        const sensescore_avg = dataStore['sensescore-avg'] || 0;
+        const sensescore_comp = dataStore['sensescore-avg_comp'];
+        const clientesFaltantes = dataStore['clientes-faltantes-meta-cobertura'] || 0;
+        const distLigacao = dataStore['dist-faltante-ligacao'] || 0;
+        const distEmail = dataStore['dist-faltante-email'] || 0;
+        let distHtml = '';
+        if (clientesFaltantes > 0) {
+            distHtml = `<div class="metric" style="font-size: 0.9rem; padding-top: 5px;"><span class="metric-label">Faltante (Ligação):</span><span class="metric-value" style="color:var(--primary-color)">${distLigacao}</span></div><div class="metric" style="font-size: 0.9rem;"><span class="metric-label">Faltante (Email):</span><span class="metric-value" style="color:var(--primary-color)">${distEmail}</span></div>`;
+        }
+        const cardCobertura = createOkrCard('Cobertura de Carteira', cobCarteiraPerc, appGoals.coverage, '%', 'cob-carteira', null, null, cobCarteiraPerc_comp, clientesFaltantes, distHtml);
+        const senseScoreCard = createOkrCard('Média Sense Score', sensescore_avg, appGoals.sensescore, ' pts', 'sensescore-avg', sensescore_avg.toFixed(1), null, sensescore_comp);
+        generalGrid.innerHTML = `${createSimpleCard('Visão Geral da Carteira', 'total-clientes', 'Total de Clientes Únicos', (dataStore['total-clientes'] || []).length, 'cob-carteira', 'Clientes Contatados', clientesContatadosCount)} ${cardCobertura} ${senseScoreCard} ${cardTiposDeContato}`;
+
+        const followupCard = createPrevistoRealizadoCard('Follow-Up Pós Loop', (dataStore['followup-previsto'] || []).length, (dataStore['followup-realizado'] || []).length, 'followup', null, (dataStore['followup-atrasado-concluido'] || []).length, (dataStore['followup-concluido-antecipado'] || []).length);
+        const discoveryCard = createPrevistoRealizadoCard('Discovery Potencial', (dataStore['discovery-previsto'] || []).length, (dataStore['discovery-realizado'] || []).length, 'discovery', null, (dataStore['discovery-atrasado-concluido'] || []).length, (dataStore['discovery-concluido-antecipado'] || []).length);
+        playbookGrid.innerHTML = `${createPrevistoRealizadoCard('Atividades de Plano de Ação', (dataStore['plano-previsto'] || []).length, (dataStore['plano-realizado'] || []).length, 'plano', null, (dataStore['plano-atrasado-concluido'] || []).length, (dataStore['plano-concluido-antecipado'] || []).length)}${createPrevistoRealizadoCard('Atividades de Adoção', (dataStore['adocao-previsto'] || []).length, (dataStore['adocao-realizado'] || []).length, 'adocao', null, (dataStore['adocao-atrasado-concluido'] || []).length, (dataStore['adocao-concluido-antecipado'] || []).length)}${followupCard}${(selectedSegmento !== 'MID/Enterprise') ? discoveryCard : ''}`;
+
+        let okrHtml = '';
+        const labsRealizadoCount = dataStore['ska-labs-realizado-list']?.length || 0;
+        const totalLabsBase = dataStore['total-labs-eligible'] || 0;
+        const labsRealizadoPerc = totalLabsBase > 0 ? (labsRealizadoCount / totalLabsBase) * 100 : 0;
+        const labsRealizadoPerc_comp = dataStore['ska-labs-realizado-list_comp_perc'];
+        const labsCard = createOkrCard('Participação SKA LABS (Tri)', labsRealizadoPerc, appGoals.labs, '%', 'ska-labs-realizado-list', labsRealizadoCount, totalLabsBase, labsRealizadoPerc_comp);
+
+        if (selectedSegmento === 'MID/Enterprise') {
+            okrHtml = `${createPrevistoRealizadoCard('Reuniões de QBR', (dataStore['reunioes-qbr-previsto'] || []).length, (dataStore['reunioes-qbr-realizado'] || []).length, 'reunioes-qbr', appGoals.qbr, (dataStore['reunioes-qbr-atrasado-concluido'] || []).length, (dataStore['reunioes-qbr-concluido-antecipado'] || []).length)}${createPrevistoRealizadoCard('Planos de Sucesso', (dataStore['planos-sucesso-previsto'] || []).length, (dataStore['planos-sucesso-realizado'] || []).length, 'planos-sucesso', appGoals.successplan, (dataStore['planos-sucesso-atrasado-concluido'] || []).length, (dataStore['planos-sucesso-concluido-antecipado'] || []).length)}${createPrevistoRealizadoCard('Baixo Engajamento (MID/ENT)', (dataStore['baixo-engajamento-mid-previsto'] || []).length, (dataStore['baixo-engajamento-mid-realizado'] || []).length, 'baixo-engajamento-mid', null, (dataStore['baixo-engajamento-mid-atrasado-concluido'] || []).length, (dataStore['baixo-engajamento-mid-concluido-antecipado'] || []).length)}${labsCard}`;
+        } else {
+            const totalRealizadoSMB = (dataStore['engajamento-smb-realizado'] || []).length + (dataStore['engajamento-smb-atrasado-concluido'] || []).length;
+            const previstosSMB = (dataStore['engajamento-smb-previsto'] || []).length;
+            const engajados = (dataStore['engajamento-smb-engajado'] || []).length;
+            const desengajados = (dataStore['engajamento-smb-desengajado'] || []).length;
+            const performancePerc = totalRealizadoSMB > 0 ? (engajados / totalRealizadoSMB) * 100 : 0;
+            const realizadoVsPrevistoPerc = previstosSMB > 0 ? (totalRealizadoSMB / previstosSMB) * 100 : 0;
+
+            const cardEngajamento = `<div class="card"><h3>Engajamento (Contato Consolidado)</h3><div class="card-content"><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;"><div><div class="metric" data-metric-id="engajamento-smb-previsto" data-metric-title="Contatos Previstos (SMB)"><span class="metric-label">Previsto:</span><span class="metric-value">${previstosSMB}</span></div><div class="metric" data-metric-id="engajamento-smb-realizado-total" data-metric-title="Total Realizado (SMB)"><span class="metric-label">Realizado:</span><span class="metric-value">${totalRealizadoSMB}</span></div></div><div><div class="metric" data-metric-id="engajamento-smb-engajado" data-metric-title="Total Engajado (SMB)"><span class="metric-label">Engajado:</span><span class="metric-value success">${engajados}</span></div><div class="metric" data-metric-id="engajamento-smb-desengajado" data-metric-title="Total Desengajado (SMB)"><span class="metric-label">Desengajado:</span><span class="metric-value danger">${desengajados}</span></div></div></div><div class="metric" style="border-top: 1px solid var(--border-color); padding-top: 15px;"><span class="metric-label">Performance:</span><span class="metric-value" style="color: ${performancePerc >= appGoals.engagement ? 'var(--secondary-color)' : 'var(--danger-color)'};">${performancePerc.toFixed(1)}% <span class="sub-metric">(Meta: ${appGoals.engagement}%)</span></span></div></div><div class="progress-bar-container" title="Realizado vs. Previsto: ${realizadoVsPrevistoPerc.toFixed(0)}%"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(realizadoVsPrevistoPerc, 100)}%;"></div></div><span class="progress-percentage">${realizadoVsPrevistoPerc.toFixed(0)}%</span></div></div>`;
+            okrHtml += cardEngajamento;
+            if (selectedSegmento === 'SMB CAD') {
+                const preenchidos = (dataStore['modelo-negocio-preenchido'] || []).length;
+                const faltantes = (dataStore['modelo-negocio-faltante'] || []).length;
+                okrHtml += createSimpleCard('Adoção Modelo de Negócio', 'modelo-negocio-preenchido', 'Preenchido', preenchidos, 'modelo-negocio-faltante', 'Faltante', faltantes);
+            }
+            if (selectedSegmento.includes('SMB')) {
+                 const preenchidos = (dataStore['cliente-potencial-preenchido'] || []).length;
+                 const faltantes = (dataStore['cliente-potencial-faltante'] || []).length;
+                 okrHtml += createSimpleCard('Mapeamento Potencial', 'cliente-potencial-preenchido', 'Mapeado', preenchidos, 'cliente-potencial-faltante', 'Faltante', faltantes);
+            }
+            okrHtml += labsCard;
+        }
+        okrGrid.innerHTML = okrHtml;
     }
 
     function renderNewOnboardingView() {
         const outcomesGrid = document.getElementById('onboarding-outcomes-grid');
-        const goLiveTotal = (onboardingDataStore.goLiveActivitiesConcluded?.length || 0);
-        outcomesGrid.innerHTML = `<div class="card"><h3>Go-Live</h3><div class="card-content"><div class="metric"><span class="metric-label">Realizados:</span><span class="metric-value">${goLiveTotal}</span></div></div></div>`;
+        const npsTotal = onboardingDataStore.clientsWithGoLive?.length || 0;
+        const npsRespondedCount = onboardingDataStore.npsResponded?.length || 0;
+        const goLivesTotal = (onboardingDataStore.goLiveActivitiesConcluded?.length || 0) + (onboardingDataStore.goLiveActivitiesPredicted?.length || 0);
+
+        outcomesGrid.innerHTML = `
+            ${createOnboardingStageCard(onboardingDataStore.totalFilteredClients || 0, onboardingDataStore.stageCounts, onboardingDataStore.stageLists || {})}
+            ${createOnboardingMetricCard('Go-Lives Realizados e Previstos', 'Total de Go-Lives concluídos e previstos para o mês.', goLivesTotal, `<strong>${onboardingDataStore.goLiveActivitiesConcluded?.length || 0}</strong> realizados, <strong>${onboardingDataStore.goLiveActivitiesPredicted?.length || 0}</strong> previstos.`, 'fa-rocket', 'onb-go-live-combined', [...(onboardingDataStore.goLiveActivitiesConcluded || []), ...(onboardingDataStore.goLiveActivitiesPredicted || [])])}
+            ${createOnboardingMetricCard('NPS Pós Go-Live', 'Taxa de resposta dos clientes que tiveram Go-Live.', `${npsRespondedCount}/${npsTotal}`, `responderam`, 'fa-star-half-alt', 'onb-nps-responded', onboardingDataStore.npsResponded || [])}
+            ${createOnboardingMetricCard('Tempo Médio de Onboarding', 'Duração média histórica.', `${onboardingDataStore.averageCompletedOnboardingTime || 0} dias`, `baseado em concluídos`, 'fa-check-circle', 'onb-completed-list', onboardingDataStore.completedOnboardingsList || [])}
+            ${createTop5OnboardingCard(onboardingDataStore.top5LongestOnboardings || [], onboardingDataStore.clientsOver120Days || [])}
+            ${createOnboardingMetricCard('Clientes Onboarding > R$50 mil', 'Clientes com alto valor.', onboardingDataStore.highValueClients?.length || 0, 'clientes', 'fa-dollar-sign', 'onb-high-value', onboardingDataStore.highValueClients || [])}
+            <div class="card" id="onboarding-product-chart-card"><h3>Análise por Produto</h3><div class="card-content" style="height: 350px; padding-top: 20px;"><canvas id="onboardingProductChart"></canvas></div></div>
+        `;
         renderOnboardingProductChart(onboardingDataStore.productChartData);
-        
-        // Renderiza cards de processo
+
         const processGrid = document.getElementById('onboarding-process-grid');
-        processGrid.innerHTML = ''; 
-        ['welcome', 'kickoff', 'planejamento'].forEach(k => {
-             const prev = (onboardingDataStore[`${k}Previsto`]||[]).length;
-             const real = (onboardingDataStore[`${k}Realizado`]||[]).length;
-             processGrid.innerHTML += `<div class="card"><h3>${k.toUpperCase()}</h3><div class="card-content"><div class="metric"><span class="metric-label">Previsto:</span><span class="metric-value">${prev}</span></div><div class="metric"><span class="metric-label">Realizado:</span><span class="metric-value success">${real}</span></div></div></div>`;
-        });
+        processGrid.innerHTML = `
+            ${createOnboardingProcessCard('SLA: Contato de Welcome', 'Meta: 3 dias', (onboardingDataStore.welcomePrevisto || []).length, (onboardingDataStore.welcomeRealizado || []).length, 'fa-handshake', 'welcome')}
+            ${createOnboardingProcessCard('SLA: Reunião Kickoff', 'Meta: 7 dias', (onboardingDataStore.kickoffPrevisto || []).length, (onboardingDataStore.kickoffRealizado || []).length, 'fa-users', 'kickoff')}
+            ${createOnboardingProcessCard('Prazo: Planejamento', 'Etapa de planejamento.', (onboardingDataStore.planejamentoPrevisto || []).length, (onboardingDataStore.planejamentoRealizado || []).length, 'fa-clipboard-check', 'planejamento')}
+            ${createOnboardingProcessCard('Prazo: Mapear Contatos', 'Etapa de stakeholders.', (onboardingDataStore.mapearContatosPrevisto || []).length, (onboardingDataStore.mapearContatosRealizado || []).length, 'fa-address-book', 'mapearContatos')}
+            ${createOnboardingProcessCard('Prazo: Reunião de GO LIVE', 'Oficialização do Go-Live.', (onboardingDataStore.goLiveMeetingPrevisto || []).length, (onboardingDataStore.goLiveMeetingRealizado || []).length, 'fa-calendar-check', 'goLiveMeeting')}
+            ${createOnboardingProcessCard('Prazo: Acompanhamento', 'Status reports.', (onboardingDataStore.acompanhamentoPrevisto || []).length, (onboardingDataStore.acompanhamentoRealizado || []).length, 'fa-sync-alt', 'acompanhamento')}
+        `;
     }
 
     function renderPeriodView(periodData, periodName) {
         document.getElementById('dashboard').style.display = 'none';
         document.getElementById('period-view').style.display = 'block';
-        document.getElementById('period-view').innerHTML = `<div class="metric-group"><h2 class="group-title">Resumo: ${periodName}</h2><div class="group-content"><div class="card"><h3>Média Cobertura</h3><div class="card-content"><div class="metric"><span class="metric-value">${periodData.averageCoverage.toFixed(1)}%</span></div></div></div></div></div>`;
+        const avgCoverageCard = createSimpleCard('Média de Cobertura', 'avg-cov', 'Média Mensal', `${periodData.averageCoverage.toFixed(1)}%`, 'total-unique', 'Clientes Únicos', periodData.totalUniqueClients);
+        
+        let playbookCardsHtml = '';
+        const playbookTitles = {'plano': 'Planos de Ação', 'adocao': 'Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery', 'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso', 'engajamento-smb': 'Engajamento', 'baixo-engajamento-mid': 'Baixo Engajamento'};
+        for (const key in playbookTitles) {
+            const data = periodData.playbookTotals[key];
+            if (data && (data.previsto > 0 || data.realizado > 0)) {
+                playbookCardsHtml += createSimpleCard(`Total: ${playbookTitles[key]}`, `p-${key}-prev`, 'Previsto', data.previsto, `p-${key}-real`, 'Realizado', data.realizado);
+            }
+        }
+        document.getElementById('period-view').innerHTML = `<div class="metric-group"><h2 class="group-title">Resumo do Período: ${periodName}</h2><div class="group-content">${avgCoverageCard}${playbookCardsHtml}</div></div>`;
     }
 
     function renderOverdueView(overdueMetrics) {
-        const grid = document.getElementById('overdue-grid-container');
+        if (!overdueMetrics) overdueMetrics = { overdueActivities: {} };
+        const overdueGrid = document.getElementById('overdue-grid-container');
         let html = '';
-        for (const key in overdueMetrics.overdueActivities) {
-            const count = overdueMetrics.overdueActivities[key].length;
-            if(count > 0) html += `<div class="card"><h3>${key}</h3><div class="card-content"><div class="metric"><span class="metric-label">Atrasadas:</span><span class="metric-value danger">${count}</span></div></div></div>`;
+        const playbookTitles = { 'plano': 'Planos de Ação', 'adocao': 'Atividades de Adoção', 'followup': 'Follow-Up', 'discovery': 'Discovery', 'reunioes-qbr': 'Reuniões de QBR', 'planos-sucesso': 'Planos de Sucesso', 'engajamento-smb': 'Engajamento', 'baixo-engajamento-mid': 'Baixo Engajamento' };
+        let totalOverdue = 0;
+        for (const key in playbookTitles) {
+            const activities = overdueMetrics.overdueActivities[key] || [];
+            totalOverdue += activities.length;
+            if (activities.length > 0) {
+                onboardingDataStore[`overdue-${key}`] = activities;
+                html += `<div class="card"><h3>${playbookTitles[key]}</h3><div class="card-content"><div class="metric overdue-metric" style="border-top: none; margin-top: 0; padding-top: 0;" data-metric-id="overdue-${key}" data-metric-title="Atrasadas: ${playbookTitles[key]}"><span class="metric-label"><i class="fas fa-exclamation-triangle"></i> Total Atrasado:</span><span class="metric-value danger" style="font-size: 2rem;">${activities.length}</span></div></div></div>`;
+            }
         }
-        grid.innerHTML = html || '<p>Sem atrasos.</p>';
+        if (totalOverdue === 0) overdueGrid.innerHTML = `<div class="loader" style="color: var(--secondary-color); border-color: var(--secondary-color);"><i class="fas fa-check-circle" style="margin-right: 10px;"></i>Nenhuma atividade atrasada!</div>`;
+        else overdueGrid.innerHTML = html;
     }
 
-    // --- HANDLER PRINCIPAL ---
-    function handleWorkerMessage(e) {
-        const { type, payload } = e.data;
-        if (type === 'INIT_COMPLETE') {
-            filterDataCache = payload.filterData; 
-            populateFilters(); 
-            renderDataTables(); 
-            applyFilterLocks(); 
-            document.querySelector('.tabs').style.display = 'flex';
-            document.getElementById('status-message').style.display = 'none'; 
-            document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('onboarding-dashboard').style.display = 'block';
-            triggerCalculations(); 
-        }
-        else if (type === 'CALCULATION_COMPLETE') {
-            dataStore = payload.dataStore; 
-            onboardingDataStore = payload.onboardingDataStore; 
-            renderOKRs();
-            renderNewOnboardingView();
-            renderOverdueView(payload.overdueMetrics); 
-            document.getElementById('status-message').style.display = 'none';
-        }
-        else if (type === 'PERIOD_CALCULATION_COMPLETE') renderPeriodView(payload.periodData, payload.periodName);
-        else if (type === 'TREND_DATA_COMPLETE') renderTrendChart(payload.labels, payload.dataPoints, payload.title);
-        else if (type === 'ERROR') console.error(payload.error);
-    }
+    // --- CARD FACTORY FUNCTIONS ---
+    const createOkrCard = (title, value, goal, unit = '', metricId, cv = null, gv = null, comp = null, miss = null, distHtml = '') => {
+        const perc = goal > 0 ? (value / goal) * 100 : 0;
+        let valText = (cv !== null) ? (gv !== null ? `${cv} de ${gv} <span class="sub-metric">(${value.toFixed(1)}%)</span>` : `${cv}${unit}`) : `${unit === '%' ? value.toFixed(1) : value.toFixed(0)}${unit}`;
+        let missHtml = (miss !== null && miss > 0) ? `<div class="metric overdue-metric"><span class="metric-label">Para a Meta:</span><span class="metric-value">${Math.ceil((dataStore['total-clientes-unicos-cs'] || 0) * (appGoals.coverage/100))} clientes (${miss} faltantes)</span></div>` : '';
+        let trendHtml = (comp !== null) ? `<span class="trend-indicator ${value - comp > 0 ? 'trend-positive' : 'trend-negative'}">${(value - comp).toFixed(1)}pp</span>` : '';
+        const trendBtn = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${metricId}" data-metric-title="${title}" data-metric-type="okr"><i class="fas fa-chart-line"></i></button>` : '';
+        return `<div class="card"><h3>${title}${trendBtn}</h3><div class="card-content"><div class="metric" data-metric-id="${metricId}" data-metric-title="${title}"><span class="metric-label">Meta: ${goal}${unit}</span><span class="metric-value">${valText}${trendHtml}</span></div>${missHtml}${distHtml}</div><div class="progress-bar-container"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(perc, 100)}%;"></div></div><span class="progress-percentage">${perc.toFixed(0)}%</span></div></div>`;
+    };
 
-    // --- INITIALIZE ---
-    function initializeDashboard() {
+    const createPrevistoRealizadoCard = (title, prev, real, id, goal = null, overdue = 0, ante = 0) => {
+        const totalReal = real + overdue + ante;
+        const totalProg = totalReal + prev;
+        const perc = totalProg > 0 ? (totalReal / totalProg) * 100 : (totalReal > 0 ? 100 : 0);
+        let metaHtml = (goal !== null && currentUser.isManager) ? `<div class="metric"><span class="metric-label">Meta:</span><span class="metric-value">${goal}</span></div>` : '';
+        let anteHtml = ante > 0 ? `<div class="metric" data-metric-id="${id}-concluido-antecipado" data-metric-title="${title} (Antecipado)"><span class="metric-label">Antecipado:</span><span class="metric-value success">${ante}</span></div>` : '';
+        let overHtml = overdue > 0 ? `<div class="metric overdue-metric" data-metric-id="${id}-atrasado-concluido" data-metric-title="${title} (Atraso)"><span class="metric-label">Atraso:</span><span class="metric-value">${overdue}</span></div>` : '';
+        const trendBtn = currentUser.isManager ? `<button class="trend-chart-button" data-metric-id="${id}" data-metric-title="${title}" data-metric-type="playbook"><i class="fas fa-chart-line"></i></button>` : '';
+        return `<div class="card"><h3>${title}${trendBtn}</h3><div class="card-content"><div class="metric" data-metric-id="${id}-realizado" data-metric-title="${title} (No Prazo)"><span class="metric-label">Realizado (Prazo):</span><span class="metric-value success">${real}</span></div>${anteHtml}${overHtml}<div class="metric" data-metric-id="${id}-previsto" data-metric-title="${title} (Pendentes)"><span class="metric-label">Pendentes:</span><span class="metric-value">${prev}</span></div>${metaHtml}</div><div class="progress-bar-container"><div class="progress-bar"><div class="progress-bar-fill" style="width: ${Math.min(perc, 100)}%;"></div></div><span class="progress-percentage">${perc.toFixed(0)}%</span></div></div>`;
+    };
+
+    const createSimpleCard = (title, id1, l1, v1, id2, l2, v2) => {
+        let m2 = id2 ? `<div class="metric" data-metric-id="${id2}" data-metric-title="${l2}"><span class="metric-label">${l2}:</span><span class="metric-value">${v2}</span></div>` : '';
+        return `<div class="card"><h3>${title}</h3><div class="card-content"><div class="metric" data-metric-id="${id1}" data-metric-title="${l1}"><span class="metric-label">${l1}:</span><span class="metric-value">${v1}</span></div>${m2}</div></div>`;
+    };
+
+    const createOnboardingMetricCard = (title, sub, val, det = '', icon, id = null, data = []) => {
+        if(id) onboardingDataStore[id] = data;
+        return `<div class="card" ${id ? `data-metric-id="${id}" data-metric-title="${title}" style="cursor:pointer"` : ''}><h3>${title}</h3><p style="font-style:italic;font-size:0.9rem;color:#888;margin:-10px 0 10px 0">${sub}</p><div class="card-content"><div class="metric"><span class="metric-value" style="font-size:2.5rem">${val}</span>${det?`<span class="metric-label" style="text-align:right">${det}</span>`:''}</div></div></div>`;
+    };
+
+    const createTop5OnboardingCard = (list, overdue) => {
+        const lis = list.length > 0 ? list.map(i => `<li><span class="client-name">${i.Cliente}</span> <span class="duration">${i.onboardingDuration} dias</span></li>`).join('') : '<li>Sem dados</li>';
+        onboardingDataStore['onb-over-120-days'] = overdue;
+        return `<div class="card"><h3>Análise de Onboardings</h3><div class="card-content"><h4 style="margin:0 0 5px 0">Top 5 Tempo:</h4><ol class="onboarding-top5-list">${lis}</ol>${overdue.length > 0 ? `<button class="view-overdue-btn" data-metric-id="onb-over-120-days" data-metric-title="> 120 dias">Ver ${overdue.length} Clientes > 120 dias</button>` : ''}</div></div>`;
+    };
+
+    const createOnboardingProcessCard = (title, sub, prev, real, icon, idPrefix) => {
+        const slaOkList = onboardingDataStore[`${idPrefix}SLAOk`];
+        const anteList = onboardingDataStore[`${idPrefix}Antecipado`] || [];
+        const atrasoList = onboardingDataStore[`${idPrefix}RealizadoAtrasado`] || [];
+        const isSla = slaOkList !== undefined;
+        let content = '';
+        let totalConcluido = real + anteList.length + atrasoList.length; 
+        
+        if(isSla) {
+            const realOk = slaOkList.length;
+            const realFora = (onboardingDataStore[`${idPrefix}RealizadoForaPrazo`] || []).length;
+            totalConcluido = realOk + realFora + anteList.length;
+            content = `<div class="metric" data-metric-id="${idPrefix}Previsto" data-metric-title="Pendentes"><span class="metric-label">Pendentes:</span><span class="metric-value">${prev}</span></div><div class="metric" data-metric-id="${idPrefix}SLAOk" data-metric-title="No SLA"><span class="metric-label">No Prazo:</span><span class="metric-value success">${realOk}</span></div><div class="metric" data-metric-id="${idPrefix}RealizadoForaPrazo" data-metric-title="Fora SLA"><span class="metric-label">Fora Prazo:</span><span class="metric-value danger">${realFora}</span></div>`;
+        } else {
+             content = `<div class="metric" data-metric-id="${idPrefix}Previsto" data-metric-title="Pendentes"><span class="metric-label">Pendentes:</span><span class="metric-value">${prev}</span></div><div class="metric" data-metric-id="${idPrefix}Realizado" data-metric-title="Realizado"><span class="metric-label">Realizado (Prazo):</span><span class="metric-value success">${real}</span></div>${atrasoList.length > 0 ? `<div class="metric" data-metric-id="${idPrefix}RealizadoAtrasado" data-metric-title="Atrasado"><span class="metric-label">Atrasado:</span><span class="metric-value danger">${atrasoList.length}</span></div>` : ''}`;
+        }
+        const total = totalConcluido + prev;
+        const perc = total > 0 ? (totalConcluido/total)*100 : (totalConcluido > 0 ? 100 : 0);
+        return `<div class="card"><h3>${title}</h3><p style="font-style:italic;font-size:0.9rem;color:#888;margin:-10px 0 10px 0">${sub}</p><div class="card-content">${content}</div><div class="progress-bar-container"><div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.min(perc, 100)}%"></div></div><span class="progress-percentage">${perc.toFixed(0)}%</span></div></div>`;
+    };
+
+    const createOnboardingStageCard = (total, counts, lists) => {
+        if(!counts) return '';
+        const stages = [{id:'preGoLive',t:'Pré GO LIVE',i:'fa-flag'},{id:'execucao',t:'Execução',i:'fa-cog'},{id:'inicio',t:'Início',i:'fa-play'},{id:'backlog',t:'Backlog',i:'fa-box'}];
+        stages.forEach(s => onboardingDataStore[`onb-stage-${s.id}`] = lists[s.id]||[]);
+        const html = stages.map(s => `<div class="metric" data-metric-id="onb-stage-${s.id}" data-metric-title="${s.t}" style="cursor:pointer"><span class="metric-label"><i class="fas ${s.i}"></i> ${s.t}:</span><span class="metric-value">${counts[s.id]||0}</span></div>`).join('');
+        return `<div class="card"><h3>Clientes em Onboarding</h3><div class="card-content"><div class="metric" style="border-bottom:1px solid #eee;margin-bottom:10px"><span class="metric-label">Total:</span><span class="metric-value" style="font-size:2.2rem;color:var(--primary-color)">${total}</span></div>${html}</div></div>`;
+    };
+
+    // --- INIT ---
+    async function initializeDashboard() {
+        const APP_VERSION = '2.2.0-stable'; 
+        const storedVersion = localStorage.getItem('appVersion');
+        if (storedVersion !== APP_VERSION) {
+            await forceClearAllData(false);
+            localStorage.setItem('appVersion', APP_VERSION);
+            window.location.reload();
+            return;
+        }
+        document.getElementById('app-version-marker').textContent = `Versão: ${APP_VERSION}`;
+        
+        const userInfoCard = document.getElementById('user-info-card');
+        if (currentUser.name) {
+            document.getElementById('user-info-text').innerHTML = `<i class="fas fa-user-check" style="margin-right: 8px; color: var(--secondary-color);"></i> ${currentUser.name}`;
+            if (currentUser.isManager) userInfoCard.insertAdjacentHTML('beforeend', '<span class="admin-badge">Login ADM</span>');
+            userInfoCard.style.display = 'flex';
+        }
+        document.getElementById('logout-button').addEventListener('click', logout);
+
         const themeToggle = document.getElementById('theme-toggle');
+        const applyTheme = (isLight) => {
+            if (isLight) { document.body.classList.add('light-theme'); localStorage.setItem('theme', 'light'); }
+            else { document.body.classList.remove('light-theme'); localStorage.setItem('theme', 'dark'); }
+        };
         themeToggle.addEventListener('change', () => {
-             document.body.classList.toggle('light-theme', themeToggle.checked);
-             localStorage.setItem('theme', themeToggle.checked ? 'light' : 'dark');
-             if(dataStore['contatos-por-negocio']) renderOKRs();
+            applyTheme(themeToggle.checked);
+            if(dataStore['contatos-por-negocio']) renderOKRs(); // Redesenha para pegar cores novas
         });
-        if(localStorage.getItem('theme') === 'light') { themeToggle.checked = true; document.body.classList.add('light-theme'); }
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') { themeToggle.checked = true; applyTheme(true); } else { themeToggle.checked = false; applyTheme(false); }
 
         setupUserView();
         loadGoals();
         
-        // Events
-        ['select-cs', 'select-month', 'select-year'].forEach(id => document.getElementById(id).addEventListener('change', triggerCalculations));
-        document.getElementById('btn-refresh-data').onclick = loadDataFromAPI;
+        // EVENTOS DE UI
+        const inputs = ['select-cs', 'select-squad', 'select-segmento', 'select-month', 'select-year', 'include-onboarding-toggle', 'select-comparison', 'select-period', 'select-onboarding-team', 'select-ism'];
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                if(id === 'select-squad' && currentUser.isManager) {
+                    const val = document.getElementById(id).value;
+                    const selCS = document.getElementById('select-cs');
+                    if(val !== 'Todos') {
+                        selCS.value = 'Todos'; selCS.disabled = true;
+                        const csInSquad = Object.entries(filterDataCache.csToSquadMap || {}).filter(([k,v]) => v === val).map(([k]) => k);
+                        document.getElementById('squad-cs-list').textContent = `CSs: ${csInSquad.join(', ')}`;
+                    } else {
+                        selCS.disabled = false;
+                        document.getElementById('squad-cs-list').textContent = '';
+                    }
+                }
+                if(id === 'select-cs') {
+                    const csVal = document.getElementById('select-cs').value;
+                    if(csVal !== 'Todos') {
+                        const fil = (document.getElementById('include-onboarding-toggle').checked ? rawClients : rawClients.filter(c => normalizeText(c.Fase) !== 'onboarding')).filter(d => d.CS?.trim() === csVal);
+                        autoSelectSegment(fil);
+                    }
+                }
+                if(id === 'select-onboarding-team') updateIsmFilter();
+                triggerCalculations();
+            });
+        });
+
+        document.querySelector('.tabs').addEventListener('click', (e) => {
+            if (e.target.matches('.tab-button')) {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                e.target.classList.add('active');
+                document.getElementById(e.target.dataset.tab).classList.add('active');
+                if (e.target.dataset.tab === 'data-view') renderDataTables();
+            }
+        });
+
+        document.body.addEventListener('click', (e) => {
+            const metricEl = e.target.closest('[data-metric-id]');
+            if(metricEl) showDetailsModal(metricEl.dataset.metricId, metricEl.dataset.metricTitle);
+            const trigger = e.target.closest('span.client-activity-trigger');
+            if(trigger) showAnotacaoModal(trigger.dataset.anotacao);
+            const trendBtn = e.target.closest('.trend-chart-button');
+            if(trendBtn) { e.preventDefault(); showTrendChart(trendBtn.dataset.metricId, trendBtn.dataset.metricTitle, trendBtn.dataset.metricType); }
+        });
+
+        document.getElementById('settings-button').addEventListener('click', () => { loadGoals(); showModal(document.getElementById('settings-modal')); });
+        document.getElementById('save-settings-button').addEventListener('click', saveGoals);
+        document.querySelectorAll('.modal .close-button').forEach(btn => btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal'))));
+        window.addEventListener('click', (e) => { if(e.target.classList.contains('modal')) closeModal(e.target); });
+        document.getElementById('bulk-export-button').addEventListener('click', () => {
+             const csSet = filterDataCache.csSet || new Set();
+             const list = document.getElementById('cs-selection-list');
+             list.innerHTML = '';
+             [...csSet].sort().forEach(cs => { list.innerHTML += `<div class="cs-item"><label><input type="checkbox" class="cs-checkbox" value="${cs}" checked> ${cs}</label></div>`; });
+             showModal(document.getElementById('bulk-export-modal'));
+        });
+    }
+    
+    // ============================================================
+    //  6. FUNÇÕES DE APOIO E EXPORTAÇÃO
+    // ============================================================
+
+    function normalizeText(str = '') { return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+
+    function updateIsmFilter() {
+        const teamView = document.getElementById('select-onboarding-team').value;
+        const { ismSet } = filterDataCache; if (!ismSet) return;
+        const onboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
+        let relevantClients = [];
+        if (teamView === 'syneco') relevantClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
+        else if (teamView === 'outros') relevantClients = onboardingClients.filter(c => !normalizeText(c.Cliente).includes('syneco'));
+        else relevantClients = onboardingClients;
+        const relevantIsmSet = new Set(relevantClients.map(c => c.ISM).filter(Boolean));
+        const selectISM = document.getElementById('select-ism');
+        selectISM.innerHTML = '<option value="Todos">Todos os ISMs</option>';
+        [...relevantIsmSet].sort().forEach(ism => { const option = document.createElement('option'); option.value = ism; option.textContent = ism; selectISM.appendChild(option); });
     }
 
-    // Funções auxiliares (populateFilters, triggerCalculations, etc.) simplificadas para caber aqui.
-    // (Certifique-se de que as funções populateFilters, setupUserView, applyFilterLocks e renderDataTables estejam definidas conforme as partes anteriores se desejar funcionalidade completa dos filtros)
-    
-    // --- [IMPORTANTE] ---
-    // Como o código ficou muito grande, simplifiquei a renderização visual (rebuildDashboardHTML) para garantir que funcione.
-    // Você pode restaurar os cards complexos copiando do seu código original se preferir.
-    
-    // Funções de Tabela e Filtro essenciais para não quebrar o init:
-    function populateFilters() { /* ... Lógica de filtros ... */ }
-    function applyFilterLocks() { /* ... */ }
-    function renderPaginatedTable(t, p, d) { /* ... */ }
-    function renderDataTables() { renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities); renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients); }
-    function setupUserView() { /* ... */ }
-    function loadGoals() { /* ... */ }
+    function populateFilters() {
+        const { csSet, squadSet, years } = filterDataCache;
+        const selectCS = document.getElementById('select-cs');
+        const selectSquad = document.getElementById('select-squad');
+        const selectMonth = document.getElementById('select-month');
+        const selectYear = document.getElementById('select-year');
+        const selectSegmento = document.getElementById('select-segmento');
+
+        selectCS.innerHTML = ''; if (currentUser.isManager) selectCS.innerHTML += '<option value="Todos">Todos os CS</option>';
+        [...csSet].sort().forEach(cs => { const option = document.createElement('option'); option.value = cs; option.textContent = cs; selectCS.appendChild(option); });
+        
+        if (currentUser.isManager) {
+            selectSquad.innerHTML = '<option value="Todos">Todos os Squads</option>';
+            [...squadSet].sort().forEach(squad => { const option = document.createElement('option'); option.value = squad; option.textContent = squad; selectSquad.appendChild(option); });
+        }
+
+        updateIsmFilter();
+
+        if (!currentUser.isManager) {
+            if (currentUser.userGroup === 'ongoing') {
+                let foundCS = null;
+                if ([...csSet].includes(currentUser.name)) foundCS = currentUser.name;
+                else if (manualEmailToCsMap[currentUser.email]) foundCS = manualEmailToCsMap[currentUser.email];
+                if (foundCS) selectCS.value = foundCS;
+            } else if (currentUser.userGroup === 'onboarding') {
+                const mappedISM = currentUser.selectedISM;
+                if (mappedISM) document.getElementById('select-ism').value = mappedISM;
+            }
+        }
+
+        const segments = ["SMB CAD", "SMB Multiprodutos", "MID/Enterprise"];
+        selectSegmento.innerHTML = '';
+        segments.forEach(seg => { const option = document.createElement('option'); option.value = seg; option.textContent = seg; selectSegmento.appendChild(option); });
+
+        const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        selectMonth.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+        const sortedYears = [...years].sort((a, b) => b - a);
+        selectYear.innerHTML = sortedYears.map(y => `<option value="${y}">${y}</option>`).join('');
+        const today = new Date();
+        selectMonth.value = today.getMonth();
+        if (sortedYears.includes(today.getFullYear())) selectYear.value = today.getFullYear();
+    }
+
+    function autoSelectSegment(clients) {
+        if (!clients || clients.length === 0) return;
+        let mid = 0, smb = 0;
+        clients.forEach(c => {
+            const seg = normalizeText(c.Segmento || '');
+            if (seg === 'mid-market' || seg === 'enterprise') mid++;
+            else if (seg.includes('smb')) smb++;
+        });
+        document.getElementById('select-segmento').value = (mid > smb) ? 'MID/Enterprise' : 'SMB CAD'; 
+    }
+
+    function applyFilterLocks() {
+        const els = ['select-squad', 'select-segmento', 'select-month', 'select-year', 'include-onboarding-toggle', 'select-period'].map(id => document.getElementById(id));
+        els.forEach(el => el.disabled = false);
+        const selectCS = document.getElementById('select-cs');
+        const selectISM = document.getElementById('select-ism');
+        const selectTeam = document.getElementById('select-onboarding-team');
+
+        if (currentUser.isManager) {
+            selectCS.disabled = false; selectISM.disabled = false; selectTeam.disabled = false;
+        } else {
+            if (currentUser.userGroup === 'ongoing') {
+                selectCS.disabled = true; selectISM.disabled = false; selectTeam.disabled = false;
+            } else if (currentUser.userGroup === 'onboarding') {
+                selectCS.disabled = true; selectISM.disabled = true; selectTeam.disabled = true;
+            }
+        }
+    }
+
+    function triggerCalculations() {
+        if (!dataWorker) return;
+        const period = document.getElementById('select-period').value;
+        const filters = {
+            month: parseInt(document.getElementById('select-month').value, 10),
+            year: parseInt(document.getElementById('select-year').value, 10),
+            selectedCS: document.getElementById('select-cs').value,
+            selectedSquad: document.getElementById('select-squad').value,
+            includeOnboarding: document.getElementById('include-onboarding-toggle').checked,
+            comparison: document.getElementById('select-comparison').value,
+            segmento: document.getElementById('select-segmento').value,
+            teamView: document.getElementById('select-onboarding-team').value,
+            selectedISM: document.getElementById('select-ism').value,
+            goals: appGoals
+        };
+
+        if (period === 'monthly') {
+            document.getElementById('status-message').style.display = 'block';
+            document.getElementById('status-message').textContent = 'Calculando...';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('period-view').style.display = 'none';
+            dataWorker.postMessage({ type: 'CALCULATE_MONTHLY', payload: filters });
+        } else {
+            document.getElementById('status-message').style.display = 'block';
+            document.getElementById('status-message').textContent = 'Calculando Período...';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('period-view').style.display = 'none';
+            dataWorker.postMessage({ type: 'CALCULATE_PERIOD', payload: { ...filters, period } });
+        }
+    }
+
+    function setupUserView() {
+        const tabs = {
+            dash: document.querySelector('[data-tab="dashboard-view"]'),
+            onb: document.querySelector('[data-tab="onboarding-view"]'),
+            overdue: document.querySelector('[data-tab="overdue-view"]'),
+            data: document.querySelector('[data-tab="data-view"]')
+        };
+        const contents = { dash: document.getElementById('dashboard-view'), onb: document.getElementById('onboarding-view') };
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        if (currentUser.userGroup === 'admin') {
+            Object.values(tabs).forEach(t => t.style.display = 'block');
+            tabs.dash.classList.add('active'); contents.dash.classList.add('active');
+        } else if (currentUser.userGroup === 'onboarding') {
+            tabs.dash.style.display = 'none'; tabs.overdue.style.display = 'none'; tabs.data.style.display = 'none';
+            tabs.onb.style.display = 'block';
+            tabs.onb.classList.add('active'); contents.onb.classList.add('active');
+        } else {
+            tabs.onb.style.display = 'none';
+            tabs.dash.style.display = 'block'; tabs.overdue.style.display = 'block'; tabs.data.style.display = 'block';
+            tabs.dash.classList.add('active'); contents.dash.classList.add('active');
+        }
+    }
+
+    function renderPaginatedTable(tId, pId, data, limit=100) {
+        const tCon = document.getElementById(tId);
+        const pCon = document.getElementById(pId);
+        if(!tCon) return;
+        let curr = 1;
+        const total = Math.ceil(data.length / limit);
+        const render = () => {
+            tCon.innerHTML = createHtmlTable(data.slice((curr-1)*limit, curr*limit));
+            pCon.innerHTML = `<button id="${pId}-p" ${curr===1?'disabled':''}>&lt;</button> <span>${curr}/${total||1}</span> <button id="${pId}-n" ${curr===total||total===0?'disabled':''}>&gt;</button>`;
+            document.getElementById(`${pId}-p`).onclick = () => { if(curr>1) { curr--; render(); } };
+            document.getElementById(`${pId}-n`).onclick = () => { if(curr<total) { curr++; render(); } };
+        };
+        render();
+    }
+
+    function renderDataTables() {
+        renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
+        renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
+    }
+
+    function loadGoals() {
+        const g = localStorage.getItem('dashboardOKRsGoals');
+        appGoals = g ? JSON.parse(g) : { ...defaultGoals };
+        Object.keys(appGoals).forEach(k => { const i = document.getElementById(`goal-${k}`); if(i) i.value = appGoals[k]; });
+    }
+
+    function saveGoals() {
+        Object.keys(defaultGoals).forEach(k => { const i = document.getElementById(`goal-${k}`); if(i) appGoals[k] = parseFloat(i.value) || defaultGoals[k]; });
+        localStorage.setItem('dashboardOKRsGoals', JSON.stringify(appGoals));
+        alert('Metas salvas.');
+        document.getElementById('settings-modal').style.display = 'none';
+        triggerCalculations();
+    }
     
     </script>
     
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script type="text/javascript">
+    var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+    (function() {
+        var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
+        s1.async = true;
+        s1.src = 'https://embed.tawk.to/6862f529ad6c8f190c6f8c38/1iv18rasf';
+        s1.charset = 'UTF-8';
+        s1.setAttribute('crossorigin', '*');
+        s0.parentNode.insertBefore(s1, s0);
+    })();
+    </script>
+
 </body>
 </html>
+
+
+
+
