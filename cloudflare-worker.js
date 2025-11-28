@@ -259,6 +259,7 @@ const syncDeletions = async (env) => {
     if (debugSample.length < 20) {
       deletedItems.slice(0, 20 - debugSample.length).forEach((item) => {
         debugSample.push({
+          deleted_task_id: item.deleted_task_id,
           id: item.id,
           id_legacy: item.id_legacy,
           updated_at: item.updated_at,
@@ -269,9 +270,9 @@ const syncDeletions = async (env) => {
     }
 
     for (const item of deletedItems) {
-      const id = item.id_legacy || item.id;
-      if (!id) continue;
-      await env.DB.prepare(`DELETE FROM atividades WHERE id_sensedata = ?`).bind(id).run();
+      const recordId = item.deleted_task_id || item.id_legacy || item.id;
+      if (!recordId) continue;
+      await env.DB.prepare(`DELETE FROM atividades WHERE id_sensedata = ?`).bind(recordId).run();
       removed++;
     }
 
