@@ -74,8 +74,13 @@
             </header>
 
             <section class="controls">
-                <div class="control-group"><label for="file-atividades"><i class="fas fa-tasks"></i> 1. Planilha de Atividades</label><input type="file" id="file-atividades" accept=".csv, .xlsx, .txt"></div>
-                <div class="control-group"><label for="file-clientes"><i class="fas fa-users"></i> 2. Planilha de Clientes</label><input type="file" id="file-clientes" accept=".csv, .xlsx, .txt"></div>
+                <div class="control-group">
+                    <label style="color: var(--secondary-color);"><i class="fas fa-database"></i> Conexão SenseData</label>
+                    <button id="btn-refresh-data" onclick="loadDataFromAPI()" style="padding: 12px 20px; background: var(--secondary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                        <i class="fas fa-sync-alt"></i> Baixar Dados Atualizados
+                    </button>
+                </div>
+
                 <div class="control-group">
                     <label for="select-period"><i class="fas fa-calendar-check"></i> Análise de Período</label>
                     <select id="select-period">
@@ -420,7 +425,7 @@ const onboardingEmails = [
 
         document.getElementById('login-container').style.display = 'none';
         document.getElementById('dashboard-wrapper').style.display = 'block';
-
+loadDataFromAPI(); // <--- ADICIONE ESTA LINHA AQUI!
         initializeDashboard();
     } else {
         alert("Falha no login. Não foi possível verificar suas credenciais. Tente novamente.");
@@ -617,6 +622,116 @@ function setupUserView() {
         };
         
         // --- FUNÇÕES DE LEITURA E INICIALIZAÇÃO (Thread Principal) ---
+		// ============================================================
+        // NOVA INTEGRAÇÃO: API SENSEDATA -> CLOUDFLARE WORKER
+        // ============================================================
+        
+        const WORKER_URL = "https://sensedata-api.sensedata-dash.workers.dev"; 
+
+        // Função que traduz os nomes do Banco de Dados (inglês/técnico) para o Dashboard (português/Excel)
+        const mapDatabaseToDashboard = (dbData, type) => {
+            return dbData.map(row => {
+                if (type === 'atividades') {
+                    return {
+                        "Criado em": row.criado_em ? new Date(row.criado_em) : null,
+                        "Cliente": row.cliente,
+                        "CS": row.cs, 
+                        "Playbook": row.playbook,
+                        "Atividade": row.atividade,
+                        "Status": row.status,
+                        "Previsão de conclusão": row.previsao_conclusao ? new Date(row.previsao_conclusao) : null,
+                        "Concluída em": row.concluida_em ? new Date(row.concluida_em) : null,
+                        "Responsável": row.responsavel,
+                        "Categoria": row.categoria,
+                        "Tipo de Atividade": row.tipo_atividade,
+                        "Status Cliente": row.status_cliente
+                    };
+                } else if (type === 'clientes') {
+                    return {
+                        "Cliente": row.cliente,
+                        "CS": row.cs,
+                        "Segmento": row.segmento,
+                        "Fase": row.fase,
+                        "ISM": row.ism,
+                        "Negócio": row.negocio,
+                        "Comercial": row.comercial,
+                        "NPS onboarding": row.nps_onboarding,
+                        "Valor total não faturado": row.valor_nao_faturado, 
+                        "Status": row.status,
+                        "Squad CS": row.segmento // Mapeamento extra para compatibilidade
+                    };
+                }
+            });
+        };
+
+        async function loadDataFromAPI() {
+            const statusMsg = document.getElementById('status-message');
+            const btn = document.getElementById('btn-refresh-data');
+            
+            if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...'; }
+            
+            statusMsg.style.display = 'block';
+            statusMsg.className = 'loader'; // Garante o estilo visual
+            statusMsg.textContent = 'Iniciando conexão segura com a base de dados...';
+
+            try {
+                // 1. Baixar Atividades
+                statusMsg.innerHTML = '<i class="fas fa-tasks"></i> Baixando histórico de Atividades...';
+                // Pede um limite alto para garantir que venha tudo
+                const resAtividades = await fetch(`${WORKER_URL}/api/atividades?limit=50000`); 
+                if (!resAtividades.ok) throw new Error("Falha ao baixar tabela de Atividades");
+                const jsonAtividades = await resAtividades.json();
+
+                // 2. Baixar Clientes
+                statusMsg.innerHTML = '<i class="fas fa-users"></i> Baixando base de Clientes...';
+                const resClientes = await fetch(`${WORKER_URL}/api/clientes`);
+                if (!resClientes.ok) throw new Error("Falha ao baixar tabela de Clientes");
+                const jsonClientes = await resClientes.json();
+
+                // 3. Processamento
+                statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando e Cruzando informações...';
+                
+                // Converte os dados do formato SQL para o formato do Dash
+                rawActivities = mapDatabaseToDashboard(jsonAtividades, 'atividades');
+                rawClients = mapDatabaseToDashboard(jsonClientes, 'clientes');
+
+                console.log(`Sucesso: ${rawActivities.length} atividades e ${rawClients.length} clientes carregados.`);
+
+                // 4. Envia para o Worker de Cálculo (Matemática do Dashboard)
+                if (dataWorker) dataWorker.terminate();
+                dataWorker = new Worker('worker.js');
+                dataWorker.onmessage = handleWorkerMessage;
+
+                dataWorker.postMessage({
+                    type: 'INIT',
+                    payload: {
+                        rawActivities: rawActivities,
+                        rawClients: rawClients,
+                        currentUser: currentUser,
+                        manualEmailToCsMap: manualEmailToCsMap
+                    }
+                });
+                
+                // Atualiza o aviso de última carga
+                const lastLoadDiv = document.getElementById('last-load-info');
+                if(lastLoadDiv) {
+                    const agora = new Date();
+                    lastLoadDiv.style.display = 'inline-block';
+                    lastLoadDiv.innerHTML = `<i class="fas fa-check-circle"></i> Dados atualizados em: ${agora.toLocaleTimeString()} (${rawActivities.length} registros)`;
+                }
+
+                statusMsg.textContent = 'Dados carregados com sucesso!';
+                setTimeout(() => { statusMsg.style.display = 'none'; }, 1500);
+
+            } catch (error) {
+                console.error(error);
+                statusMsg.textContent = 'Erro ao conectar: ' + error.message;
+                alert("Erro ao conectar com o banco de dados Cloudflare. Verifique sua internet.");
+            } finally {
+                if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Baixar Dados Atualizados'; }
+            }
+        }
+        // ============================================================
 
         const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -882,14 +997,7 @@ tabsContainer.style.display = 'flex';
         
         // --- FUNÇÕES DE FILTRO E UI (Thread Principal) ---
 
-        fileAtividadesInput.addEventListener('change', (e) => {
-            atividadesFile = e.target.files[0];
-            attemptProcess();
-        });
-        fileClientesInput.addEventListener('change', (e) => {
-            clientesFile = e.target.files[0];
-            attemptProcess();
-        });
+    
 
         const updateIsmFilter = () => {
             const teamView = selectOnboardingTeam.value;
@@ -2734,6 +2842,7 @@ if (!currentUser.isManager) {
 
 
 </html>
+
 
 
 
