@@ -298,7 +298,30 @@
     
     const WORKER_URL = "https://sensedata-api.sensedata-dash.workers.dev"; 
 
+    // --- FUNÇÃO DE TRADUÇÃO CORRIGIDA (V2) ---
     const mapDatabaseToDashboard = (dbData, type) => {
+        
+        // Dicionários de tradução (Mantidos)
+        const translateType = (rawType) => {
+            if (!rawType) return "";
+            const t = rawType.toLowerCase();
+            if (t.includes('phone') || t.includes('call')) return 'Ligação';
+            if (t.includes('meeting')) return 'Reunião';
+            if (t.includes('email') || t.includes('e-mail')) return 'E-mail';
+            if (t.includes('whatsapp')) return 'Whatsapp';
+            if (t.includes('task') || t.includes('tarefa')) return 'Tarefa';
+            return rawType;
+        };
+
+        const translateStatus = (rawStatus) => {
+            if (!rawStatus) return "";
+            const s = rawStatus.toLowerCase();
+            if (s === 'completed' || s === 'concluded' || s === 'done') return 'Concluída';
+            if (s === 'open' || s === 'pending' || s === 'scheduled') return 'Agendada';
+            if (s === 'canceled') return 'Cancelada';
+            return rawStatus;
+        };
+
         return dbData.map(row => {
             if (type === 'atividades') {
                 return {
@@ -307,12 +330,12 @@
                     "CS": row.cs, 
                     "Playbook": row.playbook,
                     "Atividade": row.atividade,
-                    "Status": row.status,
+                    "Tipo de Atividade": translateType(row.tipo_atividade), 
+                    "Categoria": row.categoria || translateType(row.tipo_atividade),
+                    "Status": translateStatus(row.status),
                     "Previsão de conclusão": row.previsao_conclusao ? new Date(row.previsao_conclusao) : null,
                     "Concluída em": row.concluida_em ? new Date(row.concluida_em) : null,
                     "Responsável": row.responsavel,
-                    "Categoria": row.categoria,
-                    "Tipo de Atividade": row.tipo_atividade,
                     "Status Cliente": row.status_cliente
                 };
             } else if (type === 'clientes') {
@@ -325,9 +348,17 @@
                     "Negócio": row.negocio,
                     "Comercial": row.comercial,
                     "NPS onboarding": row.nps_onboarding,
-                    "Valor total não faturado": row.valor_nao_faturado, 
+                    
+                    // --- CORREÇÕES E NOVAS COLUNAS AQUI ---
+                    "Valor total não faturado": row.valor_total_em_aberto, // Nome corrigido do banco
                     "Status": row.status,
-                    "Squad CS": row.segmento 
+                    "Squad CS": row.squad_cs, // <--- CORRIGIDO (Antes estava row.segmento)
+                    
+                    // Colunas novas que faltavam:
+                    "Dias sem touch": row.dias_sem_touch,
+                    "Situação": row.situacao,
+                    "Modelo de negócio": row.modelo_de_negocio,
+                    "Potencial": row.potencial
                 };
             }
         });
@@ -1383,5 +1414,6 @@
 
 </body>
 </html>
+
 
 
