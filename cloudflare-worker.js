@@ -240,6 +240,7 @@ const syncDeletions = async (env) => {
   let removed = 0;
   let safety = 0;
   const debugSample = [];
+  const rawSample = [];
 
   while (safety < MAX_PAGES) {
     const url = `${DELETED_TASKS_ENDPOINT}?limit=${DELETED_LIMIT}&page=${page}&updated_at:start=${encodeDate(
@@ -263,6 +264,7 @@ const syncDeletions = async (env) => {
           updated_at: item.updated_at,
           deleted_at: item.deleted_at
         });
+        rawSample.push(item);
       });
     }
 
@@ -283,6 +285,9 @@ const syncDeletions = async (env) => {
       `[sync-deletados] Excluídos desde ${since.toISOString()} | total=${removed} | sample=${JSON.stringify(
         debugSample
       )}`
+    );
+    console.log(
+      `[sync-deletados] raw-sample=${JSON.stringify(rawSample)}`
     );
   } else {
     console.log(`[sync-deletados] Nenhum registro retornado desde ${since.toISOString()}`);
