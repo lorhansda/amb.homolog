@@ -310,9 +310,21 @@ const syncDeletions = async (env, options = {}) => {
         item.id_legacy ||
         item.id ||
         null;
-      if (!recordId) continue;
-      await env.DB.prepare(`DELETE FROM atividades WHERE id_sensedata = ?`).bind(recordId).run();
-      removed++;
+      if (!recordId) {
+        console.log(
+          `[sync-deletados] Ignorado sem ID: ${JSON.stringify({
+            deleted_task_id: item.deleted_task_id,
+            id: item.id,
+            id_legacy: item.id_legacy
+          })}`
+        );
+        continue;
+      }
+      const result = await env.DB.prepare(`DELETE FROM atividades WHERE id_sensedata = ? RETURNING id_sensedata`).bind(recordId).first();
+      console.log(
+        `[sync-deletados] Processado id=${recordId} - removido=${result ? "true" : "false"}`
+      );
+      removed += result ? 1 : 0;
     }
 
     page++;
