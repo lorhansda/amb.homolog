@@ -55,6 +55,23 @@ const buildTaskStatement = (env, task) => {
   const playbookName = task.parent?.description || task.playbook?.description || "";
   const statusCliente = task.customer?.status?.description || "Desconhecido";
   const notes = sanitize(task.notes).replace(/[\r\n]+/g, " ");
+  const activityId =
+    task.id ||
+    task.task_id ||
+    task.id_legacy ||
+    task.activity_id ||
+    task.deleted_task_id ||
+    null;
+  if (!activityId) {
+    console.log(
+      `[sync-atividades] Atividade ignorada sem ID identificável: ${JSON.stringify({
+        id: task.id,
+        task_id: task.task_id,
+        id_legacy: task.id_legacy
+      })}`
+    );
+    return null;
+  }
 
   return env.DB.prepare(
     `INSERT OR REPLACE INTO atividades (
@@ -75,7 +92,7 @@ const buildTaskStatement = (env, task) => {
         atualizado_em
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
-    task.id,
+    activityId,
     task.created_at || null,
     task.customer?.name || "N/A",
     pickCS(task),
@@ -113,7 +130,9 @@ const fetchTasksWindow = async ({ env, token, filterField, since, maxPages }) =>
     const tasks = Array.isArray(json.tasks) ? json.tasks : [];
     if (tasks.length === 0) break;
 
-    const statements = tasks.map((task) => buildTaskStatement(env, task));
+    const statements = tasks
+      .map((task) => buildTaskStatement(env, task))
+      .filter(Boolean);
     for (let i = 0; i < statements.length; i += ACTIVITIES_BATCH_SIZE) {
       const chunk = statements.slice(i, i + ACTIVITIES_BATCH_SIZE);
       await env.DB.batch(chunk);
