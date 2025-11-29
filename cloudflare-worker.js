@@ -304,7 +304,12 @@ const syncDeletions = async (env, options = {}) => {
     }
 
     for (const item of deletedItems) {
-      const recordId = item.deleted_task_id || item.id_legacy || item.id;
+      const recordId =
+        item.task?.id ||
+        item.deleted_task_id ||
+        item.id_legacy ||
+        item.id ||
+        null;
       if (!recordId) continue;
       await env.DB.prepare(`DELETE FROM atividades WHERE id_sensedata = ?`).bind(recordId).run();
       removed++;
