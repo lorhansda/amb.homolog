@@ -770,6 +770,34 @@
             background-color: color-mix(in srgb, var(--primary-color) 15%, transparent);
         }
 
+        .activity-action-cell {
+            text-align: center;
+            width: 48px;
+        }
+
+        .activity-delete-btn {
+            background: none;
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .activity-delete-btn:hover:not(:disabled) {
+            background-color: color-mix(in srgb, var(--danger-color) 20%, transparent);
+        }
+
+        .activity-delete-btn.loading {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         body.light-theme .data-table thead {
             background-color: #f6f8fa;
         }
