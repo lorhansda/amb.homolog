@@ -108,9 +108,6 @@ const pickCS = (task) =>
 const buildTaskStatement = (env, task) => {
   const playbookName = task.parent?.description || task.playbook?.description || "";
   const statusCliente = task.customer?.status?.description || "Desconhecido";
-  if (!isActiveProductStatus(statusCliente)) {
-    return null;
-  }
   const tagsArray = Array.isArray(task.tags) ? task.tags : [];
   const categoriaTag = tagsArray
     .map(extractTagLabel)
