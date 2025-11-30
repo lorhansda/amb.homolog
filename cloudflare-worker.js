@@ -3,7 +3,7 @@ const TASKS_ENDPOINT = "https://api.sensedata.io/v2/tasks";
 const CUSTOMERS_ENDPOINT = "https://api.sensedata.io/v2/customers";
 const DELETED_TASKS_ENDPOINT = "https://api.sensedata.io/v2/deleted_tasks";
 
-const LOOKBACK_DAYS = 5;
+const LOOKBACK_DAYS = 3;
 const MIRROR_WINDOW_DAYS = 90;
 const MAX_PAGES = 10;
 const TASKS_LIMIT = 1000;
