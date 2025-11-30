@@ -419,8 +419,8 @@ const handleFetch = async (request, env) => {
         });
       }
       const result = await env.DB.prepare(
-        `DELETE FROM atividades WHERE id_sensedata = ? OR id = ? RETURNING id_sensedata`
-      ).bind(activityId, activityId).first();
+        `DELETE FROM atividades WHERE id_sensedata = ? RETURNING id_sensedata`
+      ).bind(activityId).first();
       return new Response(JSON.stringify({
         success: true,
         id: activityId,
