@@ -527,6 +527,17 @@
         return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     }
 
+    const normalizeClientKey = (value = '') => (value || '').trim().toLowerCase();
+
+    function formatClientStatusValue(value = '') {
+        if (!value) return '';
+        return value
+            .split('-')
+            .map(part => part.split(' ').map(word => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '').join(' '))
+            .join('-')
+            .trim();
+    }
+
     function formatDate(date) {
         if (!(date instanceof Date) || isNaN(date)) return '';
         const day = String(date.getUTCDate()).padStart(2, '0');
@@ -678,6 +689,36 @@
     //  3. FUNÇÕES DE DADOS E TRADUÇÃO
     // ============================================================
 
+    function enrichActivitiesWithClientData(activities = [], clients = []) {
+        if (!Array.isArray(activities) || !Array.isArray(clients)) return activities;
+        const clientMap = new Map(clients.map(client => [normalizeClientKey(client.Cliente), client]));
+        return activities.map(activity => {
+            const normalized = normalizeClientKey(activity.Cliente);
+            const clientInfo = clientMap.get(normalized);
+            if (!clientInfo) {
+                return {
+                    ...activity,
+                    ClienteCompleto: normalizeClientKey(activity.Cliente || '')
+                };
+            }
+            const canonicalName = clientInfo.Cliente || activity.Cliente;
+            return {
+                ...activity,
+                Cliente: canonicalName || activity.Cliente,
+                ClienteCompleto: normalizeClientKey(canonicalName),
+                Segmento: clientInfo.Segmento || activity.Segmento || '',
+                Squad: clientInfo['Squad CS'] || activity.Squad || '',
+                Fase: clientInfo.Fase || activity.Fase || '',
+                ISM: clientInfo.ISM || activity.ISM || '',
+                Negocio: clientInfo['Negócio'] || activity.Negocio || '',
+                Comercial: clientInfo.Comercial || activity.Comercial || '',
+                NPSOnboarding: clientInfo['NPS onboarding'] ?? activity.NPSOnboarding ?? '',
+                ValorNaoFaturado: clientInfo['Valor total não faturado'] ?? activity.ValorNaoFaturado ?? '',
+                "Status Cliente": formatClientStatusValue(activity["Status Cliente"] || clientInfo.Status || clientInfo['Situação'])
+            };
+        });
+    }
+
     function mapDatabaseToDashboard(dbData, type) {
         const translateType = (rawType) => {
             if (!rawType) return "";
@@ -706,20 +747,22 @@
                     "__activityId": activityId || null,
                     "Criado em": row.criado_em ? new Date(row.criado_em) : null,
                     "Cliente": row.cliente,
+                    "ClienteCompleto": normalizeClientKey(row.cliente),
                     "CS": row.cs, 
                     "Playbook": row.playbook,
                     "Atividade": row.atividade,
                     "Tipo de Atividade": translateType(row.tipo_atividade), 
-                    "Categoria": row.categoria || translateType(row.tipo_atividade),
+                    "Categoria": row.categoria || '',
                     "Status": translateStatus(row.status),
                     "Previsão de conclusão": row.previsao_conclusao ? new Date(row.previsao_conclusao) : null,
                     "Concluída em": row.concluida_em ? new Date(row.concluida_em) : null,
                     "Responsável": row.responsavel,
-                    "Status Cliente": row.status_cliente
+                    "Status Cliente": formatClientStatusValue(row.status_cliente)
                 };
             } else if (type === 'clientes') {
                 return {
                     "Cliente": row.cliente,
+                    "ClienteCompleto": normalizeClientKey(row.cliente),
                     "CS": row.cs,
                     "Segmento": row.segmento,
                     "Fase": row.fase,
@@ -761,6 +804,7 @@
             
             rawActivities = mapDatabaseToDashboard(jsonAtividades, 'atividades');
             rawClients = mapDatabaseToDashboard(jsonClientes, 'clientes');
+            rawActivities = enrichActivitiesWithClientData(rawActivities, rawClients);
 
             console.log(`Sucesso: ${rawActivities.length} atividades e ${rawClients.length} clientes.`);
 
