@@ -536,8 +536,12 @@ const handleFetch = async (request, env) => {
   }
 };
 
-const handleScheduled = async (_event, env) => {
-  await runDailySync(env);
+const handleScheduled = async (event, env) => {
+  if (event.cron === "0 3 * * *") {
+    await runDailySync(env);
+  } else if (event.cron === "0 2 1 * *") {
+    await purgeOldActivities(env);
+  }
 };
 
 export default {
