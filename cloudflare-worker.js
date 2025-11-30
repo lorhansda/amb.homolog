@@ -28,6 +28,26 @@ const sanitize = (val) => {
   return String(val).trim();
 };
 
+const normalizeStatus = (value) => {
+  if (!value) return "";
+  return String(value).trim().toLowerCase();
+};
+
+const extractTagLabel = (tag) => {
+  if (!tag) return "";
+  if (typeof tag === "string") return tag.trim();
+  if (typeof tag === "object") {
+    return (
+      tag.description ||
+      tag.name ||
+      tag.label ||
+      tag.value ||
+      ""
+    ).toString().trim();
+  }
+  return "";
+};
+
 const parseDateParam = (value) => {
   if (!value) return null;
   const date = new Date(value);
@@ -73,6 +93,13 @@ const pickCS = (task) =>
 const buildTaskStatement = (env, task) => {
   const playbookName = task.parent?.description || task.playbook?.description || "";
   const statusCliente = task.customer?.status?.description || "Desconhecido";
+  if (normalizeStatus(statusCliente) !== "ativo-produto") {
+    return null;
+  }
+  const tagsArray = Array.isArray(task.tags) ? task.tags : [];
+  const categoriaTag = tagsArray
+    .map(extractTagLabel)
+    .filter((tag) => tag && tag.length > 0)[0] || "";
   const notes = sanitize(task.notes).replace(/[\r\n]+/g, " ");
   const activityId =
     task.id ||
@@ -121,7 +148,7 @@ const buildTaskStatement = (env, task) => {
     task.due_date || null,
     task.end_date || null,
     task.owner?.name || "Sistema",
-    task.group || task.type?.category || "",
+    categoriaTag,
     task.type?.description || "",
     statusCliente,
     notes,
