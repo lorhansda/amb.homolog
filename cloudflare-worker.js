@@ -28,6 +28,25 @@ const sanitize = (val) => {
   return String(val).trim();
 };
 
+const parseDateParam = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date) ? null : date;
+};
+
+const parsePositiveInt = (value, min = 1) => {
+  if (!value) return null;
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < min) return null;
+  return parsed;
+};
+
+const resolveCursorDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date) ? null : date;
+};
+
 const subtractDays = (days) => {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -110,8 +129,9 @@ const buildTaskStatement = (env, task) => {
   );
 };
 
-const fetchTasksWindow = async ({ env, token, filterField, since, maxPages }) => {
+const fetchTasksWindow = async ({ env, token, filterField, since, maxPages, limit }) => {
   const pageLimit = maxPages ?? MAX_PAGES;
+  const perPageLimit = limit ?? TASKS_LIMIT;
   let page = 1;
   let fetched = 0;
   let safety = 0;
@@ -123,7 +143,7 @@ const fetchTasksWindow = async ({ env, token, filterField, since, maxPages }) =>
   };
 
   while (safety < pageLimit) {
-    const url = `${TASKS_ENDPOINT}?limit=${TASKS_LIMIT}&page=${page}&${filterField}:start=${encodeDate(
+    const url = `${TASKS_ENDPOINT}?limit=${perPageLimit}&page=${page}&${filterField}:start=${encodeDate(
       since
     )}`;
     const response = await fetch(url, {
@@ -152,7 +172,7 @@ const fetchTasksWindow = async ({ env, token, filterField, since, maxPages }) =>
     fetched += tasks.length;
     page++;
     safety++;
-    if (tasks.length < TASKS_LIMIT) break;
+    if (tasks.length < perPageLimit) break;
   }
 
   return { fetched, cursor: maxTimestamp ? maxTimestamp.toISOString() : since.toISOString() };
@@ -183,13 +203,17 @@ const updateSyncCursor = async (env, column, value) => {
 const syncActivities = async (env, options = {}) => {
   const token = getAuthToken(env);
   const state = await readSyncState(env);
-  const since = state?.last_activity_update ? new Date(state.last_activity_update) : getWindowStart();
+  const sinceOverride =
+    options.since instanceof Date && !isNaN(options.since) ? options.since : parseDateParam(options.since);
+  const cursorDate = resolveCursorDate(state?.last_activity_update);
+  const since = sinceOverride || cursorDate || getWindowStart();
   const result = await fetchTasksWindow({
     env,
     token,
     filterField: "updated_at",
     since,
-    maxPages: options.maxPages
+    maxPages: options.maxPages,
+    limit: options.limit
   });
   if (result.cursor) {
     await updateSyncCursor(env, "last_activity_update", result.cursor);
@@ -200,8 +224,12 @@ const syncActivities = async (env, options = {}) => {
 const syncClients = async (env, options = {}) => {
   const token = getAuthToken(env);
   const state = await readSyncState(env);
-  const since = state?.last_client_update ? new Date(state.last_client_update) : getWindowStart();
+  const sinceOverride =
+    options.since instanceof Date && !isNaN(options.since) ? options.since : parseDateParam(options.since);
+  const cursorDate = resolveCursorDate(state?.last_client_update);
+  const since = sinceOverride || cursorDate || getWindowStart();
   const pageLimit = options.maxPages ?? MAX_PAGES;
+  const perPageLimit = options.limit ?? CUSTOMERS_LIMIT;
   let page = 1;
   let saved = 0;
   let safety = 0;
@@ -213,7 +241,7 @@ const syncClients = async (env, options = {}) => {
   };
 
   while (safety < pageLimit) {
-    const url = `${CUSTOMERS_ENDPOINT}?limit=${CUSTOMERS_LIMIT}&page=${page}&updated_at:start=${encodeDate(
+    const url = `${CUSTOMERS_ENDPOINT}?limit=${perPageLimit}&page=${page}&updated_at:start=${encodeDate(
       since
     )}`;
     const response = await fetch(url, {
@@ -301,7 +329,7 @@ const syncClients = async (env, options = {}) => {
 
     page++;
     safety++;
-    if (customers.length < CUSTOMERS_LIMIT) break;
+    if (customers.length < perPageLimit) break;
   }
 
   if (maxTimestamp) {
@@ -325,6 +353,45 @@ const purgeOldActivities = async (env) => {
   ).bind(threshold.toISOString()).all();
 
   return result.results.length;
+};
+
+const resetDatabase = async (env, scope = "all") => {
+  const normalizedScope = ["all", "atividades", "clientes"].includes(scope) ? scope : "all";
+  let atividadesDeleted = 0;
+  let clientesDeleted = 0;
+
+  if (normalizedScope === "all" || normalizedScope === "atividades") {
+    const result = await env.DB.prepare(`DELETE FROM atividades`).run();
+    atividadesDeleted = result.meta?.changes || 0;
+  }
+
+  if (normalizedScope === "all" || normalizedScope === "clientes") {
+    const result = await env.DB.prepare(`DELETE FROM clientes`).run();
+    clientesDeleted = result.meta?.changes || 0;
+  }
+
+  try {
+    await env.DB.prepare(
+      `UPDATE sync_state
+       SET activities_created_cursor = NULL,
+           activities_updated_cursor = NULL,
+           deleted_cursor = NULL,
+           last_full_sync = NULL,
+           last_run = NULL,
+           last_error = NULL,
+           last_activity_update = NULL,
+           last_client_update = NULL
+       WHERE id = 1`
+    ).run();
+  } catch (error) {
+    console.log(`[reset-db] Falha ao resetar sync_state: ${error.message}`);
+  }
+
+  return {
+    scope: normalizedScope,
+    atividades_deleted: atividadesDeleted,
+    clientes_deleted: clientesDeleted
+  };
 };
 
 const syncDeletions = async (env, options = {}) => {
@@ -439,8 +506,16 @@ const getClientes = async (env) => {
 
 const runDailySync = async (env, options = {}) => {
   const [activities, clients] = await Promise.all([
-    syncActivities(env, options),
-    syncClients(env, options)
+    syncActivities(env, {
+      maxPages: options.maxPages,
+      limit: options.activitiesLimit ?? options.limit,
+      since: options.since
+    }),
+    syncClients(env, {
+      maxPages: options.maxPages,
+      limit: options.clientsLimit ?? options.limit,
+      since: options.since
+    })
   ]);
 
   return {
@@ -461,6 +536,10 @@ const handleFetch = async (request, env) => {
   const url = new URL(request.url);
   const pagesParam = url.searchParams.get("pages");
   const maxPagesOverride = pagesParam ? Math.max(1, parseInt(pagesParam, 10) || 1) : undefined;
+  const limitParam = parsePositiveInt(url.searchParams.get("limit"));
+  const activitiesLimitOverride = parsePositiveInt(url.searchParams.get("activities_limit")) || limitParam;
+  const clientsLimitOverride = parsePositiveInt(url.searchParams.get("clients_limit")) || limitParam;
+  const sinceOverride = parseDateParam(url.searchParams.get("since"));
 
   try {
     if (url.pathname === "/api/delete-atividade") {
@@ -495,12 +574,29 @@ const handleFetch = async (request, env) => {
         status: 200
       });
     }
+    if (url.pathname === "/api/reset-db") {
+      const scopeParam = (url.searchParams.get("scope") || "all").toLowerCase();
+      const summary = await resetDatabase(env, scopeParam);
+      return new Response(JSON.stringify({ success: true, ...summary }), {
+        headers: corsHeaders,
+        status: 200
+      });
+    }
     if (url.pathname === "/api/sync") {
-      const summary = await runDailySync(env, { maxPages: maxPagesOverride });
+      const summary = await runDailySync(env, {
+        maxPages: maxPagesOverride,
+        activitiesLimit: activitiesLimitOverride,
+        clientsLimit: clientsLimitOverride,
+        since: sinceOverride
+      });
       return new Response(JSON.stringify(summary), { headers: corsHeaders, status: 200 });
     }
     if (url.pathname === "/api/sync-atividades") {
-      const summary = await syncActivities(env, { maxPages: maxPagesOverride });
+      const summary = await syncActivities(env, {
+        maxPages: maxPagesOverride,
+        limit: activitiesLimitOverride,
+        since: sinceOverride
+      });
       return new Response(JSON.stringify(summary), { headers: corsHeaders, status: 200 });
     }
     if (url.pathname === "/api/sync-deletados") {
@@ -511,7 +607,11 @@ const handleFetch = async (request, env) => {
       });
     }
     if (url.pathname === "/api/sync-clientes") {
-      const summary = await syncClients(env, { maxPages: maxPagesOverride });
+      const summary = await syncClients(env, {
+        maxPages: maxPagesOverride,
+        limit: clientsLimitOverride,
+        since: sinceOverride
+      });
       return new Response(JSON.stringify({ success: true, clients_synced: summary }), {
         headers: corsHeaders,
         status: 200
