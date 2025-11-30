@@ -504,6 +504,26 @@ const getClientes = async (env) => {
   });
 };
 
+const getAtividadeById = async (env, id) => {
+  if (!id) {
+    return new Response(JSON.stringify({ error: "Parâmetro 'id' obrigatório." }), {
+      headers: corsHeaders,
+      status: 400
+    });
+  }
+  const result = await env.DB.prepare(`SELECT * FROM atividades WHERE id_sensedata = ?`).bind(id).first();
+  if (!result) {
+    return new Response(JSON.stringify({ error: `Atividade ${id} não encontrada.` }), {
+      headers: corsHeaders,
+      status: 404
+    });
+  }
+  return new Response(JSON.stringify(result), {
+    headers: corsHeaders,
+    status: 200
+  });
+};
+
 const runDailySync = async (env, options = {}) => {
   const [activities, clients] = await Promise.all([
     syncActivities(env, {
@@ -616,6 +636,10 @@ const handleFetch = async (request, env) => {
         headers: corsHeaders,
         status: 200
       });
+    }
+    if (url.pathname === "/api/atividade") {
+      const id = url.searchParams.get("id");
+      return await getAtividadeById(env, id);
     }
     if (url.pathname === "/api/atividades") {
       return await getAtividades(env, request.url);
