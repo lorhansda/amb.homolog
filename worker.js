@@ -16,6 +16,16 @@ let rawActivities = [],
 // --- FUNÇÕES AUXILIARES ---
 
 const normalizeText = (str = '') => String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const buildClientKey = (name = '') => (name || '').trim().toLowerCase();
+
+const formatClientStatus = (value = '') => {
+    if (!value) return 'Desconhecido';
+    return value
+        .split('-')
+        .map(part => part.split(' ').map(word => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '').join(' '))
+        .join('-')
+        .trim();
+};
 
 const getQuarter = (date) => Math.floor(date.getUTCMonth() / 3);
 
@@ -70,7 +80,40 @@ const buildCsToSquadMap = () => {
 
 const processInitialData = () => {
     // Mapeamento rápido de clientes
-    const clienteMap = new Map(rawClients.map(cli => [(cli.Cliente || '').trim().toLowerCase(), cli]));
+    const clienteMap = new Map(rawClients.map(cli => [buildClientKey(cli.Cliente), cli]));
+    const clienteLookupCache = new Map();
+    const findClientInfo = (name = '') => {
+        const normalized = buildClientKey(name);
+        if (clienteLookupCache.has(normalized)) return clienteLookupCache.get(normalized);
+
+        let info = clienteMap.get(normalized) || null;
+        let resolvedKey = info ? buildClientKey(info.Cliente) : normalized;
+
+        if (!info && normalized && normalized.includes('|')) {
+            const suffix = normalized.slice(normalized.indexOf('|'));
+            for (const [key, value] of clienteMap.entries()) {
+                if (key.endsWith(suffix)) {
+                    info = value;
+                    resolvedKey = key;
+                    break;
+                }
+            }
+        }
+
+        if (!info && normalized) {
+            for (const [key, value] of clienteMap.entries()) {
+                if (key.includes(normalized) || normalized.includes(key)) {
+                    info = value;
+                    resolvedKey = key;
+                    break;
+                }
+            }
+        }
+
+        const result = { info, resolvedKey };
+        clienteLookupCache.set(normalized, result);
+        return result;
+    };
     
     const onboardingPlaybooks = [
         'onboarding lantek', 'onboarding elétrica', 'onboarding altium',
@@ -82,15 +125,19 @@ const processInitialData = () => {
 
     // 1. Processa Atividades e Enriquece com dados do Cliente
     rawActivities = rawActivities.map(ativ => {
-        const clienteKey = (ativ.Cliente || '').trim().toLowerCase();
-        const clienteInfo = clienteMap.get(clienteKey) || {};
+        const originalClientName = ativ.Cliente || '';
+        const { info: clienteInfoResolved, resolvedKey } = findClientInfo(originalClientName);
+        const clienteInfo = clienteInfoResolved || {};
+        const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
+        const clienteKey = resolvedKey || buildClientKey(canonicalClientName) || buildClientKey(originalClientName);
         
         // Garante datas
         let criadoEmDate = ativ['Criado em'];
         if(!(criadoEmDate instanceof Date)) criadoEmDate = parseDate(criadoEmDate);
 
         const playbookNormalized = normalizeText(ativ.Playbook);
-        const statusCliente = ativ['Status Cliente'] || clienteInfo['Status Cliente'] || clienteInfo.Status || clienteInfo['Situação'];
+        const statusClienteRaw = ativ['Status Cliente'] || clienteInfo['Status Cliente'] || clienteInfo.Status || clienteInfo['Situação'];
+        const statusCliente = formatClientStatus(statusClienteRaw);
 
         if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
             const existingStartDate = clientOnboardingStartDate.get(clienteKey);
@@ -101,8 +148,9 @@ const processInitialData = () => {
 
         return {
             ...ativ,
+            Cliente: canonicalClientName || originalClientName,
             ClienteCompleto: clienteKey,
-            "Status Cliente": statusCliente || 'Desconhecido',
+            "Status Cliente": statusCliente,
             // Puxa dados da tabela de Clientes (JOIN)
             Segmento: clienteInfo.Segmento || 'Não Identificado',
             CS: clienteInfo.CS || 'Não Identificado', 
