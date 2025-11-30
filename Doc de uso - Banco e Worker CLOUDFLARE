@@ -1,0 +1,42 @@
+Guia de Operação do Espelho SenseData
+1. Sincronização Automática
+Cron executado a cada 15 min (*/15 * * * *) chama runDailySync(env, { maxPages: 1 }).
+Busca apenas o delta desde sync_state.last_activity_update / last_client_update.
+Limita a 1 página (≈100 registros) por rodada para não estourar limites do plano free.
+Cursor incremental: se o cursor estiver NULL, usa “hoje − 3 dias” como fallback e, ao final da execução, grava o maior updated_at retornado. Assim, cada exec. pega apenas o que mudou desde a última rodada.
+2. Limpeza Mensal
+Cron mensal (0 2 1 * * *) chama purgeOldActivities(env).
+Remove de atividades todas as linhas cujo coalesce(atualizado_em, criado_em) seja anterior a 4 meses (CLEANUP_MONTHS = 4).
+Endpoint manual: https://sensedata-api.sensedata-dash.workers.dev/api/purge-old-atividades.
+3. Endpoints Disponíveis
+| Endpoint | Método | Descrição | | --- | --- | --- | | /api/sync | GET | Rodada manual da sincronização (usa o cursor; respeita ?pages=n). | | /api/sync-atividades | GET | Só sincroniza atividades (com ?pages=n). | | /api/sync-clientes | GET | Só sincroniza clientes (com ?pages=n). | | /api/sync-deletados | GET | Consulta deletados na janela atual (opcional; não roda no cron). | | /api/delete-atividade?id=<id> | POST/GET | Remove do D1 a atividade com id_sensedata=<id> (usado pelo botão 🗑 no dashboard). | | /api/purge-old-atividades | POST/GET | Executa a limpeza de registros com mais de 4 meses. | | /api/atividades?limit=...&since=... | GET | Retorna os dados para o dashboard (por padrão últimos 90 dias, MIRROR_WINDOW_DAYS). | | /api/clientes | GET | Lista de clientes para o dashboard. |
+
+4. Parâmetros Ajustáveis
+LOOKBACK_DAYS (atual): 3 — fallback para primeira sincronização sem cursor.
+MAX_PAGES: 1 (no cron) — pode ser aumentado manualmente via ?pages=n quando se deseja processar mais itens em um único disparo.
+CLEANUP_MONTHS: 4 — período de retenção do D1.
+Para alterar:
+
+Em cloudflare-worker.js, ajuste os valores e republique (wrangler publish).
+Atualize os cron schedules no painel (Workers & Pages → Triggers) conforme desejado.
+5. Fluxo do Dashboard
+As tabelas exibem uma coluna de ações (botão 🗑) quando __activityId está presente. Ao clicar:
+Chamada automática a https://sensedata-api.sensedata-dash.workers.dev/api/delete-atividade?id=<ID>.
+Em caso de sucesso, a linha é removida da UI; em falha, o botão reabilita e mostra alerta.
+mapDatabaseToDashboard injeta __activityId a partir de id_sensedata para permitir esse comportamento.
+6. Uso Manual (quando necessário)
+Forçar sincronização: https://sensedata-api.sensedata-dash.workers.dev/api/sync?pages=2
+Rodar apenas atividades ou clientes: /api/sync-atividades?pages=2 ou /api/sync-clientes?pages=2.
+Limpar manualmente: /api/purge-old-atividades.
+Remover item detectado via dashboard: clique no botão ou use /api/delete-atividade?id=<id>.
+7. Observability / Logs
+Logs importantes:
+[sync-deletados] Processado id=...
+[sync-deletados] raw-sample-single={...}
+Para ver os logs, use Observability → Logs no painel, ou wrangler tail --service=sensedata-api.
+8. Manutenção Recorrente
+Verificar sync_state ocasionalmente (SELECT * FROM sync_state;) para confirmar que os cursores estão avançando.
+Caso alguma sincronização pare (ex.: feed do SenseData retorna erro), os logs mostrarão last_error.
+Se precisar resetar o cursor (por ex., reprocessar um período maior), zere last_activity_update / last_client_update:
+UPDATE sync_state SET last_activity_update = NULL, last_client_update = NULL WHERE id = 1;
+Na próxima execução ele voltará a usar “hoje − LOOKBACK_DAYS”.
