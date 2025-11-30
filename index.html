@@ -503,15 +503,20 @@
 
     function createHtmlTable(data) {
         if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Sem dados para exibir.</p>';
-        const headers = Object.keys(data[0]).filter(h => normalizeText(h) !== 'anotacoes');
-        const head = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`;
-        const body = `<tbody>${data.map(row => `<tr>${headers.map(h => {
-            let val = row[h];
-            if(val instanceof Date) val = formatDate(val);
-            // Verifica se é a coluna cliente para adicionar o gatilho de anotação
-            if(normalizeText(h) === 'cliente') return `<td><span class="client-activity-trigger" data-anotacao="${(row['Anotações']||'').replace(/"/g,'&quot;')}">${val}</span></td>`;
-            return `<td>${val !== null && val !== undefined ? val : ''}</td>`;
-        }).join('')}</tr>`).join('')}</tbody>`;
+        const hiddenKeys = ['__activityId'];
+        const headers = Object.keys(data[0]).filter(h => !hiddenKeys.includes(h) && normalizeText(h) !== 'anotacoes');
+        const hasActions = data.some(row => row.__activityId);
+        const head = `<thead><tr>${hasActions ? '<th style="width: 60px;"></th>' : ''}${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`;
+        const body = `<tbody>${data.map(row => {
+            const rowsCells = headers.map(h => {
+                let val = row[h];
+                if(val instanceof Date) val = formatDate(val);
+                if(normalizeText(h) === 'cliente') return `<td><span class="client-activity-trigger" data-anotacao="${(row['Anotações']||'').replace(/"/g,'&quot;')}">${val}</span></td>`;
+                return `<td>${val !== null && val !== undefined ? val : ''}</td>`;
+            }).join('');
+            const actionCell = hasActions ? `<td class="activity-action-cell">${row.__activityId ? `<button class="activity-delete-btn" data-activity-id="${row.__activityId}"><i class="fas fa-trash"></i></button>` : ''}</td>` : '';
+            return `<tr>${actionCell}${rowsCells}</tr>`;
+        }).join('')}</tbody>`;
         return `<table class="data-table">${head}${body}</table>`;
     }
 
@@ -634,7 +639,9 @@
 
         return dbData.map(row => {
             if (type === 'atividades') {
+                const activityId = row.id_sensedata || row.id || row.ID || row.Id;
                 return {
+                    "__activityId": activityId || null,
                     "Criado em": row.criado_em ? new Date(row.criado_em) : null,
                     "Cliente": row.cliente,
                     "CS": row.cs, 
@@ -1178,6 +1185,32 @@
         });
 
         document.body.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.activity-delete-btn');
+            if (deleteBtn) {
+                const activityId = deleteBtn.dataset.activityId;
+                if (!activityId) return;
+                if (!confirm('Remover esta atividade do espelho local?')) return;
+                deleteBtn.disabled = true;
+                deleteBtn.classList.add('loading');
+                fetch(`/api/delete-atividade?id=${encodeURIComponent(activityId)}`, { method: 'POST' })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success && res.deleted) {
+                            const row = deleteBtn.closest('tr');
+                            if (row) row.remove();
+                        } else {
+                            alert(res.error || 'Não foi possível remover esta atividade.');
+                            deleteBtn.disabled = false;
+                            deleteBtn.classList.remove('loading');
+                        }
+                    })
+                    .catch(() => {
+                        alert('Erro ao comunicar com o servidor. Tente novamente.');
+                        deleteBtn.disabled = false;
+                        deleteBtn.classList.remove('loading');
+                    });
+                return;
+            }
             const metricEl = e.target.closest('[data-metric-id]');
             if(metricEl) showDetailsModal(metricEl.dataset.metricId, metricEl.dataset.metricTitle);
             const trigger = e.target.closest('span.client-activity-trigger');

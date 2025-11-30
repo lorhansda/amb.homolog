@@ -402,6 +402,31 @@ const handleFetch = async (request, env) => {
   const maxPagesOverride = pagesParam ? Math.max(1, parseInt(pagesParam, 10) || 1) : undefined;
 
   try {
+    if (url.pathname === "/api/delete-atividade") {
+      let activityId = url.searchParams.get("id");
+      if (!activityId && request.method === "POST") {
+        try {
+          const body = await request.json();
+          activityId = body?.id || body?.activityId || null;
+        } catch (err) {
+          // ignore parse errors
+        }
+      }
+      if (!activityId) {
+        return new Response(JSON.stringify({ success: false, error: "Parâmetro 'id' obrigatório." }), {
+          headers: corsHeaders,
+          status: 400
+        });
+      }
+      const result = await env.DB.prepare(
+        `DELETE FROM atividades WHERE id_sensedata = ? OR id = ? RETURNING id_sensedata`
+      ).bind(activityId, activityId).first();
+      return new Response(JSON.stringify({
+        success: true,
+        id: activityId,
+        deleted: Boolean(result)
+      }), { headers: corsHeaders, status: 200 });
+    }
     if (url.pathname === "/api/sync") {
       const summary = await runDailySync(env, { maxPages: maxPagesOverride });
       return new Response(JSON.stringify(summary), { headers: corsHeaders, status: 200 });
