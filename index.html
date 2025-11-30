@@ -474,6 +474,51 @@
         "deborahsimonearruda@gmail.com": "Deborah Arruda",
     };
 
+    const ACTIVITY_COLUMN_ORDER = [
+        "Criado em",
+        "Cliente",
+        "CS",
+        "Playbook",
+        "Atividade",
+        "Status",
+        "Previsão de conclusão",
+        "Concluída em",
+        "Responsável",
+        "Categoria",
+        "Tipo de Atividade",
+        "Status Cliente",
+        "ClienteCompleto",
+        "Segmento",
+        "Squad",
+        "Fase",
+        "ISM",
+        "Negocio",
+        "Comercial",
+        "CriadoEm",
+        "PrevisaoConclusao",
+        "ConcluidaEm",
+        "NPSOnboarding",
+        "ValorNaoFaturado"
+    ];
+
+    const CLIENT_COLUMN_ORDER = [
+        "Cliente",
+        "CS",
+        "Segmento",
+        "Fase",
+        "ISM",
+        "Negócio",
+        "Comercial",
+        "Status",
+        "Squad CS",
+        "Dias sem touch",
+        "Situação",
+        "Modelo de negócio",
+        "Potencial",
+        "NPS onboarding",
+        "Valor total não faturado"
+    ];
+
     // ============================================================
     //  2. FUNÇÕES AUXILIARES E MODAIS (PRECISAM VIR PRIMEIRO)
     // ============================================================
@@ -501,10 +546,27 @@
         }
     }
 
-    function createHtmlTable(data) {
+    function createHtmlTable(data, options = {}) {
         if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Sem dados para exibir.</p>';
+        const columnOrder = Array.isArray(options.columnOrder) ? options.columnOrder : null;
         const hiddenKeys = ['__activityId'];
-        const headers = Object.keys(data[0]).filter(h => !hiddenKeys.includes(h) && normalizeText(h) !== 'anotacoes');
+        let headers = Object.keys(data[0]).filter(h => !hiddenKeys.includes(h) && normalizeText(h) !== 'anotacoes');
+        if (columnOrder) {
+            const normalizedLookup = new Map();
+            headers.forEach(header => normalizedLookup.set(normalizeText(header), header));
+            const usedHeaders = new Set();
+            const orderedHeaders = [];
+            columnOrder.forEach(orderKey => {
+                const normalizedKey = normalizeText(orderKey);
+                const actualHeader = normalizedLookup.get(normalizedKey);
+                if (actualHeader && !usedHeaders.has(actualHeader)) {
+                    orderedHeaders.push(actualHeader);
+                    usedHeaders.add(actualHeader);
+                }
+            });
+            const remainingHeaders = headers.filter(header => !usedHeaders.has(header));
+            headers = [...orderedHeaders, ...remainingHeaders];
+        }
         const hasActions = data.some(row => row.__activityId);
         const head = `<thead><tr>${hasActions ? '<th style="width: 60px;"></th>' : ''}${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`;
         const body = `<tbody>${data.map(row => {
@@ -1380,14 +1442,14 @@
         }
     }
 
-    function renderPaginatedTable(tId, pId, data, limit=100) {
+    function renderPaginatedTable(tId, pId, data, limit=100, columnOrder=null) {
         const tCon = document.getElementById(tId);
         const pCon = document.getElementById(pId);
         if(!tCon) return;
         let curr = 1;
         const total = Math.ceil(data.length / limit);
         const render = () => {
-            tCon.innerHTML = createHtmlTable(data.slice((curr-1)*limit, curr*limit));
+            tCon.innerHTML = createHtmlTable(data.slice((curr-1)*limit, curr*limit), { columnOrder });
             pCon.innerHTML = `<button id="${pId}-p" ${curr===1?'disabled':''}>&lt;</button> <span>${curr}/${total||1}</span> <button id="${pId}-n" ${curr===total||total===0?'disabled':''}>&gt;</button>`;
             document.getElementById(`${pId}-p`).onclick = () => { if(curr>1) { curr--; render(); } };
             document.getElementById(`${pId}-n`).onclick = () => { if(curr<total) { curr++; render(); } };
@@ -1396,8 +1458,8 @@
     }
 
     function renderDataTables() {
-        renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100);
-        renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100);
+        renderPaginatedTable('atividades-table', 'atividades-pagination', rawActivities, 100, ACTIVITY_COLUMN_ORDER);
+        renderPaginatedTable('clientes-table', 'clientes-pagination', rawClients, 100, CLIENT_COLUMN_ORDER);
     }
 
     function loadGoals() {

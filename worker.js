@@ -90,6 +90,7 @@ const processInitialData = () => {
         if(!(criadoEmDate instanceof Date)) criadoEmDate = parseDate(criadoEmDate);
 
         const playbookNormalized = normalizeText(ativ.Playbook);
+        const statusCliente = ativ['Status Cliente'] || clienteInfo['Status Cliente'] || clienteInfo.Status || clienteInfo['Situação'];
 
         if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
             const existingStartDate = clientOnboardingStartDate.get(clienteKey);
@@ -101,6 +102,7 @@ const processInitialData = () => {
         return {
             ...ativ,
             ClienteCompleto: clienteKey,
+            "Status Cliente": statusCliente || 'Desconhecido',
             // Puxa dados da tabela de Clientes (JOIN)
             Segmento: clienteInfo.Segmento || 'Não Identificado',
             CS: clienteInfo.CS || 'Não Identificado', 
