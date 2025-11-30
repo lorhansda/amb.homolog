@@ -311,6 +311,22 @@ const syncClients = async (env, options = {}) => {
   return { fetched: saved, cursor: maxTimestamp ? maxTimestamp.toISOString() : since.toISOString() };
 };
 
+const CLEANUP_MONTHS = 4;
+
+const purgeOldActivities = async (env) => {
+  const threshold = new Date();
+  threshold.setMonth(threshold.getMonth() - CLEANUP_MONTHS);
+  threshold.setHours(0, 0, 0, 0);
+
+  const result = await env.DB.prepare(
+    `DELETE FROM atividades
+     WHERE datetime(coalesce(atualizado_em, criado_em)) < datetime(?)
+     RETURNING id_sensedata`
+  ).bind(threshold.toISOString()).all();
+
+  return result.results.length;
+};
+
 const syncDeletions = async (env, options = {}) => {
   const token = getAuthToken(env);
   const since = getWindowStart();
@@ -471,6 +487,13 @@ const handleFetch = async (request, env) => {
         id: activityId,
         deleted: Boolean(result)
       }), { headers: corsHeaders, status: 200 });
+    }
+    if (url.pathname === "/api/purge-old-atividades") {
+      const deleted = await purgeOldActivities(env);
+      return new Response(JSON.stringify({ success: true, deleted }), {
+        headers: corsHeaders,
+        status: 200
+      });
     }
     if (url.pathname === "/api/sync") {
       const summary = await runDailySync(env, { maxPages: maxPagesOverride });
