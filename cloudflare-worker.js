@@ -63,6 +63,18 @@ const extractTagLabel = (tag) => {
   return "";
 };
 
+const normalizeTags = (rawTags) => {
+  if (!rawTags) return [];
+  if (Array.isArray(rawTags)) return rawTags;
+  if (typeof rawTags === "string") {
+    return rawTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+  }
+  return [rawTags];
+};
+
 const parseDateParam = (value) => {
   if (!value) return null;
   const date = new Date(value);
@@ -108,7 +120,7 @@ const pickCS = (task) =>
 const buildTaskStatement = (env, task) => {
   const playbookName = task.parent?.description || task.playbook?.description || "";
   const statusCliente = task.customer?.status?.description || "Desconhecido";
-  const tagsArray = Array.isArray(task.tags) ? task.tags : [];
+  const tagsArray = normalizeTags(task.tags);
   const categoriaTag = tagsArray
     .map(extractTagLabel)
     .filter((tag) => tag && tag.length > 0)[0] || "";
