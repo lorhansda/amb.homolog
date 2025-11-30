@@ -115,6 +115,12 @@ const fetchTasksWindow = async ({ env, token, filterField, since, maxPages }) =>
   let page = 1;
   let fetched = 0;
   let safety = 0;
+  let maxTimestamp = since;
+  const toDate = (value) => {
+    if (!value) return null;
+    const d = new Date(value);
+    return isNaN(d) ? null : d;
+  };
 
   while (safety < pageLimit) {
     const url = `${TASKS_ENDPOINT}?limit=${TASKS_LIMIT}&page=${page}&${filterField}:start=${encodeDate(
@@ -131,11 +137,16 @@ const fetchTasksWindow = async ({ env, token, filterField, since, maxPages }) =>
     if (tasks.length === 0) break;
 
     const statements = tasks
-      .map((task) => buildTaskStatement(env, task))
+      .map((task) => {
+        const stmt = buildTaskStatement(env, task);
+        const ts = toDate(task[filterField]);
+        if (ts && (!maxTimestamp || ts > maxTimestamp)) maxTimestamp = ts;
+        return stmt;
+      })
       .filter(Boolean);
     for (let i = 0; i < statements.length; i += ACTIVITIES_BATCH_SIZE) {
       const chunk = statements.slice(i, i + ACTIVITIES_BATCH_SIZE);
-      await env.DB.batch(chunk);
+      if (chunk.length > 0) await env.DB.batch(chunk);
     }
 
     fetched += tasks.length;
@@ -144,36 +155,62 @@ const fetchTasksWindow = async ({ env, token, filterField, since, maxPages }) =>
     if (tasks.length < TASKS_LIMIT) break;
   }
 
-  return fetched;
+  return { fetched, cursor: maxTimestamp ? maxTimestamp.toISOString() : since.toISOString() };
+};
+
+const readSyncState = async (env) => {
+  return env.DB.prepare(
+    `SELECT
+        activities_created_cursor,
+        activities_updated_cursor,
+        deleted_cursor,
+        last_full_sync,
+        last_run,
+        last_error,
+        last_activity_update,
+        last_client_update
+     FROM sync_state WHERE id = 1`
+  ).first();
+};
+
+const updateSyncCursor = async (env, column, value) => {
+  await env.DB.prepare(`UPDATE sync_state SET ${column} = ?, last_run = ? WHERE id = 1`).bind(
+    value,
+    new Date().toISOString()
+  ).run();
 };
 
 const syncActivities = async (env, options = {}) => {
   const token = getAuthToken(env);
-  const since = getWindowStart();
-  const created = await fetchTasksWindow({
-    env,
-    token,
-    filterField: "created_at",
-    since,
-    maxPages: options.maxPages
-  });
-  const updated = await fetchTasksWindow({
+  const state = await readSyncState(env);
+  const since = state?.last_activity_update ? new Date(state.last_activity_update) : getWindowStart();
+  const result = await fetchTasksWindow({
     env,
     token,
     filterField: "updated_at",
     since,
     maxPages: options.maxPages
   });
-  return { created, updated };
+  if (result.cursor) {
+    await updateSyncCursor(env, "last_activity_update", result.cursor);
+  }
+  return result;
 };
 
 const syncClients = async (env, options = {}) => {
   const token = getAuthToken(env);
-  const since = getWindowStart();
+  const state = await readSyncState(env);
+  const since = state?.last_client_update ? new Date(state.last_client_update) : getWindowStart();
   const pageLimit = options.maxPages ?? MAX_PAGES;
   let page = 1;
   let saved = 0;
   let safety = 0;
+  let maxTimestamp = since;
+  const toDate = (value) => {
+    if (!value) return null;
+    const d = new Date(value);
+    return isNaN(d) ? null : d;
+  };
 
   while (safety < pageLimit) {
     const url = `${CUSTOMERS_ENDPOINT}?limit=${CUSTOMERS_LIMIT}&page=${page}&updated_at:start=${encodeDate(
@@ -257,12 +294,21 @@ const syncClients = async (env, options = {}) => {
       saved += activeCustomers.length;
     }
 
+    activeCustomers.forEach((customer) => {
+      const ts = toDate(customer.updated_at);
+      if (ts && (!maxTimestamp || ts > maxTimestamp)) maxTimestamp = ts;
+    });
+
     page++;
     safety++;
     if (customers.length < CUSTOMERS_LIMIT) break;
   }
 
-  return saved;
+  if (maxTimestamp) {
+    await updateSyncCursor(env, "last_client_update", maxTimestamp.toISOString());
+  }
+
+  return { fetched: saved, cursor: maxTimestamp ? maxTimestamp.toISOString() : since.toISOString() };
 };
 
 const syncDeletions = async (env, options = {}) => {
@@ -383,10 +429,11 @@ const runDailySync = async (env, options = {}) => {
 
   return {
     success: true,
-    activities_created: activities.created,
-    activities_updated: activities.updated,
-    clients_synced: clients,
-    window_days: LOOKBACK_DAYS
+    activities_synced: activities.fetched,
+    clients_synced: clients.fetched,
+    window_days: LOOKBACK_DAYS,
+    activity_cursor: activities.cursor,
+    client_cursor: clients.cursor
   };
 };
 
