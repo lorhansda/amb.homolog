@@ -376,9 +376,8 @@ const getClientes = async (env) => {
 };
 
 const runDailySync = async (env, options = {}) => {
-  const [activities, removed, clients] = await Promise.all([
+  const [activities, clients] = await Promise.all([
     syncActivities(env, options),
-    syncDeletions(env, options),
     syncClients(env, options)
   ]);
 
@@ -386,7 +385,6 @@ const runDailySync = async (env, options = {}) => {
     success: true,
     activities_created: activities.created,
     activities_updated: activities.updated,
-    deletions: removed,
     clients_synced: clients,
     window_days: LOOKBACK_DAYS
   };
