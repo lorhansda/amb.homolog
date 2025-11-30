@@ -180,7 +180,7 @@ const buildTaskStatement = (env, task) => {
   );
 };
 
-const fetchTasksWindow = async ({ env, token, since, createdAfter, maxPages, limit }) => {
+const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since, createdAfter, maxPages, limit }) => {
   const pageLimit = maxPages ?? MAX_PAGES;
   const perPageLimit = limit ?? TASKS_LIMIT;
   let page = 1;
@@ -194,9 +194,7 @@ const fetchTasksWindow = async ({ env, token, since, createdAfter, maxPages, lim
   };
 
   while (safety < pageLimit) {
-    let url = `${TASKS_ENDPOINT}?limit=${perPageLimit}&page=${page}&updated_at:start=${encodeDate(
-      since
-    )}`;
+    let url = `${TASKS_ENDPOINT}?limit=${perPageLimit}&page=${page}&${filterField}:start=${encodeDate(since)}`;
     if (createdAfter) {
       url += `&created_at:start=${encodeDate(createdAfter)}`;
     }
