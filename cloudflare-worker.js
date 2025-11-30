@@ -180,7 +180,7 @@ const buildTaskStatement = (env, task) => {
   );
 };
 
-const fetchTasksWindow = async ({ env, token, filterField, since, maxPages, limit }) => {
+const fetchTasksWindow = async ({ env, token, since, createdAfter, maxPages, limit }) => {
   const pageLimit = maxPages ?? MAX_PAGES;
   const perPageLimit = limit ?? TASKS_LIMIT;
   let page = 1;
@@ -194,9 +194,12 @@ const fetchTasksWindow = async ({ env, token, filterField, since, maxPages, limi
   };
 
   while (safety < pageLimit) {
-    const url = `${TASKS_ENDPOINT}?limit=${perPageLimit}&page=${page}&${filterField}:start=${encodeDate(
+    let url = `${TASKS_ENDPOINT}?limit=${perPageLimit}&page=${page}&updated_at:start=${encodeDate(
       since
     )}`;
+    if (createdAfter) {
+      url += `&created_at:start=${encodeDate(createdAfter)}`;
+    }
     const response = await fetch(url, {
       method: "GET",
       headers: { Authorization: token, Accept: "application/json" }
@@ -258,11 +261,17 @@ const syncActivities = async (env, options = {}) => {
     options.since instanceof Date && !isNaN(options.since) ? options.since : parseDateParam(options.since);
   const cursorDate = resolveCursorDate(state?.last_activity_update);
   const since = sinceOverride || cursorDate || getWindowStart();
+  let createdAfter = parseDateParam(options.createdAfter);
+  if (!createdAfter) {
+    createdAfter = new Date();
+    createdAfter.setMonth(createdAfter.getMonth() - 4);
+    createdAfter.setHours(0, 0, 0, 0);
+  }
   const result = await fetchTasksWindow({
     env,
     token,
-    filterField: "updated_at",
     since,
+    createdAfter,
     maxPages: options.maxPages,
     limit: options.limit
   });
