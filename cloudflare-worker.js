@@ -33,6 +33,21 @@ const normalizeStatus = (value) => {
   return String(value).trim().toLowerCase();
 };
 
+const normalizeStatusKey = (value) => {
+  if (!value) return "";
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z]/gi, "")
+    .toLowerCase();
+};
+
+const isActiveProductStatus = (value) => {
+  const normalizedKey = normalizeStatusKey(value);
+  if (!normalizedKey) return false;
+  return normalizedKey.startsWith("ativoproduto");
+};
+
 const extractTagLabel = (tag) => {
   if (!tag) return "";
   if (typeof tag === "string") return tag.trim();
@@ -93,7 +108,7 @@ const pickCS = (task) =>
 const buildTaskStatement = (env, task) => {
   const playbookName = task.parent?.description || task.playbook?.description || "";
   const statusCliente = task.customer?.status?.description || "Desconhecido";
-  if (normalizeStatus(statusCliente) !== "ativo-produto") {
+  if (!isActiveProductStatus(statusCliente)) {
     return null;
   }
   const tagsArray = Array.isArray(task.tags) ? task.tags : [];
