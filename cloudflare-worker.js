@@ -537,8 +537,8 @@ const handleFetch = async (request, env) => {
 };
 
 const handleScheduled = async (event, env) => {
-  if (event.cron === "0 3 * * *") {
-    await runDailySync(env);
+  if (event.cron === "*/15 * * * *") {
+    await runDailySync(env, { maxPages: 1 });
   } else if (event.cron === "0 2 1 * *") {
     await purgeOldActivities(env);
   }
