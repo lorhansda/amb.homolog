@@ -207,15 +207,26 @@ const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since,
 
     const json = await response.json();
     const tasks = Array.isArray(json.tasks) ? json.tasks : [];
-    totalFetched += tasks.length;
 
-    const statements = tasks
-      .map((task) => {
-        const stmt = buildTaskStatement(env, task);
-        const ts = toDate(task[filterField]);
-        if (ts && (!maxTimestamp || ts > maxTimestamp)) maxTimestamp = ts;
-        return stmt;
-      })
+    tasks.forEach((task) => {
+      const ts = toDate(task[filterField]);
+      if (ts && (!maxTimestamp || ts > maxTimestamp)) maxTimestamp = ts;
+    });
+
+    const createdAfterTime = createdAfter ? createdAfter.getTime() : null;
+    const filteredTasks = createdAfterTime === null
+      ? tasks
+      : tasks.filter((task) => {
+          if (!task.created_at) return false;
+          const createdAtTime = Date.parse(task.created_at);
+          if (Number.isNaN(createdAtTime)) return false;
+          return createdAtTime >= createdAfterTime;
+        });
+
+    totalFetched += filteredTasks.length;
+
+    const statements = filteredTasks
+      .map((task) => buildTaskStatement(env, task))
       .filter(Boolean);
 
     let insertedCount = 0;
