@@ -28,6 +28,17 @@ const sanitize = (val) => {
   return String(val).trim();
 };
 
+const stripDataUris = (html) => {
+  if (!html) return html;
+  return html.replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[^"' )]+/g, "[imagem removida]");
+};
+
+const truncateLargeContent = (val, maxLength = 200000) => {
+  if (!val) return val;
+  if (val.length <= maxLength) return val;
+  return `${val.slice(0, maxLength)}... [conteúdo truncado]`;
+};
+
 const normalizeStatus = (value) => {
   if (!value) return "";
   return String(value).trim().toLowerCase();
@@ -124,7 +135,9 @@ const buildTaskStatement = (env, task) => {
   const categoriaTag = tagsArray
     .map(extractTagLabel)
     .filter((tag) => tag && tag.length > 0)[0] || "";
-  const notes = sanitize(task.notes).replace(/[\r\n]+/g, " ");
+  const notesSanitized = sanitize(task.notes).replace(/[\r\n]+/g, " ");
+  const notesWithoutDataUris = stripDataUris(notesSanitized);
+  const notes = truncateLargeContent(notesWithoutDataUris);
   const activityId =
     task.id ||
     task.task_id ||
