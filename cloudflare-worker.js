@@ -184,7 +184,8 @@ const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since,
   const pageLimit = maxPages ?? MAX_PAGES;
   const perPageLimit = limit ?? TASKS_LIMIT;
   let page = startPage;
-  let fetched = 0;
+  let totalInserted = 0;
+  let totalFetched = 0;
   let safety = 0;
   let maxTimestamp = since;
   const toDate = (value) => {
@@ -206,6 +207,7 @@ const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since,
 
     const json = await response.json();
     const tasks = Array.isArray(json.tasks) ? json.tasks : [];
+    totalFetched += tasks.length;
 
     const statements = tasks
       .map((task) => {
@@ -227,14 +229,18 @@ const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since,
       }
     }
 
-    fetched += insertedCount;
-    if (tasks.length < perPageLimit || insertedCount === 0) break;
+    totalInserted += insertedCount;
+    if (tasks.length < perPageLimit) break;
 
     page++;
     safety++;
   }
 
-  return { fetched, cursor: maxTimestamp ? maxTimestamp.toISOString() : since.toISOString() };
+  return {
+    inserted: totalInserted,
+    fetched: totalFetched,
+    cursor: maxTimestamp ? maxTimestamp.toISOString() : since.toISOString()
+  };
 };
 
 const readSyncState = async (env) => {
@@ -717,12 +723,12 @@ const handleFetch = async (request, env) => {
       return new Response(JSON.stringify({
         success: true,
         page: pageParam,
-        next_page: (summary.fetched || summary.activities_synced || 0) === 0 ? null : pageParam + 1,
-        saved_count: summary.fetched || summary.activities_synced || 0,
-        finished: (summary.fetched || summary.activities_synced || 0) === 0,
-        activities_synced: summary.fetched || summary.activities_synced || 0,
-        activity_cursor: summary.activity_cursor,
-        window_days: summary.window_days
+        next_page: (summary.fetched || 0) === 0 ? null : pageParam + 1,
+        saved_count: summary.fetched || 0,
+        inserted_count: summary.inserted || 0,
+        finished: (summary.fetched || 0) === 0,
+        activity_cursor: summary.cursor,
+        window_days: summary.window_days ?? LOOKBACK_DAYS
       }), {
         headers: corsHeaders,
         status: 200
