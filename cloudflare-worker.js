@@ -206,7 +206,6 @@ const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since,
 
     const json = await response.json();
     const tasks = Array.isArray(json.tasks) ? json.tasks : [];
-    if (tasks.length === 0) break;
 
     const statements = tasks
       .map((task) => {
@@ -216,15 +215,23 @@ const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since,
         return stmt;
       })
       .filter(Boolean);
-    for (let i = 0; i < statements.length; i += ACTIVITIES_BATCH_SIZE) {
-      const chunk = statements.slice(i, i + ACTIVITIES_BATCH_SIZE);
-      if (chunk.length > 0) await env.DB.batch(chunk);
+
+    let insertedCount = 0;
+    if (statements.length > 0) {
+      for (let i = 0; i < statements.length; i += ACTIVITIES_BATCH_SIZE) {
+        const chunk = statements.slice(i, i + ACTIVITIES_BATCH_SIZE);
+        if (chunk.length > 0) {
+          await env.DB.batch(chunk);
+          insertedCount += chunk.length;
+        }
+      }
     }
 
-    fetched += tasks.length;
+    fetched += insertedCount;
+    if (tasks.length < perPageLimit || insertedCount === 0) break;
+
     page++;
     safety++;
-    if (tasks.length < perPageLimit) break;
   }
 
   return { fetched, cursor: maxTimestamp ? maxTimestamp.toISOString() : since.toISOString() };
@@ -698,10 +705,11 @@ const handleFetch = async (request, env) => {
     }
     if (url.pathname === "/api/sync-batch") {
       const pageParam = parsePositiveInt(url.searchParams.get("page"), 1) || 1;
+      const manualLimit = parsePositiveInt(url.searchParams.get("limit"));
       const createdAfterParam = url.searchParams.get("createdAfter");
       const summary = await syncActivities(env, {
         maxPages: 1,
-        limit: activitiesLimitOverride || TASKS_LIMIT,
+        limit: manualLimit || activitiesLimitOverride || TASKS_LIMIT,
         since: sinceOverride,
         createdAfter: createdAfterParam,
         startPage: pageParam
@@ -709,7 +717,7 @@ const handleFetch = async (request, env) => {
       return new Response(JSON.stringify({
         success: true,
         page: pageParam,
-        next_page: pageParam + 1,
+        next_page: (summary.fetched || summary.activities_synced || 0) === 0 ? null : pageParam + 1,
         saved_count: summary.fetched || summary.activities_synced || 0,
         finished: (summary.fetched || summary.activities_synced || 0) === 0,
         activities_synced: summary.fetched || summary.activities_synced || 0,
