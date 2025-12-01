@@ -782,28 +782,91 @@
         });
     }
 
-    async function loadDataFromAPI() {
+    const ACTIVITY_FETCH_LIMIT = 5000;
+    const ACTIVITY_FETCH_MAX_PAGES = 20;
+    const ACTIVITY_DEFAULT_SINCE = '2025-05-01';
+
+    async function fetchActivitiesInChunks({ limit = ACTIVITY_FETCH_LIMIT, maxPages = ACTIVITY_FETCH_MAX_PAGES, since, onPageFetch }) {
+        const aggregated = [];
+        let page = 1;
+
+        while (page <= maxPages) {
+            if (typeof onPageFetch === 'function') onPageFetch(page, aggregated.length);
+
+            const url = new URL(`${WORKER_URL}/api/atividades`);
+            url.searchParams.set('limit', String(limit));
+            url.searchParams.set('page', String(page));
+            if (since) url.searchParams.set('since', since);
+
+            const response = await fetch(url.toString());
+            if (!response.ok) {
+                const body = await response.text();
+                throw new Error(`Falha ao baixar atividades (página ${page}): ${body || response.statusText}`);
+            }
+
+            const chunk = await response.json();
+            if (!Array.isArray(chunk) || chunk.length === 0) break;
+
+            aggregated.push(...chunk);
+            if (chunk.length < limit) break;
+
+            page += 1;
+            await new Promise((resolve) => setTimeout(resolve, 150));
+        }
+
+        return aggregated;
+    }
+
+    async function fetchAllClients() {
+        const response = await fetch(`${WORKER_URL}/api/clientes`);
+        if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`Falha ao baixar tabela de Clientes: ${body || response.statusText}`);
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+    }
+
+    async function loadDataFromAPI(options = {}) {
         const statusMsg = document.getElementById('status-message');
         const btn = document.getElementById('btn-refresh-data');
-        
-        if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...'; }
-        if(statusMsg) { statusMsg.style.display = 'block'; statusMsg.className = 'loader'; }
+        const since = options.since || ACTIVITY_DEFAULT_SINCE;
+        const limit = options.pageSize || ACTIVITY_FETCH_LIMIT;
+        const maxPages = options.maxPages || ACTIVITY_FETCH_MAX_PAGES;
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
+        }
+        if (statusMsg) {
+            statusMsg.style.display = 'block';
+            statusMsg.className = 'loader';
+            statusMsg.textContent = 'Iniciando carregamento de atividades...';
+        }
 
         try {
-            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-tasks"></i> Baixando histórico de Atividades...';
-            const resAtividades = await fetch(`${WORKER_URL}/api/atividades?limit=300000`); 
-            if (!resAtividades.ok) throw new Error("Falha ao baixar tabela de Atividades");
-            const jsonAtividades = await resAtividades.json();
+            const atividadesBrutas = await fetchActivitiesInChunks({
+                limit,
+                maxPages,
+                since,
+                onPageFetch: (page, count) => {
+                    if (statusMsg) {
+                        statusMsg.innerHTML = `<i class="fas fa-tasks"></i> Baixando atividades (página ${page})... ${count.toLocaleString()} registros acumulados`;
+                    }
+                }
+            });
 
-            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-users"></i> Baixando base de Clientes...';
-            const resClientes = await fetch(`${WORKER_URL}/api/clientes`);
-            if (!resClientes.ok) throw new Error("Falha ao baixar tabela de Clientes");
-            const jsonClientes = await resClientes.json();
+            if (statusMsg) {
+                statusMsg.innerHTML = '<i class="fas fa-users"></i> Baixando base de Clientes...';
+            }
+            const clientesBrutos = await fetchAllClients();
 
-            if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando e Cruzando informações...';
+            if (statusMsg) {
+                statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando e Cruzando informações...';
+            }
             
-            rawActivities = mapDatabaseToDashboard(jsonAtividades, 'atividades');
-            rawClients = mapDatabaseToDashboard(jsonClientes, 'clientes');
+            rawActivities = mapDatabaseToDashboard(atividadesBrutas, 'atividades');
+            rawClients = mapDatabaseToDashboard(clientesBrutos, 'clientes');
             rawActivities = enrichActivitiesWithClientData(rawActivities, rawClients);
 
             console.log(`Sucesso: ${rawActivities.length} atividades e ${rawClients.length} clientes.`);
@@ -815,10 +878,10 @@
             dataWorker.postMessage({
                 type: 'INIT',
                 payload: {
-                    rawActivities: rawActivities,
-                    rawClients: rawClients,
-                    currentUser: currentUser,
-                    manualEmailToCsMap: manualEmailToCsMap
+                    rawActivities,
+                    rawClients,
+                    currentUser,
+                    manualEmailToCsMap
                 }
             });
             
@@ -826,7 +889,7 @@
             if(lastLoadDiv) {
                 const agora = new Date();
                 lastLoadDiv.style.display = 'inline-block';
-                lastLoadDiv.innerHTML = `<i class="fas fa-check-circle"></i> Dados atualizados em: ${agora.toLocaleTimeString()} (${rawActivities.length} reg.)`;
+                lastLoadDiv.innerHTML = `<i class="fas fa-check-circle"></i> Dados atualizados em: ${agora.toLocaleTimeString()} (${rawActivities.length.toLocaleString()} reg.)`;
             }
 
         } catch (error) {
