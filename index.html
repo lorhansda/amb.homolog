@@ -785,6 +785,7 @@
     const ACTIVITY_FETCH_LIMIT = 10000;
     const ACTIVITY_FETCH_MAX_PAGES = 20;
     const ACTIVITY_DEFAULT_SINCE = '2025-05-01';
+    const ACTIVITY_MAX_RECORDS = 60000;
 
     async function fetchActivitiesInChunks({ limit = ACTIVITY_FETCH_LIMIT, maxPages = ACTIVITY_FETCH_MAX_PAGES, since, onPageFetch }) {
         const aggregated = [];
@@ -808,6 +809,10 @@
             if (!Array.isArray(chunk) || chunk.length === 0) break;
 
             aggregated.push(...chunk);
+            if (aggregated.length >= ACTIVITY_MAX_RECORDS) {
+                aggregated.length = ACTIVITY_MAX_RECORDS;
+                break;
+            }
             if (chunk.length < limit) break;
 
             page += 1;
@@ -868,6 +873,9 @@
             rawActivities = mapDatabaseToDashboard(atividadesBrutas, 'atividades');
             rawClients = mapDatabaseToDashboard(clientesBrutos, 'clientes');
             rawActivities = enrichActivitiesWithClientData(rawActivities, rawClients);
+            if (rawActivities.length > ACTIVITY_MAX_RECORDS) {
+                rawActivities = rawActivities.slice(0, ACTIVITY_MAX_RECORDS);
+            }
 
             console.log(`Sucesso: ${rawActivities.length} atividades e ${rawClients.length} clientes.`);
 
