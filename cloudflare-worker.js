@@ -575,19 +575,44 @@ const syncDeletions = async (env, options = {}) => {
 
 const getAtividades = async (env, requestUrl) => {
   const url = new URL(requestUrl);
-  const limit = parseInt(url.searchParams.get("limit") || "5000", 10);
+
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "5000", 10), 20000);
+  const page = Math.max(parseInt(url.searchParams.get("page") || "1", 10), 1);
+  const offset = (page - 1) * limit;
+
   const sinceParam = url.searchParams.get("since");
+  const createdAfterParam = url.searchParams.get("createdAfter");
   const since = sinceParam ? new Date(sinceParam) : subtractDays(MIRROR_WINDOW_DAYS);
+  const createdAfter = createdAfterParam ? new Date(createdAfterParam) : null;
 
-  const result = await env.DB.prepare(
-    `SELECT * FROM atividades
-     WHERE datetime(coalesce(criado_em, atualizado_em)) >= datetime(?)
-     ORDER BY datetime(coalesce(criado_em, atualizado_em)) DESC
-     LIMIT ?`
-  ).bind(since.toISOString(), limit).all();
+  const baseQuery = `
+    SELECT *
+      FROM atividades
+     WHERE datetime(atualizado_em) >= datetime(?)
+       ${createdAfter ? "AND datetime(criado_em) >= datetime(?)" : ""}
+     ORDER BY datetime(atualizado_em) DESC
+     LIMIT ? OFFSET ?`;
 
-  return new Response(JSON.stringify(result.results), {
-    headers: corsHeaders,
+  const statement = createdAfter
+    ? env.DB.prepare(baseQuery).bind(
+        since.toISOString(),
+        createdAfter.toISOString(),
+        limit,
+        offset
+      )
+    : env.DB.prepare(baseQuery).bind(
+        since.toISOString(),
+        limit,
+        offset
+      );
+
+  const result = await statement.all();
+
+  return new Response(JSON.stringify(result.results ?? []), {
+    headers: {
+      ...corsHeaders,
+      "Cache-Control": "no-store"
+    },
     status: 200
   });
 };
