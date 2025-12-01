@@ -791,7 +791,7 @@
 
         try {
             if(statusMsg) statusMsg.innerHTML = '<i class="fas fa-tasks"></i> Baixando histórico de Atividades...';
-            const resAtividades = await fetch(`${WORKER_URL}/api/atividades?limit=30000`); 
+            const resAtividades = await fetch(`${WORKER_URL}/api/atividades?limit=5000`); 
             if (!resAtividades.ok) throw new Error("Falha ao baixar tabela de Atividades");
             const jsonAtividades = await resAtividades.json();
 
@@ -1541,6 +1541,7 @@
 
 </body>
 </html>
+
 
 
 
