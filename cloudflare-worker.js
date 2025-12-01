@@ -180,10 +180,10 @@ const buildTaskStatement = (env, task) => {
   );
 };
 
-const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since, createdAfter, maxPages, limit }) => {
+const fetchTasksWindow = async ({ env, token, filterField = "updated_at", since, createdAfter, maxPages, limit, startPage = 1 }) => {
   const pageLimit = maxPages ?? MAX_PAGES;
   const perPageLimit = limit ?? TASKS_LIMIT;
-  let page = 1;
+  let page = startPage;
   let fetched = 0;
   let safety = 0;
   let maxTimestamp = since;
@@ -271,7 +271,8 @@ const syncActivities = async (env, options = {}) => {
     since,
     createdAfter,
     maxPages: options.maxPages,
-    limit: options.limit
+    limit: options.limit,
+    startPage: options.startPage || 1
   });
   if (result.cursor) {
     await updateSyncCursor(env, "last_activity_update", result.cursor);
@@ -702,7 +703,8 @@ const handleFetch = async (request, env) => {
         maxPages: 1,
         limit: activitiesLimitOverride || TASKS_LIMIT,
         since: sinceOverride,
-        createdAfter: createdAfterParam
+        createdAfter: createdAfterParam,
+        startPage: pageParam
       });
       return new Response(JSON.stringify({
         success: true,
