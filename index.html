@@ -999,30 +999,39 @@
         });
     }
 
-    const ACTIVITY_FETCH_LIMIT = 10000;
-    const ACTIVITY_FETCH_MAX_PAGES = 20;
+    const DASH_FETCH_CONFIG = window.DASH_FETCH_CONFIG || {};
+    const ACTIVITY_FETCH_LIMIT = Number(DASH_FETCH_CONFIG.activityLimit ?? 8000);
+    const ACTIVITY_FETCH_MAX_PAGES = Number(DASH_FETCH_CONFIG.activityMaxPages ?? 12);
+    const ACTIVITY_PAGE_COOLDOWN_MS = Number(DASH_FETCH_CONFIG.pageDelayMs ?? 50);
     const ACTIVITY_DEFAULT_SINCE = '2025-05-01';
     const ACTIVITY_MAX_RECORDS = 60000;
 
     async function fetchActivitiesInChunks({ limit = ACTIVITY_FETCH_LIMIT, maxPages = ACTIVITY_FETCH_MAX_PAGES, since, onPageFetch }) {
         const aggregated = [];
         let page = 1;
+        const now = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
 
-        while (page <= maxPages) {
-            if (typeof onPageFetch === 'function') onPageFetch(page, aggregated.length);
-
+        const requestPage = (pageNumber) => {
+            if (typeof onPageFetch === 'function') onPageFetch(pageNumber, aggregated.length);
             const url = new URL(`${WORKER_URL}/api/atividades`);
             url.searchParams.set('limit', String(limit));
-            url.searchParams.set('page', String(page));
+            url.searchParams.set('page', String(pageNumber));
             if (since) url.searchParams.set('since', since);
+            const requestStart = now();
+            return fetch(url.toString()).then(async (response) => {
+                if (!response.ok) {
+                    const body = await response.text();
+                    throw new Error(`Falha ao baixar atividades (página ${pageNumber}): ${body || response.statusText}`);
+                }
+                const chunk = await response.json();
+                return { chunk, duration: now() - requestStart };
+            });
+        };
 
-            const response = await fetch(url.toString());
-            if (!response.ok) {
-                const body = await response.text();
-                throw new Error(`Falha ao baixar atividades (página ${page}): ${body || response.statusText}`);
-            }
+        let nextPagePromise = requestPage(page);
 
-            const chunk = await response.json();
+        while (page <= maxPages) {
+            const { chunk, duration } = await nextPagePromise;
             if (!Array.isArray(chunk) || chunk.length === 0) break;
 
             aggregated.push(...chunk);
@@ -1031,9 +1040,25 @@
                 break;
             }
             if (chunk.length < limit) break;
+            if (page >= maxPages) break;
 
-            page += 1;
-            await new Promise((resolve) => setTimeout(resolve, 150));
+            const nextPageNumber = page + 1;
+            const scheduleNext = () => {
+                if (ACTIVITY_PAGE_COOLDOWN_MS > 0) {
+                    const waitTime = Math.max(0, ACTIVITY_PAGE_COOLDOWN_MS - duration);
+                    if (waitTime > 4) {
+                        return new Promise((resolve, reject) => {
+                            setTimeout(() => {
+                                requestPage(nextPageNumber).then(resolve).catch(reject);
+                            }, waitTime);
+                        });
+                    }
+                }
+                return requestPage(nextPageNumber);
+            };
+
+            page = nextPageNumber;
+            nextPagePromise = scheduleNext();
         }
 
         return aggregated;
@@ -1070,6 +1095,7 @@
         }
 
         try {
+            const clientesPromise = fetchAllClients();
             const atividadesBrutas = await fetchActivitiesInChunks({
                 limit,
                 maxPages,
@@ -1081,9 +1107,9 @@
             });
 
             if (statusMsg) {
-                statusMsg.innerHTML = '<i class="fas fa-users"></i> Baixando base de Clientes...';
+                statusMsg.innerHTML = '<i class="fas fa-users"></i> Consolidando base de Clientes...';
             }
-            const clientesBrutos = await fetchAllClients();
+            const clientesBrutos = await clientesPromise;
 
             if (statusMsg) {
                 statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando e Cruzando informações...';
