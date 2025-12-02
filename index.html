@@ -696,7 +696,7 @@
         if (!storedAt) return null;
         const ts = new Date(storedAt);
         if (Number.isNaN(ts.getTime())) return null;
-        return Math.max(0, Math.round((Date.now() - ts.getTime()) / 60000));
+        return Math.max(0, Math.round((Date.now() - ts.getTime()) / 20000));
     }
 
     async function hydrateDashboardData({ activities = [], clients = [], storedAt = new Date().toISOString(), sourceLabel = 'tempo real' } = {}) {
@@ -2044,6 +2044,7 @@
 
 </body>
 </html>
+
 
 
 
