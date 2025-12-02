@@ -474,6 +474,19 @@
         "deborahsimonearruda@gmail.com": "Deborah Arruda",
     };
 
+    const formatNotesValue = (value) => {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string') return value.trim();
+        if (typeof value === 'object') {
+            try {
+                return JSON.stringify(value);
+            } catch (error) {
+                return String(value);
+            }
+        }
+        return String(value);
+    };
+
     const ACTIVITY_COLUMN_ORDER = [
         "Criado em",
         "Cliente",
@@ -897,6 +910,7 @@
         return dbData.map(row => {
             if (type === 'atividades') {
                 const activityId = row.id_sensedata || row.id || row.ID || row.Id;
+                const notesValue = formatNotesValue(row.notes || row.Notas || row.anotacoes || row.notes_text || row.NotasDetalhadas);
                 return {
                     "__activityId": activityId || null,
                     "Criado em": row.criado_em ? new Date(row.criado_em) : null,
@@ -911,7 +925,8 @@
                     "Previsão de conclusão": row.previsao_conclusao ? new Date(row.previsao_conclusao) : null,
                     "Concluída em": row.concluida_em ? new Date(row.concluida_em) : null,
                     "Responsável": row.responsavel,
-                    "Status Cliente": formatClientStatusValue(row.status_cliente)
+                    "Status Cliente": formatClientStatusValue(row.status_cliente),
+                    "Anotações": notesValue
                 };
             } else if (type === 'clientes') {
                 return {
@@ -1187,10 +1202,16 @@
                 const divMarker = document.getElementById('divergence-marker');
                 const divText = document.getElementById('divergence-text');
                 if (payload.divergentClientCount > 0 && document.getElementById('select-period').value === 'monthly') {
-                    divText.textContent = `Atenção: ${payload.divergentClientCount} clientes fora da carteira receberam atividades.`;
+                    divText.textContent = `Atenção: ${payload.divergentClientCount} clientes fora da carteira receberam atividades. Clique para ver detalhes.`;
                     divMarker.style.display = 'flex';
+                    divMarker.style.cursor = 'pointer';
+                    divMarker.setAttribute('role', 'button');
+                    divMarker.tabIndex = 0;
                 } else {
                     divMarker.style.display = 'none';
+                    divMarker.removeAttribute('role');
+                    divMarker.removeAttribute('tabindex');
+                    divMarker.style.cursor = 'default';
                 }
                 document.getElementById('status-message').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
@@ -1562,6 +1583,25 @@
              [...csSet].sort().forEach(cs => { list.innerHTML += `<div class="cs-item"><label><input type="checkbox" class="cs-checkbox" value="${cs}" checked> ${cs}</label></div>`; });
              showModal(document.getElementById('bulk-export-modal'));
         });
+
+        const divergenceMarker = document.getElementById('divergence-marker');
+        if (divergenceMarker) {
+            const openDivergenceDetails = () => {
+                const divergentList = dataStore['divergent-activities'] || [];
+                if (!divergentList.length) {
+                    alert('Nenhuma atividade divergente disponível para exibir no momento.');
+                    return;
+                }
+                showDataInModal(divergentList, 'Atividades para Clientes Fora da Carteira');
+            };
+            divergenceMarker.addEventListener('click', openDivergenceDetails);
+            divergenceMarker.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openDivergenceDetails();
+                }
+            });
+        }
     }
     
     // ============================================================
