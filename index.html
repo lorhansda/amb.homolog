@@ -63,7 +63,7 @@
             <section class="controls">
                 <div class="control-group">
                     <label style="color: var(--secondary-color);"><i class="fas fa-database"></i> Conexão SenseData</label>
-                    <button id="btn-refresh-data" onclick="loadDataFromAPI()" style="padding: 12px 20px; background: var(--secondary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                    <button id="btn-refresh-data" onclick="refreshDashboard()" style="padding: 12px 20px; background: var(--secondary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
                         <i class="fas fa-sync-alt"></i> Atualizar Agora
                     </button>
                 </div>
@@ -503,10 +503,11 @@
     let filterDataCache = {}; 
     let chartInstances = {};
     let dataTableFiltersInitialized = false;
-    const dataTableFilters = {
+    const createDefaultDataTableFilters = () => ({
         atividades: { search: '', cs: '', start: '', end: '' },
         clientes: { search: '', status: '', cs: '' }
-    };
+    });
+    let dataTableFilters = createDefaultDataTableFilters();
     
     const defaultGoals = {
         sensescore: 85, labs: 10, coverage: 40, qbr: 5, successplan: 5, engagement: 50
@@ -766,6 +767,51 @@
             return null;
         }
     }
+
+    async function clearDashboardSnapshot() {
+        try {
+            const db = await openSnapshotDB();
+            if (!db) return;
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(SNAPSHOT_STORE_NAME, 'readwrite');
+                tx.oncomplete = () => {
+                    db.close();
+                    resolve();
+                };
+                tx.onabort = tx.onerror = () => {
+                    const err = tx.error || new Error('indexedDB transaction error');
+                    db.close();
+                    reject(err);
+                };
+                tx.objectStore(SNAPSHOT_STORE_NAME).delete(SNAPSHOT_STORAGE_KEY);
+            });
+        } catch (error) {
+            console.warn('Falha ao limpar snapshot local', error);
+        }
+        lastSnapshotMeta = null;
+    }
+
+    function resetDataTableFiltersState() {
+        dataTableFilters = createDefaultDataTableFilters();
+        const setValue = (id, value = '') => {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+        };
+        setValue('atividades-search');
+        setValue('atividades-date-start');
+        setValue('atividades-date-end');
+        setValue('clientes-search');
+        const selects = ['atividades-cs-filter', 'clientes-cs-filter', 'clientes-status-filter'];
+        selects.forEach(id => setValue(id, ''));
+    }
+
+    async function refreshDashboard() {
+        await clearDashboardSnapshot();
+        resetDataTableFiltersState();
+        await loadDataFromAPI();
+    }
+
+    window.refreshDashboard = refreshDashboard;
 
     // ============================================================
     //  2. FUNÇÕES AUXILIARES E MODAIS (PRECISAM VIR PRIMEIRO)
@@ -1033,11 +1079,11 @@
     }
 
     const DASH_FETCH_CONFIG = window.DASH_FETCH_CONFIG || {};
-    const ACTIVITY_FETCH_LIMIT = Number(DASH_FETCH_CONFIG.activityLimit ?? 8000);
-    const ACTIVITY_FETCH_MAX_PAGES = Number(DASH_FETCH_CONFIG.activityMaxPages ?? 12);
-    const ACTIVITY_PAGE_COOLDOWN_MS = Number(DASH_FETCH_CONFIG.pageDelayMs ?? 50);
+    const ACTIVITY_FETCH_LIMIT = Number(DASH_FETCH_CONFIG.activityLimit ?? 30000);
+    const ACTIVITY_FETCH_MAX_PAGES = Number(DASH_FETCH_CONFIG.activityMaxPages ?? 4);
+    const ACTIVITY_PAGE_COOLDOWN_MS = Number(DASH_FETCH_CONFIG.pageDelayMs ?? 30);
     const ACTIVITY_DEFAULT_SINCE = '2025-05-01';
-    const ACTIVITY_MAX_RECORDS = 60000;
+    const ACTIVITY_MAX_RECORDS = Number(DASH_FETCH_CONFIG.activityMaxRecords ?? (ACTIVITY_FETCH_LIMIT * ACTIVITY_FETCH_MAX_PAGES)) || 60000;
 
     async function fetchActivitiesInChunks({ limit = ACTIVITY_FETCH_LIMIT, maxPages = ACTIVITY_FETCH_MAX_PAGES, since, onPageFetch }) {
         const aggregated = [];
@@ -1890,13 +1936,13 @@
             if (startTs && (!createdAt || createdAt.getTime() < startTs)) return false;
             if (endTs && (!createdAt || createdAt.getTime() > endTs)) return false;
             if (searchTerm) {
-                const haystack = [
-                    activity.Cliente,
-                    activity.Atividade,
-                    activity.Playbook,
-                    activity["Status Cliente"],
-                    activity.notes
-                ].map(val => normalizeText(val || '')).join(' ');
+            const haystack = [
+                activity.Cliente,
+                activity.Atividade,
+                activity.Playbook,
+                activity["Status Cliente"],
+                activity["Anotações"]
+            ].map(val => normalizeText(val || '')).join(' ');
                 if (!haystack.includes(searchTerm)) return false;
             }
             return true;
@@ -1943,42 +1989,48 @@
         const clientesStatusSelect = document.getElementById('clientes-status-filter');
         const csValues = [...new Set(rawClients.map(client => client.CS).filter(Boolean))].sort((a, b) => a.localeCompare(b));
         const statusValues = [...new Set(rawClients.map(client => client.Status || client['Status Cliente']).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        const atividadesSearch = document.getElementById('atividades-search');
+        const atividadesStart = document.getElementById('atividades-date-start');
+        const atividadesEnd = document.getElementById('atividades-date-end');
+        const clientesSearch = document.getElementById('clientes-search');
 
         if (atividadesCsSelect) {
-            atividadesCsSelect.innerHTML = '<option value=\"\">Todos os CS</option>';
+            atividadesCsSelect.innerHTML = '<option value="">Todos os CS</option>';
             csValues.forEach(cs => {
                 const option = document.createElement('option');
                 option.value = cs;
                 option.textContent = cs;
                 atividadesCsSelect.appendChild(option);
             });
+            atividadesCsSelect.value = dataTableFilters.atividades.cs || '';
         }
         if (clientesCsSelect) {
-            clientesCsSelect.innerHTML = '<option value=\"\">Todos os CS</option>';
+            clientesCsSelect.innerHTML = '<option value="">Todos os CS</option>';
             csValues.forEach(cs => {
                 const option = document.createElement('option');
                 option.value = cs;
                 option.textContent = cs;
                 clientesCsSelect.appendChild(option);
             });
+            clientesCsSelect.value = dataTableFilters.clientes.cs || '';
         }
         if (clientesStatusSelect) {
-            clientesStatusSelect.innerHTML = '<option value=\"\">Todos os status</option>';
+            clientesStatusSelect.innerHTML = '<option value="">Todos os status</option>';
             statusValues.forEach(status => {
                 const option = document.createElement('option');
                 option.value = status;
                 option.textContent = status;
                 clientesStatusSelect.appendChild(option);
             });
+            clientesStatusSelect.value = dataTableFilters.clientes.status || '';
         }
+        if (atividadesSearch) atividadesSearch.value = dataTableFilters.atividades.search || '';
+        if (atividadesStart) atividadesStart.value = dataTableFilters.atividades.start || '';
+        if (atividadesEnd) atividadesEnd.value = dataTableFilters.atividades.end || '';
+        if (clientesSearch) clientesSearch.value = dataTableFilters.clientes.search || '';
 
         if (!dataTableFiltersInitialized) {
             dataTableFiltersInitialized = true;
-            const atividadesSearch = document.getElementById('atividades-search');
-            const atividadesStart = document.getElementById('atividades-date-start');
-            const atividadesEnd = document.getElementById('atividades-date-end');
-            const clientesSearch = document.getElementById('clientes-search');
-
             atividadesSearch?.addEventListener('input', (e) => {
                 dataTableFilters.atividades.search = e.target.value;
                 debouncedRenderDataTables();
