@@ -718,7 +718,14 @@ self.onmessage = (e) => {
             const concludedInPeriodActivities = rawActivities.filter(a => a.ConcluidaEm?.getUTCMonth() === payload.month && a.ConcluidaEm?.getUTCFullYear() === payload.year);
             const divergentActivities = concludedInPeriodActivities.filter(a => {
                 const activityOwner = (a['Responsável'] || '').trim();
-                return a.CS && a.CS.trim() !== payload.selectedCS && activityOwner === payload.selectedCS && payload.selectedCS !== 'Todos';
+                const activityCS = (a.CS || '').trim();
+                const customerStatus = (a['Status Cliente'] || '').trim().toLowerCase();
+                const isInactiveProduct = customerStatus.includes('inativo-produto') || customerStatus.includes('inativoproduto');
+                if (isInactiveProduct) return false;
+                return activityCS &&
+                    activityCS !== payload.selectedCS &&
+                    activityOwner === payload.selectedCS &&
+                    payload.selectedCS !== 'Todos';
             });
             dataStore['divergent-activities'] = divergentActivities;
             const divergentClientCount = new Set(divergentActivities.map(a => a.ClienteCompleto)).size;
