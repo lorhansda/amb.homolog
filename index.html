@@ -289,13 +289,10 @@
             'lorhanska@gmail.com',
             'elianeokr@gmail.com',
             'juliarail@gmail.com',
-            'jadecristianettirp@gmail.com',
+            'jadecristianettirp@gmail.com'
         ].map((email) => email.trim().toLowerCase());
         const ADMIN_EMAILS = [
-            'lorhanska@gmail.com',
-            'elianeokr@gmail.com',
-            'juliarail@gmail.com',
-            'jadecristianettirp@gmail.com',
+            'lorhanska@gmail.com'
         ].map((email) => email.trim().toLowerCase());
         const ONBOARDING_EMAILS = [
             'lorhangames2@gmail.com',
@@ -498,20 +495,44 @@
         "francielesilvadomingues@gmail.com": "Franciele Domingues",
         "okrmarina1@gmail.com": "Marina Santos",
         "deborahsimonearruda@gmail.com": "Deborah Arruda",
-        "leonardo.santos.ska@gmail.com": "Leonardo Santos",
+    };
+
+    const decodeHtmlEntities = (text = '') =>
+        text
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&lt;/gi, '<')
+            .replace(/&gt;/gi, '>')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;/gi, "'");
+
+    const stripHtmlToPlainText = (html = '') => {
+        if (!html) return '';
+        return decodeHtmlEntities(
+            html
+                .replace(/<\s*br\s*\/?>/gi, '\n')
+                .replace(/<\s*\/\s*p\s*>/gi, '\n')
+                .replace(/<\s*li\s*>/gi, '\n• ')
+                .replace(/<\s*\/\s*li\s*>/gi, '')
+                .replace(/<\s*\/\s*(ul|ol)\s*>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+        )
+            .replace(/\r/g, '')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
     };
 
     const formatNotesValue = (value) => {
         if (value === null || value === undefined) return '';
-        if (typeof value === 'string') return value.trim();
-        if (typeof value === 'object') {
-            try {
-                return JSON.stringify(value);
-            } catch (error) {
-                return String(value);
-            }
+        let text = '';
+        if (typeof value === 'string') text = value;
+        else if (typeof value === 'object') {
+            try { text = JSON.stringify(value); }
+            catch (error) { text = String(value); }
+        } else {
+            text = String(value);
         }
-        return String(value);
+        return stripHtmlToPlainText(text);
     };
 
     const ACTIVITY_COLUMN_ORDER = [
@@ -1834,7 +1855,6 @@
 
 </body>
 </html>
-
 
 
 
