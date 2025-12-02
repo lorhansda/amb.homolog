@@ -1,3 +1,30 @@
+#data-view .data-table-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+#data-view .data-table-controls input[type="search"],
+#data-view .data-table-controls select,
+#data-view .data-table-controls input[type="date"] {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--card-bg-color);
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+#data-view .data-table-controls .date-range label {
+    font-size: 0.85rem;
+    color: var(--text-light-color);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
 
         /*
             -- REESTILIZAÇÃO VISUAL COMPLETA --
