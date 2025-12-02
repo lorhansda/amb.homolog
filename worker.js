@@ -721,9 +721,9 @@ self.onmessage = (e) => {
                 const activityCS = (a.CS || '').trim();
                 const customerStatus = (a['Status Cliente'] || '').trim().toLowerCase();
                 const isInactiveProduct = customerStatus.includes('inativo-produto') || customerStatus.includes('inativoproduto');
-                if (isInactiveProduct) return false;
-                return activityCS &&
-                    activityCS !== payload.selectedCS &&
+                const hasValidCS = activityCS && normalizeText(activityCS) !== 'não identificado' && normalizeText(activityCS) !== 'nao identificado';
+                if (isInactiveProduct || !hasValidCS) return false;
+                return activityCS !== payload.selectedCS &&
                     activityOwner === payload.selectedCS &&
                     payload.selectedCS !== 'Todos';
             });
