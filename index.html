@@ -285,8 +285,20 @@
     <script src="ism_config.js"></script>
     <script>
     (function() {
-        const MANAGER_EMAILS = ['lorhanska@gmail.com'];
-        const ADMIN_EMAILS = ['lorhanska@gmail.com'];
+        const MANAGER_EMAILS = [
+            'lorhanska@gmail.com',
+            'elianeokr@gmail.com',
+            'juliarail@gmail.com',
+            'jadecristianettirp@gmail.com'
+        ].map((email) => email.trim().toLowerCase());
+        const ADMIN_EMAILS = [
+            'lorhanska@gmail.com'
+        ].map((email) => email.trim().toLowerCase());
+        const ONBOARDING_EMAILS = [
+            'lorhangames2@gmail.com',
+            'naty.naveal@gmail.com',
+            'outro.email@provedor.com'
+        ].map((email) => email.trim().toLowerCase());
 
         const normalizeEmail = (email) => (email || '').trim().toLowerCase();
         const parseJwt = (token) => {
@@ -315,16 +327,26 @@
             const normalized = normalizeEmail(email);
             currentUser.userGroup = 'ongoing';
             currentUser.selectedISM = 'Todos';
-            currentUser.isManager = MANAGER_EMAILS.includes(normalized);
-            if (ADMIN_EMAILS.includes(normalized)) {
+            const mapping = window.ISM_MAPPING || {};
+            const isAdmin = ADMIN_EMAILS.includes(normalized);
+            const isManager = isAdmin || MANAGER_EMAILS.includes(normalized);
+            currentUser.isManager = isManager;
+
+            if (isAdmin) {
                 currentUser.userGroup = 'admin';
-                currentUser.isManager = true;
                 return;
             }
-            const mapping = window.ISM_MAPPING || {};
+
             if (mapping[normalized]) {
                 currentUser.userGroup = 'onboarding';
                 currentUser.selectedISM = mapping[normalized];
+                return;
+            }
+
+            if (ONBOARDING_EMAILS.includes(normalized)) {
+                currentUser.userGroup = 'onboarding';
+                currentUser.selectedISM = mapping[normalized] || 'Todos';
+                return;
             }
         }
 
@@ -468,6 +490,7 @@
 
     const manualEmailToCsMap = {
         "email.dificil@provedor.com": "Nome Completo do CS",
+        "contato@empresa.com.br": "Outro CS",
         "gabriellermsviana@gmail.com": "Gabrielle Viana",
         "francielesilvadomingues@gmail.com": "Franciele Domingues",
         "okrmarina1@gmail.com": "Marina Santos",
