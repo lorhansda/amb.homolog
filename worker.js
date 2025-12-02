@@ -719,27 +719,13 @@ self.onmessage = (e) => {
             const divergentActivities = concludedInPeriodActivities.filter(a => {
                 const activityOwner = (a['Responsável'] || '').trim();
                 const activityCS = (a.CS || '').trim();
-                const statusRaw = (a['Status Cliente'] || '').trim();
-                const statusNormalized = normalizeText(statusRaw);
-                const collapsedStatus = statusNormalized.replace(/[^a-z]/g, '');
-                const isInactiveOrCancelled =
-                    collapsedStatus.includes('inativ') ||
-                    collapsedStatus.includes('cancel') ||
-                    collapsedStatus.includes('semcontrato') ||
-                    collapsedStatus.includes('encerrado');
-                const hasValidCS =
-                    activityCS &&
-                    normalizeText(activityCS) !== 'não identificado' &&
-                    normalizeText(activityCS) !== 'nao identificado';
-                if (
-                    payload.selectedCS === 'Todos' ||
-                    isInactiveOrCancelled ||
-                    !hasValidCS
-                ) {
-                    return false;
-                }
+                const customerStatus = (a['Status Cliente'] || '').trim().toLowerCase();
+                const isInactiveProduct = customerStatus.includes('inativo-produto') || customerStatus.includes('inativoproduto');
+                const hasValidCS = activityCS && normalizeText(activityCS) !== 'não identificado' && normalizeText(activityCS) !== 'nao identificado';
+                if (isInactiveProduct || !hasValidCS) return false;
                 return activityCS !== payload.selectedCS &&
-                    activityOwner === payload.selectedCS;
+                    activityOwner === payload.selectedCS &&
+                    payload.selectedCS !== 'Todos';
             });
             dataStore['divergent-activities'] = divergentActivities;
             const divergentClientCount = new Set(divergentActivities.map(a => a.ClienteCompleto)).size;
@@ -836,4 +822,3 @@ self.onmessage = (e) => {
         });
     }
 };
-
