@@ -519,6 +519,160 @@
         "Valor total não faturado"
     ];
 
+    const APP_VERSION = '2.2.1-cache';
+    const SNAPSHOT_DB_NAME = 'dashboard-cache';
+    const SNAPSHOT_STORE_NAME = 'snapshots';
+    const SNAPSHOT_STORAGE_KEY = 'latest';
+    const SNAPSHOT_AUTO_REFRESH_MINUTES = 60;
+    let lastSnapshotMeta = null;
+
+    // ============================================================
+    //  1.1 CACHE LOCAL E HIDRATAÇÃO DO DASHBOARD
+    // ============================================================
+
+    function openSnapshotDB() {
+        return new Promise((resolve, reject) => {
+            if (!('indexedDB' in window)) {
+                resolve(null);
+                return;
+            }
+            const request = indexedDB.open(SNAPSHOT_DB_NAME, 1);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(SNAPSHOT_STORE_NAME)) {
+                    db.createObjectStore(SNAPSHOT_STORE_NAME);
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error || new Error('indexedDB error'));
+        });
+    }
+
+    async function persistDashboardSnapshot(activities, clients, storedAt) {
+        try {
+            const db = await openSnapshotDB();
+            if (!db) return;
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(SNAPSHOT_STORE_NAME, 'readwrite');
+                tx.oncomplete = () => {
+                    db.close();
+                    resolve();
+                };
+                tx.onabort = tx.onerror = () => {
+                    const err = tx.error || new Error('indexedDB transaction error');
+                    db.close();
+                    reject(err);
+                };
+                tx.objectStore(SNAPSHOT_STORE_NAME).put({
+                    version: APP_VERSION,
+                    storedAt,
+                    activities,
+                    clients
+                }, SNAPSHOT_STORAGE_KEY);
+            });
+        } catch (error) {
+            console.warn('Não foi possível salvar snapshot local', error);
+        }
+    }
+
+    async function readDashboardSnapshot() {
+        try {
+            const db = await openSnapshotDB();
+            if (!db) return null;
+            const snapshot = await new Promise((resolve, reject) => {
+                const tx = db.transaction(SNAPSHOT_STORE_NAME, 'readonly');
+                const store = tx.objectStore(SNAPSHOT_STORE_NAME);
+                const request = store.get(SNAPSHOT_STORAGE_KEY);
+                request.onsuccess = () => resolve(request.result || null);
+                request.onerror = () => reject(request.error);
+                tx.oncomplete = () => db.close();
+                tx.onabort = () => {
+                    const err = tx.error || new Error('indexedDB transaction aborted');
+                    db.close();
+                    reject(err);
+                };
+            });
+            return snapshot;
+        } catch (error) {
+            console.warn('Não foi possível ler snapshot local', error);
+            return null;
+        }
+    }
+
+    function getSnapshotAgeMinutes(storedAt) {
+        if (!storedAt) return null;
+        const ts = new Date(storedAt);
+        if (Number.isNaN(ts.getTime())) return null;
+        return Math.max(0, Math.round((Date.now() - ts.getTime()) / 60000));
+    }
+
+    async function hydrateDashboardData({ activities = [], clients = [], storedAt = new Date().toISOString(), sourceLabel = 'tempo real' } = {}) {
+        rawActivities = Array.isArray(activities) ? activities.slice(0, ACTIVITY_MAX_RECORDS) : [];
+        rawClients = Array.isArray(clients) ? clients : [];
+
+        if (dataWorker) dataWorker.terminate();
+        dataWorker = new Worker('worker.js');
+        dataWorker.onmessage = handleWorkerMessage;
+        dataWorker.postMessage({
+            type: 'INIT',
+            payload: {
+                rawActivities,
+                rawClients,
+                currentUser,
+                manualEmailToCsMap
+            }
+        });
+
+        const lastLoadDiv = document.getElementById('last-load-info');
+        if (lastLoadDiv) {
+            const parsedDate = new Date(storedAt);
+            const displayDate = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+            lastLoadDiv.style.display = 'inline-block';
+            const label = sourceLabel === 'cache local'
+                ? 'Dados locais carregados em'
+                : 'Dados atualizados em';
+            lastLoadDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${label}: ${displayDate.toLocaleTimeString()} (${rawActivities.length.toLocaleString()} reg.)`;
+        }
+
+        lastSnapshotMeta = { sourceLabel, storedAt };
+        return { activities: rawActivities, clients: rawClients };
+    }
+
+    async function restoreCachedDataIfAvailable() {
+        try {
+            const snapshot = await readDashboardSnapshot();
+            if (!snapshot || !Array.isArray(snapshot.activities) || !Array.isArray(snapshot.clients)) {
+                return null;
+            }
+            if (snapshot.version && snapshot.version !== APP_VERSION) {
+                console.info('Snapshot local ignorado por versão diferente.');
+                return null;
+            }
+
+            const restored = await hydrateDashboardData({
+                activities: snapshot.activities,
+                clients: snapshot.clients,
+                storedAt: snapshot.storedAt,
+                sourceLabel: 'cache local'
+            });
+
+            const statusMsg = document.getElementById('status-message');
+            if (statusMsg) {
+                statusMsg.style.display = 'block';
+                statusMsg.className = 'loader';
+                const age = getSnapshotAgeMinutes(snapshot.storedAt);
+                statusMsg.textContent = age !== null
+                    ? `Carregado do cache local (${age} min). Atualize para dados recentes.`
+                    : 'Carregado do cache local. Atualize para dados recentes.';
+            }
+
+            return { ...snapshot, activities: restored.activities, clients: restored.clients };
+        } catch (error) {
+            console.warn('Falha ao restaurar snapshot local', error);
+            return null;
+        }
+    }
+
     // ============================================================
     //  2. FUNÇÕES AUXILIARES E MODAIS (PRECISAM VIR PRIMEIRO)
     // ============================================================
@@ -838,15 +992,18 @@
         const since = options.since || ACTIVITY_DEFAULT_SINCE;
         const limit = options.pageSize || ACTIVITY_FETCH_LIMIT;
         const maxPages = options.maxPages || ACTIVITY_FETCH_MAX_PAGES;
+        const silentMode = Boolean(options.silent);
 
-        if (btn) {
+        if (!silentMode && btn) {
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
         }
         if (statusMsg) {
             statusMsg.style.display = 'block';
             statusMsg.className = 'loader';
-            statusMsg.textContent = 'Iniciando carregamento de atividades...';
+            statusMsg.textContent = silentMode
+                ? 'Atualizando dados em segundo plano...'
+                : 'Iniciando carregamento de atividades...';
         }
 
         try {
@@ -855,9 +1012,8 @@
                 maxPages,
                 since,
                 onPageFetch: (page, count) => {
-                    if (statusMsg) {
-                        statusMsg.innerHTML = `<i class="fas fa-tasks"></i> Baixando atividades (página ${page})... ${count.toLocaleString()} registros acumulados`;
-                    }
+                    if (!statusMsg) return;
+                    statusMsg.innerHTML = `<i class="fas fa-tasks"></i> Baixando atividades (página ${page})... ${count.toLocaleString()} registros acumulados`;
                 }
             });
 
@@ -870,42 +1026,32 @@
                 statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando e Cruzando informações...';
             }
             
-            rawActivities = mapDatabaseToDashboard(atividadesBrutas, 'atividades');
-            rawClients = mapDatabaseToDashboard(clientesBrutos, 'clientes');
-            rawActivities = enrichActivitiesWithClientData(rawActivities, rawClients);
-            if (rawActivities.length > ACTIVITY_MAX_RECORDS) {
-                rawActivities = rawActivities.slice(0, ACTIVITY_MAX_RECORDS);
-            }
+            const mappedClients = mapDatabaseToDashboard(clientesBrutos, 'clientes');
+            const mappedActivities = mapDatabaseToDashboard(atividadesBrutas, 'atividades');
+            const processedActivities = enrichActivitiesWithClientData(mappedActivities, mappedClients);
+            const storedAtIso = new Date().toISOString();
 
-            console.log(`Sucesso: ${rawActivities.length} atividades e ${rawClients.length} clientes.`);
-
-            if (dataWorker) dataWorker.terminate();
-            dataWorker = new Worker('worker.js');
-            dataWorker.onmessage = handleWorkerMessage;
-
-            dataWorker.postMessage({
-                type: 'INIT',
-                payload: {
-                    rawActivities,
-                    rawClients,
-                    currentUser,
-                    manualEmailToCsMap
-                }
+            const hydrated = await hydrateDashboardData({
+                activities: processedActivities,
+                clients: mappedClients,
+                storedAt: storedAtIso,
+                sourceLabel: 'atualização direta'
             });
-            
-            const lastLoadDiv = document.getElementById('last-load-info');
-            if(lastLoadDiv) {
-                const agora = new Date();
-                lastLoadDiv.style.display = 'inline-block';
-                lastLoadDiv.innerHTML = `<i class="fas fa-check-circle"></i> Dados atualizados em: ${agora.toLocaleTimeString()} (${rawActivities.length.toLocaleString()} reg.)`;
-            }
+
+            await persistDashboardSnapshot(hydrated.activities, hydrated.clients, storedAtIso);
+            console.log(`Sucesso: ${hydrated.activities.length} atividades e ${hydrated.clients.length} clientes.`);
 
         } catch (error) {
             console.error(error);
-            if(statusMsg) statusMsg.textContent = 'Erro ao conectar: ' + error.message;
-            alert("Erro ao conectar com o banco de dados. Tente novamente.");
+            if (statusMsg) statusMsg.textContent = 'Erro ao conectar: ' + error.message;
+            if (!silentMode) {
+                alert("Erro ao conectar com o banco de dados. Tente novamente.");
+            }
         } finally {
-            if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Agora'; }
+            if (!silentMode && btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Agora';
+            }
         }
     }
 
@@ -1290,7 +1436,6 @@
             return;
         }
         window.__dashboardInitialized = true;
-        const APP_VERSION = '2.2.0-stable'; 
         const storedVersion = localStorage.getItem('appVersion');
         if (storedVersion !== APP_VERSION) {
             await forceClearAllData(false);
@@ -1322,6 +1467,16 @@
 
         setupUserView();
         loadGoals();
+
+        const cachedSnapshot = await restoreCachedDataIfAvailable();
+        const snapshotAge = cachedSnapshot ? getSnapshotAgeMinutes(cachedSnapshot.storedAt) : null;
+        const shouldBackgroundRefresh = !cachedSnapshot || snapshotAge === null || snapshotAge >= SNAPSHOT_AUTO_REFRESH_MINUTES;
+        if (shouldBackgroundRefresh) {
+            const silentRefresh = Boolean(cachedSnapshot);
+            setTimeout(() => {
+                loadDataFromAPI({ silent: silentRefresh }).catch((error) => console.error('Atualização automática falhou', error));
+            }, silentRefresh ? 800 : 0);
+        }
         
         // EVENTOS DE UI
         const inputs = ['select-cs', 'select-squad', 'select-segmento', 'select-month', 'select-year', 'include-onboarding-toggle', 'select-comparison', 'select-period', 'select-onboarding-team', 'select-ism'];
