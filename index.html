@@ -999,8 +999,10 @@
         });
     }
 
-    const ACTIVITY_FETCH_LIMIT = 10000;
-    const ACTIVITY_FETCH_MAX_PAGES = 20;
+    const DASH_FETCH_CONFIG = window.DASH_FETCH_CONFIG || {};
+    const ACTIVITY_FETCH_LIMIT = Number(DASH_FETCH_CONFIG.activityLimit ?? 8000);
+    const ACTIVITY_FETCH_MAX_PAGES = Number(DASH_FETCH_CONFIG.activityMaxPages ?? 12);
+    const ACTIVITY_PAGE_COOLDOWN_MS = Number(DASH_FETCH_CONFIG.pageDelayMs ?? 50);
     const ACTIVITY_DEFAULT_SINCE = '2025-05-01';
     const ACTIVITY_MAX_RECORDS = 60000;
 
@@ -1016,6 +1018,7 @@
             url.searchParams.set('page', String(page));
             if (since) url.searchParams.set('since', since);
 
+            const requestStart = Date.now();
             const response = await fetch(url.toString());
             if (!response.ok) {
                 const body = await response.text();
@@ -1033,7 +1036,11 @@
             if (chunk.length < limit) break;
 
             page += 1;
-            await new Promise((resolve) => setTimeout(resolve, 150));
+            const elapsed = Date.now() - requestStart;
+            if (ACTIVITY_PAGE_COOLDOWN_MS > 0 && elapsed < 300) {
+                const remaining = Math.max(5, ACTIVITY_PAGE_COOLDOWN_MS - Math.min(ACTIVITY_PAGE_COOLDOWN_MS, elapsed));
+                await new Promise((resolve) => setTimeout(resolve, remaining));
+            }
         }
 
         return aggregated;
@@ -1070,6 +1077,7 @@
         }
 
         try {
+            const clientesPromise = fetchAllClients();
             const atividadesBrutas = await fetchActivitiesInChunks({
                 limit,
                 maxPages,
@@ -1081,9 +1089,9 @@
             });
 
             if (statusMsg) {
-                statusMsg.innerHTML = '<i class="fas fa-users"></i> Baixando base de Clientes...';
+                statusMsg.innerHTML = '<i class="fas fa-users"></i> Consolidando base de Clientes...';
             }
-            const clientesBrutos = await fetchAllClients();
+            const clientesBrutos = await clientesPromise;
 
             if (statusMsg) {
                 statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando e Cruzando informações...';
