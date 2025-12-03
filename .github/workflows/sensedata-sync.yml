@@ -1,0 +1,52 @@
+name: SenseData Sync
+
+on:
+  schedule:
+    # Intervalo padrão: a cada 15 minutos (UTC)
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}  # permite rodar manualmente pelo botão "Run workflow"
+
+env:
+  # URLs base (sem o parâmetro since)
+  SYNC_FULLDAY_URL: "https://sensedata-api.sensedata-dash.workers.dev/api/sync-fullday"
+  SYNC_ATIVIDADES_BASE_URL: "https://sensedata-api.sensedata-dash.workers.dev/api/sync-atividades"
+  SYNC_CLIENTES_BASE_URL: "https://sensedata-api.sensedata-dash.workers.dev/api/sync-clientes"
+
+jobs:
+  run-syncs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Calcular data de hoje (UTC) e montar URLs dinâmicas
+        id: build_urls
+        run: |
+          # Data de hoje em UTC, formato YYYY-MM-DD
+          TODAY_UTC=$(date -u +"%Y-%m-%d")
+          echo "Hoje (UTC): $TODAY_UTC"
+
+          # Monta since com T00:00:00Z
+          SINCE="${TODAY_UTC}T00:00:00Z"
+          echo "Since (UTC): $SINCE"
+
+          # Monta URL completa de atividades
+          ATIVIDADES_URL="${SYNC_ATIVIDADES_BASE_URL}?since=${SINCE}&filter_field=created_at&pages=5"
+          echo "ATIVIDADES_URL=$ATIVIDADES_URL" >> $GITHUB_OUTPUT
+
+          # Monta URL completa de clientes
+          CLIENTES_URL="${SYNC_CLIENTES_BASE_URL}?since=${SINCE}&pages=3"
+          echo "CLIENTES_URL=$CLIENTES_URL" >> $GITHUB_OUTPUT
+
+      - name: Chamar /api/sync-fullday (full-day hoje em todos os campos de data)
+        run: |
+          echo "Chamando: $SYNC_FULLDAY_URL"
+          curl -sS -X GET "$SYNC_FULLDAY_URL"
+
+      - name: Chamar /api/sync-atividades (criadas desde hoje 00:00:00Z)
+        run: |
+          echo "Chamando: ${{ steps.build_urls.outputs.ATIVIDADES_URL }}"
+          curl -sS -X GET "${{ steps.build_urls.outputs.ATIVIDADES_URL }}"
+
+      - name: Chamar /api/sync-clientes (clientes desde hoje 00:00:00Z)
+        run: |
+          echo "Chamando: ${{ steps.build_urls.outputs.CLIENTES_URL }}"
+          curl -sS -X GET "${{ steps.build_urls.outputs.CLIENTES_URL }}"
