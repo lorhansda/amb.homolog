@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}  # permite rodar manualmente pelo botão "Run workflow"
 
 env:
-  # URLs base (sem o parâmetro since)
+  # URLs base (sem parâmetros de data)
   SYNC_FULLDAY_URL: "https://sensedata-api.sensedata-dash.workers.dev/api/sync-fullday"
   SYNC_ATIVIDADES_BASE_URL: "https://sensedata-api.sensedata-dash.workers.dev/api/sync-atividades"
   SYNC_CLIENTES_BASE_URL: "https://sensedata-api.sensedata-dash.workers.dev/api/sync-clientes"
@@ -24,27 +24,38 @@ jobs:
           TODAY_UTC=$(date -u +"%Y-%m-%d")
           echo "Hoje (UTC): $TODAY_UTC"
 
-          # Monta since com T00:00:00Z
+          # Monta since/until com T00:00:00Z / T23:59:59Z
           SINCE="${TODAY_UTC}T00:00:00Z"
+          UNTIL="${TODAY_UTC}T23:59:59Z"
           echo "Since (UTC): $SINCE"
+          echo "Until (UTC): $UNTIL"
 
-          # Monta URL completa de atividades
-          ATIVIDADES_URL="${SYNC_ATIVIDADES_BASE_URL}?since=${SINCE}&filter_field=created_at&pages=5"
-          echo "ATIVIDADES_URL=$ATIVIDADES_URL" >> $GITHUB_OUTPUT
+          # 1) Atividades criadas desde hoje (created_at)
+          ATIVIDADES_CREATED_URL="${SYNC_ATIVIDADES_BASE_URL}?since=${SINCE}&filter_field=created_at&pages=5"
+          echo "ATIVIDADES_CREATED_URL=$ATIVIDADES_CREATED_URL" >> $GITHUB_OUTPUT
 
-          # Monta URL completa de clientes
+          # 2) Clientes atualizados desde hoje
           CLIENTES_URL="${SYNC_CLIENTES_BASE_URL}?since=${SINCE}&pages=3"
           echo "CLIENTES_URL=$CLIENTES_URL" >> $GITHUB_OUTPUT
 
-      - name: Chamar /api/sync-fullday (full-day hoje em todos os campos de data)
+          # 3) Atividades atualizadas hoje (updated_at full-day)
+          ATIVIDADES_UPDATED_URL="${SYNC_ATIVIDADES_BASE_URL}?since=${SINCE}&until=${UNTIL}&filter_field=updated_at&pages=10"
+          echo "ATIVIDADES_UPDATED_URL=$ATIVIDADES_UPDATED_URL" >> $GITHUB_OUTPUT
+
+      - name: Chamar /api/sync-fullday (full-day hoje em created_at, updated_at, system_end_date)
         run: |
           echo "Chamando: $SYNC_FULLDAY_URL"
           curl -sS -X GET "$SYNC_FULLDAY_URL"
 
-      - name: Chamar /api/sync-atividades (criadas desde hoje 00:00:00Z)
+      - name: Chamar /api/sync-atividades (criadas desde hoje 00:00:00Z - created_at)
         run: |
-          echo "Chamando: ${{ steps.build_urls.outputs.ATIVIDADES_URL }}"
-          curl -sS -X GET "${{ steps.build_urls.outputs.ATIVIDADES_URL }}"
+          echo "Chamando: ${{ steps.build_urls.outputs.ATIVIDADES_CREATED_URL }}"
+          curl -sS -X GET "${{ steps.build_urls.outputs.ATIVIDADES_CREATED_URL }}"
+
+      - name: Chamar /api/sync-atividades (atualizadas hoje - updated_at full-day)
+        run: |
+          echo "Chamando: ${{ steps.build_urls.outputs.ATIVIDADES_UPDATED_URL }}"
+          curl -sS -X GET "${{ steps.build_urls.outputs.ATIVIDADES_UPDATED_URL }}"
 
       - name: Chamar /api/sync-clientes (clientes desde hoje 00:00:00Z)
         run: |
