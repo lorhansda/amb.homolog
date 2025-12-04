@@ -39,7 +39,7 @@ class SensedataAPIClient {
       // --- Fim da Melhoria Futura ---
 
       // Carregar clientes
-      const clientesResponse = await fetch(`${this.apiUrl}/api/clientes?limit=10000`);
+      const clientesResponse = await fetch(`${this.apiUrl}/api/clientes?limit=100000`);
       if (!clientesResponse.ok) {
         throw new Error(`Erro ao carregar clientes: ${clientesResponse.status}`);
       }
