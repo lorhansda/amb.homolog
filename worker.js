@@ -43,10 +43,9 @@ const parseDate = (dateInput) => {
 
     const dateStr = String(dateInput).trim();
 
-    // 1) Tenta parse direto de ISO (ex.: "2025-12-03T14:57:09.790545")
+    // 1) Tenta parse direto de ISO
     const isoCandidate = new Date(dateStr);
     if (!isNaN(isoCandidate)) {
-        // Normaliza para UTC (somente data)
         return new Date(Date.UTC(
             isoCandidate.getUTCFullYear(),
             isoCandidate.getUTCMonth(),
@@ -109,34 +108,36 @@ const processInitialData = () => {
     // 1. Prepara Mapeamento de Clientes por ID (Regra Principal)
     const clientByIdMap = new Map();
     
-    // Também mantemos o mapa por Nome como fallback (caso id_legacy venha vazio em algum caso raro)
+    // Também mantemos o mapa por Nome como fallback
     const clienteMapByName = new Map();
 
     rawClients = rawClients.map(c => {
-        // Normaliza as chaves do Cliente (D1 snake_case -> Dashboard Title Case)
-        // Isso garante que se o dado vier do D1, ele tenha as propriedades que o Dash espera
         const getVal = (keys) => {
             for (const k of keys) if (c[k] !== undefined && c[k] !== null) return c[k];
             return '';
         };
 
         const normalizedClient = {
-            ...c, // Mantém originais
+            ...c, 
             Cliente: getVal(['cliente', 'Cliente', 'name']),
-            CS: getVal(['cs', 'CS', 'owner']), // Pega o CS da tabela de clientes
+            CS: getVal(['cs', 'CS', 'owner']), 
             Segmento: getVal(['segmento', 'Segmento', 'industry']),
             Fase: getVal(['fase', 'Fase', 'stage']),
             ISM: getVal(['ism', 'ISM']),
             "Negócio": getVal(['negocio', 'Negócio', 'Negocio']),
             "Comercial": getVal(['comercial', 'Comercial']),
-            "Status Cliente": getVal(['status', 'Status', 'situacao']), // Status da conta
+            "Status Cliente": getVal(['status', 'Status', 'situacao']), 
             "Squad CS": getVal(['squad_cs', 'Squad CS']),
             "NPS onboarding": getVal(['nps_onboarding', 'NPS onboarding']),
             "Valor total não faturado": getVal(['valor_total_em_aberto', 'Valor total não faturado']),
             id_legacy: getVal(['id_legacy', 'id_customer_legacy'])
         };
 
-        // Indexa pelo ID Legacy (Chave Primária de Link)
+        // 2. Ajuste final nos Clientes (AQUI DENTRO DO MAP)
+        normalizedClient["Dias sem touch"] = normalizedClient['Dias sem touch'] !== undefined ? normalizedClient['Dias sem touch'] : (c['dias_sem_touch'] || 0);
+        normalizedClient["Situação"] = normalizedClient['Situação'] || normalizedClient['Status Cliente'];
+
+        // Indexa pelo ID Legacy (Prioridade)
         if (normalizedClient.id_legacy) {
             clientByIdMap.set(String(normalizedClient.id_legacy).trim(), normalizedClient);
         }
@@ -150,7 +151,6 @@ const processInitialData = () => {
         return normalizedClient;
     });
 
-    // Cache para busca por nome (usado apenas se falhar o ID)
     const findClientFallback = (name = '') => {
         const normalized = buildClientKey(name);
         return clienteMapByName.get(normalized) || null;
@@ -164,9 +164,8 @@ const processInitialData = () => {
 
     clientOnboardingStartDate.clear();
 
-    // 2. Processa Atividades e Faz o Link (JOIN)
+    // 3. Processa Atividades e Faz o Link (JOIN)
     rawActivities = rawActivities.map(ativ => {
-        // Função auxiliar para ler campos com prioridade
         const campo = (keys) => {
             for (const k of keys) {
                 if (ativ[k] !== undefined && ativ[k] !== null) return ativ[k];
@@ -174,61 +173,49 @@ const processInitialData = () => {
             return ''; 
         };
 
-        // --- DEFINIÇÃO DE DADOS CONFORME REGRAS ESTRITAS ---
-        
         // IDs de vínculo
-        const idCustomerLegacy = campo(['id_customer_legacy', 'id_legacy']); // Na atividade
+        const idCustomerLegacy = campo(['id_customer_legacy', 'id_legacy']);
         
-        // Tentativa de Link: Pelo ID Legacy (Prioridade Total)
         let clienteInfo = null;
+        // Tentativa 1: Por ID
         if (idCustomerLegacy) {
             clienteInfo = clientByIdMap.get(String(idCustomerLegacy).trim());
         }
 
-        // Fallback: Se não achou por ID, tenta pelo nome do cliente na atividade
+        // Tentativa 2: Por Nome
         const originalClientName = campo(['cliente', 'Cliente', 'name_contract']);
         if (!clienteInfo && originalClientName) {
             clienteInfo = findClientFallback(originalClientName);
         }
 
-        // Garante objeto vazio se não achou nada
         clienteInfo = clienteInfo || {};
 
-        // Nomes e Chaves
         const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
         const clienteKey = buildClientKey(canonicalClientName);
 
-        // --- MAPEAMENTO DE COLUNAS (REGRAS DO USUÁRIO) ---
         const rawData = {
             playbook: campo(['playbook', 'Playbook']),
             atividade: campo(['atividade', 'Atividade']),
             tipo: campo(['tipo_atividade', 'Tipo de Atividade']),
-            responsavelAtividade: campo(['responsavel', 'Responsável']), // Quem fez a atividade
+            responsavelAtividade: campo(['responsavel', 'Responsável']),
             status: campo(['status', 'Status']),
             categoria: campo(['categoria', 'Categoria']),
             notes: campo(['notes', 'Anotações']),
             
-            // DATAS (Regras Estritas)
-            // CriadoEm -> created_on
+            // DATAS
             criado_em: campo(['created_on', 'CriadoEm', 'criado_em']), 
-            // Previsao -> previsao_conclusao
             previsao: campo(['previsao_conclusao', 'PrevisaoConclusao']), 
-            // Conclusao -> end_date (Prioritário conforme pedido)
             concluido: campo(['end_date', 'ConcluidaEm', 'system_end_date_raw']) 
         };
 
-        // Parsing de Datas
         let criadoEmDate = parseDate(rawData.criado_em);
         const previsaoConclusaoDate = parseDate(rawData.previsao);
         const concluidaEmDate = parseDate(rawData.concluido);
 
         const playbookNormalized = normalizeText(rawData.playbook);
-        
-        // Status do Cliente (Vem do JOIN com a tabela Cliente)
         const statusClienteRaw = clienteInfo['Status Cliente'] || 'Desconhecido';
         const statusCliente = formatClientStatus(statusClienteRaw);
 
-        // Lógica de Data de Onboarding (Mantida)
         if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
             const existingStartDate = clientOnboardingStartDate.get(clienteKey);
             if (!existingStartDate || criadoEmDate < existingStartDate) {
@@ -237,26 +224,18 @@ const processInitialData = () => {
         }
 
         return {
-            ...ativ, // Mantém dados originais
-            
-            // IDs para controle interno
+            ...ativ,
             __activityId: campo(['id_sensedata', 'id']),
-
-            // Dados do Cliente e Linkagem
             Cliente: canonicalClientName,
             ClienteCompleto: clienteKey,
             "Status Cliente": statusCliente,
-            
-            // DADOS ENRIQUECIDOS (Vem da Tabela Clientes via ID Legacy)
             Segmento: clienteInfo.Segmento || 'Não Identificado',
-            CS: clienteInfo.CS || 'Não Identificado', // AQUI PEGA O CS DA CONTA
+            CS: clienteInfo.CS || 'Não Identificado',
             Squad: clienteInfo['Squad CS'],
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
             Negocio: clienteInfo['Negócio'],
             Comercial: clienteInfo['Comercial'],
-            
-            // Dados da Atividade
             Playbook: rawData.playbook,
             Atividade: rawData.atividade,
             "Tipo de Atividade": rawData.tipo,
@@ -264,30 +243,11 @@ const processInitialData = () => {
             Status: rawData.status,
             Categoria: rawData.categoria,
             "Anotações": rawData.notes,
-
-            // Datas Convertidas
             CriadoEm: criadoEmDate,
             PrevisaoConclusao: previsaoConclusaoDate,
-            ConcluidaEm: concluidaEmDate, // Agora usando end_date
-
-            // Métricas Numéricas do Cliente
+            ConcluidaEm: concluidaEmDate,
             NPSOnboarding: clienteInfo['NPS onboarding'],
-            ValorNaoFaturado: parseFloat(
-                String(clienteInfo['Valor total não faturado'] || '0')
-                    .replace(/[^0-9,-]+/g, "")
-                    .replace(",", ".")
-            )
-        };
-    });
-};
-
-    // 2. Ajuste final nos Clientes (Prioriza o dado do SenseData)
-    rawClients = rawClients.map(c => {
-        return {
-            ...c,
-            // Se o SenseData mandou dias sem touch, usa. Se não, mantém 0 ou calcula.
-            "Dias sem touch": c['Dias sem touch'] !== undefined ? c['Dias sem touch'] : 0,
-            "Situação": c['Situação'] || c.Status
+            ValorNaoFaturado: parseFloat(String(clienteInfo['Valor total não faturado'] || '0').replace(/[^0-9,-]+/g, "").replace(",", "."))
         };
     });
 };
@@ -950,6 +910,3 @@ self.onmessage = (e) => {
         });
     }
 };
-
-
-
