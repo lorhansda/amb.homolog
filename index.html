@@ -1013,71 +1013,93 @@
             };
         });
     }
-
-    function mapDatabaseToDashboard(dbData, type) {
-        const translateType = (rawType) => {
-            if (!rawType) return "";
-            const t = rawType.toLowerCase();
-            if (t.includes('phone') || t.includes('call')) return 'Ligação';
-            if (t.includes('meeting')) return 'Reunião';
-            if (t.includes('email') || t.includes('e-mail')) return 'E-mail';
-            if (t.includes('whatsapp')) return 'Whatsapp';
-            if (t.includes('task') || t.includes('tarefa')) return 'Tarefa';
-            return rawType;
-        };
-
-        const translateStatus = (rawStatus) => {
-            if (!rawStatus) return "";
-            const s = rawStatus.toLowerCase();
-            if (s === 'completed' || s === 'concluded' || s === 'done') return 'Concluída';
-            if (s === 'open' || s === 'pending' || s === 'scheduled') return 'Agendada';
-            if (s === 'canceled') return 'Cancelada';
-            return rawStatus;
-        };
-
-        return dbData.map(row => {
-            if (type === 'atividades') {
-                const activityId = row.id_sensedata || row.id || row.ID || row.Id;
-                const notesValue = formatNotesValue(row.notes || row.Notas || row.anotacoes || row.notes_text || row.NotasDetalhadas);
-                return {
-                    "__activityId": activityId || null,
-                    "Criado em": row.criado_em ? new Date(row.criado_em) : null,
-                    "Cliente": row.cliente,
-                    "ClienteCompleto": normalizeClientKey(row.cliente),
-                    "CS": row.cs, 
-                    "Playbook": row.playbook,
-                    "Atividade": row.atividade,
-                    "Tipo de Atividade": translateType(row.tipo_atividade), 
-                    "Categoria": row.categoria || '',
-                    "Status": translateStatus(row.status),
-                    "Previsão de conclusão": row.previsao_conclusao ? new Date(row.previsao_conclusao) : null,
-                    "Concluída em": row.concluida_em ? new Date(row.concluida_em) : null,
-                    "Responsável": row.responsavel,
-                    "Status Cliente": formatClientStatusValue(row.status_cliente),
-                    "Anotações": notesValue
-                };
-            } else if (type === 'clientes') {
-                return {
-                    "Cliente": row.cliente,
-                    "ClienteCompleto": normalizeClientKey(row.cliente),
-                    "CS": row.cs,
-                    "Segmento": row.segmento,
-                    "Fase": row.fase,
-                    "ISM": row.ism,
-                    "Negócio": row.negocio,
-                    "Comercial": row.comercial,
-                    "NPS onboarding": row.nps_onboarding,
-                    "Valor total não faturado": row.valor_total_em_aberto,
-                    "Status": row.status,
-                    "Squad CS": row.squad_cs, 
-                    "Dias sem touch": row.dias_sem_touch,
-                    "Situação": row.situacao,
-                    "Modelo de negócio": row.modelo_de_negocio,
-                    "Potencial": row.potencial
-                };
-            }
-        });
+const parseDate = (dateInput) => {
+    if (!dateInput) return null;
+    if (dateInput instanceof Date) return dateInput;
+    
+    const dateStr = String(dateInput).trim();
+    
+    // Caso 1: Formato ISO ou SQL (ex: 2025-08-08 ou 2025-08-08T10:00:00)
+    if (dateStr.includes('-')) {
+        // Se tiver 'T' ou espaço, tenta criar direto. Se for só YYYY-MM-DD, força o meio-dia para evitar fuso horário
+        const cleanDate = dateStr.includes('T') || dateStr.includes(':') ? dateStr : `${dateStr}T12:00:00`;
+        const dateObj = new Date(cleanDate);
+        if (!isNaN(dateObj)) return dateObj;
     }
+    
+    // Caso 2: Formato Brasileiro (ex: 08/08/2025)
+    if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+            // Dia, Mês - 1, Ano
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+    }
+    return null;
+};
+    // --- MAPPER: Banco D1 -> Formato do Dashboard ---
+function mapDatabaseToDashboard(dbData, type) {
+    if (!Array.isArray(dbData)) return [];
+
+    return dbData.map(row => {
+        if (type === 'atividades') {
+            // Mapeia as colunas do D1 (snake_case) para o Dashboard (Title Case)
+            
+            // 1. Trata as datas usando o helper do Passo 1
+            const created = parseDate(row.criado_em || row.created_at || row["Criado em"]);
+            const due = parseDate(row.previsao_conclusao || row.due_date || row["Previsão de conclusão"]);
+            const done = parseDate(row.concluida_em || row.system_end_date || row["Concluída em"]);
+            
+            // 2. Retorna o objeto no formato que o Worker e a Tabela esperam
+            return {
+                "__activityId": row.id_sensedata || row.id,
+                
+                // Campos de Data (Formatados)
+                "Criado em": created,
+                "Previsão de conclusão": due,
+                "Concluída em": done,
+                
+                // Campos de Texto Principais
+                "Cliente": row.cliente || row.customer_name || "Cliente Desconhecido",
+                "ClienteCompleto": (row.cliente || '').trim().toLowerCase(),
+                "CS": row.cs || row.owner_name, // Se vier vazio, será preenchido depois pelo 'enrich'
+                "Playbook": row.playbook,
+                "Atividade": row.atividade || row.description,
+                "Tipo de Atividade": row.tipo_atividade || row.tipo,
+                "Categoria": row.categoria,
+                
+                // Status e Responsáveis
+                "Status": row.status, // Ex: "Concluída" ou "Atrasada"
+                "Responsável": row.responsavel || row.responsavel_name,
+                "Status Cliente": row.status_cliente, // Ex: "Ativo-Produto"
+                
+                // Anotações (JSON ou Texto)
+                "Anotações": row.notes || row.anotacoes || ""
+            };
+        } 
+        else if (type === 'clientes') {
+            return {
+                // Mapeamento da tabela de Clientes
+                "Cliente": row.cliente || row.name,
+                "ClienteCompleto": (row.cliente || '').trim().toLowerCase(),
+                "CS": row.cs || row.owner,
+                "Segmento": row.segmento || row.industry,
+                "Fase": row.fase || row.stage,
+                "ISM": row.ism,
+                "Negócio": row.negocio,
+                "Comercial": row.comercial,
+                "NPS onboarding": row.nps_onboarding,
+                "Valor total não faturado": row.valor_total_em_aberto,
+                "Status": row.status,        // Ex: "Ativo"
+                "Squad CS": row.squad_cs,
+                "Dias sem touch": row.dias_sem_touch,
+                "Situação": row.situacao,
+                "Modelo de negócio": row.modelo_de_negocio,
+                "Potencial": row.potencial
+            };
+        }
+    });
+}
 
     const DASH_FETCH_CONFIG = window.DASH_FETCH_CONFIG || {};
     const ACTIVITY_FETCH_LIMIT = Number(DASH_FETCH_CONFIG.activityLimit ?? 30000);
@@ -1154,58 +1176,87 @@
         return Array.isArray(data) ? data : [];
     }
 
-    async function loadDataFromAPI() {
-        const statusMsg = document.getElementById('status-message');
-        if(statusMsg) {
-            statusMsg.style.display = 'block';
-            statusMsg.className = 'loader';
-            statusMsg.innerHTML = 'Conectando API Cloudflare (Isso pode levar alguns segundos)...';
+    // --- LOADER: Busca dados, Mapeia e Atualiza a Tela ---
+async function loadDataFromAPI() {
+    const statusMsg = document.getElementById('status-message');
+    if(statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.className = 'loader';
+        statusMsg.innerHTML = 'Conectando ao banco D1 e processando dados...';
+    }
+
+    try {
+        // 1. Instancia a integração e baixa os dados brutos do Cloudflare
+        // (Certifique-se que o arquivo frontend-integration.js está carregado)
+        const api = new SensedataAPIClient(WORKER_URL); 
+        const dados = await api.carregarDadosClientes();
+
+        if (!dados.atividades || dados.atividades.length === 0) {
+            console.warn("Aviso: API retornou 0 atividades.");
         }
 
-        try {
-            const api = new SensedataAPIClient(WORKER_URL);
-            
-            // Agora o backend vai aceitar o limite de 150k
-            const dados = await api.carregarDadosClientes();
+        // 2. APLICA O MAPEAMENTO (A CORREÇÃO PRINCIPAL)
+        // Converte os dados "crus" do D1 para o formato Title Case do painel
+        const mappedClients = mapDatabaseToDashboard(dados.clientes, 'clientes');
+        let mappedActivities = mapDatabaseToDashboard(dados.atividades, 'atividades');
 
-            if (!dados.atividades || dados.atividades.length === 0) {
-                console.warn("Aviso: Nenhuma atividade retornada. Verifique se o deploy na Cloudflare foi feito.");
+        // 3. ENRIQUECIMENTO
+        // Garante que atividades sem CS peguem o CS da lista de clientes
+        if (typeof window.enrichActivitiesWithClientData === 'function') {
+            mappedActivities = window.enrichActivitiesWithClientData(mappedActivities, mappedClients);
+        }
+
+        // 4. Define as variáveis globais para as tabelas
+        rawClients = mappedClients;
+        rawActivities = mappedActivities;
+
+        // 5. Envia para o Worker de Cálculo (worker.js)
+        // Passamos os dados JÁ MAPEADOS para que o worker encontre as colunas certas
+        if (dataWorker) dataWorker.terminate();
+        dataWorker = new Worker('worker.js');
+        dataWorker.onmessage = handleWorkerMessage;
+        
+        dataWorker.postMessage({
+            type: 'INIT',
+            payload: {
+                rawActivities: mappedActivities, 
+                rawClients: mappedClients,
+                currentUser: currentUser,
+                manualEmailToCsMap: manualEmailToCsMap || {}
             }
+        });
 
-            // Envia para o Worker de Processamento (frontend)
-            // ATENÇÃO: Não chamamos updateDashboard() aqui. O hydrateDashboardData dispara o worker
-            // e o worker devolve uma mensagem 'CALCULATION_COMPLETE' que atualiza a tela.
-            const result = await hydrateDashboardData({
-                activities: dados.atividades,
-                clients: api.converterClientesParaFormatoOriginal(),
-                storedAt: new Date().toISOString(),
-                sourceLabel: 'API D1 Cloudflare'
-            });
+        // 6. Salva no Cache Local para o próximo acesso ser rápido
+        if (typeof persistDashboardSnapshot === 'function') {
+            persistDashboardSnapshot(mappedActivities, mappedClients, new Date().toISOString());
+        }
 
-            // Salva cache
-            persistDashboardSnapshot(result.activities, result.clients, new Date().toISOString());
-
-            if(statusMsg) statusMsg.style.display = 'none';
-            
-            // Habilita filtros
-            const elCs = document.getElementById('select-cs');
-            if(elCs) elCs.disabled = false;
-            const elSquad = document.getElementById('select-squad');
-            if(elSquad) elSquad.disabled = false;
-            const elSeg = document.getElementById('select-segmento');
-            if(elSeg) elSeg.disabled = false;
-
-            // Inicializa filtros da tabela de dados brutos
-            populateFilters(result.activities, result.clients);
-
-        } catch (error) {
-            console.error(error);
-            if(statusMsg) {
-                statusMsg.className = 'error';
-                statusMsg.innerHTML = 'Erro: ' + error.message + '<br><button onclick="location.reload()">Recarregar</button>';
+        if(statusMsg) statusMsg.style.display = 'none';
+        
+        // 7. Atualiza a Interface
+        populateFilters(); // Preenche os selects (CS, Mês, etc)
+        renderDataTables(); // Preenche as tabelas
+        
+        // Trava seletor de CS se não for gestor
+        if (!currentUser.isManager) {
+            const selectedCS = document.getElementById('select-cs').value;
+            if (selectedCS) {
+                const clientsOfLoggedInUser = rawClients.filter(client => client.CS?.trim() === selectedCS);
+                if(typeof autoSelectSegment === 'function') autoSelectSegment(clientsOfLoggedInUser);
             }
+        }
+        
+        // Força o cálculo inicial dos gráficos
+        triggerCalculations();
+
+    } catch (error) {
+        console.error(error);
+        if(statusMsg) {
+            statusMsg.className = 'error';
+            statusMsg.innerHTML = 'Erro ao carregar dados: ' + error.message + '<br><button onclick="location.reload()">Recarregar</button>';
         }
     }
+}
 
 
     // ============================================================
@@ -2082,6 +2133,7 @@
 
 </body>
 </html>
+
 
 
 
