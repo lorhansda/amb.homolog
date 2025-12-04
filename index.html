@@ -1153,74 +1153,56 @@
         return Array.isArray(data) ? data : [];
     }
 
-    async function loadDataFromAPI(options = {}) {
+   async function loadDataFromAPI() {
         const statusMsg = document.getElementById('status-message');
-        const btn = document.getElementById('btn-refresh-data');
-        const since = options.since || ACTIVITY_DEFAULT_SINCE;
-        const limit = options.pageSize || ACTIVITY_FETCH_LIMIT;
-        const maxPages = options.maxPages || ACTIVITY_FETCH_MAX_PAGES;
-        const silentMode = Boolean(options.silent);
-
-        if (!silentMode && btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
-        }
-        if (statusMsg) {
-            statusMsg.style.display = 'block';
-            statusMsg.className = 'loader';
-            statusMsg.textContent = silentMode
-                ? 'Atualizando dados em segundo plano...'
-                : 'Iniciando carregamento de atividades...';
-        }
+        statusMsg.style.display = 'block';
+        statusMsg.className = 'loader';
+        statusMsg.innerHTML = 'Conectando ao banco de dados D1 (150k registros)...';
 
         try {
-            const clientesPromise = fetchAllClients();
-            const atividadesBrutas = await fetchActivitiesInChunks({
-                limit,
-                maxPages,
-                since,
-                onPageFetch: (page, count) => {
-                    if (!statusMsg) return;
-                    statusMsg.innerHTML = `<i class="fas fa-tasks"></i> Baixando atividades (página ${page})... ${count.toLocaleString()} registros acumulados`;
-                }
-            });
-
-            if (statusMsg) {
-                statusMsg.innerHTML = '<i class="fas fa-users"></i> Consolidando base de Clientes...';
-            }
-            const clientesBrutos = await clientesPromise;
-
-            if (statusMsg) {
-                statusMsg.innerHTML = '<i class="fas fa-cogs"></i> Processando e Cruzando informações...';
-            }
+            // Instancia a classe de integração que acabamos de atualizar
+            const api = new SensedataAPIClient(WORKER_URL);
             
-            const mappedClients = mapDatabaseToDashboard(clientesBrutos, 'clientes');
-            const mappedActivities = mapDatabaseToDashboard(atividadesBrutas, 'atividades');
-            const processedActivities = enrichActivitiesWithClientData(mappedActivities, mappedClients);
-            const storedAtIso = new Date().toISOString();
+            // Chama a função que agora baixa TUDO (clientes + atividades)
+            const dados = await api.carregarDadosClientes();
 
-            const hydrated = await hydrateDashboardData({
-                activities: processedActivities,
-                clients: mappedClients,
-                storedAt: storedAtIso,
-                sourceLabel: 'atualização direta'
+            // Verifica se vieram atividades
+            if (!dados.atividades || dados.atividades.length === 0) {
+                console.warn("API retornou 0 atividades. Verifique o endpoint.");
+            }
+
+            // Envia para o processamento (Worker V10)
+            // Nota: O SensedataAPIClient retorna o JSON "cru" da API. 
+            // O Worker V10 que fiz para você sabe ler esse JSON cru, então passamos direto.
+            const result = await hydrateDashboardData({
+                activities: dados.atividades,
+                clients: api.converterClientesParaFormatoOriginal(), // Clientes precisam de leve ajuste
+                storedAt: new Date().toISOString(),
+                sourceLabel: 'API D1 Cloudflare'
             });
 
-            await persistDashboardSnapshot(hydrated.activities, hydrated.clients, storedAtIso);
-            console.log(`Sucesso: ${hydrated.activities.length} atividades e ${hydrated.clients.length} clientes.`);
+            // Salva no cache local para o próximo reload ser rápido
+            persistDashboardSnapshot(result.activities, result.clients, new Date().toISOString());
+
+            statusMsg.style.display = 'none';
+            
+            // Inicializa os filtros e carrega a view inicial
+            populateFilters(result.activities, result.clients);
+            
+            // Atualiza filtros visuais
+            document.getElementById('select-cs').disabled = false;
+            document.getElementById('select-squad').disabled = false;
+            document.getElementById('select-segmento').disabled = false;
+            
+            // Força o cálculo inicial
+            updateDashboard();
 
         } catch (error) {
             console.error(error);
-            if (statusMsg) statusMsg.textContent = 'Erro ao conectar: ' + error.message;
-            if (!silentMode) {
-                alert("Erro ao conectar com o banco de dados. Tente novamente.");
-            }
-        } finally {
-            if (!silentMode && btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Agora';
-            }
+            statusMsg.className = 'error';
+            statusMsg.innerHTML = 'Erro ao carregar dados: ' + error.message + '<br><button onclick="location.reload()">Tentar Novamente</button>';
         }
+    }
     }
 
     // ============================================================
@@ -2097,6 +2079,7 @@
 
 </body>
 </html>
+
 
 
 
