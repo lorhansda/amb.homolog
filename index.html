@@ -1154,54 +1154,56 @@
         return Array.isArray(data) ? data : [];
     }
 
-   async function loadDataFromAPI() {
+    async function loadDataFromAPI() {
         const statusMsg = document.getElementById('status-message');
-        statusMsg.style.display = 'block';
-        statusMsg.className = 'loader';
-        statusMsg.innerHTML = 'Conectando ao banco de dados D1 (150k registros)...';
+        if(statusMsg) {
+            statusMsg.style.display = 'block';
+            statusMsg.className = 'loader';
+            statusMsg.innerHTML = 'Conectando API Cloudflare (Isso pode levar alguns segundos)...';
+        }
 
         try {
-            // Instancia a classe de integração que acabamos de atualizar
             const api = new SensedataAPIClient(WORKER_URL);
             
-            // Chama a função que agora baixa TUDO (clientes + atividades)
+            // Agora o backend vai aceitar o limite de 150k
             const dados = await api.carregarDadosClientes();
 
-            // Verifica se vieram atividades
             if (!dados.atividades || dados.atividades.length === 0) {
-                console.warn("API retornou 0 atividades. Verifique o endpoint.");
+                console.warn("Aviso: Nenhuma atividade retornada. Verifique se o deploy na Cloudflare foi feito.");
             }
 
-            // Envia para o processamento (Worker V10)
-            // Nota: O SensedataAPIClient retorna o JSON "cru" da API. 
-            // O Worker V10 que fiz para você sabe ler esse JSON cru, então passamos direto.
+            // Envia para o Worker de Processamento (frontend)
+            // ATENÇÃO: Não chamamos updateDashboard() aqui. O hydrateDashboardData dispara o worker
+            // e o worker devolve uma mensagem 'CALCULATION_COMPLETE' que atualiza a tela.
             const result = await hydrateDashboardData({
                 activities: dados.atividades,
-                clients: api.converterClientesParaFormatoOriginal(), // Clientes precisam de leve ajuste
+                clients: api.converterClientesParaFormatoOriginal(),
                 storedAt: new Date().toISOString(),
                 sourceLabel: 'API D1 Cloudflare'
             });
 
-            // Salva no cache local para o próximo reload ser rápido
+            // Salva cache
             persistDashboardSnapshot(result.activities, result.clients, new Date().toISOString());
 
-            statusMsg.style.display = 'none';
+            if(statusMsg) statusMsg.style.display = 'none';
             
-            // Inicializa os filtros e carrega a view inicial
+            // Habilita filtros
+            const elCs = document.getElementById('select-cs');
+            if(elCs) elCs.disabled = false;
+            const elSquad = document.getElementById('select-squad');
+            if(elSquad) elSquad.disabled = false;
+            const elSeg = document.getElementById('select-segmento');
+            if(elSeg) elSeg.disabled = false;
+
+            // Inicializa filtros da tabela de dados brutos
             populateFilters(result.activities, result.clients);
-            
-            // Atualiza filtros visuais
-            document.getElementById('select-cs').disabled = false;
-            document.getElementById('select-squad').disabled = false;
-            document.getElementById('select-segmento').disabled = false;
-            
-            // Força o cálculo inicial
-            updateDashboard();
 
         } catch (error) {
             console.error(error);
-            statusMsg.className = 'error';
-            statusMsg.innerHTML = 'Erro ao carregar dados: ' + error.message + '<br><button onclick="location.reload()">Tentar Novamente</button>';
+            if(statusMsg) {
+                statusMsg.className = 'error';
+                statusMsg.innerHTML = 'Erro: ' + error.message + '<br><button onclick="location.reload()">Recarregar</button>';
+            }
         }
     }
 
@@ -2080,6 +2082,7 @@
 
 </body>
 </html>
+
 
 
 
