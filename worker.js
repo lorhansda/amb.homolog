@@ -106,42 +106,56 @@ const buildCsToSquadMap = () => {
 };
 
 const processInitialData = () => {
-    // Mapeamento rápido de clientes
-    const clienteMap = new Map(rawClients.map(cli => [buildClientKey(cli.Cliente), cli]));
-    const clienteLookupCache = new Map();
-    const findClientInfo = (name = '') => {
-        const normalized = buildClientKey(name);
-        if (clienteLookupCache.has(normalized)) return clienteLookupCache.get(normalized);
-
-        let info = clienteMap.get(normalized) || null;
-        let resolvedKey = info ? buildClientKey(info.Cliente) : normalized;
-
-        if (!info && normalized && normalized.includes('|')) {
-            const suffix = normalized.slice(normalized.indexOf('|'));
-            for (const [key, value] of clienteMap.entries()) {
-                if (key.endsWith(suffix)) {
-                    info = value;
-                    resolvedKey = key;
-                    break;
-                }
-            }
-        }
-
-        if (!info && normalized) {
-            for (const [key, value] of clienteMap.entries()) {
-                if (key.includes(normalized) || normalized.includes(key)) {
-                    info = value;
-                    resolvedKey = key;
-                    break;
-                }
-            }
-        }
-
-        const result = { info, resolvedKey };
-        clienteLookupCache.set(normalized, result);
-        return result;
-    };
+    // 1. Prepara Mapeamento de Clientes por ID (Regra Principal)
+    const clientByIdMap = new Map();
     
+    // Também mantemos o mapa por Nome como fallback (caso id_legacy venha vazio em algum caso raro)
+    const clienteMapByName = new Map();
+
+    rawClients = rawClients.map(c => {
+        // Normaliza as chaves do Cliente (D1 snake_case -> Dashboard Title Case)
+        // Isso garante que se o dado vier do D1, ele tenha as propriedades que o Dash espera
+        const getVal = (keys) => {
+            for (const k of keys) if (c[k] !== undefined && c[k] !== null) return c[k];
+            return '';
+        };
+
+        const normalizedClient = {
+            ...c, // Mantém originais
+            Cliente: getVal(['cliente', 'Cliente', 'name']),
+            CS: getVal(['cs', 'CS', 'owner']), // Pega o CS da tabela de clientes
+            Segmento: getVal(['segmento', 'Segmento', 'industry']),
+            Fase: getVal(['fase', 'Fase', 'stage']),
+            ISM: getVal(['ism', 'ISM']),
+            "Negócio": getVal(['negocio', 'Negócio', 'Negocio']),
+            "Comercial": getVal(['comercial', 'Comercial']),
+            "Status Cliente": getVal(['status', 'Status', 'situacao']), // Status da conta
+            "Squad CS": getVal(['squad_cs', 'Squad CS']),
+            "NPS onboarding": getVal(['nps_onboarding', 'NPS onboarding']),
+            "Valor total não faturado": getVal(['valor_total_em_aberto', 'Valor total não faturado']),
+            id_legacy: getVal(['id_legacy', 'id_customer_legacy'])
+        };
+
+        // Indexa pelo ID Legacy (Chave Primária de Link)
+        if (normalizedClient.id_legacy) {
+            clientByIdMap.set(String(normalizedClient.id_legacy).trim(), normalizedClient);
+        }
+        
+        // Indexa pelo Nome (Fallback)
+        const nameKey = buildClientKey(normalizedClient.Cliente);
+        if (nameKey) {
+            clienteMapByName.set(nameKey, normalizedClient);
+        }
+
+        return normalizedClient;
+    });
+
+    // Cache para busca por nome (usado apenas se falhar o ID)
+    const findClientFallback = (name = '') => {
+        const normalized = buildClientKey(name);
+        return clienteMapByName.get(normalized) || null;
+    };
+
     const onboardingPlaybooks = [
         'onboarding lantek', 'onboarding elétrica', 'onboarding altium',
         'onboarding solidworks', 'onboarding usinagem', 'onboarding hp',
@@ -150,80 +164,122 @@ const processInitialData = () => {
 
     clientOnboardingStartDate.clear();
 
-    // 1. Processa Atividades e Enriquece com dados do Cliente
-    // 1. Processa Atividades e Enriquece com dados do Cliente
-rawActivities = rawActivities.map(ativ => {
-    const originalClientName = ativ.Cliente || '';
-    const { info: clienteInfoResolved, resolvedKey } = findClientInfo(originalClientName);
-    const clienteInfo = clienteInfoResolved || {};
-    const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
-    const clienteKey = resolvedKey || buildClientKey(canonicalClientName) || buildClientKey(originalClientName);
-    
-    // Garante datas (agora olhando tanto para os nomes NOVOS do D1
-    // quanto para os nomes ANTIGOS da planilha, se ainda existirem)
-    let criadoEmRaw =
-        ativ.CriadoEm ||
-        ativ['Criado em'] ||
-        ativ.criado_em;
+    // 2. Processa Atividades e Faz o Link (JOIN)
+    rawActivities = rawActivities.map(ativ => {
+        // Função auxiliar para ler campos com prioridade
+        const campo = (keys) => {
+            for (const k of keys) {
+                if (ativ[k] !== undefined && ativ[k] !== null) return ativ[k];
+            }
+            return ''; 
+        };
 
-    let previsaoConclusaoRaw =
-        ativ.PrevisaoConclusao ||
-        ativ['Previsão de conclusão'] ||
-        ativ.previsao_conclusao;
-
-    let concluidaEmRaw =
-        ativ.ConcluidaEm ||
-        ativ['Concluída em'] ||
-        ativ.concluida_em;
-
-    let criadoEmDate = criadoEmRaw instanceof Date ? criadoEmRaw : parseDate(criadoEmRaw);
-    const previsaoConclusaoDate =
-        previsaoConclusaoRaw instanceof Date ? previsaoConclusaoRaw : parseDate(previsaoConclusaoRaw);
-    const concluidaEmDate =
-        concluidaEmRaw instanceof Date ? concluidaEmRaw : parseDate(concluidaEmRaw);
-
-    const playbookNormalized = normalizeText(ativ.Playbook);
-    const statusClienteRaw =
-        ativ['Status Cliente'] ||
-        clienteInfo['Status Cliente'] ||
-        clienteInfo.Status ||
-        clienteInfo['Situação'];
-    const statusCliente = formatClientStatus(statusClienteRaw);
-
-    if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
-        const existingStartDate = clientOnboardingStartDate.get(clienteKey);
-        if (!existingStartDate || criadoEmDate < existingStartDate) {
-            clientOnboardingStartDate.set(clienteKey, criadoEmDate);
+        // --- DEFINIÇÃO DE DADOS CONFORME REGRAS ESTRITAS ---
+        
+        // IDs de vínculo
+        const idCustomerLegacy = campo(['id_customer_legacy', 'id_legacy']); // Na atividade
+        
+        // Tentativa de Link: Pelo ID Legacy (Prioridade Total)
+        let clienteInfo = null;
+        if (idCustomerLegacy) {
+            clienteInfo = clientByIdMap.get(String(idCustomerLegacy).trim());
         }
-    }
 
-    return {
-        ...ativ,
-        Cliente: canonicalClientName || originalClientName,
-        ClienteCompleto: clienteKey,
-        "Status Cliente": statusCliente,
-        // Puxa dados da tabela de Clientes (JOIN)
-        Segmento: clienteInfo.Segmento || 'Não Identificado',
-        CS: clienteInfo.CS || 'Não Identificado', 
-        Squad: clienteInfo['Squad CS'],
-        Fase: clienteInfo.Fase,
-        ISM: clienteInfo.ISM,
-        Negocio: clienteInfo['Negócio'],
-        Comercial: clienteInfo['Comercial'],
+        // Fallback: Se não achou por ID, tenta pelo nome do cliente na atividade
+        const originalClientName = campo(['cliente', 'Cliente', 'name_contract']);
+        if (!clienteInfo && originalClientName) {
+            clienteInfo = findClientFallback(originalClientName);
+        }
 
-        // Datas já convertidas para Date
-        CriadoEm: criadoEmDate,
-        PrevisaoConclusao: previsaoConclusaoDate,
-        ConcluidaEm: concluidaEmDate,
+        // Garante objeto vazio se não achou nada
+        clienteInfo = clienteInfo || {};
 
-        NPSOnboarding: clienteInfo['NPS onboarding'],
-        ValorNaoFaturado: parseFloat(
-            String(clienteInfo['Valor total não faturado'] || '0')
-                .replace(/[^0-9,-]+/g, "")
-                .replace(",", ".")
-        )
-    };
-});
+        // Nomes e Chaves
+        const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
+        const clienteKey = buildClientKey(canonicalClientName);
+
+        // --- MAPEAMENTO DE COLUNAS (REGRAS DO USUÁRIO) ---
+        const rawData = {
+            playbook: campo(['playbook', 'Playbook']),
+            atividade: campo(['atividade', 'Atividade']),
+            tipo: campo(['tipo_atividade', 'Tipo de Atividade']),
+            responsavelAtividade: campo(['responsavel', 'Responsável']), // Quem fez a atividade
+            status: campo(['status', 'Status']),
+            categoria: campo(['categoria', 'Categoria']),
+            notes: campo(['notes', 'Anotações']),
+            
+            // DATAS (Regras Estritas)
+            // CriadoEm -> created_on
+            criado_em: campo(['created_on', 'CriadoEm', 'criado_em']), 
+            // Previsao -> previsao_conclusao
+            previsao: campo(['previsao_conclusao', 'PrevisaoConclusao']), 
+            // Conclusao -> end_date (Prioritário conforme pedido)
+            concluido: campo(['end_date', 'ConcluidaEm', 'system_end_date_raw']) 
+        };
+
+        // Parsing de Datas
+        let criadoEmDate = parseDate(rawData.criado_em);
+        const previsaoConclusaoDate = parseDate(rawData.previsao);
+        const concluidaEmDate = parseDate(rawData.concluido);
+
+        const playbookNormalized = normalizeText(rawData.playbook);
+        
+        // Status do Cliente (Vem do JOIN com a tabela Cliente)
+        const statusClienteRaw = clienteInfo['Status Cliente'] || 'Desconhecido';
+        const statusCliente = formatClientStatus(statusClienteRaw);
+
+        // Lógica de Data de Onboarding (Mantida)
+        if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
+            const existingStartDate = clientOnboardingStartDate.get(clienteKey);
+            if (!existingStartDate || criadoEmDate < existingStartDate) {
+                clientOnboardingStartDate.set(clienteKey, criadoEmDate);
+            }
+        }
+
+        return {
+            ...ativ, // Mantém dados originais
+            
+            // IDs para controle interno
+            __activityId: campo(['id_sensedata', 'id']),
+
+            // Dados do Cliente e Linkagem
+            Cliente: canonicalClientName,
+            ClienteCompleto: clienteKey,
+            "Status Cliente": statusCliente,
+            
+            // DADOS ENRIQUECIDOS (Vem da Tabela Clientes via ID Legacy)
+            Segmento: clienteInfo.Segmento || 'Não Identificado',
+            CS: clienteInfo.CS || 'Não Identificado', // AQUI PEGA O CS DA CONTA
+            Squad: clienteInfo['Squad CS'],
+            Fase: clienteInfo.Fase,
+            ISM: clienteInfo.ISM,
+            Negocio: clienteInfo['Negócio'],
+            Comercial: clienteInfo['Comercial'],
+            
+            // Dados da Atividade
+            Playbook: rawData.playbook,
+            Atividade: rawData.atividade,
+            "Tipo de Atividade": rawData.tipo,
+            "Responsável": rawData.responsavelAtividade,
+            Status: rawData.status,
+            Categoria: rawData.categoria,
+            "Anotações": rawData.notes,
+
+            // Datas Convertidas
+            CriadoEm: criadoEmDate,
+            PrevisaoConclusao: previsaoConclusaoDate,
+            ConcluidaEm: concluidaEmDate, // Agora usando end_date
+
+            // Métricas Numéricas do Cliente
+            NPSOnboarding: clienteInfo['NPS onboarding'],
+            ValorNaoFaturado: parseFloat(
+                String(clienteInfo['Valor total não faturado'] || '0')
+                    .replace(/[^0-9,-]+/g, "")
+                    .replace(",", ".")
+            )
+        };
+    });
+};
 
     // 2. Ajuste final nos Clientes (Prioriza o dado do SenseData)
     rawClients = rawClients.map(c => {
@@ -894,5 +950,6 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
 
