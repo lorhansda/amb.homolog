@@ -133,7 +133,7 @@ const processInitialData = () => {
             id_legacy: getVal(['id_legacy', 'id_customer_legacy'])
         };
 
-        // 2. Ajuste final nos Clientes (AQUI DENTRO DO MAP)
+        // 2. Ajuste final nos Clientes (INTEGRADO AQUI PARA EVITAR ERRO)
         normalizedClient["Dias sem touch"] = normalizedClient['Dias sem touch'] !== undefined ? normalizedClient['Dias sem touch'] : (c['dias_sem_touch'] || 0);
         normalizedClient["Situação"] = normalizedClient['Situação'] || normalizedClient['Status Cliente'];
 
