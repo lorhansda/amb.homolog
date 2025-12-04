@@ -14,61 +14,102 @@ class SensedataAPIClient {
 
     async carregarDadosClientes() {
         try {
-            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch na API (Modo Paginado)...');
+            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch OTIMIZADO (Lotes menores)...');
             console.log('URL Alvo:', this.apiUrl);
 
-            // 1. BUSCAR CLIENTES (Clientes são leves, podemos manter busca única ou paginada simples)
-            // Mantivemos um limite alto seguro para clientes, pois geralmente são menos registros que atividades
-            console.log(`📡 Buscando Clientes...`);
-            const clientesResp = await fetch(`${this.apiUrl}/api/clientes?limit=10000`); 
-            const clientesJson = await clientesResp.json();
-            this.clientes = Array.isArray(clientesJson) ? clientesJson : (clientesJson.data || []);
-            console.log(`✅ ${this.clientes.length} Clientes carregados.`);
+            // ==============================================================================
+            // 1. BUSCAR CLIENTES (AGORA COM PAGINAÇÃO PARA EVITAR ERRO 500)
+            // ==============================================================================
+            this.clientes = [];
+            let clientPage = 1;
+            const CLIENT_CHUNK = 2000; // Reduzido de 10000 para 2000 para segurança
+            let moreClients = true;
 
-            // 2. BUSCAR ATIVIDADES COM PAGINAÇÃO (LOOP)
-            // Isso evita o Erro 500 por estouro de memória no Worker
-            this.atividades = [];
-            let page = 1;
-            const CHUNK_SIZE = 15000; // Tamanho seguro por página (Cloudflare Pro aguenta bem)
-            let hasMore = true;
+            console.log(`📡 Buscando Clientes em lotes de ${CLIENT_CHUNK}...`);
 
-            console.log(`📡 Buscando Atividades em lotes de ${CHUNK_SIZE}...`);
-
-            while (hasMore) {
-                const url = `${this.apiUrl}/api/atividades?limit=${CHUNK_SIZE}&page=${page}`;
-                console.log(`   🔄 Baixando página ${page}...`);
+            while (moreClients) {
+                const url = `${this.apiUrl}/api/clientes?limit=${CLIENT_CHUNK}&page=${clientPage}`;
                 
-                const resp = await fetch(url);
-                
-                if (!resp.ok) {
-                    console.error(`❌ Erro na página ${page}: ${resp.status}`);
-                    throw new Error(`Falha ao buscar atividades (Página ${page})`);
-                }
-
-                const json = await resp.json();
-                const chunk = Array.isArray(json) ? json : (json.data || []);
-
-                if (chunk.length > 0) {
-                    this.atividades = this.atividades.concat(chunk);
-                    console.log(`   📦 +${chunk.length} atividades recebidas. Total: ${this.atividades.length}`);
-                    page++;
+                try {
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error(`Erro ${resp.status}`);
                     
-                    // Se o chunk veio menor que o limite, acabaram os dados
-                    if (chunk.length < CHUNK_SIZE) {
-                        hasMore = false;
+                    const json = await resp.json();
+                    const chunk = Array.isArray(json) ? json : (json.data || []);
+                    
+                    if (chunk.length > 0) {
+                        this.clientes = this.clientes.concat(chunk);
+                        console.log(`   👤 Clientes Pág ${clientPage}: +${chunk.length} (Total: ${this.clientes.length})`);
+                        clientPage++;
+                        if (chunk.length < CLIENT_CHUNK) moreClients = false;
+                    } else {
+                        moreClients = false;
                     }
-                } else {
-                    hasMore = false;
+                } catch (err) {
+                    console.error(`❌ Falha ao buscar clientes pág ${clientPage}:`, err);
+                    moreClients = false; // Aborta clientes para tentar seguir
                 }
+            }
+            console.log(`✅ Total Final Clientes: ${this.clientes.length}`);
+
+
+            // ==============================================================================
+            // 2. BUSCAR ATIVIDADES (COM LOTE REDUZIDO)
+            // ==============================================================================
+            this.atividades = [];
+            let actPage = 1;
+            const ACT_CHUNK = 5000; // Reduzido de 15000 para 5000 (Muito mais seguro)
+            let moreActivities = true;
+            let errorCount = 0;
+
+            console.log(`📡 Buscando Atividades em lotes de ${ACT_CHUNK}...`);
+
+            while (moreActivities) {
+                const url = `${this.apiUrl}/api/atividades?limit=${ACT_CHUNK}&page=${actPage}`;
+                console.log(`   🔄 Baixando Atividades Pág ${actPage}...`);
                 
-                // Segurança para não loopar infinito em caso de erro lógico
-                if (page > 50) { 
-                    console.warn("⚠️ Limite de segurança de páginas atingido.");
-                    hasMore = false; 
+                try {
+                    const resp = await fetch(url);
+                    
+                    if (!resp.ok) {
+                        // Se der erro 500, tenta mais uma vez essa página antes de desistir
+                        console.warn(`⚠️ Erro ${resp.status} na pág ${actPage}. Tentando novamente...`);
+                        errorCount++;
+                        if(errorCount > 3) throw new Error("Muitos erros consecutivos.");
+                        await new Promise(r => setTimeout(r, 1000)); // Espera 1s
+                        continue; 
+                    }
+
+                    const json = await resp.json();
+                    const chunk = Array.isArray(json) ? json : (json.data || []);
+
+                    if (chunk.length > 0) {
+                        this.atividades = this.atividades.concat(chunk);
+                        console.log(`   📦 +${chunk.length} atividades. Total acumulado: ${this.atividades.length}`);
+                        actPage++;
+                        errorCount = 0; // Reset contador de erro
+                        
+                        if (chunk.length < ACT_CHUNK) {
+                            moreActivities = false;
+                        }
+                    } else {
+                        moreActivities = false;
+                    }
+                    
+                    // Freio de segurança (se passar de 100 páginas/500k registros, para)
+                    if (actPage > 100) { 
+                        console.warn("⚠️ Limite de segurança de páginas atingido.");
+                        moreActivities = false; 
+                    }
+
+                } catch (err) {
+                    console.error(`❌ Erro fatal na página ${actPage}:`, err);
+                    // Opcional: break aqui se quiser parar tudo, ou continue se quiser tentar pular
+                    moreActivities = false; 
                 }
             }
 
-            console.log('📊 [RESUMO FINAL]');
+            console.log('📊 [RESUMO FINAL DO CARREGAMENTO]');
             console.log(`   Total Clientes: ${this.clientes.length}`);
             console.log(`   Total Atividades: ${this.atividades.length}`);
 
@@ -81,27 +122,11 @@ class SensedataAPIClient {
             };
 
         } catch (error) {
-            console.error('❌ [ERRO FATAL NO FETCH]:', error);
-            alert("Erro na conexão com a API. Verifique o console.");
+            console.error('❌ [ERRO CRÍTICO]:', error);
+            alert("Erro ao carregar dados. O sistema tentou recuperar mas falhou. Verifique o console.");
             throw error;
         }
     }
-
-    // Métodos auxiliares mantidos para evitar erro de "not a function"
-    filtrarClientesPorSegmento(s) { return []; }
-    obterListaCSs() { return []; }
-    obterListaSegmentos() { return []; }
-    obterListaSquads() { return []; }
-    converterClientesParaFormatoOriginal() { 
-        // Conversor de emergência
-        return this.clientes.map(c => ({
-            Cliente: c.cliente || c.name,
-            CS: c.cs || c.owner,
-            id_legacy: c.id_legacy,
-            ...c
-        }));
-    }
-}
 
 // Exportar
 if (typeof module !== 'undefined' && module.exports) {
