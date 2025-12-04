@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * MÓDULO DE INTEGRAÇÃO - VERSÃO DIAGNÓSTICO
+ * MÓDULO DE INTEGRAÇÃO - VERSÃO PÁGINAÇÃO SEGURA (ANTI-ERRO 500)
  * ===================================================================
  */
 
@@ -14,15 +14,16 @@ class SensedataAPIClient {
 
     async carregarDadosClientes() {
         try {
-            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch OTIMIZADO (Lotes menores)...');
+            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch SEGURANÇA MÁXIMA...');
             console.log('URL Alvo:', this.apiUrl);
 
             // ==============================================================================
-            // 1. BUSCAR CLIENTES (AGORA COM PAGINAÇÃO PARA EVITAR ERRO 500)
+            // 1. BUSCAR CLIENTES (PAGINADO DE 2 EM 2 MIL)
             // ==============================================================================
             this.clientes = [];
             let clientPage = 1;
-            const CLIENT_CHUNK = 2000; // Reduzido de 10000 para 2000 para segurança
+            // IMPORTANTE: 2000 é o limite seguro. Não aumente para 10000.
+            const CLIENT_CHUNK = 2000; 
             let moreClients = true;
 
             console.log(`📡 Buscando Clientes em lotes de ${CLIENT_CHUNK}...`);
@@ -32,7 +33,7 @@ class SensedataAPIClient {
                 
                 try {
                     const resp = await fetch(url);
-                    if (!resp.ok) throw new Error(`Erro ${resp.status}`);
+                    if (!resp.ok) throw new Error(`Erro HTTP ${resp.status}`);
                     
                     const json = await resp.json();
                     const chunk = Array.isArray(json) ? json : (json.data || []);
@@ -41,24 +42,28 @@ class SensedataAPIClient {
                         this.clientes = this.clientes.concat(chunk);
                         console.log(`   👤 Clientes Pág ${clientPage}: +${chunk.length} (Total: ${this.clientes.length})`);
                         clientPage++;
+                        // Se vier menos que o limite, é a última página
                         if (chunk.length < CLIENT_CHUNK) moreClients = false;
                     } else {
                         moreClients = false;
                     }
                 } catch (err) {
                     console.error(`❌ Falha ao buscar clientes pág ${clientPage}:`, err);
-                    moreClients = false; // Aborta clientes para tentar seguir
+                    moreClients = false; 
+                    // Se falhar na primeira página de clientes, é crítico.
+                    if (clientPage === 1) throw err;
                 }
             }
             console.log(`✅ Total Final Clientes: ${this.clientes.length}`);
 
 
             // ==============================================================================
-            // 2. BUSCAR ATIVIDADES (COM LOTE REDUZIDO)
+            // 2. BUSCAR ATIVIDADES (PAGINADO DE 5 EM 5 MIL)
             // ==============================================================================
             this.atividades = [];
             let actPage = 1;
-            const ACT_CHUNK = 5000; // Reduzido de 15000 para 5000 (Muito mais seguro)
+            // IMPORTANTE: 5000 é o limite seguro. 15000 causou o erro 500 no seu log.
+            const ACT_CHUNK = 5000; 
             let moreActivities = true;
             let errorCount = 0;
 
@@ -72,11 +77,10 @@ class SensedataAPIClient {
                     const resp = await fetch(url);
                     
                     if (!resp.ok) {
-                        // Se der erro 500, tenta mais uma vez essa página antes de desistir
-                        console.warn(`⚠️ Erro ${resp.status} na pág ${actPage}. Tentando novamente...`);
+                        console.warn(`⚠️ Erro ${resp.status} na pág ${actPage}. Tentando novamente (Tentativa ${errorCount + 1})...`);
                         errorCount++;
-                        if(errorCount > 3) throw new Error("Muitos erros consecutivos.");
-                        await new Promise(r => setTimeout(r, 1000)); // Espera 1s
+                        if(errorCount > 3) throw new Error("Muitos erros consecutivos na API.");
+                        await new Promise(r => setTimeout(r, 2000)); // Espera 2s antes de tentar de novo
                         continue; 
                     }
 
@@ -87,7 +91,7 @@ class SensedataAPIClient {
                         this.atividades = this.atividades.concat(chunk);
                         console.log(`   📦 +${chunk.length} atividades. Total acumulado: ${this.atividades.length}`);
                         actPage++;
-                        errorCount = 0; // Reset contador de erro
+                        errorCount = 0; // Sucesso, zera contador de erro
                         
                         if (chunk.length < ACT_CHUNK) {
                             moreActivities = false;
@@ -96,15 +100,14 @@ class SensedataAPIClient {
                         moreActivities = false;
                     }
                     
-                    // Freio de segurança (se passar de 100 páginas/500k registros, para)
-                    if (actPage > 100) { 
-                        console.warn("⚠️ Limite de segurança de páginas atingido.");
+                    // Segurança para loop infinito
+                    if (actPage > 200) { 
+                        console.warn("⚠️ Limite de segurança de páginas atingido (200). Parando.");
                         moreActivities = false; 
                     }
 
                 } catch (err) {
                     console.error(`❌ Erro fatal na página ${actPage}:`, err);
-                    // Opcional: break aqui se quiser parar tudo, ou continue se quiser tentar pular
                     moreActivities = false; 
                 }
             }
@@ -122,13 +125,23 @@ class SensedataAPIClient {
             };
 
         } catch (error) {
-            console.error('❌ [ERRO CRÍTICO]:', error);
-            alert("Erro ao carregar dados. O sistema tentou recuperar mas falhou. Verifique o console.");
+            console.error('❌ [ERRO CRÍTICO NO FRONTEND]:', error);
+            alert("Erro ao carregar dados. Abra o console (F12) para ver os detalhes.");
             throw error;
         }
     }
 
-// Exportar
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SensedataAPIClient;
+    // Métodos auxiliares mantidos para compatibilidade
+    filtrarClientesPorSegmento(s) { return []; }
+    obterListaCSs() { return []; }
+    obterListaSegmentos() { return []; }
+    obterListaSquads() { return []; }
+    converterClientesParaFormatoOriginal() { 
+        return this.clientes.map(c => ({
+            Cliente: c.cliente || c.name,
+            CS: c.cs || c.owner,
+            id_legacy: c.id_legacy,
+            ...c
+        }));
+    }
 }
