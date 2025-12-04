@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * MÓDULO DE INTEGRAÇÃO - VERSÃO PÁGINAÇÃO SEGURA (ANTI-ERRO 500)
+ * MÓDULO DE INTEGRAÇÃO - VERSÃO PAGINAÇÃO SEGURA V2
  * ===================================================================
  */
 
@@ -22,7 +22,6 @@ class SensedataAPIClient {
             // ==============================================================================
             this.clientes = [];
             let clientPage = 1;
-            // IMPORTANTE: 2000 é o limite seguro. Não aumente para 10000.
             const CLIENT_CHUNK = 2000; 
             let moreClients = true;
 
@@ -62,7 +61,6 @@ class SensedataAPIClient {
             // ==============================================================================
             this.atividades = [];
             let actPage = 1;
-            // IMPORTANTE: 5000 é o limite seguro. 15000 causou o erro 500 no seu log.
             const ACT_CHUNK = 5000; 
             let moreActivities = true;
             let errorCount = 0;
