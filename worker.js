@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * WORKER DE PROCESSAMENTO DE OKRs (V4 - Correção de Datas e Filtros)
+ * WORKER DE PROCESSAMENTO DE OKRs (V6 - Correção de Milissegundos)
  * ===================================================================
  */
 
@@ -37,33 +37,35 @@ const formatDate = (date) => {
     return `${day}/${month}/${year}`;
 };
 
-// PARSE DATE MAIS ROBUSTO PARA FORMATOS SQL / ISO
+// --- PARSER DE DATAS DEFINITIVO ---
 const parseDate = (dateInput) => {
     if (!dateInput) return null;
     if (dateInput instanceof Date && !isNaN(dateInput)) return dateInput;
 
-    const dateStr = String(dateInput).trim();
+    let dateStr = String(dateInput).trim();
 
-    // Tenta criar data direto (ISO 8601, UTC strings)
-    let dateObj = new Date(dateStr);
-    
-    // Verifica se é válida e se não é "Invalid Date"
-    if (!isNaN(dateObj.getTime())) {
-         // Ajuste para garantir que datas SQL (que as vezes vem como UTC implicito ou Local) não quebrem
-         // Se vier "2025-01-01", o JS as vezes interpreta como UTC-3 (dia anterior)
-         // Vamos forçar UTC apenas para extração segura de Ano/Mês se for formato ISO simples
-         return dateObj;
+    // CASO 1: Data Simples "YYYY-MM-DD" (ex: 2025-05-18)
+    // Forçamos UTC para evitar que vire dia 17 às 21h devido ao fuso horário
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(Date.UTC(y, m - 1, d));
     }
 
-    // Fallback para SQL timestamp simples "YYYY-MM-DD HH:MM:SS" ou "YYYY-MM-DD"
-    // Ex: "2024-05-15 10:30:00"
-    const sqlMatch = dateStr.match(/^(\d{4})[-/](\d{2})[-/](\d{2})/);
-    if (sqlMatch) {
-        return new Date(Date.UTC(
-            parseInt(sqlMatch[1], 10),
-            parseInt(sqlMatch[2], 10) - 1,
-            parseInt(sqlMatch[3], 10)
-        ));
+    // CASO 2: Trata milissegundos longos (ex: .300879 -> .300)
+    // O JS suporta no máximo 3 dígitos de milissegundos
+    if (dateStr.includes('.')) {
+        dateStr = dateStr.replace(/(\.\d{3})\d+/, '$1');
+    }
+
+    // CASO 3: Troca espaço por T se parecer SQL Timestamp (2025-01-01 10:00:00)
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/)) {
+        dateStr = dateStr.replace(' ', 'T');
+    }
+
+    // Tenta criar a data
+    const dateObj = new Date(dateStr);
+    if (!isNaN(dateObj.getTime())) {
+        return dateObj;
     }
 
     return null;
@@ -98,7 +100,7 @@ const buildCsToSquadMap = () => {
 };
 
 const processInitialData = () => {
-    console.log('[Worker] Iniciando processamento inicial de dados...');
+    console.log(`[Worker] Processando ${rawActivities.length} atividades...`);
     
     // 1. Prepara Mapeamento de Clientes
     const clientByIdMap = new Map();
@@ -154,8 +156,10 @@ const processInitialData = () => {
 
     clientOnboardingStartDate.clear();
 
-    // 2. Processa Atividades e Normaliza TUDO
-    rawActivities = rawActivities.map(ativ => {
+    // 2. Processa Atividades
+    let debugCount = 0;
+
+    rawActivities = rawActivities.map((ativ, index) => {
         const campo = (keys) => {
             for (const k of keys) {
                 if (ativ[k] !== undefined && ativ[k] !== null) return ativ[k];
@@ -189,10 +193,9 @@ const processInitialData = () => {
             categoria: campo(['categoria', 'Categoria']),
             notes: campo(['notes', 'Anotações']),
             
-            // REGRAS DE DATA REFORÇADAS
+            // DATAS (Mapeamento corrigido para os dados do banco)
             criado_em: campo(['created_on', 'CriadoEm', 'criado_em']), 
             previsao: campo(['previsao_conclusao', 'PrevisaoConclusao']), 
-            // Prioriza end_date (D1), depois ConcluidaEm (Manual), depois system_end_date (API raw)
             concluido: campo(['end_date', 'ConcluidaEm', 'system_end_date_raw']) 
         };
 
@@ -211,17 +214,24 @@ const processInitialData = () => {
             }
         }
 
-        // Retorno normalizado com as chaves que o DASHBOARD espera (Title Case)
+        // --- DEBUG NO CONSOLE (Verifique se as datas aparecem corretas) ---
+        if (debugCount < 3) {
+            console.log(`[WORKER DEBUG] Atividade ${index}:`, {
+                original_created: rawData.criado_em,
+                parsed_created: criadoEmDate,
+                original_end: rawData.concluido,
+                parsed_end: concluidaEmDate,
+                playbook: rawData.playbook
+            });
+            debugCount++;
+        }
+
         return {
             ...ativ,
             __activityId: campo(['id_sensedata', 'id']),
-            
-            // Chaves Fundamentais para o Dash
             Cliente: canonicalClientName,
             ClienteCompleto: clienteKey,
             "Status Cliente": statusCliente,
-            
-            // JOIN
             Segmento: clienteInfo.Segmento || 'Não Identificado',
             CS: clienteInfo.CS || 'Não Identificado',
             Squad: clienteInfo['Squad CS'],
@@ -229,8 +239,6 @@ const processInitialData = () => {
             ISM: clienteInfo.ISM,
             Negocio: clienteInfo['Negócio'],
             Comercial: clienteInfo['Comercial'],
-            
-            // Atividade
             Playbook: rawData.playbook,
             Atividade: rawData.atividade,
             "Tipo de Atividade": rawData.tipo,
@@ -238,19 +246,13 @@ const processInitialData = () => {
             Status: rawData.status,
             Categoria: rawData.categoria,
             "Anotações": rawData.notes,
-            
-            // DATAS CRÍTICAS (Objetos Date Reais)
             CriadoEm: criadoEmDate,
             PrevisaoConclusao: previsaoConclusaoDate,
             ConcluidaEm: concluidaEmDate,
-            
-            // Métricas
             NPSOnboarding: clienteInfo['NPS onboarding'],
             ValorNaoFaturado: parseFloat(String(clienteInfo['Valor total não faturado'] || '0').replace(/[^0-9,-]+/g, "").replace(",", "."))
         };
     });
-    
-    console.log(`[Worker] Processamento concluído. ${rawActivities.length} atividades normalizadas.`);
 };
 
 // --- CÁLCULOS DE MÉTRICAS ---
@@ -264,7 +266,6 @@ const calculateOverdueMetrics = (activities, selectedCS) => {
 
     const overdue = csActivities.filter(a => {
         const dueDate = a.PrevisaoConclusao;
-        // Só considera atrasada se tiver data prevista, NÃO estiver concluída e a data for anterior a hoje
         return dueDate && !a.ConcluidaEm && dueDate < today;
     });
 
@@ -295,26 +296,18 @@ const calculateOverdueMetrics = (activities, selectedCS) => {
 
 const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS, includeOnboarding, goals) => {
     const metrics = {};
-    // Intervalo do Mês Selecionado
     const startOfPeriod = new Date(Date.UTC(year, month, 1));
     const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
 
-    const isConcludedInPeriod = (item) => {
-        if (!item.ConcluidaEm) return false;
-        return item.ConcluidaEm.getUTCMonth() === month && item.ConcluidaEm.getUTCFullYear() === year;
-    };
-
+    // CORREÇÃO DA LÓGICA DE CONCLUÍDO
+    const isConcludedInPeriod = (item) => item.ConcluidaEm && item.ConcluidaEm.getUTCMonth() === month && item.ConcluidaEm.getUTCFullYear() === year;
+    
     const isPredictedForPeriod = (activity) => {
         if (!activity.PrevisaoConclusao) return false;
         const isDueInPeriod = activity.PrevisaoConclusao.getUTCMonth() === month && activity.PrevisaoConclusao.getUTCFullYear() === year;
         return isDueInPeriod && !activity.ConcluidaEm; 
     };
-    
-    const isOverdue = (activity) => {
-        if (!activity.PrevisaoConclusao) return false;
-        // Se a previsão era anterior ao inicio deste mês e AINDA não foi concluida (ou foi concluida neste mês mas era velha)
-        return activity.PrevisaoConclusao < startOfPeriod;
-    };
+    const isOverdue = (activity) => activity.PrevisaoConclusao && activity.PrevisaoConclusao < startOfPeriod;
 
     const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
 
@@ -367,19 +360,13 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         }
 
         const totalRealizadoList = combinedRealizedActivities.filter(filterFn);
-        
-        // Métricas de Playbook:
-        // 1. Atrasado Concluído: Era pra ter feito antes, fez nesse mês.
         metrics[`${key}-atrasado-concluido`] = totalRealizadoList.filter(isOverdue);
-        
         const notOverdueList = totalRealizadoList.filter(a => !isOverdue(a));
-        // 2. Realizado no Prazo: Era pra esse mês, fez nesse mês.
         metrics[`${key}-realizado`] = notOverdueList.filter(a => a.PrevisaoConclusao <= endOfMonth);
-        // 3. Antecipado: Era pra depois, fez agora.
         metrics[`${key}-concluido-antecipado`] = notOverdueList.filter(a => a.PrevisaoConclusao > endOfMonth);
     }
 
-    const validContactKeywords = ['e-mail', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
+    const validContactKeywords = ['e-mail', 'email', 'ligacao', 'reuniao', 'whatsapp', 'call sponsor'];
     const isCountableContact = (a) => {
         const at = normalizeText(a['Tipo de Atividade'] || a['Tipo de atividade'] || a['Tipo']);
         const an = normalizeText(a.Atividade || '');
@@ -396,7 +383,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['cob-carteira'] = Array.from(uniqueClientContactsMap.values());
 
     const callKeywords = ['ligacao', 'reuniao', 'call sponsor'];
-    const emailKeywords = ['e-mail', 'whatsapp'];
+    const emailKeywords = ['e-mail', 'email', 'whatsapp'];
     const prioritizedCsContacts = new Map();
     csContactActivities.forEach(activity => {
         const clientKey = activity.ClienteCompleto;
@@ -458,6 +445,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         metrics[`${key}-previsto`] = allActivitiesOfType.filter(isPredictedForPeriod);
     }
 
+    // Engajamento SMB
     const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
     const uniqueSmbContacts = new Map();
     smbConcluidoList.forEach(a => {
@@ -470,6 +458,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['engajamento-smb-engajado'] = finalSmbList.filter(item => item.status === 'engajado').map(item => item.activity);
     metrics['engajamento-smb-desengajado'] = finalSmbList.filter(item => item.status === 'desengajado').map(item => item.activity);
 
+    // Campos Faltantes
     const clientesContatados = metrics['cob-carteira'] || [];
     const clientesContatadosComDados = clientesContatados.map(atividade => {
         const clienteData = clients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
@@ -483,12 +472,14 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['cliente-potencial-preenchido'] = clientesContatadosComDados.filter(item => item['Potencial'] && item['Potencial'] !== 'Vazio');
     metrics['cliente-potencial-faltante'] = clientesContatadosComDados.filter(item => !item['Potencial'] || item['Potencial'] === 'Vazio');
 
+    // SKA Labs
     const selectedQuarter = Math.floor(month / 3);
     const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getUTCMonth() / 3) === selectedQuarter && item.ConcluidaEm.getUTCFullYear() === year;
     const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
     metrics['total-labs-eligible'] = clients.length;
     metrics['ska-labs-realizado-list'] = [...new Map(rawActivities.filter(isConcludedInQuarter).filter(a => normalizeText(a.Atividade).includes('participou do ska labs')).filter(a => eligibleClientSet.has(a.ClienteCompleto)).map(a => [a.ClienteCompleto, a])).values()];
 
+    // Contagens para Gráficos
     const contatosPorNegocio = {};
     const contatosPorComercial = {};
     (metrics['cob-carteira'] || []).forEach(activity => {
@@ -500,6 +491,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['contatos-por-negocio'] = contatosPorNegocio;
     metrics['contatos-por-comercial'] = contatosPorComercial;
 
+    // Metas Distribuídas
     const metaCobertura = (goals.coverage || 40) / 100;
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(metrics['total-clientes-unicos-cs'] * metaCobertura));
     metrics['clientes-faltantes-meta-cobertura'] = Math.max(0, clientesParaAtingirMeta - clientesContatados.length);
@@ -721,11 +713,14 @@ self.onmessage = (e) => {
                 ...rawActivities.map(a => a.PrevisaoConclusao), 
                 ...rawActivities.map(a => a.ConcluidaEm)
             ];
-            const years = [...new Set(
+            const distinctYears = [...new Set(
                 allDates
                 .filter(d => d instanceof Date && !isNaN(d))
                 .map(d => d.getUTCFullYear())
             )].sort((a, b) => b - a);
+            
+            // Se não achou nada, forçar o ano atual
+            const years = distinctYears.length > 0 ? distinctYears : [new Date().getFullYear()];
 
             console.log(`[Worker] Anos identificados: ${years.join(', ')}`);
 
