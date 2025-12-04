@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * WORKER DE PROCESSAMENTO DE OKRs (V7 - Correção de Join e Fallback de CS)
+ * WORKER DE PROCESSAMENTO DE OKRs (V8 - Mapeamento Universal de Colunas)
  * ===================================================================
  */
 
@@ -43,6 +43,13 @@ const parseDate = (dateInput) => {
     if (dateInput instanceof Date && !isNaN(dateInput)) return dateInput;
 
     let dateStr = String(dateInput).trim();
+    if (!dateStr) return null;
+
+    // CASO 0: Data formato brasileiro "DD/MM/YYYY" (Comum em CSVs)
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+        const [d, m, y] = dateStr.split('/').map(Number);
+        return new Date(Date.UTC(y, m - 1, d));
+    }
 
     // CASO 1: Data Simples "YYYY-MM-DD" -> Força UTC
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
@@ -138,15 +145,6 @@ const processInitialData = () => {
         return normalizedClient;
     });
 
-    // DEBUG CLIENTE (Verificar se estamos lendo certo)
-    if (rawClients.length > 0) {
-        console.log('[WORKER DEBUG] Exemplo Cliente 0:', {
-            Nome: rawClients[0].Cliente,
-            ID: rawClients[0].id_legacy,
-            CS: rawClients[0].CS
-        });
-    }
-
     const findClientFallback = (name = '') => {
         const normalized = buildClientKey(name);
         return clienteMapByName.get(normalized) || null;
@@ -174,12 +172,10 @@ const processInitialData = () => {
         const idCustomerLegacy = campo(['id_customer_legacy', 'id_legacy']);
         
         let clienteInfo = null;
-        // Tentativa 1: ID
         if (idCustomerLegacy) {
             clienteInfo = clientByIdMap.get(String(idCustomerLegacy).trim());
         }
 
-        // Tentativa 2: Nome
         const originalClientName = campo(['cliente', 'Cliente', 'name_contract']);
         if (!clienteInfo && originalClientName) {
             clienteInfo = findClientFallback(originalClientName);
@@ -190,17 +186,21 @@ const processInitialData = () => {
         const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
         const clienteKey = buildClientKey(canonicalClientName);
 
+        // *** CORREÇÃO CRÍTICA: MAPEAMENTO DE COLUNAS AMPLIADO ***
+        // Adicionados os nomes "Bonitos" (CSV) que você mostrou no exemplo
         const rawData = {
             playbook: campo(['playbook', 'Playbook']),
             atividade: campo(['atividade', 'Atividade']),
-            tipo: campo(['tipo_atividade', 'Tipo de Atividade']),
-            responsavelAtividade: campo(['responsavel', 'Responsável']),
+            tipo: campo(['tipo_atividade', 'Tipo de Atividade', 'Tipo de atividade']),
+            responsavelAtividade: campo(['responsavel', 'Responsável', 'Responsavel']),
             status: campo(['status', 'Status']),
             categoria: campo(['categoria', 'Categoria']),
-            notes: campo(['notes', 'Anotações']),
-            criado_em: campo(['created_on', 'CriadoEm', 'criado_em']), 
-            previsao: campo(['previsao_conclusao', 'PrevisaoConclusao']), 
-            concluido: campo(['end_date', 'ConcluidaEm', 'system_end_date_raw']) 
+            notes: campo(['notes', 'Anotações', 'notes_html']),
+            
+            // Datas: Incluindo "Criado em", "Previsão de conclusão", etc.
+            criado_em: campo(['created_on', 'CriadoEm', 'criado_em', 'Criado em']), 
+            previsao: campo(['previsao_conclusao', 'PrevisaoConclusao', 'Previsão de conclusão', 'Previsao Conclusao']), 
+            concluido: campo(['end_date', 'ConcluidaEm', 'system_end_date_raw', 'Concluída em', 'Concluida em']) 
         };
 
         let criadoEmDate = parseDate(rawData.criado_em);
@@ -218,13 +218,22 @@ const processInitialData = () => {
             }
         }
 
-        // *** CORREÇÃO CRÍTICA: FALLBACK DE CS ***
-        // Se não achou o CS da conta (clienteInfo.CS), usa o Responsável da Atividade
+        // Fallback de CS
         let finalCS = clienteInfo.CS;
         if (!finalCS || finalCS === 'Não Identificado') {
             finalCS = rawData.responsavelAtividade;
         }
         if (!finalCS) finalCS = 'Não Identificado';
+
+        // --- DEBUG (Verifique se "parsed_created" agora tem valor) ---
+        if (debugCount < 3) {
+            console.log(`[WORKER DEBUG V8] Atividade ${index}:`, {
+                original_created: rawData.criado_em, // Deve aparecer a data string agora
+                parsed_created: criadoEmDate,        // Deve aparecer o objeto Date
+                cs_final: finalCS
+            });
+            debugCount++;
+        }
 
         return {
             ...ativ,
@@ -233,7 +242,7 @@ const processInitialData = () => {
             ClienteCompleto: clienteKey,
             "Status Cliente": statusCliente,
             Segmento: clienteInfo.Segmento || 'Não Identificado',
-            CS: finalCS, // Usando o CS com Fallback
+            CS: finalCS,
             Squad: clienteInfo['Squad CS'],
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
@@ -309,9 +318,6 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
 
-    // *** ALTERAÇÃO CRÍTICA: Removida validação estrita de 'carteira' que estava escondendo dados ***
-    // Anteriormente: filter(a => clients.some(c => ...))
-    // Se o JOIN falhava, isso retornava vazio.
     const allConcludedActivitiesInPortfolio = rawActivities.filter(isConcludedInPeriod);
 
     let csRealizedActivities = [];
@@ -324,7 +330,6 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         const activityOwner = (activity['Responsável'] || '').trim();
 
         if (!isClientOnboarding) {
-            // Agora activity.CS deve estar preenchido pelo Fallback
             if (selectedCS === 'Todos' || activityCS === selectedCS) csRealizedActivities.push(activity);
         } else {
             if (ismList.includes(activityOwner) && ismToFilter !== 'Todos') {
