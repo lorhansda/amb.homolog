@@ -40,13 +40,40 @@ const formatDate = (date) => {
 const parseDate = (dateInput) => {
     if (!dateInput) return null;
     if (dateInput instanceof Date && !isNaN(dateInput)) return dateInput;
+
     const dateStr = String(dateInput).trim();
-    const dateOnlyStr = dateStr.split(' ')[0];
-    let parts = dateOnlyStr.split(/[-/]/);
-    if (parts.length === 3) {
-        if (parts[2].length === 4) return new Date(Date.UTC(parts[2], parts[1] - 1, parts[0]));
-        if (parts[0].length === 4) return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+
+    // 1) Tenta parse direto de ISO (ex.: "2025-12-03T14:57:09.790545")
+    const isoCandidate = new Date(dateStr);
+    if (!isNaN(isoCandidate)) {
+        // Normaliza para UTC (somente data)
+        return new Date(Date.UTC(
+            isoCandidate.getUTCFullYear(),
+            isoCandidate.getUTCMonth(),
+            isoCandidate.getUTCDate()
+        ));
     }
+
+    // 2) Tenta formatos manuais (DD/MM/YYYY ou YYYY-MM-DD)
+    const dateOnlyStr = dateStr.split(' ')[0];
+    const parts = dateOnlyStr.split(/[-/]/);
+    if (parts.length === 3) {
+        // DD/MM/YYYY
+        if (parts[2].length === 4 && parts[0].length <= 2) {
+            const [dd, mm, yyyy] = parts.map(p => parseInt(p, 10));
+            if (!isNaN(dd) && !isNaN(mm) && !isNaN(yyyy)) {
+                return new Date(Date.UTC(yyyy, mm - 1, dd));
+            }
+        }
+        // YYYY-MM-DD
+        if (parts[0].length === 4) {
+            const [yyyy, mm, dd] = parts.map(p => parseInt(p, 10));
+            if (!isNaN(dd) && !isNaN(mm) && !isNaN(yyyy)) {
+                return new Date(Date.UTC(yyyy, mm - 1, dd));
+            }
+        }
+    }
+
     return null;
 };
 
@@ -124,48 +151,79 @@ const processInitialData = () => {
     clientOnboardingStartDate.clear();
 
     // 1. Processa Atividades e Enriquece com dados do Cliente
-    rawActivities = rawActivities.map(ativ => {
-        const originalClientName = ativ.Cliente || '';
-        const { info: clienteInfoResolved, resolvedKey } = findClientInfo(originalClientName);
-        const clienteInfo = clienteInfoResolved || {};
-        const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
-        const clienteKey = resolvedKey || buildClientKey(canonicalClientName) || buildClientKey(originalClientName);
-        
-        // Garante datas
-        let criadoEmDate = ativ['Criado em'];
-        if(!(criadoEmDate instanceof Date)) criadoEmDate = parseDate(criadoEmDate);
+    // 1. Processa Atividades e Enriquece com dados do Cliente
+rawActivities = rawActivities.map(ativ => {
+    const originalClientName = ativ.Cliente || '';
+    const { info: clienteInfoResolved, resolvedKey } = findClientInfo(originalClientName);
+    const clienteInfo = clienteInfoResolved || {};
+    const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
+    const clienteKey = resolvedKey || buildClientKey(canonicalClientName) || buildClientKey(originalClientName);
+    
+    // Garante datas (agora olhando tanto para os nomes NOVOS do D1
+    // quanto para os nomes ANTIGOS da planilha, se ainda existirem)
+    let criadoEmRaw =
+        ativ.CriadoEm ||
+        ativ['Criado em'] ||
+        ativ.criado_em;
 
-        const playbookNormalized = normalizeText(ativ.Playbook);
-        const statusClienteRaw = ativ['Status Cliente'] || clienteInfo['Status Cliente'] || clienteInfo.Status || clienteInfo['Situação'];
-        const statusCliente = formatClientStatus(statusClienteRaw);
+    let previsaoConclusaoRaw =
+        ativ.PrevisaoConclusao ||
+        ativ['Previsão de conclusão'] ||
+        ativ.previsao_conclusao;
 
-        if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
-            const existingStartDate = clientOnboardingStartDate.get(clienteKey);
-            if (!existingStartDate || criadoEmDate < existingStartDate) {
-                clientOnboardingStartDate.set(clienteKey, criadoEmDate);
-            }
+    let concluidaEmRaw =
+        ativ.ConcluidaEm ||
+        ativ['Concluída em'] ||
+        ativ.concluida_em;
+
+    let criadoEmDate = criadoEmRaw instanceof Date ? criadoEmRaw : parseDate(criadoEmRaw);
+    const previsaoConclusaoDate =
+        previsaoConclusaoRaw instanceof Date ? previsaoConclusaoRaw : parseDate(previsaoConclusaoRaw);
+    const concluidaEmDate =
+        concluidaEmRaw instanceof Date ? concluidaEmRaw : parseDate(concluidaEmRaw);
+
+    const playbookNormalized = normalizeText(ativ.Playbook);
+    const statusClienteRaw =
+        ativ['Status Cliente'] ||
+        clienteInfo['Status Cliente'] ||
+        clienteInfo.Status ||
+        clienteInfo['Situação'];
+    const statusCliente = formatClientStatus(statusClienteRaw);
+
+    if (onboardingPlaybooks.includes(playbookNormalized) && criadoEmDate) {
+        const existingStartDate = clientOnboardingStartDate.get(clienteKey);
+        if (!existingStartDate || criadoEmDate < existingStartDate) {
+            clientOnboardingStartDate.set(clienteKey, criadoEmDate);
         }
+    }
 
-        return {
-            ...ativ,
-            Cliente: canonicalClientName || originalClientName,
-            ClienteCompleto: clienteKey,
-            "Status Cliente": statusCliente,
-            // Puxa dados da tabela de Clientes (JOIN)
-            Segmento: clienteInfo.Segmento || 'Não Identificado',
-            CS: clienteInfo.CS || 'Não Identificado', 
-            Squad: clienteInfo['Squad CS'], // Agora puxa o Squad correto
-            Fase: clienteInfo.Fase,
-            ISM: clienteInfo.ISM,
-            Negocio: clienteInfo['Negócio'],
-            Comercial: clienteInfo['Comercial'],
-            CriadoEm: criadoEmDate,
-            PrevisaoConclusao: (ativ['Previsão de conclusão'] instanceof Date) ? ativ['Previsão de conclusão'] : parseDate(ativ['Previsão de conclusão']),
-            ConcluidaEm: (ativ['Concluída em'] instanceof Date) ? ativ['Concluída em'] : parseDate(ativ['Concluída em']),
-            NPSOnboarding: clienteInfo['NPS onboarding'],
-            ValorNaoFaturado: parseFloat(String(clienteInfo['Valor total não faturado'] || '0').replace(/[^0-9,-]+/g, "").replace(",", "."))
-        };
-    });
+    return {
+        ...ativ,
+        Cliente: canonicalClientName || originalClientName,
+        ClienteCompleto: clienteKey,
+        "Status Cliente": statusCliente,
+        // Puxa dados da tabela de Clientes (JOIN)
+        Segmento: clienteInfo.Segmento || 'Não Identificado',
+        CS: clienteInfo.CS || 'Não Identificado', 
+        Squad: clienteInfo['Squad CS'],
+        Fase: clienteInfo.Fase,
+        ISM: clienteInfo.ISM,
+        Negocio: clienteInfo['Negócio'],
+        Comercial: clienteInfo['Comercial'],
+
+        // Datas já convertidas para Date
+        CriadoEm: criadoEmDate,
+        PrevisaoConclusao: previsaoConclusaoDate,
+        ConcluidaEm: concluidaEmDate,
+
+        NPSOnboarding: clienteInfo['NPS onboarding'],
+        ValorNaoFaturado: parseFloat(
+            String(clienteInfo['Valor total não faturado'] || '0')
+                .replace(/[^0-9,-]+/g, "")
+                .replace(",", ".")
+        )
+    };
+});
 
     // 2. Ajuste final nos Clientes (Prioriza o dado do SenseData)
     rawClients = rawClients.map(c => {
@@ -836,4 +894,5 @@ self.onmessage = (e) => {
         });
     }
 };
+
 
