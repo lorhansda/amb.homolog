@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * WORKER DE PROCESSAMENTO DE OKRs (V6 - Correção de Milissegundos)
+ * WORKER DE PROCESSAMENTO DE OKRs (V7 - Correção de Join e Fallback de CS)
  * ===================================================================
  */
 
@@ -37,37 +37,31 @@ const formatDate = (date) => {
     return `${day}/${month}/${year}`;
 };
 
-// --- PARSER DE DATAS DEFINITIVO ---
+// --- PARSER DE DATAS ---
 const parseDate = (dateInput) => {
     if (!dateInput) return null;
     if (dateInput instanceof Date && !isNaN(dateInput)) return dateInput;
 
     let dateStr = String(dateInput).trim();
 
-    // CASO 1: Data Simples "YYYY-MM-DD" (ex: 2025-05-18)
-    // Forçamos UTC para evitar que vire dia 17 às 21h devido ao fuso horário
+    // CASO 1: Data Simples "YYYY-MM-DD" -> Força UTC
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         const [y, m, d] = dateStr.split('-').map(Number);
         return new Date(Date.UTC(y, m - 1, d));
     }
 
-    // CASO 2: Trata milissegundos longos (ex: .300879 -> .300)
-    // O JS suporta no máximo 3 dígitos de milissegundos
+    // CASO 2: Remove milissegundos longos (.123456 -> .123)
     if (dateStr.includes('.')) {
         dateStr = dateStr.replace(/(\.\d{3})\d+/, '$1');
     }
 
-    // CASO 3: Troca espaço por T se parecer SQL Timestamp (2025-01-01 10:00:00)
+    // CASO 3: SQL Timestamp (YYYY-MM-DD HH:MM:SS) -> ISO
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/)) {
         dateStr = dateStr.replace(' ', 'T');
     }
 
-    // Tenta criar a data
     const dateObj = new Date(dateStr);
-    if (!isNaN(dateObj.getTime())) {
-        return dateObj;
-    }
-
+    if (!isNaN(dateObj.getTime())) return dateObj;
     return null;
 };
 
@@ -131,6 +125,7 @@ const processInitialData = () => {
         normalizedClient["Dias sem touch"] = normalizedClient['Dias sem touch'] !== undefined ? normalizedClient['Dias sem touch'] : (c['dias_sem_touch'] || 0);
         normalizedClient["Situação"] = normalizedClient['Situação'] || normalizedClient['Status Cliente'];
 
+        // Indexação
         if (normalizedClient.id_legacy) {
             clientByIdMap.set(String(normalizedClient.id_legacy).trim(), normalizedClient);
         }
@@ -142,6 +137,15 @@ const processInitialData = () => {
 
         return normalizedClient;
     });
+
+    // DEBUG CLIENTE (Verificar se estamos lendo certo)
+    if (rawClients.length > 0) {
+        console.log('[WORKER DEBUG] Exemplo Cliente 0:', {
+            Nome: rawClients[0].Cliente,
+            ID: rawClients[0].id_legacy,
+            CS: rawClients[0].CS
+        });
+    }
 
     const findClientFallback = (name = '') => {
         const normalized = buildClientKey(name);
@@ -170,10 +174,12 @@ const processInitialData = () => {
         const idCustomerLegacy = campo(['id_customer_legacy', 'id_legacy']);
         
         let clienteInfo = null;
+        // Tentativa 1: ID
         if (idCustomerLegacy) {
             clienteInfo = clientByIdMap.get(String(idCustomerLegacy).trim());
         }
 
+        // Tentativa 2: Nome
         const originalClientName = campo(['cliente', 'Cliente', 'name_contract']);
         if (!clienteInfo && originalClientName) {
             clienteInfo = findClientFallback(originalClientName);
@@ -192,8 +198,6 @@ const processInitialData = () => {
             status: campo(['status', 'Status']),
             categoria: campo(['categoria', 'Categoria']),
             notes: campo(['notes', 'Anotações']),
-            
-            // DATAS (Mapeamento corrigido para os dados do banco)
             criado_em: campo(['created_on', 'CriadoEm', 'criado_em']), 
             previsao: campo(['previsao_conclusao', 'PrevisaoConclusao']), 
             concluido: campo(['end_date', 'ConcluidaEm', 'system_end_date_raw']) 
@@ -214,17 +218,13 @@ const processInitialData = () => {
             }
         }
 
-        // --- DEBUG NO CONSOLE (Verifique se as datas aparecem corretas) ---
-        if (debugCount < 3) {
-            console.log(`[WORKER DEBUG] Atividade ${index}:`, {
-                original_created: rawData.criado_em,
-                parsed_created: criadoEmDate,
-                original_end: rawData.concluido,
-                parsed_end: concluidaEmDate,
-                playbook: rawData.playbook
-            });
-            debugCount++;
+        // *** CORREÇÃO CRÍTICA: FALLBACK DE CS ***
+        // Se não achou o CS da conta (clienteInfo.CS), usa o Responsável da Atividade
+        let finalCS = clienteInfo.CS;
+        if (!finalCS || finalCS === 'Não Identificado') {
+            finalCS = rawData.responsavelAtividade;
         }
+        if (!finalCS) finalCS = 'Não Identificado';
 
         return {
             ...ativ,
@@ -233,7 +233,7 @@ const processInitialData = () => {
             ClienteCompleto: clienteKey,
             "Status Cliente": statusCliente,
             Segmento: clienteInfo.Segmento || 'Não Identificado',
-            CS: clienteInfo.CS || 'Não Identificado',
+            CS: finalCS, // Usando o CS com Fallback
             Squad: clienteInfo['Squad CS'],
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
@@ -299,9 +299,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     const startOfPeriod = new Date(Date.UTC(year, month, 1));
     const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59));
 
-    // CORREÇÃO DA LÓGICA DE CONCLUÍDO
     const isConcludedInPeriod = (item) => item.ConcluidaEm && item.ConcluidaEm.getUTCMonth() === month && item.ConcluidaEm.getUTCFullYear() === year;
-    
     const isPredictedForPeriod = (activity) => {
         if (!activity.PrevisaoConclusao) return false;
         const isDueInPeriod = activity.PrevisaoConclusao.getUTCMonth() === month && activity.PrevisaoConclusao.getUTCFullYear() === year;
@@ -311,8 +309,10 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
 
     const clientsForPeriod = includeOnboarding ? clients : clients.filter(c => normalizeText(c.Fase) !== 'onboarding');
 
-    // Filtra atividades concluídas no período e pertencentes à carteira ATUAL
-    const allConcludedActivitiesInPortfolio = rawActivities.filter(isConcludedInPeriod).filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto));
+    // *** ALTERAÇÃO CRÍTICA: Removida validação estrita de 'carteira' que estava escondendo dados ***
+    // Anteriormente: filter(a => clients.some(c => ...))
+    // Se o JOIN falhava, isso retornava vazio.
+    const allConcludedActivitiesInPortfolio = rawActivities.filter(isConcludedInPeriod);
 
     let csRealizedActivities = [];
     let onboardingRealizedActivities = [];
@@ -324,6 +324,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         const activityOwner = (activity['Responsável'] || '').trim();
 
         if (!isClientOnboarding) {
+            // Agora activity.CS deve estar preenchido pelo Fallback
             if (selectedCS === 'Todos' || activityCS === selectedCS) csRealizedActivities.push(activity);
         } else {
             if (ismList.includes(activityOwner) && ismToFilter !== 'Todos') {
@@ -425,7 +426,7 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         return activity.CS === selectedCS; 
     };
 
-    let activitiesByCS_previstos = rawActivities.filter(a => clients.some(c => (c.Cliente || '').trim().toLowerCase() === a.ClienteCompleto)).filter(applyOwnershipRule);
+    let activitiesByCS_previstos = rawActivities.filter(applyOwnershipRule);
     if (!includeOnboarding) {
         activitiesByCS_previstos = activitiesByCS_previstos.filter(activity => normalizeText(activity.Fase) !== 'onboarding');
     }
@@ -445,7 +446,6 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
         metrics[`${key}-previsto`] = allActivitiesOfType.filter(isPredictedForPeriod);
     }
 
-    // Engajamento SMB
     const smbConcluidoList = (metrics['engajamento-smb-realizado'] || []).concat(metrics['engajamento-smb-atrasado-concluido'] || []);
     const uniqueSmbContacts = new Map();
     smbConcluidoList.forEach(a => {
@@ -458,7 +458,6 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['engajamento-smb-engajado'] = finalSmbList.filter(item => item.status === 'engajado').map(item => item.activity);
     metrics['engajamento-smb-desengajado'] = finalSmbList.filter(item => item.status === 'desengajado').map(item => item.activity);
 
-    // Campos Faltantes
     const clientesContatados = metrics['cob-carteira'] || [];
     const clientesContatadosComDados = clientesContatados.map(atividade => {
         const clienteData = clients.find(c => (c.Cliente || '').trim().toLowerCase() === atividade.ClienteCompleto);
@@ -472,14 +471,12 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['cliente-potencial-preenchido'] = clientesContatadosComDados.filter(item => item['Potencial'] && item['Potencial'] !== 'Vazio');
     metrics['cliente-potencial-faltante'] = clientesContatadosComDados.filter(item => !item['Potencial'] || item['Potencial'] === 'Vazio');
 
-    // SKA Labs
     const selectedQuarter = Math.floor(month / 3);
     const isConcludedInQuarter = (item) => item.ConcluidaEm && Math.floor(item.ConcluidaEm.getUTCMonth() / 3) === selectedQuarter && item.ConcluidaEm.getUTCFullYear() === year;
     const eligibleClientSet = new Set(clients.map(c => (c.Cliente || '').trim().toLowerCase()));
     metrics['total-labs-eligible'] = clients.length;
     metrics['ska-labs-realizado-list'] = [...new Map(rawActivities.filter(isConcludedInQuarter).filter(a => normalizeText(a.Atividade).includes('participou do ska labs')).filter(a => eligibleClientSet.has(a.ClienteCompleto)).map(a => [a.ClienteCompleto, a])).values()];
 
-    // Contagens para Gráficos
     const contatosPorNegocio = {};
     const contatosPorComercial = {};
     (metrics['cob-carteira'] || []).forEach(activity => {
@@ -491,7 +488,6 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     metrics['contatos-por-negocio'] = contatosPorNegocio;
     metrics['contatos-por-comercial'] = contatosPorComercial;
 
-    // Metas Distribuídas
     const metaCobertura = (goals.coverage || 40) / 100;
     const clientesParaAtingirMeta = Math.max(0, Math.ceil(metrics['total-clientes-unicos-cs'] * metaCobertura));
     metrics['clientes-faltantes-meta-cobertura'] = Math.max(0, clientesParaAtingirMeta - clientesContatados.length);
@@ -527,6 +523,39 @@ const getPeriodDateRange = (period, year) => {
         case 'year': return { start: new Date(Date.UTC(year, 0, 1)), end: new Date(Date.UTC(year, 11, 31, 23, 59, 59)) };
         default: return null;
     }
+};
+
+const calculateMetricsForDateRange = (startDate, endDate, allActivities, allClients, selectedCS, includeOnboarding, goals) => {
+    const periodMetrics = { monthlyCoverages: [], totalClientsInPeriod: new Set(), playbookTotals: {} };
+    const playbookKeys = ['plano', 'adocao', 'reunioes-qbr', 'planos-sucesso', 'followup', 'discovery', 'engajamento-smb', 'baixo-engajamento-mid'];
+    playbookKeys.forEach(key => periodMetrics.playbookTotals[key] = { previsto: 0, realizado: 0 });
+    const clientsForPeriod = (selectedCS === 'Todos') ? allClients : allClients.filter(d => d.CS?.trim() === selectedCS);
+
+    for (let d = new Date(startDate); d <= endDate; d.setUTCMonth(d.getUTCMonth() + 1)) {
+        if (d > endDate) break;
+        const currentMonth = d.getUTCMonth();
+        const currentYear = d.getUTCFullYear();
+        const monthlyMetrics = calculateMetricsForPeriod(currentMonth, currentYear, rawActivities, clientsForPeriod, selectedCS, includeOnboarding, goals);
+        const totalClientsUnicosCS = monthlyMetrics['total-clientes-unicos-cs'] || 0;
+        const clientesContatadosCount = monthlyMetrics['cob-carteira']?.length || 0;
+        const cobCarteiraPerc = totalClientsUnicosCS > 0 ? (clientesContatadosCount / totalClientsUnicosCS) * 100 : 0;
+        periodMetrics.monthlyCoverages.push(cobCarteiraPerc);
+        (monthlyMetrics['total-clientes'] || []).forEach(client => periodMetrics.totalClientsInPeriod.add(client.Cliente));
+        playbookKeys.forEach(key => {
+            periodMetrics.playbookTotals[key].previsto += (monthlyMetrics[`${key}-previsto`] || []).length;
+            const realizadoTotal = (monthlyMetrics[`${key}-realizado`] || []).length + (monthlyMetrics[`${key}-atrasado-concluido`] || []).length + (monthlyMetrics[`${key}-concluido-antecipado`] || []).length;
+            periodMetrics.playbookTotals[key].realizado += realizadoTotal;
+        });
+    }
+
+    if (periodMetrics.monthlyCoverages.length > 0) {
+        const sum = periodMetrics.monthlyCoverages.reduce((acc, val) => acc + val, 0);
+        periodMetrics.averageCoverage = sum / periodMetrics.monthlyCoverages.length;
+    } else {
+        periodMetrics.averageCoverage = 0;
+    }
+    periodMetrics.totalUniqueClients = periodMetrics.totalClientsInPeriod.size;
+    return periodMetrics;
 };
 
 const calculateNewOnboardingOKRs = (month, year, activities, clients, teamView, selectedISM) => {
