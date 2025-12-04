@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * WORKER DE PROCESSAMENTO DE OKRs (V8 - Mapeamento Universal de Colunas)
+ * WORKER DE PROCESSAMENTO DE OKRs (V9 - Suporte a JSON Aninhado da API)
  * ===================================================================
  */
 
@@ -27,6 +27,18 @@ const formatClientStatus = (value = '') => {
         .trim();
 };
 
+// --- NOVO: Função para pegar valores em objetos aninhados (ex: owner.name) ---
+const getNestedValue = (obj, path) => {
+    if (!path) return undefined;
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+        if (current === null || current === undefined) return undefined;
+        current = current[key];
+    }
+    return current;
+};
+
 const getQuarter = (date) => Math.floor(date.getUTCMonth() / 3);
 
 const formatDate = (date) => {
@@ -45,13 +57,13 @@ const parseDate = (dateInput) => {
     let dateStr = String(dateInput).trim();
     if (!dateStr) return null;
 
-    // CASO 0: Data formato brasileiro "DD/MM/YYYY" (Comum em CSVs)
+    // CASO 0: Data formato brasileiro "DD/MM/YYYY"
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
         const [d, m, y] = dateStr.split('/').map(Number);
         return new Date(Date.UTC(y, m - 1, d));
     }
 
-    // CASO 1: Data Simples "YYYY-MM-DD" -> Força UTC
+    // CASO 1: Data Simples "YYYY-MM-DD"
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         const [y, m, d] = dateStr.split('-').map(Number);
         return new Date(Date.UTC(y, m - 1, d));
@@ -62,7 +74,7 @@ const parseDate = (dateInput) => {
         dateStr = dateStr.replace(/(\.\d{3})\d+/, '$1');
     }
 
-    // CASO 3: SQL Timestamp (YYYY-MM-DD HH:MM:SS) -> ISO
+    // CASO 3: SQL Timestamp
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/)) {
         dateStr = dateStr.replace(' ', 'T');
     }
@@ -101,23 +113,30 @@ const buildCsToSquadMap = () => {
 };
 
 const processInitialData = () => {
-    console.log(`[Worker] Processando ${rawActivities.length} atividades...`);
+    console.log(`[Worker] Processando ${rawActivities.length} atividades (V9 - JSON Support)...`);
     
-    // 1. Prepara Mapeamento de Clientes
     const clientByIdMap = new Map();
     const clienteMapByName = new Map();
 
+    // 1. Processamento de CLIENTES
     rawClients = rawClients.map(c => {
+        // Helper interno para buscar em várias chaves possíveis
         const getVal = (keys) => {
-            for (const k of keys) if (c[k] !== undefined && c[k] !== null) return c[k];
+            for (const k of keys) {
+                // Tenta acesso direto
+                if (c[k] !== undefined && c[k] !== null) return c[k];
+                // Tenta acesso aninhado (ex: customer.group)
+                const nested = getNestedValue(c, k);
+                if (nested !== undefined && nested !== null) return nested;
+            }
             return '';
         };
 
         const normalizedClient = {
             ...c, 
-            Cliente: getVal(['cliente', 'Cliente', 'name']),
-            CS: getVal(['cs', 'CS', 'owner']), 
-            Segmento: getVal(['segmento', 'Segmento', 'industry']),
+            Cliente: getVal(['cliente', 'Cliente', 'name', 'customer.name']),
+            CS: getVal(['cs', 'CS', 'owner', 'customer.cs']), // Tenta achar CS no cliente
+            Segmento: getVal(['segmento', 'Segmento', 'industry', 'customer.group']),
             Fase: getVal(['fase', 'Fase', 'stage']),
             ISM: getVal(['ism', 'ISM']),
             "Negócio": getVal(['negocio', 'Negócio', 'Negocio']),
@@ -126,13 +145,12 @@ const processInitialData = () => {
             "Squad CS": getVal(['squad_cs', 'Squad CS']),
             "NPS onboarding": getVal(['nps_onboarding', 'NPS onboarding']),
             "Valor total não faturado": getVal(['valor_total_em_aberto', 'Valor total não faturado']),
-            id_legacy: getVal(['id_legacy', 'id_customer_legacy'])
+            id_legacy: getVal(['id_legacy', 'id_customer_legacy', 'customer.id_legacy'])
         };
 
         normalizedClient["Dias sem touch"] = normalizedClient['Dias sem touch'] !== undefined ? normalizedClient['Dias sem touch'] : (c['dias_sem_touch'] || 0);
         normalizedClient["Situação"] = normalizedClient['Situação'] || normalizedClient['Status Cliente'];
 
-        // Indexação
         if (normalizedClient.id_legacy) {
             clientByIdMap.set(String(normalizedClient.id_legacy).trim(), normalizedClient);
         }
@@ -158,25 +176,30 @@ const processInitialData = () => {
 
     clientOnboardingStartDate.clear();
 
-    // 2. Processa Atividades
+    // 2. Processamento de ATIVIDADES
     let debugCount = 0;
 
     rawActivities = rawActivities.map((ativ, index) => {
+        // Helper robusto para extrair dados de CSV ou JSON Aninhado
         const campo = (keys) => {
             for (const k of keys) {
+                // 1. Tenta valor direto
                 if (ativ[k] !== undefined && ativ[k] !== null) return ativ[k];
+                // 2. Tenta valor aninhado (ex: owner.name)
+                const nested = getNestedValue(ativ, k);
+                if (nested !== undefined && nested !== null) return nested;
             }
             return ''; 
         };
 
-        const idCustomerLegacy = campo(['id_customer_legacy', 'id_legacy']);
+        const idCustomerLegacy = campo(['id_customer_legacy', 'id_legacy', 'customer.id_legacy']);
         
         let clienteInfo = null;
         if (idCustomerLegacy) {
             clienteInfo = clientByIdMap.get(String(idCustomerLegacy).trim());
         }
 
-        const originalClientName = campo(['cliente', 'Cliente', 'name_contract']);
+        const originalClientName = campo(['cliente', 'Cliente', 'name_contract', 'customer.name', 'customer.name_contract']);
         if (!clienteInfo && originalClientName) {
             clienteInfo = findClientFallback(originalClientName);
         }
@@ -186,20 +209,19 @@ const processInitialData = () => {
         const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
         const clienteKey = buildClientKey(canonicalClientName);
 
-        // *** CORREÇÃO CRÍTICA: MAPEAMENTO DE COLUNAS AMPLIADO ***
-        // Adicionados os nomes "Bonitos" (CSV) que você mostrou no exemplo
+        // Mapeamento Universal (CSV + JSON API)
         const rawData = {
-            playbook: campo(['playbook', 'Playbook']),
-            atividade: campo(['atividade', 'Atividade']),
-            tipo: campo(['tipo_atividade', 'Tipo de Atividade', 'Tipo de atividade']),
-            responsavelAtividade: campo(['responsavel', 'Responsável', 'Responsavel']),
-            status: campo(['status', 'Status']),
+            playbook: campo(['playbook', 'Playbook', 'playbook.name']),
+            atividade: campo(['atividade', 'Atividade', 'description']), // Na API, 'description' é o nome da atividade
+            tipo: campo(['tipo_atividade', 'Tipo de Atividade', 'type.caption', 'type.description']),
+            responsavelAtividade: campo(['responsavel', 'Responsável', 'owner.name', 'owner.username']),
+            status: campo(['status', 'Status', 'status.description']),
             categoria: campo(['categoria', 'Categoria']),
-            notes: campo(['notes', 'Anotações', 'notes_html']),
+            notes: campo(['notes', 'Anotações']),
             
-            // Datas: Incluindo "Criado em", "Previsão de conclusão", etc.
+            // Datas
             criado_em: campo(['created_on', 'CriadoEm', 'criado_em', 'Criado em']), 
-            previsao: campo(['previsao_conclusao', 'PrevisaoConclusao', 'Previsão de conclusão', 'Previsao Conclusao']), 
+            previsao: campo(['previsao_conclusao', 'PrevisaoConclusao', 'Previsão de conclusão', 'due_date']), 
             concluido: campo(['end_date', 'ConcluidaEm', 'system_end_date_raw', 'Concluída em', 'Concluida em']) 
         };
 
@@ -218,19 +240,23 @@ const processInitialData = () => {
             }
         }
 
-        // Fallback de CS
+        // *** LÓGICA DE FALLBACK DE CS ***
+        // 1. Tenta CS da Conta (vinda da lista de Clientes)
         let finalCS = clienteInfo.CS;
+        // 2. Se não tem CS na conta, tenta usar o Responsável da Atividade (owner.name do JSON)
         if (!finalCS || finalCS === 'Não Identificado') {
             finalCS = rawData.responsavelAtividade;
         }
         if (!finalCS) finalCS = 'Não Identificado';
 
-        // --- DEBUG (Verifique se "parsed_created" agora tem valor) ---
+        // --- DEBUG VISUAL ---
         if (debugCount < 3) {
-            console.log(`[WORKER DEBUG V8] Atividade ${index}:`, {
-                original_created: rawData.criado_em, // Deve aparecer a data string agora
-                parsed_created: criadoEmDate,        // Deve aparecer o objeto Date
-                cs_final: finalCS
+            console.log(`[WORKER DEBUG V9] Reg ${index}:`, {
+                Ativ: rawData.atividade,
+                Resp: rawData.responsavelAtividade,
+                CS_Final: finalCS,
+                Dt_Criado: criadoEmDate,
+                Dt_Concl: concluidaEmDate
             });
             debugCount++;
         }
@@ -242,7 +268,7 @@ const processInitialData = () => {
             ClienteCompleto: clienteKey,
             "Status Cliente": statusCliente,
             Segmento: clienteInfo.Segmento || 'Não Identificado',
-            CS: finalCS,
+            CS: finalCS, // CS processado
             Squad: clienteInfo['Squad CS'],
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
