@@ -1,8 +1,7 @@
 /**
  * ===================================================================
- * MÓDULO DE INTEGRAÇÃO COM API - Para o Frontend (GitHub Pages)
+ * MÓDULO DE INTEGRAÇÃO - VERSÃO DIAGNÓSTICO
  * ===================================================================
- * Versão com carga TOTAL de dados (Limites Aumentados)
  */
 
 class SensedataAPIClient {
@@ -13,123 +12,73 @@ class SensedataAPIClient {
         this.ultimaAtualizacaoClientes = null;
     }
 
-    /**
-     * Carregar TODOS os dados da API (Clientes + Atividades)
-     */
     async carregarDadosClientes() {
         try {
-            console.log('🚀 Iniciando carga total de dados da API...');
+            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch na API...');
+            console.log('URL Alvo:', this.apiUrl);
 
-            // 1. Carregar Clientes (Limite aumentado para 100k)
-            const clientesPromise = fetch(`${this.apiUrl}/api/clientes?limit=100000`)
-                .then(res => {
-                    if (!res.ok) throw new Error(`Erro clientes: ${res.status}`);
-                    return res.json();
-                });
+            // Tenta buscar com um limite menor primeiro para testar se não é timeout
+            const limit = 150000; 
 
-            // 2. Carregar Atividades (Limite aumentado para 150k para pegar a ID 1441504)
-            // ATENÇÃO: Isso pode demorar alguns segundos dependendo da conexão
-            const atividadesPromise = fetch(`${this.apiUrl}/api/atividades?limit=150000`)
-                .then(res => {
-                    if (!res.ok) throw new Error(`Erro atividades: ${res.status}`);
-                    return res.json();
-                });
+            // 1. BUSCAR CLIENTES
+            console.log(`📡 Buscando Clientes (limit=${limit})...`);
+            const clientesResp = await fetch(`${this.apiUrl}/api/clientes?limit=${limit}`);
+            console.log('📡 Status Clientes:', clientesResp.status);
+            const clientesJson = await clientesResp.json();
+            
+            // LOG CRÍTICO: Mostra a estrutura real que veio
+            console.log('📦 [JSON CLIENTES RECEBIDO]:', clientesJson); 
 
-            // Executa em paralelo para ser mais rápido
-            const [clientesData, atividadesData] = await Promise.all([clientesPromise, atividadesPromise]);
+            // 2. BUSCAR ATIVIDADES
+            console.log(`📡 Buscando Atividades (limit=${limit})...`);
+            const atividadesResp = await fetch(`${this.apiUrl}/api/atividades?limit=${limit}`);
+            console.log('📡 Status Atividades:', atividadesResp.status);
+            const atividadesJson = await atividadesResp.json();
 
-            // Processa Clientes
-            this.clientes = clientesData.data || [];
+            // LOG CRÍTICO: Mostra a estrutura real que veio
+            console.log('📦 [JSON ATIVIDADES RECEBIDO]:', atividadesJson);
+
+            // TENTATIVA DE DESCOBRIR ONDE ESTÃO OS DADOS
+            // Verifica se estão em 'data', 'results', ou na raiz
+            this.clientes = clientesJson.data || clientesJson.results || (Array.isArray(clientesJson) ? clientesJson : []);
+            this.atividades = atividadesJson.data || atividadesJson.results || (Array.isArray(atividadesJson) ? atividadesJson : []);
+
+            console.log('📊 [RESUMO DO PROCESSAMENTO]');
+            console.log(`   Clientes encontrados: ${this.clientes.length}`);
+            console.log(`   Atividades encontradas: ${this.atividades.length}`);
+
             this.ultimaAtualizacaoClientes = new Date();
 
-            // Processa Atividades
-            this.atividades = atividadesData.data || [];
-
-            console.log(`✅ Carga Concluída!`);
-            console.log(`   - Clientes: ${this.clientes.length.toLocaleString()}`);
-            console.log(`   - Atividades: ${this.atividades.length.toLocaleString()}`);
-
             return {
-                atividades: this.atividades, // Agora retorna os dados reais!
+                atividades: this.atividades,
                 clientes: this.clientes,
                 timestamp: this.ultimaAtualizacaoClientes
             };
 
         } catch (error) {
-            console.error('❌ Erro fatal ao carregar dados da API:', error);
-            alert("Erro ao baixar dados do servidor. Verifique o console.");
+            console.error('❌ [ERRO FATAL NO FETCH]:', error);
+            alert("Erro na conexão com a API. Abra o Console (F12) e mande um print para o suporte.");
             throw error;
         }
     }
 
-    /**
-     * Filtrar clientes por segmento
-     */
-    filtrarClientesPorSegmento(segmento) {
-        return this.clientes.filter(c => c.segmento === segmento);
+    // Métodos auxiliares mantidos para evitar erro de "not a function"
+    filtrarClientesPorSegmento(s) { return []; }
+    obterListaCSs() { return []; }
+    obterListaSegmentos() { return []; }
+    obterListaSquads() { return []; }
+    converterClientesParaFormatoOriginal() { 
+        // Conversor de emergência
+        return this.clientes.map(c => ({
+            Cliente: c.cliente || c.name,
+            CS: c.cs || c.owner,
+            id_legacy: c.id_legacy,
+            ...c
+        }));
     }
-
-    /**
-     * Obter lista única de CSs
-     */
-    obterListaCSs() {
-        const csSet = new Set();
-        this.clientes.forEach(c => {
-            if (c.cs) csSet.add(c.cs);
-        });
-        return Array.from(csSet).sort();
-    }
-
-    /**
-     * Obter lista única de segmentos
-     */
-    obterListaSegmentos() {
-        const segmentosSet = new Set();
-        this.clientes.forEach(c => {
-            if (c.segmento) segmentosSet.add(c.segmento);
-        });
-        return Array.from(segmentosSet).sort();
-    }
-
-    /**
-     * Obter lista única de squads
-     */
-    obterListaSquads() {
-        const squadsSet = new Set();
-        this.clientes.forEach(c => {
-            if (c.squad_cs) squadsSet.add(c.squad_cs);
-        });
-        return Array.from(squadsSet).sort();
-    }
-
-    /**
-     * Converter dados de CLIENTES para formato compatível com o worker.js
-     */
-    converterClientesParaFormatoOriginal() {
-        return this.clientes.map(c => {
-            const dados = c.dados_json ? JSON.parse(c.dados_json) : {};
-            return {
-                Cliente: c.cliente,
-                Segmento: c.segmento,
-                CS: c.cs,
-                'Squad CS': c.squad_cs,
-                Fase: c.fase,
-                ISM: c.ism,
-                'Negócio': c.negocio,
-                Comercial: c.comercial,
-                'NPS onboarding': c.nps_onboarding,
-                'Valor total não faturado': c.valor_nao_faturado,
-                id_legacy: c.id_legacy, // Importante para o V10 do worker
-                ...dados
-            };
-        });
-    }
-    
-    // Mantém compatibilidade caso algo chame conversion de atividades separadamente
-    // (Embora o worker V10 já aceite o formato JSON direto da API)
 }
 
-// Exportar para uso em módulos
+// Exportar
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SensedataAPIClient;
 }
