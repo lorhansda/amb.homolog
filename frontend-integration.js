@@ -69,14 +69,20 @@ class SensedataAPIClient {
             let errorCount = 0;
 
             // CONFIGURAÇÃO DO FILTRO DE DATA
-            // Define data de corte: 01/01/2025 (Ajuste conforme sua necessidade de histórico no painel)
-            const DATA_INICIO = '2025-01-01'; 
-            
-            console.log(`📡 Buscando Atividades a partir de ${DATA_INICIO}...`);
+            // Se quiser limitar o histórico, defina window.DASH_FETCH_CONFIG.activitiesSince = 'YYYY-MM-DD'
+            const DATA_INICIO = (window.DASH_FETCH_CONFIG?.activitiesSince || '').trim() || null; 
+            console.log(
+                DATA_INICIO
+                    ? `📡 Buscando Atividades a partir de ${DATA_INICIO}...`
+                    : '📡 Buscando TODAS as atividades disponíveis (sem filtro de data)...'
+            );
 
             while (moreActivities) {
                 // Passamos o parâmetro 'since' para o Worker filtrar no SQL
-                const url = `${this.apiUrl}/api/atividades?limit=${ACT_CHUNK}&page=${actPage}&since=${DATA_INICIO}`;
+                let url = `${this.apiUrl}/api/atividades?limit=${ACT_CHUNK}&page=${actPage}`;
+                if (DATA_INICIO) {
+                    url += `&since=${encodeURIComponent(DATA_INICIO)}`;
+                }
                 console.log(`   🔄 Baixando Atividades Pág ${actPage}...`);
                 
                 try {
@@ -121,7 +127,11 @@ class SensedataAPIClient {
 
             console.log('📊 [RESUMO FINAL]');
             console.log(`   Clientes: ${this.clientes.length}`);
-            console.log(`   Atividades (desde ${DATA_INICIO}): ${this.atividades.length}`);
+            console.log(
+                DATA_INICIO
+                    ? `   Atividades (desde ${DATA_INICIO}): ${this.atividades.length}`
+                    : `   Atividades carregadas: ${this.atividades.length}`
+            );
 
             this.ultimaAtualizacaoClientes = new Date();
 

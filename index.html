@@ -1079,7 +1079,7 @@ function mapDatabaseToDashboard(dbData, type) {
             // 1. Trata as datas usando o helper do Passo 1
             const created = parseDate(row.criado_em || row.created_at || row["Criado em"]);
             const due = parseDate(row.previsao_conclusao || row.due_date || row["Previsão de conclusão"]);
-            const done = parseDate(row.concluida_em || row.system_end_date || row["Concluída em"]);
+            const done = parseDate(row.end_date || row.system_end_date || row.concluida_em || row["Concluída em"]);
             
             // 2. Retorna o objeto no formato que o Worker e a Tabela esperam
             return {
@@ -1096,11 +1096,11 @@ function mapDatabaseToDashboard(dbData, type) {
                 "CS": row.cs || row.owner_name, // Se vier vazio, será preenchido depois pelo 'enrich'
                 "Playbook": row.playbook,
                 "Atividade": row.atividade || row.description,
-                "Tipo de Atividade": row.tipo_atividade || row.tipo,
+                "Tipo de Atividade": translateActivityType(row.tipo_atividade || row.tipo || row["Tipo de Atividade"]),
                 "Categoria": row.categoria,
                 
                 // Status e Responsáveis
-                "Status": row.status, // Ex: "Concluída" ou "Atrasada"
+                "Status": translateStatus(row.status || row["Status"]),
                 "Responsável": row.responsavel || row.responsavel_name,
                 "Status Cliente": row.status_cliente, // Ex: "Ativo-Produto"
                 
@@ -1130,6 +1130,41 @@ function mapDatabaseToDashboard(dbData, type) {
             };
         }
     });
+}
+
+function buildFilterDataSnapshot(clients = [], activities = []) {
+    const csSet = new Set();
+    const squadSet = new Set();
+    const csToSquadMap = {};
+    clients.forEach(client => {
+        const csName = (client.CS || "").trim();
+        if (csName) {
+            csSet.add(csName);
+            if (client["Squad CS"]) {
+                squadSet.add(client["Squad CS"]);
+                csToSquadMap[csName] = client["Squad CS"];
+            }
+        }
+    });
+
+    const years = new Set();
+    const collectYear = (value) => {
+        if (value instanceof Date && !isNaN(value)) {
+            years.add(value.getUTCFullYear());
+        }
+    };
+    activities.forEach(activity => {
+        collectYear(activity["Previsão de conclusão"]);
+        collectYear(activity["Concluída em"]);
+    });
+    if (years.size === 0) years.add(new Date().getFullYear());
+
+    return {
+        csSet,
+        squadSet,
+        years: [...years].sort((a, b) => b - a),
+        csToSquadMap
+    };
 }
 
     const DASH_FETCH_CONFIG = window.DASH_FETCH_CONFIG || {};
@@ -1240,6 +1275,7 @@ async function loadDataFromAPI() {
         // 4. Define as variáveis globais para as tabelas
         rawClients = mappedClients;
         rawActivities = mappedActivities;
+        filterDataCache = buildFilterDataSnapshot(mappedClients, mappedActivities);
 
         // 5. Envia para o Worker de Cálculo (worker.js)
         // Passamos os dados JÁ MAPEADOS para que o worker encontre as colunas certas
@@ -1832,7 +1868,10 @@ async function loadDataFromAPI() {
 
     function updateIsmFilter() {
         const teamView = document.getElementById('select-onboarding-team').value;
-        const { ismSet } = filterDataCache; if (!ismSet) return;
+        const cachedIsmSet = filterDataCache?.ismSet;
+        const fallbackIsmSet = new Set(rawClients.map(c => c.ISM).filter(Boolean));
+        const ismSet = cachedIsmSet && cachedIsmSet.size ? cachedIsmSet : fallbackIsmSet;
+        if (!ismSet || ismSet.size === 0) return;
         const onboardingClients = rawClients.filter(c => normalizeText(c.Fase) === 'onboarding');
         let relevantClients = [];
         if (teamView === 'syneco') relevantClients = onboardingClients.filter(c => normalizeText(c.Cliente).includes('syneco'));
@@ -1845,7 +1884,7 @@ async function loadDataFromAPI() {
     }
 
     function populateFilters() {
-        const { csSet, squadSet, years } = filterDataCache;
+        const { csSet = new Set(), squadSet = new Set(), years = [] } = filterDataCache || {};
         const selectCS = document.getElementById('select-cs');
         const selectSquad = document.getElementById('select-squad');
         const selectMonth = document.getElementById('select-month');
