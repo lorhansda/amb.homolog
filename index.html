@@ -1083,7 +1083,7 @@
     const ACTIVITY_FETCH_MAX_PAGES = Number(DASH_FETCH_CONFIG.activityMaxPages ?? 4);
     const ACTIVITY_PAGE_COOLDOWN_MS = Number(DASH_FETCH_CONFIG.pageDelayMs ?? 30);
     const ACTIVITY_DEFAULT_SINCE = '2025-05-01';
-    const ACTIVITY_MAX_RECORDS = Number(DASH_FETCH_CONFIG.activityMaxRecords ?? (ACTIVITY_FETCH_LIMIT * ACTIVITY_FETCH_MAX_PAGES)) || 60000;
+    const ACTIVITY_MAX_RECORDS = Number(DASH_FETCH_CONFIG.activityMaxRecords ?? (ACTIVITY_FETCH_LIMIT * ACTIVITY_FETCH_MAX_PAGES)) || 1000000;
 
     async function fetchActivitiesInChunks({ limit = ACTIVITY_FETCH_LIMIT, maxPages = ACTIVITY_FETCH_MAX_PAGES, since, onPageFetch }) {
         const aggregated = [];
@@ -2097,6 +2097,7 @@
 
 </body>
 </html>
+
 
 
 
