@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * MÓDULO DE INTEGRAÇÃO - VERSÃO PAGINAÇÃO SEGURA V2
+ * MÓDULO DE INTEGRAÇÃO - CORREÇÃO DO LOOP INFINITO DE CLIENTES
  * ===================================================================
  */
 
@@ -14,50 +14,38 @@ class SensedataAPIClient {
 
     async carregarDadosClientes() {
         try {
-            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch SEGURANÇA MÁXIMA...');
+            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch CORRIGIDO...');
             console.log('URL Alvo:', this.apiUrl);
 
             // ==============================================================================
-            // 1. BUSCAR CLIENTES (PAGINADO DE 2 EM 2 MIL)
+            // 1. BUSCAR CLIENTES (BUSCA ÚNICA - SEM LOOP)
+            // O Worker atual retorna todos os clientes de uma vez, então não devemos paginar.
             // ==============================================================================
             this.clientes = [];
-            let clientPage = 1;
-            const CLIENT_CHUNK = 2000; 
-            let moreClients = true;
+            console.log(`📡 Buscando lista completa de Clientes...`);
 
-            console.log(`📡 Buscando Clientes em lotes de ${CLIENT_CHUNK}...`);
-
-            while (moreClients) {
-                const url = `${this.apiUrl}/api/clientes?limit=${CLIENT_CHUNK}&page=${clientPage}`;
+            try {
+                // Removemos parametros de limite para o Worker trazer tudo (comportamento padrão dele)
+                const url = `${this.apiUrl}/api/clientes`; 
+                const resp = await fetch(url);
                 
-                try {
-                    const resp = await fetch(url);
-                    if (!resp.ok) throw new Error(`Erro HTTP ${resp.status}`);
-                    
-                    const json = await resp.json();
-                    const chunk = Array.isArray(json) ? json : (json.data || []);
-                    
-                    if (chunk.length > 0) {
-                        this.clientes = this.clientes.concat(chunk);
-                        console.log(`   👤 Clientes Pág ${clientPage}: +${chunk.length} (Total: ${this.clientes.length})`);
-                        clientPage++;
-                        // Se vier menos que o limite, é a última página
-                        if (chunk.length < CLIENT_CHUNK) moreClients = false;
-                    } else {
-                        moreClients = false;
-                    }
-                } catch (err) {
-                    console.error(`❌ Falha ao buscar clientes pág ${clientPage}:`, err);
-                    moreClients = false; 
-                    // Se falhar na primeira página de clientes, é crítico.
-                    if (clientPage === 1) throw err;
-                }
+                if (!resp.ok) throw new Error(`Erro HTTP ${resp.status}`);
+                
+                const json = await resp.json();
+                // Verifica se veio como array ou dentro de um objeto 'data'
+                this.clientes = Array.isArray(json) ? json : (json.data || []);
+                
+                console.log(`✅ Total de Clientes carregados: ${this.clientes.length}`);
+
+            } catch (err) {
+                console.error(`❌ Falha crítica ao buscar clientes:`, err);
+                throw err;
             }
-            console.log(`✅ Total Final Clientes: ${this.clientes.length}`);
 
 
             // ==============================================================================
             // 2. BUSCAR ATIVIDADES (PAGINADO DE 5 EM 5 MIL)
+            // O Worker de atividades SUPORTA paginação, então aqui mantemos o loop.
             // ==============================================================================
             this.atividades = [];
             let actPage = 1;
@@ -78,7 +66,7 @@ class SensedataAPIClient {
                         console.warn(`⚠️ Erro ${resp.status} na pág ${actPage}. Tentando novamente (Tentativa ${errorCount + 1})...`);
                         errorCount++;
                         if(errorCount > 3) throw new Error("Muitos erros consecutivos na API.");
-                        await new Promise(r => setTimeout(r, 2000)); // Espera 2s antes de tentar de novo
+                        await new Promise(r => setTimeout(r, 2000)); 
                         continue; 
                     }
 
@@ -89,8 +77,9 @@ class SensedataAPIClient {
                         this.atividades = this.atividades.concat(chunk);
                         console.log(`   📦 +${chunk.length} atividades. Total acumulado: ${this.atividades.length}`);
                         actPage++;
-                        errorCount = 0; // Sucesso, zera contador de erro
+                        errorCount = 0; 
                         
+                        // Se vier menos que o limite solicitado, é a última página
                         if (chunk.length < ACT_CHUNK) {
                             moreActivities = false;
                         }
@@ -98,9 +87,9 @@ class SensedataAPIClient {
                         moreActivities = false;
                     }
                     
-                    // Segurança para loop infinito
+                    // Trava de segurança (aprox 1 milhão de registros)
                     if (actPage > 200) { 
-                        console.warn("⚠️ Limite de segurança de páginas atingido (200). Parando.");
+                        console.warn("⚠️ Limite de segurança de páginas atingido. Parando loop.");
                         moreActivities = false; 
                     }
 
@@ -129,7 +118,7 @@ class SensedataAPIClient {
         }
     }
 
-    // Métodos auxiliares mantidos para compatibilidade
+    // Métodos auxiliares
     filtrarClientesPorSegmento(s) { return []; }
     obterListaCSs() { return []; }
     obterListaSegmentos() { return []; }
