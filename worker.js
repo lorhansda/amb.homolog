@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * WORKER DE PROCESSAMENTO DE OKRs (V9 - Suporte a JSON Aninhado da API)
+ * WORKER DE PROCESSAMENTO DE OKRs (V10 - Correção Datas JSON API)
  * ===================================================================
  */
 
@@ -27,7 +27,6 @@ const formatClientStatus = (value = '') => {
         .trim();
 };
 
-// --- NOVO: Função para pegar valores em objetos aninhados (ex: owner.name) ---
 const getNestedValue = (obj, path) => {
     if (!path) return undefined;
     const keys = path.split('.');
@@ -49,13 +48,13 @@ const formatDate = (date) => {
     return `${day}/${month}/${year}`;
 };
 
-// --- PARSER DE DATAS ---
+// --- PARSER DE DATAS (ATUALIZADO V10) ---
 const parseDate = (dateInput) => {
     if (!dateInput) return null;
     if (dateInput instanceof Date && !isNaN(dateInput)) return dateInput;
 
     let dateStr = String(dateInput).trim();
-    if (!dateStr) return null;
+    if (!dateStr || dateStr.toLowerCase() === 'null') return null;
 
     // CASO 0: Data formato brasileiro "DD/MM/YYYY"
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
@@ -63,24 +62,33 @@ const parseDate = (dateInput) => {
         return new Date(Date.UTC(y, m - 1, d));
     }
 
-    // CASO 1: Data Simples "YYYY-MM-DD"
+    // CASO 1: Formato ISO 8601 com T (Vem do JSON da API: "2025-12-03T00:00:00")
+    if (dateStr.includes('T')) {
+        // Remove milissegundos longos se houver
+        if (dateStr.includes('.')) {
+            dateStr = dateStr.replace(/(\.\d{3})\d+/, '$1');
+        }
+        const dateObj = new Date(dateStr);
+        if (!isNaN(dateObj.getTime())) return dateObj;
+    }
+
+    // CASO 2: Data Simples "YYYY-MM-DD"
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         const [y, m, d] = dateStr.split('-').map(Number);
         return new Date(Date.UTC(y, m - 1, d));
     }
 
-    // CASO 2: Remove milissegundos longos (.123456 -> .123)
-    if (dateStr.includes('.')) {
-        dateStr = dateStr.replace(/(\.\d{3})\d+/, '$1');
-    }
-
-    // CASO 3: SQL Timestamp
+    // CASO 3: SQL Timestamp "YYYY-MM-DD HH:MM:SS" (Sem T)
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/)) {
         dateStr = dateStr.replace(' ', 'T');
+        const dateObj = new Date(dateStr);
+        if (!isNaN(dateObj.getTime())) return dateObj;
     }
 
-    const dateObj = new Date(dateStr);
-    if (!isNaN(dateObj.getTime())) return dateObj;
+    // Fallback final
+    const fallbackDate = new Date(dateStr);
+    if (!isNaN(fallbackDate.getTime())) return fallbackDate;
+
     return null;
 };
 
@@ -113,19 +121,16 @@ const buildCsToSquadMap = () => {
 };
 
 const processInitialData = () => {
-    console.log(`[Worker] Processando ${rawActivities.length} atividades (V9 - JSON Support)...`);
+    console.log(`[Worker] Processando ${rawActivities.length} atividades (V10 - JSON/Dates)...`);
     
     const clientByIdMap = new Map();
     const clienteMapByName = new Map();
 
     // 1. Processamento de CLIENTES
     rawClients = rawClients.map(c => {
-        // Helper interno para buscar em várias chaves possíveis
         const getVal = (keys) => {
             for (const k of keys) {
-                // Tenta acesso direto
                 if (c[k] !== undefined && c[k] !== null) return c[k];
-                // Tenta acesso aninhado (ex: customer.group)
                 const nested = getNestedValue(c, k);
                 if (nested !== undefined && nested !== null) return nested;
             }
@@ -135,7 +140,7 @@ const processInitialData = () => {
         const normalizedClient = {
             ...c, 
             Cliente: getVal(['cliente', 'Cliente', 'name', 'customer.name']),
-            CS: getVal(['cs', 'CS', 'owner', 'customer.cs']), // Tenta achar CS no cliente
+            CS: getVal(['cs', 'CS', 'owner', 'customer.cs']),
             Segmento: getVal(['segmento', 'Segmento', 'industry', 'customer.group']),
             Fase: getVal(['fase', 'Fase', 'stage']),
             ISM: getVal(['ism', 'ISM']),
@@ -180,12 +185,9 @@ const processInitialData = () => {
     let debugCount = 0;
 
     rawActivities = rawActivities.map((ativ, index) => {
-        // Helper robusto para extrair dados de CSV ou JSON Aninhado
         const campo = (keys) => {
             for (const k of keys) {
-                // 1. Tenta valor direto
                 if (ativ[k] !== undefined && ativ[k] !== null) return ativ[k];
-                // 2. Tenta valor aninhado (ex: owner.name)
                 const nested = getNestedValue(ativ, k);
                 if (nested !== undefined && nested !== null) return nested;
             }
@@ -209,20 +211,24 @@ const processInitialData = () => {
         const canonicalClientName = (clienteInfo.Cliente || originalClientName || '').trim();
         const clienteKey = buildClientKey(canonicalClientName);
 
-        // Mapeamento Universal (CSV + JSON API)
+        // --- MAPEAMENTO DE CAMPOS (Priorizando estrutura JSON da API) ---
         const rawData = {
             playbook: campo(['playbook', 'Playbook', 'playbook.name']),
-            atividade: campo(['atividade', 'Atividade', 'description']), // Na API, 'description' é o nome da atividade
+            atividade: campo(['atividade', 'Atividade', 'description']), 
             tipo: campo(['tipo_atividade', 'Tipo de Atividade', 'type.caption', 'type.description']),
             responsavelAtividade: campo(['responsavel', 'Responsável', 'owner.name', 'owner.username']),
             status: campo(['status', 'Status', 'status.description']),
             categoria: campo(['categoria', 'Categoria']),
             notes: campo(['notes', 'Anotações']),
             
-            // Datas
+            // DATAS: Prioridade para chaves da API (JSON)
             criado_em: campo(['created_on', 'CriadoEm', 'criado_em', 'Criado em']), 
-            previsao: campo(['previsao_conclusao', 'PrevisaoConclusao', 'Previsão de conclusão', 'due_date']), 
-            concluido: campo(['end_date', 'ConcluidaEm', 'system_end_date_raw', 'Concluída em', 'Concluida em']) 
+            
+            // PREVISÃO: due_date é o padrão da API para prazo
+            previsao: campo(['due_date', 'previsao_conclusao', 'PrevisaoConclusao', 'Previsão de conclusão', 'planned_due_date']), 
+            
+            // CONCLUSÃO: end_date é o padrão da API para conclusão efetiva
+            concluido: campo(['end_date', 'system_end_date', 'ConcluidaEm', 'system_end_date_raw', 'Concluída em']) 
         };
 
         let criadoEmDate = parseDate(rawData.criado_em);
@@ -240,23 +246,21 @@ const processInitialData = () => {
             }
         }
 
-        // *** LÓGICA DE FALLBACK DE CS ***
-        // 1. Tenta CS da Conta (vinda da lista de Clientes)
+        // Fallback de CS
         let finalCS = clienteInfo.CS;
-        // 2. Se não tem CS na conta, tenta usar o Responsável da Atividade (owner.name do JSON)
         if (!finalCS || finalCS === 'Não Identificado') {
             finalCS = rawData.responsavelAtividade;
         }
         if (!finalCS) finalCS = 'Não Identificado';
 
-        // --- DEBUG VISUAL ---
+        // --- DEBUG NO CONSOLE PARA AS 3 PRIMEIRAS ATIVIDADES ---
         if (debugCount < 3) {
-            console.log(`[WORKER DEBUG V9] Reg ${index}:`, {
-                Ativ: rawData.atividade,
-                Resp: rawData.responsavelAtividade,
-                CS_Final: finalCS,
-                Dt_Criado: criadoEmDate,
-                Dt_Concl: concluidaEmDate
+            console.log(`[WORKER DEBUG V10] Ativ ${index}:`, {
+                Atividade: rawData.atividade,
+                RawEnd: rawData.concluido,
+                ParsedEnd: concluidaEmDate,
+                RawDue: rawData.previsao,
+                ParsedDue: previsaoConclusaoDate
             });
             debugCount++;
         }
@@ -268,7 +272,7 @@ const processInitialData = () => {
             ClienteCompleto: clienteKey,
             "Status Cliente": statusCliente,
             Segmento: clienteInfo.Segmento || 'Não Identificado',
-            CS: finalCS, // CS processado
+            CS: finalCS, 
             Squad: clienteInfo['Squad CS'],
             Fase: clienteInfo.Fase,
             ISM: clienteInfo.ISM,
