@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * MÓDULO DE INTEGRAÇÃO - CORREÇÃO DO LOOP INFINITO DE CLIENTES
+ * MÓDULO DE INTEGRAÇÃO - OTIMIZADO PARA ALTO VOLUME
  * ===================================================================
  */
 
@@ -14,58 +14,78 @@ class SensedataAPIClient {
 
     async carregarDadosClientes() {
         try {
-            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch CORRIGIDO...');
-            console.log('URL Alvo:', this.apiUrl);
+            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch OTIMIZADO (Paginação + Filtro de Data)...');
 
             // ==============================================================================
-            // 1. BUSCAR CLIENTES (BUSCA ÚNICA - SEM LOOP)
-            // O Worker atual retorna todos os clientes de uma vez, então não devemos paginar.
+            // 1. BUSCAR CLIENTES (PAGINADO)
+            // Agora o Worker suporta paginação, então baixamos em blocos seguros
             // ==============================================================================
             this.clientes = [];
-            console.log(`📡 Buscando lista completa de Clientes...`);
+            let clientPage = 1;
+            const CLIENT_CHUNK = 2000; 
+            let moreClients = true;
 
-            try {
-                // Removemos parametros de limite para o Worker trazer tudo (comportamento padrão dele)
-                const url = `${this.apiUrl}/api/clientes`; 
-                const resp = await fetch(url);
-                
-                if (!resp.ok) throw new Error(`Erro HTTP ${resp.status}`);
-                
-                const json = await resp.json();
-                // Verifica se veio como array ou dentro de um objeto 'data'
-                this.clientes = Array.isArray(json) ? json : (json.data || []);
-                
-                console.log(`✅ Total de Clientes carregados: ${this.clientes.length}`);
+            console.log(`📡 Buscando Clientes em lotes de ${CLIENT_CHUNK}...`);
 
-            } catch (err) {
-                console.error(`❌ Falha crítica ao buscar clientes:`, err);
-                throw err;
+            while (moreClients) {
+                // Adiciona um timestamp para evitar cache do navegador
+                const url = `${this.apiUrl}/api/clientes?limit=${CLIENT_CHUNK}&page=${clientPage}&t=${Date.now()}`;
+                
+                try {
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error(`Erro HTTP ${resp.status} em Clientes`);
+                    
+                    const json = await resp.json();
+                    const chunk = Array.isArray(json) ? json : (json.data || []);
+                    
+                    if (chunk.length > 0) {
+                        this.clientes = this.clientes.concat(chunk);
+                        console.log(`   👤 Clientes Pág ${clientPage}: +${chunk.length} (Total: ${this.clientes.length})`);
+                        clientPage++;
+                        
+                        // Se vier menos que o limite, acabou
+                        if (chunk.length < CLIENT_CHUNK) {
+                            moreClients = false;
+                        }
+                    } else {
+                        moreClients = false;
+                    }
+                } catch (err) {
+                    console.error(`❌ Falha crítica em clientes pág ${clientPage}:`, err);
+                    throw err;
+                }
             }
+            console.log(`✅ Total de Clientes: ${this.clientes.length}`);
 
 
             // ==============================================================================
-            // 2. BUSCAR ATIVIDADES (PAGINADO DE 5 EM 5 MIL)
-            // O Worker de atividades SUPORTA paginação, então aqui mantemos o loop.
+            // 2. BUSCAR ATIVIDADES (COM FILTRO DE DATA OBRIGATÓRIO)
+            // Para evitar baixar 2 milhões de linhas, filtramos apenas o ano corrente/recente.
             // ==============================================================================
             this.atividades = [];
             let actPage = 1;
-            const ACT_CHUNK = 5000; 
+            const ACT_CHUNK = 3000; // Lote conservador
             let moreActivities = true;
             let errorCount = 0;
 
-            console.log(`📡 Buscando Atividades em lotes de ${ACT_CHUNK}...`);
+            // CONFIGURAÇÃO DO FILTRO DE DATA
+            // Define data de corte: 01/01/2025 (Ajuste conforme sua necessidade de histórico no painel)
+            const DATA_INICIO = '2025-01-01'; 
+            
+            console.log(`📡 Buscando Atividades a partir de ${DATA_INICIO}...`);
 
             while (moreActivities) {
-                const url = `${this.apiUrl}/api/atividades?limit=${ACT_CHUNK}&page=${actPage}`;
+                // Passamos o parâmetro 'since' para o Worker filtrar no SQL
+                const url = `${this.apiUrl}/api/atividades?limit=${ACT_CHUNK}&page=${actPage}&since=${DATA_INICIO}`;
                 console.log(`   🔄 Baixando Atividades Pág ${actPage}...`);
                 
                 try {
                     const resp = await fetch(url);
                     
                     if (!resp.ok) {
-                        console.warn(`⚠️ Erro ${resp.status} na pág ${actPage}. Tentando novamente (Tentativa ${errorCount + 1})...`);
+                        console.warn(`⚠️ Erro ${resp.status} na pág ${actPage}. Tentativa ${errorCount + 1}...`);
                         errorCount++;
-                        if(errorCount > 3) throw new Error("Muitos erros consecutivos na API.");
+                        if(errorCount > 3) throw new Error("Falha persistente na API de atividades.");
                         await new Promise(r => setTimeout(r, 2000)); 
                         continue; 
                     }
@@ -75,11 +95,10 @@ class SensedataAPIClient {
 
                     if (chunk.length > 0) {
                         this.atividades = this.atividades.concat(chunk);
-                        console.log(`   📦 +${chunk.length} atividades. Total acumulado: ${this.atividades.length}`);
+                        console.log(`   📦 +${chunk.length} atividades. Total: ${this.atividades.length}`);
                         actPage++;
-                        errorCount = 0; 
+                        errorCount = 0;
                         
-                        // Se vier menos que o limite solicitado, é a última página
                         if (chunk.length < ACT_CHUNK) {
                             moreActivities = false;
                         }
@@ -87,21 +106,22 @@ class SensedataAPIClient {
                         moreActivities = false;
                     }
                     
-                    // Trava de segurança (aprox 1 milhão de registros)
-                    if (actPage > 200) { 
-                        console.warn("⚠️ Limite de segurança de páginas atingido. Parando loop.");
+                    // Trava de segurança (aprox 300k registros)
+                    // Se precisar de mais que isso, o navegador vai travar de qualquer jeito.
+                    if (actPage > 100) { 
+                        console.warn("⚠️ Limite de segurança de páginas atingido (100). Parando.");
                         moreActivities = false; 
                     }
 
                 } catch (err) {
-                    console.error(`❌ Erro fatal na página ${actPage}:`, err);
+                    console.error(`❌ Erro ao buscar atividades pág ${actPage}:`, err);
                     moreActivities = false; 
                 }
             }
 
-            console.log('📊 [RESUMO FINAL DO CARREGAMENTO]');
-            console.log(`   Total Clientes: ${this.clientes.length}`);
-            console.log(`   Total Atividades: ${this.atividades.length}`);
+            console.log('📊 [RESUMO FINAL]');
+            console.log(`   Clientes: ${this.clientes.length}`);
+            console.log(`   Atividades (desde ${DATA_INICIO}): ${this.atividades.length}`);
 
             this.ultimaAtualizacaoClientes = new Date();
 
@@ -112,13 +132,13 @@ class SensedataAPIClient {
             };
 
         } catch (error) {
-            console.error('❌ [ERRO CRÍTICO NO FRONTEND]:', error);
-            alert("Erro ao carregar dados. Abra o console (F12) para ver os detalhes.");
+            console.error('❌ [ERRO GERAL]:', error);
+            alert("Erro ao carregar dados. Verifique o console (F12).");
             throw error;
         }
     }
 
-    // Métodos auxiliares
+    // Métodos auxiliares para compatibilidade
     filtrarClientesPorSegmento(s) { return []; }
     obterListaCSs() { return []; }
     obterListaSegmentos() { return []; }
