@@ -424,7 +424,8 @@ const calculateMetricsForPeriod = (month, year, activities, clients, selectedCS,
     csContactActivities.forEach(activity => {
         const clientKey = activity.ClienteCompleto;
         if (!clientKey) return;
-        const at = normalizeText(activity['Tipo de Atividade'] || a['Tipo']);
+        const typeRaw = activity['Tipo de Atividade'] || activity['Tipo de atividade'] || activity['Tipo'] || '';
+        const at = normalizeText(typeRaw || activity.Atividade || '');
         let currentCategory = '';
         if (callKeywords.some(k => at.includes(k))) currentCategory = 'call';
         else if (emailKeywords.some(k => at.includes(k))) currentCategory = 'email';
