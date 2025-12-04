@@ -1037,6 +1037,37 @@ const parseDate = (dateInput) => {
     }
     return null;
 };
+
+        // --- HELPERS: Tradução de Termos (Inglês -> Português) ---
+
+const translateActivityType = (type) => {
+    if (!type) return 'Não Identificado';
+    
+    // Converte para minúsculo para facilitar a comparação
+    const lower = String(type).toLowerCase();
+    
+    // Mapeamento de Tipos
+    if (lower.includes('meeting') || lower.includes('reunião')) return 'Reunião';
+    if (lower.includes('call') || lower.includes('phone') || lower.includes('ligação')) return 'Ligação';
+    if (lower.includes('email') || lower.includes('e-mail')) return 'E-mail';
+    if (lower.includes('whatsapp')) return 'Whatsapp';
+    if (lower.includes('task') || lower.includes('tarefa')) return 'Tarefa';
+    
+    return type; // Se não achar, retorna o original
+};
+
+const translateStatus = (status) => {
+    if (!status) return 'Desconhecido';
+    const lower = String(status).toLowerCase();
+    
+    // Mapeamento de Status
+    if (lower === 'completed' || lower === 'concluded' || lower === 'done' || lower === 'concluída') return 'Concluída';
+    if (lower === 'open' || lower === 'pending' || lower === 'scheduled' || lower === 'agendada') return 'Agendada';
+    if (lower === 'canceled' || lower === 'cancelled' || lower === 'cancelada') return 'Cancelada';
+    if (lower === 'late' || lower === 'overdue' || lower === 'atrasada') return 'Atrasada';
+    
+    return status;
+};
     // --- MAPPER: Banco D1 -> Formato do Dashboard ---
 function mapDatabaseToDashboard(dbData, type) {
     if (!Array.isArray(dbData)) return [];
@@ -2133,6 +2164,7 @@ async function loadDataFromAPI() {
 
 </body>
 </html>
+
 
 
 
