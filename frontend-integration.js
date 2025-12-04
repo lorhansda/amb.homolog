@@ -14,38 +14,63 @@ class SensedataAPIClient {
 
     async carregarDadosClientes() {
         try {
-            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch na API...');
+            console.warn('🔍 [DIAGNÓSTICO] Iniciando fetch na API (Modo Paginado)...');
             console.log('URL Alvo:', this.apiUrl);
 
-            // Tenta buscar com um limite menor primeiro para testar se não é timeout
-            const limit = 150000; 
-
-            // 1. BUSCAR CLIENTES
-            console.log(`📡 Buscando Clientes (limit=${limit})...`);
-            const clientesResp = await fetch(`${this.apiUrl}/api/clientes?limit=${limit}`);
-            console.log('📡 Status Clientes:', clientesResp.status);
+            // 1. BUSCAR CLIENTES (Clientes são leves, podemos manter busca única ou paginada simples)
+            // Mantivemos um limite alto seguro para clientes, pois geralmente são menos registros que atividades
+            console.log(`📡 Buscando Clientes...`);
+            const clientesResp = await fetch(`${this.apiUrl}/api/clientes?limit=10000`); 
             const clientesJson = await clientesResp.json();
-            
-            // LOG CRÍTICO: Mostra a estrutura real que veio
-            console.log('📦 [JSON CLIENTES RECEBIDO]:', clientesJson); 
+            this.clientes = Array.isArray(clientesJson) ? clientesJson : (clientesJson.data || []);
+            console.log(`✅ ${this.clientes.length} Clientes carregados.`);
 
-            // 2. BUSCAR ATIVIDADES
-            console.log(`📡 Buscando Atividades (limit=${limit})...`);
-            const atividadesResp = await fetch(`${this.apiUrl}/api/atividades?limit=${limit}`);
-            console.log('📡 Status Atividades:', atividadesResp.status);
-            const atividadesJson = await atividadesResp.json();
+            // 2. BUSCAR ATIVIDADES COM PAGINAÇÃO (LOOP)
+            // Isso evita o Erro 500 por estouro de memória no Worker
+            this.atividades = [];
+            let page = 1;
+            const CHUNK_SIZE = 15000; // Tamanho seguro por página (Cloudflare Pro aguenta bem)
+            let hasMore = true;
 
-            // LOG CRÍTICO: Mostra a estrutura real que veio
-            console.log('📦 [JSON ATIVIDADES RECEBIDO]:', atividadesJson);
+            console.log(`📡 Buscando Atividades em lotes de ${CHUNK_SIZE}...`);
 
-            // TENTATIVA DE DESCOBRIR ONDE ESTÃO OS DADOS
-            // Verifica se estão em 'data', 'results', ou na raiz
-            this.clientes = clientesJson.data || clientesJson.results || (Array.isArray(clientesJson) ? clientesJson : []);
-            this.atividades = atividadesJson.data || atividadesJson.results || (Array.isArray(atividadesJson) ? atividadesJson : []);
+            while (hasMore) {
+                const url = `${this.apiUrl}/api/atividades?limit=${CHUNK_SIZE}&page=${page}`;
+                console.log(`   🔄 Baixando página ${page}...`);
+                
+                const resp = await fetch(url);
+                
+                if (!resp.ok) {
+                    console.error(`❌ Erro na página ${page}: ${resp.status}`);
+                    throw new Error(`Falha ao buscar atividades (Página ${page})`);
+                }
 
-            console.log('📊 [RESUMO DO PROCESSAMENTO]');
-            console.log(`   Clientes encontrados: ${this.clientes.length}`);
-            console.log(`   Atividades encontradas: ${this.atividades.length}`);
+                const json = await resp.json();
+                const chunk = Array.isArray(json) ? json : (json.data || []);
+
+                if (chunk.length > 0) {
+                    this.atividades = this.atividades.concat(chunk);
+                    console.log(`   📦 +${chunk.length} atividades recebidas. Total: ${this.atividades.length}`);
+                    page++;
+                    
+                    // Se o chunk veio menor que o limite, acabaram os dados
+                    if (chunk.length < CHUNK_SIZE) {
+                        hasMore = false;
+                    }
+                } else {
+                    hasMore = false;
+                }
+                
+                // Segurança para não loopar infinito em caso de erro lógico
+                if (page > 50) { 
+                    console.warn("⚠️ Limite de segurança de páginas atingido.");
+                    hasMore = false; 
+                }
+            }
+
+            console.log('📊 [RESUMO FINAL]');
+            console.log(`   Total Clientes: ${this.clientes.length}`);
+            console.log(`   Total Atividades: ${this.atividades.length}`);
 
             this.ultimaAtualizacaoClientes = new Date();
 
@@ -57,7 +82,7 @@ class SensedataAPIClient {
 
         } catch (error) {
             console.error('❌ [ERRO FATAL NO FETCH]:', error);
-            alert("Erro na conexão com a API. Abra o Console (F12) e mande um print para o suporte.");
+            alert("Erro na conexão com a API. Verifique o console.");
             throw error;
         }
     }
