@@ -63,10 +63,12 @@ class SensedataAPIClient {
             // Para evitar baixar 2 milhões de linhas, filtramos apenas o ano corrente/recente.
             // ==============================================================================
             this.atividades = [];
-            let actPage = 1;
             const ACT_CHUNK = 3000; // Lote conservador
             let moreActivities = true;
             let errorCount = 0;
+            let cursor = null;
+            let supportsCursor = null; // desconhecido
+            let chunkIndex = 1;
 
             // CONFIGURAÇÃO DO FILTRO DE DATA
             // Se quiser limitar o histórico, defina window.DASH_FETCH_CONFIG.activitiesSince = 'YYYY-MM-DD'
@@ -78,12 +80,16 @@ class SensedataAPIClient {
             );
 
             while (moreActivities) {
-                // Passamos o parâmetro 'since' para o Worker filtrar no SQL
-                let url = `${this.apiUrl}/api/atividades?limit=${ACT_CHUNK}&page=${actPage}`;
+                let url = `${this.apiUrl}/api/atividades?limit=${ACT_CHUNK}`;
                 if (DATA_INICIO) {
                     url += `&since=${encodeURIComponent(DATA_INICIO)}`;
                 }
-                console.log(`   🔄 Baixando Atividades Pág ${actPage}...`);
+                if (supportsCursor === true && cursor) {
+                    url += `&cursor=${encodeURIComponent(cursor)}`;
+                } else if (supportsCursor === false) {
+                    url += `&page=${chunkIndex}`;
+                }
+                console.log(`   🔄 Baixando Atividades Lote ${chunkIndex}${supportsCursor === true ? ` (cursor=${cursor ?? 'inicial'})` : supportsCursor === false ? ` (page=${chunkIndex})` : ''}...`);
                 
                 try {
                     const resp = await fetch(url);
@@ -96,27 +102,35 @@ class SensedataAPIClient {
                         continue; 
                     }
 
+                    const hasCursorHeader = resp.headers.has('x-next-cursor');
+                    const nextCursorHeader = hasCursorHeader ? resp.headers.get('x-next-cursor') : null;
                     const json = await resp.json();
-                    const chunk = Array.isArray(json) ? json : (json.data || []);
+                    const chunk = Array.isArray(json) ? json : (json.results || json.data || []);
 
                     if (chunk.length > 0) {
                         this.atividades = this.atividades.concat(chunk);
                         console.log(`   📦 +${chunk.length} atividades. Total: ${this.atividades.length}`);
-                        actPage++;
+                        chunkIndex++;
                         errorCount = 0;
-                        
-                        if (chunk.length < ACT_CHUNK) {
-                            moreActivities = false;
+
+                        if (supportsCursor === null) {
+                            supportsCursor = hasCursorHeader;
+                        }
+
+                        if (supportsCursor === true) {
+                            cursor = nextCursorHeader || null;
+                            if (!cursor) moreActivities = false;
+                        } else {
+                            if (chunk.length < ACT_CHUNK) {
+                                moreActivities = false;
+                            }
+                            if (chunkIndex > 100) { 
+                                console.warn("⚠️ Limite de segurança de páginas atingido (100). Parando.");
+                                moreActivities = false; 
+                            }
                         }
                     } else {
                         moreActivities = false;
-                    }
-                    
-                    // Trava de segurança (aprox 300k registros)
-                    // Se precisar de mais que isso, o navegador vai travar de qualquer jeito.
-                    if (actPage > 100) { 
-                        console.warn("⚠️ Limite de segurança de páginas atingido (100). Parando.");
-                        moreActivities = false; 
                     }
 
                 } catch (err) {
