@@ -823,6 +823,11 @@
     }
 
     const normalizeClientKey = (value = '') => (value || '').trim().toLowerCase();
+    const normalizeIdValue = (value) => {
+        if (value === undefined || value === null) return null;
+        const trimmed = String(value).trim();
+        return trimmed.length > 0 ? trimmed : null;
+    };
 
     function formatClientStatusValue(value = '') {
         if (!value) return '';
@@ -855,7 +860,7 @@
     function createHtmlTable(data, options = {}) {
         if (!data || data.length === 0) return '<p style="padding: 20px; text-align: center;">Sem dados para exibir.</p>';
         const columnOrder = Array.isArray(options.columnOrder) ? options.columnOrder : null;
-        const hiddenKeys = ['__activityId'];
+        const hiddenKeys = ['__activityId', 'id_sensedata', 'id_customer', 'id_customer_legacy', 'id_legacy'];
         let headers = Object.keys(data[0]).filter(h => !hiddenKeys.includes(h) && normalizeText(h) !== 'anotacoes');
         if (columnOrder) {
             const normalizedLookup = new Map();
@@ -986,21 +991,40 @@
 
     function enrichActivitiesWithClientData(activities = [], clients = []) {
         if (!Array.isArray(activities) || !Array.isArray(clients)) return activities;
-        const clientMap = new Map(clients.map(client => [normalizeClientKey(client.Cliente), client]));
+
+        const clientIdMap = new Map();
+        const clientNameMap = new Map();
+
+        clients.forEach((client) => {
+            const idLegacy = normalizeIdValue(client.id_legacy ?? client.id_customer_legacy);
+            if (idLegacy) clientIdMap.set(idLegacy, client);
+            const nameKey = normalizeClientKey(client.Cliente);
+            if (nameKey) clientNameMap.set(nameKey, client);
+        });
+
         return activities.map(activity => {
-            const normalized = normalizeClientKey(activity.Cliente);
-            const clientInfo = clientMap.get(normalized);
+            const activityLegacyId = normalizeIdValue(activity.id_customer_legacy);
+            let clientInfo = activityLegacyId ? clientIdMap.get(activityLegacyId) : null;
+
+            if (!clientInfo) {
+                const normalized = normalizeClientKey(activity.Cliente);
+                clientInfo = clientNameMap.get(normalized);
+            }
+
             if (!clientInfo) {
                 return {
                     ...activity,
-                    ClienteCompleto: normalizeClientKey(activity.Cliente || '')
+                    ClienteCompleto: normalizeClientKey(activity.Cliente || ''),
+                    id_customer_legacy: activityLegacyId
                 };
             }
+
             const canonicalName = clientInfo.Cliente || activity.Cliente;
             return {
                 ...activity,
                 Cliente: canonicalName || activity.Cliente,
                 ClienteCompleto: normalizeClientKey(canonicalName),
+                CS: clientInfo.CS || activity.CS || 'Não Identificado',
                 Segmento: clientInfo.Segmento || activity.Segmento || '',
                 Squad: clientInfo['Squad CS'] || activity.Squad || '',
                 Fase: clientInfo.Fase || activity.Fase || '',
@@ -1009,7 +1033,13 @@
                 Comercial: clientInfo.Comercial || activity.Comercial || '',
                 NPSOnboarding: clientInfo['NPS onboarding'] ?? activity.NPSOnboarding ?? '',
                 ValorNaoFaturado: clientInfo['Valor total não faturado'] ?? activity.ValorNaoFaturado ?? '',
-                "Status Cliente": formatClientStatusValue(activity["Status Cliente"] || clientInfo.Status || clientInfo['Situação'])
+                "Status Cliente": formatClientStatusValue(
+                    activity["Status Cliente"] ||
+                    clientInfo["Status Cliente"] ||
+                    clientInfo.Status ||
+                    clientInfo['Situação']
+                ),
+                id_customer_legacy: activityLegacyId || normalizeIdValue(clientInfo.id_legacy)
             };
         });
     }
@@ -1074,45 +1104,48 @@ function mapDatabaseToDashboard(dbData, type) {
 
     return dbData.map(row => {
         if (type === 'atividades') {
-            // Mapeia as colunas do D1 (snake_case) para o Dashboard (Title Case)
-            
-            // 1. Trata as datas usando o helper do Passo 1
-            const created = parseDate(row.criado_em || row.created_at || row["Criado em"]);
+            const idSensedata = normalizeIdValue(row.id_sensedata ?? row.id);
+            const idCustomer = normalizeIdValue(row.id_customer ?? row.customer_id ?? row.id_cliente);
+            const idCustomerLegacy = normalizeIdValue(
+                row.id_customer_legacy ??
+                row.id_legacy ??
+                row.id_cliente_legacy ??
+                row.customer_id_legacy
+            );
+            const created = parseDate(row.criado_em || row.created_at || row.created_on || row["Criado em"]);
             const due = parseDate(row.previsao_conclusao || row.due_date || row["Previsão de conclusão"]);
             const done = parseDate(row.end_date || row.system_end_date || row.concluida_em || row["Concluída em"]);
-            
-            // 2. Retorna o objeto no formato que o Worker e a Tabela esperam
+            const clienteNome = row.cliente || row.customer_name || "Cliente Desconhecido";
+
             return {
-                "__activityId": row.id_sensedata || row.id,
-                
-                // Campos de Data (Formatados)
+                "__activityId": idSensedata || row.id_sensedata || row.id,
+                id_sensedata: idSensedata,
+                id_customer: idCustomer,
+                id_customer_legacy: idCustomerLegacy,
                 "Criado em": created,
                 "Previsão de conclusão": due,
                 "Concluída em": done,
-                
-                // Campos de Texto Principais
-                "Cliente": row.cliente || row.customer_name || "Cliente Desconhecido",
-                "ClienteCompleto": (row.cliente || '').trim().toLowerCase(),
-                "CS": row.cs || row.owner_name, // Se vier vazio, será preenchido depois pelo 'enrich'
+                "Cliente": clienteNome,
+                "ClienteCompleto": normalizeClientKey(clienteNome),
+                "CS": row.cs || row.owner_name || row.responsavel, 
                 "Playbook": row.playbook,
                 "Atividade": row.atividade || row.description,
                 "Tipo de Atividade": translateActivityType(row.tipo_atividade || row.tipo || row["Tipo de Atividade"]),
                 "Categoria": row.categoria,
-                
-                // Status e Responsáveis
                 "Status": translateStatus(row.status || row["Status"]),
-                "Responsável": row.responsavel || row.responsavel_name,
-                "Status Cliente": row.status_cliente, // Ex: "Ativo-Produto"
-                
-                // Anotações (JSON ou Texto)
+                "Responsável": row.responsavel || row.responsavel_name || row.owner_name,
+                "Status Cliente": row.status_cliente,
                 "Anotações": row.notes || row.anotacoes || ""
             };
         } 
         else if (type === 'clientes') {
+            const idCustomer = normalizeIdValue(row.id_customer ?? row.id);
+            const idLegacy = normalizeIdValue(row.id_legacy ?? row.id_customer_legacy ?? row.id_cliente_legacy);
+            const clienteNome = row.cliente || row.name || '';
+            const statusFormatado = formatClientStatusValue(row.status || row.situacao || row["Status Cliente"]);
             return {
-                // Mapeamento da tabela de Clientes
-                "Cliente": row.cliente || row.name,
-                "ClienteCompleto": (row.cliente || '').trim().toLowerCase(),
+                "Cliente": clienteNome,
+                "ClienteCompleto": normalizeClientKey(clienteNome),
                 "CS": row.cs || row.owner,
                 "Segmento": row.segmento || row.industry,
                 "Fase": row.fase || row.stage,
@@ -1121,12 +1154,16 @@ function mapDatabaseToDashboard(dbData, type) {
                 "Comercial": row.comercial,
                 "NPS onboarding": row.nps_onboarding,
                 "Valor total não faturado": row.valor_total_em_aberto,
-                "Status": row.status,        // Ex: "Ativo"
+                "Status": statusFormatado,
+                "Status Cliente": statusFormatado,
                 "Squad CS": row.squad_cs,
                 "Dias sem touch": row.dias_sem_touch,
                 "Situação": row.situacao,
                 "Modelo de negócio": row.modelo_de_negocio,
-                "Potencial": row.potencial
+                "Potencial": row.potencial,
+                id_customer: idCustomer,
+                id_legacy: idLegacy,
+                id_customer_legacy: idLegacy
             };
         }
     });
