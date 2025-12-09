@@ -823,6 +823,8 @@
     }
 
     const normalizeClientKey = (value = '') => (value || '').trim().toLowerCase();
+    const normalizeStatusKey = (value = '') => normalizeText(value).replace(/[^a-z]/g, '');
+    const isActiveProductStatus = (value = '') => normalizeStatusKey(value).startsWith('ativoproduto');
     const normalizeIdValue = (value) => {
         if (value === undefined || value === null) return null;
         const trimmed = String(value).trim();
@@ -1310,9 +1312,15 @@ async function loadDataFromAPI() {
         }
 
         // 4. Define as variáveis globais para as tabelas
-        rawClients = mappedClients;
+        const dashboardClients = mappedClients.filter(
+            client => isActiveProductStatus(client["Status Cliente"] || client.Status)
+        );
+
+        const clientsForDashboard = dashboardClients.length > 0 ? dashboardClients : mappedClients;
+
+        rawClients = clientsForDashboard;
         rawActivities = mappedActivities;
-        filterDataCache = buildFilterDataSnapshot(mappedClients, mappedActivities);
+        filterDataCache = buildFilterDataSnapshot(clientsForDashboard, mappedActivities);
 
         // 5. Envia para o Worker de Cálculo (worker.js)
         // Passamos os dados JÁ MAPEADOS para que o worker encontre as colunas certas
