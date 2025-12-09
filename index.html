@@ -990,59 +990,59 @@
     // ============================================================
 
     function enrichActivitiesWithClientData(activities = [], clients = []) {
-        if (!Array.isArray(activities) || !Array.isArray(clients)) return activities;
+    if (!Array.isArray(activities) || !Array.isArray(clients)) return activities;
 
-        const clientIdMap = new Map();
-        const clientNameMap = new Map();
+    const clientIdMap = new Map();
+    const clientNameMap = new Map();
 
-        clients.forEach((client) => {
-            const idLegacy = normalizeIdValue(client.id_legacy ?? client.id_customer_legacy);
-            if (idLegacy) clientIdMap.set(idLegacy, client);
-            const nameKey = normalizeClientKey(client.Cliente);
-            if (nameKey) clientNameMap.set(nameKey, client);
-        });
+    clients.forEach((client) => {
+        const idLegacy = normalizeIdValue(client.id_legacy ?? client.id_customer_legacy);
+        if (idLegacy) clientIdMap.set(idLegacy, client);
+        const nameKey = normalizeClientKey(client.Cliente);
+        if (nameKey) clientNameMap.set(nameKey, client);
+    });
 
-        return activities.map(activity => {
-            const activityLegacyId = normalizeIdValue(activity.id_customer_legacy);
-            let clientInfo = activityLegacyId ? clientIdMap.get(activityLegacyId) : null;
+    return activities.map(activity => {
+        const activityLegacyId = normalizeIdValue(activity.id_customer_legacy);
+        let clientInfo = activityLegacyId ? clientIdMap.get(activityLegacyId) : null;
 
-            if (!clientInfo) {
-                const normalized = normalizeClientKey(activity.Cliente);
-                clientInfo = clientNameMap.get(normalized);
-            }
+        if (!clientInfo) {
+            const normalized = normalizeClientKey(activity.Cliente);
+            clientInfo = clientNameMap.get(normalized);
+        }
 
-            if (!clientInfo) {
-                return {
-                    ...activity,
-                    ClienteCompleto: normalizeClientKey(activity.Cliente || ''),
-                    id_customer_legacy: activityLegacyId
-                };
-            }
-
-            const canonicalName = clientInfo.Cliente || activity.Cliente;
+        if (!clientInfo) {
             return {
                 ...activity,
-                Cliente: canonicalName || activity.Cliente,
-                ClienteCompleto: normalizeClientKey(canonicalName),
-                CS: clientInfo.CS || activity.CS || 'Não Identificado',
-                Segmento: clientInfo.Segmento || activity.Segmento || '',
-                Squad: clientInfo['Squad CS'] || activity.Squad || '',
-                Fase: clientInfo.Fase || activity.Fase || '',
-                ISM: clientInfo.ISM || activity.ISM || '',
-                Negocio: clientInfo['Negócio'] || activity.Negocio || '',
-                Comercial: clientInfo.Comercial || activity.Comercial || '',
-                NPSOnboarding: clientInfo['NPS onboarding'] ?? activity.NPSOnboarding ?? '',
-                ValorNaoFaturado: clientInfo['Valor total não faturado'] ?? activity.ValorNaoFaturado ?? '',
-                "Status Cliente": formatClientStatusValue(
-                    activity["Status Cliente"] ||
-                    clientInfo["Status Cliente"] ||
-                    clientInfo.Status ||
-                    clientInfo['Situação']
-                ),
-                id_customer_legacy: activityLegacyId || normalizeIdValue(clientInfo.id_legacy)
+                ClienteCompleto: normalizeClientKey(activity.Cliente || ''),
+                id_customer_legacy: activityLegacyId
             };
-        });
-    }
+        }
+
+        const canonicalName = clientInfo.Cliente || activity.Cliente;
+        return {
+            ...activity,
+            Cliente: canonicalName || activity.Cliente,
+            ClienteCompleto: normalizeClientKey(canonicalName),
+            CS: clientInfo.CS || activity.CS || 'Não Identificado',
+            Segmento: clientInfo.Segmento || activity.Segmento || '',
+            Squad: clientInfo['Squad CS'] || activity.Squad || '',
+            Fase: clientInfo.Fase || activity.Fase || '',
+            ISM: clientInfo.ISM || activity.ISM || '',
+            Negocio: clientInfo['Negócio'] || activity.Negocio || '',
+            Comercial: clientInfo.Comercial || activity.Comercial || '',
+            NPSOnboarding: clientInfo['NPS onboarding'] ?? activity.NPSOnboarding ?? '',
+            ValorNaoFaturado: clientInfo['Valor total não faturado'] ?? activity.ValorNaoFaturado ?? '',
+            "Status Cliente": formatClientStatusValue(
+                activity["Status Cliente"] ||
+                clientInfo["Status Cliente"] ||
+                clientInfo.Status ||
+                clientInfo['Situação']
+            ),
+            id_customer_legacy: activityLegacyId || normalizeIdValue(clientInfo.id_legacy)
+        };
+    });
+}
 const parseDate = (dateInput) => {
     if (!dateInput) return null;
     if (dateInput instanceof Date) return dateInput;
@@ -1127,7 +1127,7 @@ function mapDatabaseToDashboard(dbData, type) {
                 "Concluída em": done,
                 "Cliente": clienteNome,
                 "ClienteCompleto": normalizeClientKey(clienteNome),
-                "CS": row.cs || row.owner_name || row.responsavel, 
+                "CS": row.cs || row.owner_name || row.responsavel,
                 "Playbook": row.playbook,
                 "Atividade": row.atividade || row.description,
                 "Tipo de Atividade": translateActivityType(row.tipo_atividade || row.tipo || row["Tipo de Atividade"]),
@@ -2240,6 +2240,7 @@ async function loadDataFromAPI() {
 
 </body>
 </html>
+
 
 
 
